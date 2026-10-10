@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:kazumi/services/network/bangumi_acceleration.dart';
@@ -47,7 +48,9 @@ class _NetworkMirrorSettingsState extends State<NetworkMirrorSettings> {
             context,
             title: '番剧条目加速',
             current: bangumiAcceleration,
-            modes: BangumiAcceleration.values,
+            modes: BangumiAcceleration.values
+                .where((mode) => !kIsWeb || mode != BangumiAcceleration.ech)
+                .toList(),
             label: (mode) => mode.label,
             description: (mode) => mode.description,
             setting: SettingsKeys.bangumiAcceleration,
@@ -77,12 +80,20 @@ class _NetworkMirrorSettingsState extends State<NetworkMirrorSettings> {
             context,
             title: '图片加速',
             current: imageAcceleration,
-            modes: ImageAcceleration.values,
+            modes: ImageAcceleration.values
+                .where((mode) => !kIsWeb || mode != ImageAcceleration.ech)
+                .toList(),
             label: (mode) => mode.label,
             description: (mode) => mode.description,
             setting: SettingsKeys.imageAcceleration,
           ),
         ),
+        if (kIsWeb)
+          const SettingsTile(
+            leading: Icons.info_outline_rounded,
+            title: Text('浏览器通过本地网关联网'),
+            description: Text('ECH 与系统代理由原生客户端提供；浏览器使用网关的 HTTPS 和代理配置。'),
+          ),
       ],
     );
   }

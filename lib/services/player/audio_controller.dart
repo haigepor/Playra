@@ -1,5 +1,7 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:kazumi/services/platform/resource_url.dart';
+import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_service_mpris/audio_service_mpris.dart';
@@ -73,12 +75,12 @@ class AudioController {
 
       if (Platform.isAndroid || Platform.isIOS) {
         _becomingNoisySubscription?.cancel();
-        _becomingNoisySubscription =
-            _audioSession!.becomingNoisyEventStream.listen((_) {
-          if (_handler?.playbackState.value.playing ?? false) {
-            unawaited(_safePause());
-          }
-        });
+        _becomingNoisySubscription = _audioSession!.becomingNoisyEventStream
+            .listen((_) {
+              if (_handler?.playbackState.value.playing ?? false) {
+                unawaited(_safePause());
+              }
+            });
       }
     } catch (e) {
       KazumiLogger().w('AudioController: audio_session init failed', error: e);
@@ -241,21 +243,21 @@ class AudioController {
     final processingState = completed
         ? AudioProcessingState.completed
         : loading
-            ? AudioProcessingState.loading
-            : buffering
-                ? AudioProcessingState.buffering
-                : AudioProcessingState.ready;
+        ? AudioProcessingState.loading
+        : buffering
+        ? AudioProcessingState.buffering
+        : AudioProcessingState.ready;
 
     final normalizedPosition = duration == null
         ? updatePosition
         : updatePosition > duration
-            ? duration
-            : updatePosition;
+        ? duration
+        : updatePosition;
     final normalizedBufferedPosition = duration == null
         ? bufferedPosition
         : bufferedPosition > duration
-            ? duration
-            : bufferedPosition;
+        ? duration
+        : bufferedPosition;
 
     handler.updatePlaybackState(
       PlaybackState(
@@ -263,9 +265,7 @@ class AudioController {
         androidCompactActionIndices: compactActionIndices,
         systemActions: duration == null || duration == Duration.zero
             ? const {}
-            : const {
-                MediaAction.seek,
-              },
+            : const {MediaAction.seek},
         processingState: processingState,
         playing: playing,
         updatePosition: normalizedPosition,
@@ -289,6 +289,13 @@ class AudioController {
   /// inline, so it can land after [deactivate] and repost the notification
   /// that the idle state just cancelled.
   Future<void> _resolveArtwork(AsyncSession binding, String artworkUrl) async {
+    // 浏览器媒体会话直接使用同源封面，避免原生文件缓存和跨域读取。
+    if (kIsWeb) {
+      if (binding.isStale) return;
+      _artworkUri = Uri.parse(platformResourceUrl(artworkUrl));
+      _artworkPending = false;
+      return;
+    }
     Uri? resolved;
     try {
       final file = await ProxyAwareImageCacheManager.instance

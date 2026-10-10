@@ -1,7 +1,7 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/services/platform/platform_paths.dart';
 
 import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
@@ -13,9 +13,7 @@ class StorageErrorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('内部错误'),
-      ),
+      appBar: AppBar(title: const Text('内部错误')),
       body: FutureBuilder<Directory>(
         future: getApplicationSupportDirectory(),
         builder: (context, snapshot) {

@@ -33,6 +33,9 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+/tool/web_backend/node_modules/
+/.tooling/
+/.playwright-mcp/
 
 # Symbolication related
 app.*.symbols

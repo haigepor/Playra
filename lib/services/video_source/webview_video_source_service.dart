@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'package:kazumi/webview/video/video_webview_controller.dart';
 import 'package:kazumi/services/video_source/video_source_service.dart';
@@ -43,7 +44,9 @@ class WebViewVideoSourceService implements IVideoSourceService {
         episodeUrl,
         useLegacyParser: useLegacyParser,
         offset: offset,
-        timeout: timeout,
+        timeout: kIsWeb && timeout < const Duration(seconds: 45)
+            ? const Duration(seconds: 45)
+            : timeout,
       ),
     );
 
@@ -75,11 +78,7 @@ class WebViewVideoSourceService implements IVideoSourceService {
     try {
       request.throwIfNotCurrent(_activeRequest);
       didStartLoad = true;
-      await _webview!.loadUrl(
-        episodeUrl,
-        useLegacyParser,
-        offset: offset,
-      );
+      await _webview!.loadUrl(episodeUrl, useLegacyParser, offset: offset);
 
       request.throwIfNotCurrent(_activeRequest);
 

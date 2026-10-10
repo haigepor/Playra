@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:kazumi/request/core/dio_factory.dart';
 import 'package:kazumi/request/core/network_error_mapper.dart';
 
@@ -60,6 +62,16 @@ class DownloadHttpClient {
     ProgressCallback? onReceiveProgress,
   }) async {
     try {
+      if (kIsWeb) {
+        final response = await DioFactory.downloadDio.get<List<int>>(
+          url,
+          options: Options(headers: headers, responseType: ResponseType.bytes),
+          cancelToken: cancelToken,
+          onReceiveProgress: onReceiveProgress,
+        );
+        await File(savePath).writeAsBytes(response.data ?? const []);
+        return;
+      }
       await DioFactory.downloadDio.download(
         url,
         savePath,

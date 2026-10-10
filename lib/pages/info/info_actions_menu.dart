@@ -3,6 +3,9 @@ import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
+import 'package:kazumi/request/core/dio_factory.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/bean/dialog/dialog.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
@@ -72,7 +75,7 @@ class _InfoActionsMenuState extends State<InfoActionsMenu> {
       final bytes = await _loadCoverPng(imageUrl);
       if (!mounted) return;
 
-      if (isDesktop()) {
+      if (isDesktop() || kIsWeb) {
         final path = await FilePicker.platform.saveFile(
           dialogTitle: '保存封面',
           fileName: fileName,
@@ -114,10 +117,7 @@ class _InfoActionsMenuState extends State<InfoActionsMenu> {
           onPressed: _title.trim().isEmpty ? null : _copyTitle,
           label: '复制标题',
         ),
-        KazumiMenuItem(
-          onPressed: _openExternally,
-          label: '外部打开',
-        ),
+        KazumiMenuItem(onPressed: _openExternally, label: '外部打开'),
       ],
       builder: (context, toggle) => IconButton(
         tooltip: '更多操作',
@@ -140,10 +140,20 @@ String _coverFileName(String title, int subjectId) {
 }
 
 Future<Uint8List> _loadCoverPng(String imageUrl) async {
-  final file = await CachedNetworkImageProvider.defaultCacheManager
-      .getSingleFile(imageUrl)
-      .timeout(const Duration(seconds: 30));
-  final codec = await ui.instantiateImageCodec(await file.readAsBytes());
+  final Uint8List bytes;
+  if (kIsWeb) {
+    final response = await DioFactory.downloadDio.get<List<int>>(
+      imageUrl,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    bytes = Uint8List.fromList(response.data ?? const []);
+  } else {
+    final file = await CachedNetworkImageProvider.defaultCacheManager
+        .getSingleFile(imageUrl)
+        .timeout(const Duration(seconds: 30));
+    bytes = await file.readAsBytes();
+  }
+  final codec = await ui.instantiateImageCodec(bytes);
   try {
     final frame = await codec.getNextFrame();
     try {

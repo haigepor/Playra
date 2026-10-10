@@ -284,6 +284,11 @@ class SettingsKeys {
     '/tab/popular/',
     group: SettingGroup.interface,
   );
+  static const androidUiStyle = SettingKey<String>(
+    'androidUiStyle',
+    'legacy',
+    group: SettingGroup.interface,
+  );
   static const webDavEnable = SettingKey<bool>(
     _SettingBoxKey.webDavEnable,
     false,
@@ -607,6 +612,7 @@ class SettingsKeys {
     bangumiAcceleration,
     enableSystemProxy,
     defaultStartupPage,
+    androidUiStyle,
     webDavEnable,
     webDavEnableHistory,
     webDavEnableCollect,
@@ -666,7 +672,7 @@ class SettingsKeys {
   static List<SettingKey<Object?>> byGroup(SettingGroup group) {
     return [
       for (final key in all)
-        if (key.group == group) key
+        if (key.group == group) key,
     ];
   }
 

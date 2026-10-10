@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:kazumi/services/platform/resource_url.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -40,6 +42,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
   final _picker = ImagePicker();
   Timer? _previewDebounce;
   File? _imageFile;
+  Uint8List? _imageBytes;
   String _previewUrl = '';
   String _lastUrlText = '';
   String? _inputError;
@@ -64,6 +67,9 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
 
   @override
   void dispose() {
+    if (kIsWeb && _imageFile != null) {
+      unawaited(_imageFile!.delete().catchError((_) => _imageFile!));
+    }
     _previewDebounce?.cancel();
     _urlController.dispose();
     _urlFocus.dispose();
@@ -110,8 +116,9 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
   Future<void> _pasteUrl() async {
     if (_busy) return;
     try {
-      final text =
-          (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim();
+      final text = (await Clipboard.getData(
+        Clipboard.kTextPlain,
+      ))?.text?.trim();
       if (!mounted || _busy || !_useUrl) return;
       if (text == null || text.isEmpty) {
         setState(() => _inputError = '剪贴板里还没有图片链接');
@@ -135,7 +142,22 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
     try {
       final image = await _picker.pickImage(source: ImageSource.gallery);
       if (image == null) return;
-      final file = File(image.path);
+      final file = File(
+        kIsWeb
+            ? '/kazumi/tmp/image-search-${DateTime.now().microsecondsSinceEpoch}-${image.name}'
+            : image.path,
+      );
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        if (bytes.length > 25 * 1024 * 1024) {
+          if (mounted) setState(() => _inputError = '图片超过 25 MB，请换一张较小的截图');
+          return;
+        }
+        await file.writeAsBytes(bytes);
+        final previous = _imageFile;
+        if (previous != null) await previous.delete();
+        _imageBytes = bytes;
+      }
       if (await file.length() > 25 * 1024 * 1024) {
         if (mounted) setState(() => _inputError = '图片超过 25 MB，请换一张较小的截图');
         return;
@@ -182,14 +204,20 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
       if (_transition == Duration.zero) {
         _resultScroll.jumpTo(0);
       } else {
-        _resultScroll.animateTo(0,
-            duration: _transition, curve: Curves.easeOutCubic);
+        _resultScroll.animateTo(
+          0,
+          duration: _transition,
+          curve: Curves.easeOutCubic,
+        );
       }
     } else {
       final resultsContext = _resultsKey.currentContext;
       if (resultsContext != null) {
-        Scrollable.ensureVisible(resultsContext,
-            duration: _transition, curve: Curves.easeOutCubic);
+        Scrollable.ensureVisible(
+          resultsContext,
+          duration: _transition,
+          curve: Curves.easeOutCubic,
+        );
       }
     }
   }
@@ -228,8 +256,9 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             child: const Text('访问 trace.moe'),
           ),
           FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('知道了')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('知道了'),
+          ),
         ],
       ),
     );
@@ -244,30 +273,33 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         backgroundColor: colors.surface,
         actions: [
           IconButton(
-              onPressed: _showHelp,
-              tooltip: '搜图小贴士',
-              icon: const Icon(Icons.help_outline_rounded)),
+            onPressed: _showHelp,
+            tooltip: '搜图小贴士',
+            icon: const Icon(Icons.help_outline_rounded),
+          ),
         ],
       ),
       body: SafeArea(
         top: false,
         child: NotificationListener<UserScrollNotification>(
-            onNotification: (notification) {
-              if (_controller.isImageSearching &&
-                  notification.direction != ScrollDirection.idle) {
-                _userScrolledDuringSearch = true;
-              }
-              return false;
-            },
-            child: LayoutBuilder(
-              builder: (context, constraints) => Observer(
-                builder: (context) => ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context)
-                      .copyWith(scrollbars: false),
-                  child: _buildContent(context, constraints),
-                ),
+          onNotification: (notification) {
+            if (_controller.isImageSearching &&
+                notification.direction != ScrollDirection.idle) {
+              _userScrolledDuringSearch = true;
+            }
+            return false;
+          },
+          child: LayoutBuilder(
+            builder: (context, constraints) => Observer(
+              builder: (context) => ScrollConfiguration(
+                behavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(scrollbars: false),
+                child: _buildContent(context, constraints),
               ),
-            )),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -275,7 +307,8 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
   Widget _buildContent(BuildContext context, BoxConstraints constraints) {
     final window = MediaQuery.sizeOf(context);
     final textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
-    final splitLayout = constraints.maxWidth >= 840 ||
+    final splitLayout =
+        constraints.maxWidth >= 840 ||
         (constraints.maxWidth >= 600 &&
             window.width > window.height &&
             textScale < 1.5);
@@ -289,8 +322,13 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
     // Keep the form scrollable when the keyboard consumes most of the height.
     final pinAction =
         splitLayout && (showResults || short) && constraints.maxHeight >= 240;
-    final source = _buildSource(context, searching, showResults,
-        short: short, inlineAction: !pinAction);
+    final source = _buildSource(
+      context,
+      searching,
+      showResults,
+      short: short,
+      inlineAction: !pinAction,
+    );
     final resultContent = showResults
         ? _ImageSearchResults(
             results: results,
@@ -315,11 +353,15 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             children: [
               SizedBox(
                 width: showResults
-                    ? ((constraints.maxWidth - padding * 2 - 24) * .36)
-                        .clamp(264.0, 400.0)
+                    ? ((constraints.maxWidth - padding * 2 - 24) * .36).clamp(
+                        264.0,
+                        400.0,
+                      )
                     : (constraints.maxWidth - padding * 2).clamp(0.0, 520.0),
-                child: _buildSourcePane(source,
-                    action: pinAction ? _buildPrimaryAction(searching) : null),
+                child: _buildSourcePane(
+                  source,
+                  action: pinAction ? _buildPrimaryAction(searching) : null,
+                ),
               ),
               if (resultContent != null)
                 Expanded(
@@ -379,15 +421,21 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Flexible(
-            fit: action == null ? FlexFit.loose : FlexFit.tight,
-            child: scrollable),
+          fit: action == null ? FlexFit.loose : FlexFit.tight,
+          child: scrollable,
+        ),
         if (action != null) action,
       ],
     );
   }
 
-  Widget _buildSource(BuildContext context, bool searching, bool showResults,
-      {required bool short, required bool inlineAction}) {
+  Widget _buildSource(
+    BuildContext context,
+    bool searching,
+    bool showResults, {
+    required bool short,
+    required bool inlineAction,
+  }) {
     final colors = Theme.of(context).colorScheme;
     final type = Theme.of(context).textTheme;
     final busy = searching || _isPicking;
@@ -400,22 +448,29 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             showResults
                 ? '搜索图片'
                 : short
-                    ? '用截图找到番名'
-                    : '这一幕，\n出自哪部番？',
+                ? '用截图找到番名'
+                : '这一幕，\n出自哪部番？',
             style:
                 (showResults || short ? type.headlineSmall : type.displaySmall)
                     ?.copyWith(
-                        fontWeight: FontWeight.w700, color: colors.onSurface),
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurface,
+                    ),
           ),
         ),
         if (!showResults && !short) ...[
           const SizedBox(height: 8),
-          Text('用一张截图，找到番名与出现的集数。',
-              style: type.bodyLarge?.copyWith(color: colors.onSurfaceVariant)),
+          Text(
+            '用一张截图，找到番名与出现的集数。',
+            style: type.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
+          ),
         ],
         SizedBox(height: short ? 12 : 24),
         _ImageSourceSelector(
-            useUrl: _useUrl, enabled: !busy, onChanged: _changeSource),
+          useUrl: _useUrl,
+          enabled: !busy,
+          onChanged: _changeSource,
+        ),
         const SizedBox(height: 16),
         if (_useUrl) ...[
           TextField(
@@ -433,8 +488,9 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
               hintText: 'https://…',
               filled: true,
               fillColor: colors.surfaceContainerLow,
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               suffixIcon: IconButton(
                 onPressed: busy ? null : _pasteUrl,
                 tooltip: '粘贴图片链接',
@@ -443,8 +499,10 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text('使用可直接访问的 HTTP 或 HTTPS 图片地址',
-              style: type.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+          Text(
+            '使用可直接访问的 HTTP 或 HTTPS 图片地址',
+            style: type.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          ),
           if (_previewUrl.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildPreview(short: short),
@@ -455,24 +513,35 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
           else
             Padding(
               padding: EdgeInsets.symmetric(
-                  horizontal: 16, vertical: short ? 12 : 24),
+                horizontal: 16,
+                vertical: short ? 12 : 24,
+              ),
               child: short
-                  ? Row(children: [
-                      const _ImageSearchEmblem(size: 48),
-                      const SizedBox(width: 12),
-                      Expanded(
-                          child: Text('截图预览',
-                              style: type.titleMedium
-                                  ?.copyWith(color: colors.onSurfaceVariant))),
-                    ])
+                  ? Row(
+                      children: [
+                        const _ImageSearchEmblem(size: 48),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '截图预览',
+                            style: type.titleMedium?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
                   : Column(
                       children: [
                         const _ImageSearchEmblem(size: 72),
                         const SizedBox(height: 12),
-                        Text('截图预览',
-                            textAlign: TextAlign.center,
-                            style: type.titleMedium
-                                ?.copyWith(color: colors.onSurfaceVariant)),
+                        Text(
+                          '截图预览',
+                          textAlign: TextAlign.center,
+                          style: type.titleMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
             ),
@@ -481,36 +550,47 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             Row(
               children: [
                 Expanded(
-                    child: Text(path.basename(_imageFile!.path),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: type.bodySmall
-                            ?.copyWith(color: colors.onSurfaceVariant))),
+                  child: Text(
+                    path.basename(_imageFile!.path),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: type.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
                 TextButton.icon(
-                    onPressed: busy ? null : _pickImage,
-                    label: const Text('更换截图'),
-                    icon: const Icon(Icons.swap_horiz_rounded, size: 20)),
+                  onPressed: busy ? null : _pickImage,
+                  label: const Text('更换截图'),
+                  icon: const Icon(Icons.swap_horiz_rounded, size: 20),
+                ),
               ],
             )
           else
-            Text('JPG、PNG、WebP · 最大 25 MB',
-                textAlign: TextAlign.center,
-                style:
-                    type.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+            Text(
+              'JPG、PNG、WebP · 最大 25 MB',
+              textAlign: TextAlign.center,
+              style: type.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
         ],
         if (_inputError != null) ...[
           const SizedBox(height: 12),
           Semantics(
-              liveRegion: true,
-              child: Text(_inputError!,
-                  style: type.bodyMedium?.copyWith(color: colors.error))),
+            liveRegion: true,
+            child: Text(
+              _inputError!,
+              style: type.bodyMedium?.copyWith(color: colors.error),
+            ),
+          ),
         ],
         const SizedBox(height: 16),
         if (inlineAction) _buildPrimaryAction(searching),
         const SizedBox(height: 12),
-        Text('由 trace.moe 识别动画截图',
-            textAlign: TextAlign.center,
-            style: type.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+        Text(
+          '由 trace.moe 识别动画截图',
+          textAlign: TextAlign.center,
+          style: type.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        ),
         if (!showResults && !short) ...[
           const SizedBox(height: 24),
           const _ScreenshotTip(),
@@ -529,36 +609,45 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
       onPressed: busy
           ? null
           : selecting
-              ? _pickImage
-              : _hasImage
-                  ? _search
-                  : null,
+          ? _pickImage
+          : _hasImage
+          ? _search
+          : null,
       style: ButtonStyle(
         minimumSize: const WidgetStatePropertyAll(Size.fromHeight(56)),
         padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
+          EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        ),
         textStyle: WidgetStatePropertyAll(
-            type.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-        shape: WidgetStateProperty.resolveWith((states) =>
-            RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                    states.contains(WidgetState.pressed) ? 16 : 28))),
+          type.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        shape: WidgetStateProperty.resolveWith(
+          (states) => RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+              states.contains(WidgetState.pressed) ? 16 : 28,
+            ),
+          ),
+        ),
         animationDuration: _transition,
       ),
       icon: searching || _isPicking
           ? LoadingIndicator(size: 24, color: colors.onSurfaceVariant)
-          : Icon(_hasImage
-              ? Icons.image_search_rounded
-              : Icons.add_photo_alternate_outlined),
-      label: Text(searching
-          ? '正在识别'
-          : _isPicking
-              ? '正在读取图片'
-              : selecting
-                  ? '选择截图'
-                  : _useUrl
-                      ? '开始识别'
-                      : '识别这张截图'),
+          : Icon(
+              _hasImage
+                  ? Icons.image_search_rounded
+                  : Icons.add_photo_alternate_outlined,
+            ),
+      label: Text(
+        searching
+            ? '正在识别'
+            : _isPicking
+            ? '正在读取图片'
+            : selecting
+            ? '选择截图'
+            : _useUrl
+            ? '开始识别'
+            : '识别这张截图',
+      ),
     );
   }
 
@@ -566,10 +655,11 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
     final colors = Theme.of(context).colorScheme;
     Widget fallback(BuildContext context, Object error, StackTrace? stack) =>
         const Center(
-            child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Text('暂时无法预览\n仍可尝试识别，或更换图片', textAlign: TextAlign.center),
-        ));
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('暂时无法预览\n仍可尝试识别，或更换图片', textAlign: TextAlign.center),
+          ),
+        );
     return Semantics(
       label: '待识别的完整截图',
       image: true,
@@ -577,18 +667,31 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         height: short ? 136 : 208,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-            color: colors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(24)),
+          color: colors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(24),
+        ),
         child: _useUrl
-            ? Image.network(_previewUrl,
+            ? Image.network(
+                platformResourceUrl(_previewUrl),
                 fit: BoxFit.contain,
                 errorBuilder: fallback,
                 loadingBuilder: (context, child, progress) => progress == null
                     ? child
                     : const Center(
-                        child: LoadingIndicator(semanticsLabel: '正在加载截图')))
-            : Image.file(_imageFile!,
-                fit: BoxFit.contain, errorBuilder: fallback),
+                        child: LoadingIndicator(semanticsLabel: '正在加载截图'),
+                      ),
+              )
+            : kIsWeb
+            ? Image.memory(
+                _imageBytes!,
+                fit: BoxFit.contain,
+                errorBuilder: fallback,
+              )
+            : Image.file(
+                _imageFile!,
+                fit: BoxFit.contain,
+                errorBuilder: fallback,
+              ),
       ),
     );
   }

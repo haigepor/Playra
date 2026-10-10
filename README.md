@@ -156,6 +156,12 @@ A: 本项目编译需要良好的网络环境, 除了由 Google 托管的 Flutte
 
 欢迎您提交 PR！在开始之前, 请阅读 [贡献指引](static/doc/CONTRIBUTING.md) 以了解我们对 PR 和 AI 参与辅助开发的规定。
 
+### 本地依赖覆盖
+
+`ech_http` 当前通过 `pubspec.yaml` 的 `dependency_overrides` 指向仓库内的 `third_party/ech_http`, 而不是 Pub 上的 `0.2.1`。
+该本地副本仅修补了 MSVC 下证书字符串触发的 C2026 编译限制, 证书内容与 TLS 校验行为均未改动。
+升级或替换该依赖前请先阅读 [third_party/ech_http/LOCAL_PATCH.md](third_party/ech_http/LOCAL_PATCH.md)。
+
 ## 美术资源
 
 本项目图标来自 [Yuquanaaa](https://www.pixiv.net/users/66219277) 发表在 [Pixiv](https://www.pixiv.net/artworks/116666979) 上的作品。

@@ -1,10 +1,11 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
+import 'package:kazumi/services/platform/platform_setup.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/app_module.dart';
 import 'package:kazumi/app_widget.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/settings/theme_provider.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/services/platform/platform_paths.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/download/download_directory_service.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -22,18 +23,22 @@ import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:kazumi/services/platform/webview_feature_service.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
+import 'package:kazumi/presentation/interface_style.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configurePlatformPaths();
   registerEchHttpLicenses();
   MediaKit.ensureInitialized();
   if (Platform.isAndroid || Platform.isIOS) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarDividerColor: Colors.transparent,
-      statusBarColor: Colors.transparent,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        statusBarColor: Colors.transparent,
+      ),
+    );
   }
 
   if (Platform.isAndroid) {
@@ -43,6 +48,7 @@ void main() async {
   try {
     final hivePath = '${(await getApplicationSupportDirectory()).path}/hive';
     await Hive.initFlutter(hivePath);
+    await initializePlatformFiles();
     await GStorage.init();
   } catch (e) {
     debugPrint('Storage initialization failed: $e');
@@ -55,18 +61,27 @@ void main() async {
         await windowManager.focus();
       });
     }
-    runApp(MaterialApp(
+    runApp(
+      MaterialApp(
         title: '初始化失败',
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         supportedLocales: const [
           Locale.fromSubtags(
-              languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN")
+            languageCode: 'zh',
+            scriptCode: 'Hans',
+            countryCode: "CN",
+          ),
         ],
         locale: const Locale.fromSubtags(
-            languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN"),
+          languageCode: 'zh',
+          scriptCode: 'Hans',
+          countryCode: "CN",
+        ),
         builder: (context, child) {
           return const StorageErrorPage();
-        }));
+        },
+      ),
+    );
     return;
   }
   await DownloadDirectoryService().restoreAccess();
@@ -104,6 +119,17 @@ void main() async {
       defaultTransition: TransitionType.material,
       provide: (scoped) {
         scoped.addChangeNotifier<ThemeProvider>(ThemeProvider.new);
+        scoped.addChangeNotifier<InterfaceStyleController>(
+          () => InterfaceStyleController(
+            supportsModern: Platform.isAndroid,
+            savedStyle: GStorage.getSetting(SettingsKeys.androidUiStyle),
+            writeStyle: (value) =>
+                GStorage.putSetting(SettingsKeys.androidUiStyle, value),
+            savedStyleChanges: GStorage.watchSettings([
+              SettingsKeys.androidUiStyle,
+            ]).map((_) => GStorage.getSetting(SettingsKeys.androidUiStyle)),
+          ),
+        );
       },
       child: const AppWidget(),
     ),

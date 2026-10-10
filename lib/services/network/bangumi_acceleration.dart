@@ -1,4 +1,5 @@
 import 'package:kazumi/services/storage/storage.dart';
+import 'package:flutter/foundation.dart';
 
 enum BangumiAcceleration {
   direct,
@@ -9,7 +10,7 @@ enum BangumiAcceleration {
     SettingsKeys.bangumiAcceleration,
   )) {
     'direct' => direct,
-    'ech' => ech,
+    'ech' => kIsWeb ? direct : ech,
     'mirror' => mirror,
     _ => GStorage.getSetting(SettingsKeys.enableBangumiProxy) ? mirror : direct,
   };

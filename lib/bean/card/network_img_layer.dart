@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/image_extension.dart';
+import 'package:kazumi/services/platform/resource_url.dart';
 
 class NetworkImgLayer extends StatelessWidget {
   const NetworkImgLayer({
@@ -46,15 +47,13 @@ class NetworkImgLayer extends StatelessWidget {
     final heroContext = flightDirection == HeroFlightDirection.push
         ? fromHeroContext
         : toHeroContext;
-    final hero =
-        flightDirection == HeroFlightDirection.push ? fromHero : toHero;
+    final hero = flightDirection == HeroFlightDirection.push
+        ? fromHero
+        : toHero;
 
     return InheritedTheme.captureAll(
       heroContext,
-      Material(
-        type: MaterialType.transparency,
-        child: hero.child,
-      ),
+      Material(type: MaterialType.transparency, child: hero.child),
     );
   }
 
@@ -70,7 +69,7 @@ class NetworkImgLayer extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       borderRadius: _borderRadius,
       child: CachedNetworkImage(
-        imageUrl: imageUrl,
+        imageUrl: platformResourceUrl(imageUrl),
         width: width,
         height: height,
         memCacheWidth: memCacheWidth,
@@ -139,10 +138,9 @@ class NetworkImgLayer extends StatelessWidget {
       height: height,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .onInverseSurface
-            .withValues(alpha: 0.4),
+        color: Theme.of(
+          context,
+        ).colorScheme.onInverseSurface.withValues(alpha: 0.4),
         borderRadius: _borderRadius,
       ),
       child: type == 'bg'

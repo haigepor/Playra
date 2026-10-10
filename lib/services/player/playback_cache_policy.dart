@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:kazumi/services/player/native_player_access.dart';
 
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/metered_network_service.dart';
@@ -10,8 +11,8 @@ class PlaybackCachePolicy {
   PlaybackCachePolicy({
     required bool Function() isLocalPlayback,
     required Player? Function() currentPlayer,
-  })  : _isLocalPlayback = isLocalPlayback,
-        _currentPlayer = currentPlayer;
+  }) : _isLocalPlayback = isLocalPlayback,
+       _currentPlayer = currentPlayer;
 
   static const int _lowMemoryBufferSize = 2 * 1024 * 1024;
   static const int _defaultBufferSize = 1500 * 1024 * 1024;
@@ -27,12 +28,13 @@ class PlaybackCachePolicy {
       !_isLocalPlayback() &&
       MeteredNetworkService.isMetered;
 
-  int get bufferSize => LowMemoryMode.current.isEnabled(
+  int get bufferSize =>
+      LowMemoryMode.current.isEnabled(
         isMetered: MeteredNetworkService.isMetered,
         isLocalPlayback: _isLocalPlayback(),
       )
-          ? _lowMemoryBufferSize
-          : _defaultBufferSize;
+      ? _lowMemoryBufferSize
+      : _defaultBufferSize;
 
   void startWatching() {
     if (_settingsSubscription != null) {
@@ -54,7 +56,7 @@ class PlaybackCachePolicy {
       return;
     }
     try {
-      final pp = player.platform as NativePlayer;
+      final pp = nativePlayerAccess(player);
       // A stale player's initialization must not block its replacement's writes.
       await pp.waitForPlayerInitialization;
       await _writes.run(() async {

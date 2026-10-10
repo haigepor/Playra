@@ -1,19 +1,31 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kazumi/services/player/screenshot_candidate.dart';
 import 'package:path/path.dart' as path;
 
 class ScreenshotExportService {
   const ScreenshotExportService();
 
-  Future<String?> chooseDestination() => FilePicker.platform.getDirectoryPath(
-    dialogTitle: '选择截图保存文件夹',
-    lockParentWindow: true,
-  );
+  Future<String?> chooseDestination() => kIsWeb
+      ? Future.value('/kazumi/screenshots')
+      : FilePicker.platform.getDirectoryPath(
+          dialogTitle: '选择截图保存文件夹',
+          lockParentWindow: true,
+        );
 
   Future<void> write(ScreenshotCandidate item, String location) async {
     final name = _fileName(item);
+    if (kIsWeb) {
+      await FilePicker.platform.saveFile(
+        fileName: name,
+        bytes: item.bytes,
+        type: FileType.custom,
+        allowedExtensions: const ['png'],
+      );
+      return;
+    }
     var file = File(path.join(location, name));
     var suffix = 1;
     while (await file.exists()) {

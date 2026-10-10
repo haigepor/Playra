@@ -1,5 +1,7 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'impl/captcha_webview_browser_impl.dart';
 
 import 'package:kazumi/webview/captcha/impl/captcha_webview_inappwebview_impl.dart';
 import 'package:kazumi/webview/captcha/impl/captcha_webview_windows_impl.dart';
@@ -67,7 +69,10 @@ abstract class CaptchaWebviewController<T> {
   /// [inputXpath]  验证码输入框元素的 XPath
   /// [buttonXpath] 提交按钮元素的 XPath
   Future<void> submitCaptchaInteract(
-      String captchaCode, String inputXpath, String buttonXpath);
+    String captchaCode,
+    String inputXpath,
+    String buttonXpath,
+  );
 
   /// 获取当前页面的 Cookie 字符串（"key1=val1; key2=val2"）
   ///
@@ -92,6 +97,7 @@ abstract class CaptchaWebviewController<T> {
 
 class CaptchaWebviewControllerFactory {
   static CaptchaWebviewController getController() {
+    if (kIsWeb) return CaptchaWebviewBrowserImpl();
     if (Platform.isWindows) {
       return CaptchaWebviewWindowsImpl();
     }

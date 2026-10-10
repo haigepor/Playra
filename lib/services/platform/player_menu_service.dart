@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:flutter/services.dart';
 

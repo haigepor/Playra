@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 

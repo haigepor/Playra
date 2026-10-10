@@ -1,5 +1,12 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:kazumi/plugins/plugins_controller.dart';
+import 'package:kazumi/pages/download/download_controller.dart';
+import 'package:kazumi/pages/collect/collect_controller.dart';
+import 'package:kazumi/pages/my/my_controller.dart';
+import 'package:kazumi/services/sync/danmaku_shield_sync_service.dart';
+import 'package:kazumi/services/sync/webdav.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -30,14 +37,35 @@ class _AppWidgetState extends State<AppWidget>
   bool _isHandlingWindowClose = false;
   bool _didApplyStoredThemeSettings = false;
   Brightness? _lastTitleBarBrightness;
+  Future<void>? _webStartup;
 
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) _webStartup = _initializeWebData();
     trayManager.addListener(this);
     windowManager.addListener(this);
     WidgetsBinding.instance.addObserver(this);
     _initializePlatformIntegrations();
+  }
+
+  /// 浏览器可直接打开或刷新任意路由，不能依赖首页的 InitPage 加载规则和下载状态。
+  Future<void> _initializeWebData() async {
+    await inject<PluginsController>().init();
+    await inject<DownloadController>().init();
+    await inject<CollectController>().migrateCollect();
+    await inject<MyController>().loadShieldList();
+    inject<DanmakuShieldSyncService>().start();
+    if (GStorage.getSetting(SettingsKeys.webDavEnable)) {
+      try {
+        await WebDav().init();
+      } catch (error) {
+        KazumiLogger().w(
+          'Web: automatic WebDAV initialization failed',
+          error: error,
+        );
+      }
+    }
   }
 
   Future<void> _initializePlatformIntegrations() async {
@@ -156,8 +184,9 @@ class _AppWidgetState extends State<AppWidget>
   void _syncWindowsTitleBarBrightness(ThemeProvider themeProvider) {
     if (!Platform.isWindows) return;
 
-    final brightness =
-        themeProvider.isEffectiveDark() ? Brightness.dark : Brightness.light;
+    final brightness = themeProvider.isEffectiveDark()
+        ? Brightness.dark
+        : Brightness.light;
     if (_lastTitleBarBrightness == brightness) return;
 
     _lastTitleBarBrightness = brightness;
@@ -205,13 +234,10 @@ class _AppWidgetState extends State<AppWidget>
 
         action = result.action;
         if (result.rememberChoice) {
-          await GStorage.putSetting(
-            SettingsKeys.exitBehavior,
-            switch (action) {
-              ExitDialogAction.exit => 0,
-              ExitDialogAction.minimizeToTray => 1,
-            },
-          );
+          await GStorage.putSetting(SettingsKeys.exitBehavior, switch (action) {
+            ExitDialogAction.exit => 0,
+            ExitDialogAction.minimizeToTray => 1,
+          });
         }
       }
 
@@ -231,11 +257,13 @@ class _AppWidgetState extends State<AppWidget>
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
-      KazumiLogger()
-          .i("AppLifecycleState.paused: Application moved to background");
+      KazumiLogger().i(
+        "AppLifecycleState.paused: Application moved to background",
+      );
     } else if (state == AppLifecycleState.resumed) {
-      KazumiLogger()
-          .i("AppLifecycleState.resumed: Application moved to foreground");
+      KazumiLogger().i(
+        "AppLifecycleState.resumed: Application moved to foreground",
+      );
       await MeteredNetworkService.refresh();
     } else if (state == AppLifecycleState.inactive) {
       KazumiLogger().i("AppLifecycleState.inactive: Application is inactive");
@@ -247,7 +275,8 @@ class _AppWidgetState extends State<AppWidget>
     super.didChangePlatformBrightness();
     final ThemeProvider themeProvider = context.read<ThemeProvider>();
     KazumiLogger().i(
-        "Platform brightness changed, themeMode: ${themeProvider.themeMode}");
+      "Platform brightness changed, themeMode: ${themeProvider.themeMode}",
+    );
 
     _syncWindowsTitleBarBrightness(themeProvider);
   }
@@ -266,11 +295,13 @@ class _AppWidgetState extends State<AppWidget>
       await trayManager.setToolTip('Kazumi');
     }
 
-    Menu trayMenu = Menu(items: [
-      MenuItem(key: 'show_window', label: '显示窗口'),
-      MenuItem.separator(),
-      MenuItem(key: 'exit', label: '退出 Kazumi')
-    ]);
+    Menu trayMenu = Menu(
+      items: [
+        MenuItem(key: 'show_window', label: '显示窗口'),
+        MenuItem.separator(),
+        MenuItem(key: 'exit', label: '退出 Kazumi'),
+      ],
+    );
     await trayManager.setContextMenu(trayMenu);
   }
 
@@ -302,14 +333,36 @@ class _AppWidgetState extends State<AppWidget>
             : dynamicDarkTheme;
 
         return MaterialApp.router(
+          builder: kIsWeb
+              ? (context, child) => FutureBuilder<void>(
+                  future: _webStartup,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError)
+                      return const Scaffold(
+                        body: Center(child: Text('初始化失败，请刷新页面重试')),
+                      );
+                    if (snapshot.connectionState != ConnectionState.done)
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    return child ?? const SizedBox.shrink();
+                  },
+                )
+              : null,
           title: "Kazumi",
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           supportedLocales: const [
             Locale.fromSubtags(
-                languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN")
+              languageCode: 'zh',
+              scriptCode: 'Hans',
+              countryCode: "CN",
+            ),
           ],
           locale: const Locale.fromSubtags(
-              languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN"),
+            languageCode: 'zh',
+            scriptCode: 'Hans',
+            countryCode: "CN",
+          ),
           theme: lightTheme,
           darkTheme: effectiveDarkTheme,
           themeMode: themeProvider.themeMode,

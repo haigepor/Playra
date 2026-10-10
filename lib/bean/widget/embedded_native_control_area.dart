@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/services/platform/desktop_window_config.dart';
 

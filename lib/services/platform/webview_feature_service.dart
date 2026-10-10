@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:flutter_inappwebview_platform_interface/flutter_inappwebview_platform_interface.dart';
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/network_mirror_settings.dart';
@@ -40,22 +41,32 @@ class _ProxySettingsPageState extends State<ProxySettingsPage> {
           SettingsSection(
             title: const Text('代理'),
             tiles: [
-              SettingsTile.switchTile(
-                leading: Icons.vpn_key_rounded,
-                onToggle: (value) => _setProxyEnabled(value ?? !proxyEnabled),
-                title: const Text('启用代理'),
-                description: const Text('启用后网络请求将通过代理服务器'),
-                initialValue: proxyEnabled,
-              ),
-              SettingsTile(
-                leading: Icons.tune_rounded,
-                onPressed: (_) async {
-                  await context.pushNamed('/settings/proxy/editor');
-                  if (mounted) setState(() {});
-                },
-                title: const Text('代理配置'),
-                description: const Text('配置代理服务器地址和认证信息'),
-              ),
+              if (kIsWeb)
+                const SettingsTile(
+                  leading: Icons.info_outline_rounded,
+                  title: Text('浏览器代理由本地服务管理'),
+                  description: Text(
+                    '启动服务时使用 HTTP_PROXY / HTTPS_PROXY；应用内原生代理设置不适用于浏览器。',
+                  ),
+                ),
+              if (!kIsWeb) ...[
+                SettingsTile.switchTile(
+                  leading: Icons.vpn_key_rounded,
+                  onToggle: (value) => _setProxyEnabled(value ?? !proxyEnabled),
+                  title: const Text('启用代理'),
+                  description: const Text('启用后网络请求将通过代理服务器'),
+                  initialValue: proxyEnabled,
+                ),
+                SettingsTile(
+                  leading: Icons.tune_rounded,
+                  onPressed: (_) async {
+                    await context.pushNamed('/settings/proxy/editor');
+                    if (mounted) setState(() {});
+                  },
+                  title: const Text('代理配置'),
+                  description: const Text('配置代理服务器地址和认证信息'),
+                ),
+              ],
             ],
           ),
         ],

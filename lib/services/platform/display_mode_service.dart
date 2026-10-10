@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:kazumi/services/platform/browser_display.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -13,6 +14,7 @@ class DisplayModeService {
   static bool _systemBarsHidden = false;
 
   static Future<void> applyVideoFullscreen(bool fullscreen) {
+    if (kIsWeb) return _attempt(() => setBrowserFullscreen(fullscreen));
     return _pendingFullscreen = _pendingFullscreen.then((_) async {
       if (defaultTargetPlatform == TargetPlatform.linux ||
           defaultTargetPlatform == TargetPlatform.macOS ||
@@ -22,14 +24,16 @@ class DisplayModeService {
       }
 
       // Restore system orientation on exit, including an existing landscape.
-      await _attempt(() => SystemChrome.setPreferredOrientations(
-            fullscreen
-                ? [
-                    DeviceOrientation.landscapeLeft,
-                    DeviceOrientation.landscapeRight
-                  ]
-                : [],
-          ));
+      await _attempt(
+        () => SystemChrome.setPreferredOrientations(
+          fullscreen
+              ? [
+                  DeviceOrientation.landscapeLeft,
+                  DeviceOrientation.landscapeRight,
+                ]
+              : [],
+        ),
+      );
     });
   }
 
@@ -51,6 +55,7 @@ class DisplayModeService {
   }
 
   static Future<void> _setSystemBarsHidden(bool hidden) {
+    if (kIsWeb) return Future<void>.value();
     if (_systemBarsHidden == hidden) {
       return _pendingSystemBars ?? Future.value();
     }
@@ -58,21 +63,20 @@ class DisplayModeService {
     // Rotation acknowledgements must not delay immersion or route cleanup.
     late final Future<void> request;
     request = (_pendingSystemBars ?? Future<void>.value())
-        .then((_) => _attempt(() async {
-              if (defaultTargetPlatform == TargetPlatform.android) {
-                await _intentChannel.invokeMethod(
-                    'setSystemBarsHidden', hidden);
-              } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-                await SystemChrome.setEnabledSystemUIMode(
-                  hidden
-                      ? SystemUiMode.immersiveSticky
-                      : SystemUiMode.edgeToEdge,
-                );
-              }
-            }))
+        .then(
+          (_) => _attempt(() async {
+            if (defaultTargetPlatform == TargetPlatform.android) {
+              await _intentChannel.invokeMethod('setSystemBarsHidden', hidden);
+            } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+              await SystemChrome.setEnabledSystemUIMode(
+                hidden ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
+              );
+            }
+          }),
+        )
         .whenComplete(() {
-      if (identical(_pendingSystemBars, request)) _pendingSystemBars = null;
-    });
+          if (identical(_pendingSystemBars, request)) _pendingSystemBars = null;
+        });
     return _pendingSystemBars = request;
   }
 
@@ -80,8 +84,11 @@ class DisplayModeService {
     try {
       await operation();
     } catch (error, stackTrace) {
-      KazumiLogger().e('Display: failed to apply video display mode',
-          error: error, stackTrace: stackTrace);
+      KazumiLogger().e(
+        'Display: failed to apply video display mode',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 }

@@ -1,7 +1,9 @@
 // ignore_for_file: library_private_types_in_public_api
 
-import 'dart:io';
-import 'dart:typed_data';
+import 'package:kazumi/services/platform/platform_io.dart';
+import 'package:kazumi/services/platform/media_resource.dart';
+import 'package:kazumi/services/player/native_player_access.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
@@ -33,6 +35,7 @@ final class _OwnedPlayer {
   _OwnedPlayer(this.player);
 
   final Player player;
+  String? mediaResource;
   Future<void>? _disposeFuture;
 
   Future<void> dispose() {
@@ -40,6 +43,8 @@ final class _OwnedPlayer {
   }
 
   Future<void> _dispose() async {
+    final resource = mediaResource;
+    mediaResource = null;
     try {
       await player.dispose();
     } catch (error, stackTrace) {
@@ -51,6 +56,8 @@ final class _OwnedPlayer {
       try {
         await player.stop();
       } catch (_) {}
+    } finally {
+      if (resource != null) releaseMediaResource(resource);
     }
   }
 }
@@ -171,8 +178,10 @@ abstract class _PlayerPlaybackController with Store {
       await player.play();
       startOffset = 0;
     } catch (e) {
-      KazumiLogger()
-          .w('PlayerController: failed to restart from beginning', error: e);
+      KazumiLogger().w(
+        'PlayerController: failed to restart from beginning',
+        error: e,
+      );
     }
   }
 
@@ -251,7 +260,7 @@ abstract class _PlayerPlaybackController with Store {
         return;
       }
       try {
-        final pp = player.platform as NativePlayer;
+        final pp = nativePlayerAccess(player);
         await pp.setProperty('cache-secs', wanted ? '0' : '36000');
         if (!isCurrentPlayer(player)) {
           return;
@@ -274,12 +283,15 @@ abstract class _PlayerPlaybackController with Store {
     VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
   }) async {
     startOffset = offset;
-    superResolutionMode = SuperResolutionMode.fromStorageValue(
-      GStorage.getSetting(SettingsKeys.defaultSuperResolutionMode),
-    );
+    superResolutionMode = kIsWeb
+        ? SuperResolutionMode.off
+        : SuperResolutionMode.fromStorageValue(
+            GStorage.getSetting(SettingsKeys.defaultSuperResolutionMode),
+          );
     hAenable = GStorage.getSetting(SettingsKeys.hAenable);
-    androidEnableOpenSLES =
-        GStorage.getSetting(SettingsKeys.androidEnableOpenSLES);
+    androidEnableOpenSLES = GStorage.getSetting(
+      SettingsKeys.androidEnableOpenSLES,
+    );
     hardwareDecoder = GStorage.getSetting(SettingsKeys.hardwareDecoder);
     autoPlay = GStorage.getSetting(SettingsKeys.autoPlay);
     playerDebugMode = GStorage.getSetting(SettingsKeys.playerDebugMode);
@@ -316,7 +328,7 @@ abstract class _PlayerPlaybackController with Store {
         return await _discardIfNotCurrent(candidate);
       }
 
-      var pp = player.platform as NativePlayer;
+      final pp = nativePlayerAccess(player);
       // media-kit 默认启用硬盘作为双重缓存，这可以维持大缓存的前提下减轻内存压力
       // media-kit 内部硬盘缓存目录按照 Linux 配置，这导致该功能在其他平台上被损坏
       // 该设置可以在所有平台上正确启用双重缓存
@@ -369,17 +381,17 @@ abstract class _PlayerPlaybackController with Store {
         }
       }
 
-      await player.setAudioTrack(
-        AudioTrack.auto(),
-      );
+      // HTML 视频使用浏览器默认音轨；Web 后端不支持 AudioTrack.auto。
+      if (!kIsWeb) await player.setAudioTrack(AudioTrack.auto());
       if (!isCurrentPlayer(player)) {
         return await _discardIfNotCurrent(candidate);
       }
 
       String? videoRenderer;
       if (Platform.isAndroid) {
-        final String androidVideoRenderer =
-            GStorage.getSetting(SettingsKeys.androidVideoRenderer);
+        final String androidVideoRenderer = GStorage.getSetting(
+          SettingsKeys.androidVideoRenderer,
+        );
 
         if (androidVideoRenderer == 'auto') {
           // Android 14 及以上使用基于 Vulkan 的 MPV GPU-NEXT 视频输出，着色器性能更好
@@ -430,16 +442,21 @@ abstract class _PlayerPlaybackController with Store {
           );
           if (actionableMessage != null) {
             KazumiDialog.showToast(
-                message: actionableMessage, showActionButton: true);
+              message: actionableMessage,
+              showActionButton: true,
+            );
           } else if (showPlayerError) {
             KazumiDialog.showToast(
-                message: '播放器内部错误 ${event.toString()} ${videoUrl()}',
-                duration: const Duration(seconds: 5),
-                showActionButton: true);
+              message: '播放器内部错误 ${event.toString()} ${videoUrl()}',
+              duration: const Duration(seconds: 5),
+              showActionButton: true,
+            );
           }
         }
-        KazumiLogger().e('PlayerController: Player intent error ${videoUrl()}',
-            error: event);
+        KazumiLogger().e(
+          'PlayerController: Player intent error ${videoUrl()}',
+          error: event,
+        );
       });
 
       if (superResolutionMode != SuperResolutionMode.off) {
@@ -456,9 +473,18 @@ abstract class _PlayerPlaybackController with Store {
         }
       }
 
+      final mediaResource = await prepareMediaResource(videoUrl(), httpHeaders);
+      candidate.mediaResource = mediaResource;
+      if (!isCurrentPlayer(player)) {
+        return await _discardIfNotCurrent(candidate);
+      }
       await player.open(
-        Media(videoUrl(),
-            start: Duration(seconds: offset), httpHeaders: httpHeaders),
+        Media(
+          mediaResource,
+          start: Duration(seconds: offset),
+          // Web 请求头已编码在网关地址中，HTML 视频不能直接设置请求头。
+          httpHeaders: kIsWeb ? null : httpHeaders,
+        ),
         play: autoPlay,
       );
       if (!isCurrentPlayer(player)) {
@@ -485,7 +511,7 @@ abstract class _PlayerPlaybackController with Store {
     final currentPlayer = player ?? mediaPlayer;
     if (currentPlayer == null) return;
     try {
-      var pp = currentPlayer.platform as NativePlayer;
+      final pp = nativePlayerAccess(currentPlayer);
       await pp.waitForPlayerInitialization;
       await pp.waitForVideoControllerInitializationIfAttached;
       if (!identical(mediaPlayer, currentPlayer)) {
@@ -529,8 +555,10 @@ abstract class _PlayerPlaybackController with Store {
     try {
       mediaPlayer!.setRate(playerSpeed);
     } catch (e) {
-      KazumiLogger()
-          .e('PlayerController: failed to set playback speed', error: e);
+      KazumiLogger().e(
+        'PlayerController: failed to set playback speed',
+        error: e,
+      );
     }
   }
 
@@ -564,7 +592,7 @@ abstract class _PlayerPlaybackController with Store {
   Future<void> syncVolumeToDevice([double? value]) async {
     final vol = (value ?? volume).clamp(0.0, 100.0);
     try {
-      if (isDesktop()) {
+      if (kIsWeb || isDesktop()) {
         await mediaPlayer!.setVolume(vol);
       } else {
         await FlutterVolumeController.setVolume(vol / 100);

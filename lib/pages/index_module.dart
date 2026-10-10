@@ -4,6 +4,8 @@ import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/bean/widget/image_preview.dart';
 import 'package:kazumi/pages/collect/collect_module.dart';
 import 'package:kazumi/pages/index_page.dart';
+import 'package:kazumi/presentation/modern/components/shadcn_gallery.dart';
+import 'package:kazumi/presentation/interface_style.dart';
 import 'package:kazumi/pages/info/info_module.dart';
 import 'package:kazumi/pages/init_page.dart';
 import 'package:kazumi/pages/my/my_module.dart';
@@ -94,13 +96,17 @@ final indexModule = createModule(
         '/error',
         child: (context, state) => Scaffold(
           appBar: AppBar(title: const Text('Kazumi')),
-          body: const GeneralErrorWidget(
-            title: '初始化失败',
-            errMsg: '请重新启动应用后再试。',
-          ),
+          body: const GeneralErrorWidget(title: '初始化失败', errMsg: '请重新启动应用后再试。'),
         ),
       )
       ..module(tabModule)
+      ..route(
+        '/ui/components',
+        child: (context, state) =>
+            inject<InterfaceStyleController>().supportsModern
+            ? ShadcnGallery(onExit: () => context.pop())
+            : const RouteErrorPage(message: '组件实验室当前仅向安卓新版界面开放。'),
+      )
       ..module(videoModule)
       ..route(
         ImageViewer.routePath,

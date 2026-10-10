@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:kazumi/utils/bangumi_mirror_credentials.dart';

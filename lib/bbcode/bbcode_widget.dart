@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:kazumi/services/platform/resource_url.dart';
 import 'package:antlr4/antlr4.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kazumi/bean/widget/image_preview.dart';
@@ -82,12 +83,12 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                 Color? textColor = (!_isVisible && e.masked)
                     ? Colors.transparent
                     : (e.link != null)
-                        ? Colors.blue
-                        : (e.quoted)
-                            ? Theme.of(context).colorScheme.outline
-                            : (e.color != null)
-                                ? _parseColor(e.color!)
-                                : null;
+                    ? Colors.blue
+                    : (e.quoted)
+                    ? Theme.of(context).colorScheme.outline
+                    : (e.color != null)
+                    ? _parseColor(e.color!)
+                    : null;
                 return TextSpan(
                   text: e.text,
                   mouseCursor: (e.link != null || e.masked)
@@ -116,15 +117,18 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                     decorationColor: textColor,
                     fontSize: e.size.toDouble(),
                     color: textColor,
-                    backgroundColor:
-                        (!_isVisible && e.masked) ? Color(0xFF555555) : null,
+                    backgroundColor: (!_isVisible && e.masked)
+                        ? Color(0xFF555555)
+                        : null,
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 );
               } else if (e is BBCodeImg) {
                 final currentIndex = imageIndex++;
-                final heroTag =
-                    ImageViewer.heroTagFor(e.imageUrl, currentIndex);
+                final heroTag = ImageViewer.heroTagFor(
+                  e.imageUrl,
+                  currentIndex,
+                );
                 return WidgetSpan(
                   child: GestureDetector(
                     onTap: () => ImageViewer.show(
@@ -136,7 +140,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                     child: Hero(
                       tag: heroTag,
                       child: CachedNetworkImage(
-                        imageUrl: e.imageUrl,
+                        imageUrl: platformResourceUrl(e.imageUrl),
                         placeholder: (context, url) =>
                             const SizedBox(width: 1, height: 1),
                         errorWidget: (context, error, stackTrace) {
@@ -160,7 +164,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                 url = 'https://bangumi.tv/img/smiles/tv/${e.id - 23}.gif';
                 return WidgetSpan(
                   child: CachedNetworkImage(
-                    imageUrl: url,
+                    imageUrl: platformResourceUrl(url),
                     placeholder: (context, url) =>
                         const SizedBox(width: 1, height: 1),
                     errorWidget: (context, error, stackTrace) {
@@ -171,8 +175,9 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
               } else if (e is BBCodeMusume) {
                 return WidgetSpan(
                   child: CachedNetworkImage(
-                    imageUrl:
-                        'https://lain.bgm.tv/img/smiles/musume/musume_${e.id}.gif',
+                    imageUrl: platformResourceUrl(
+                      'https://lain.bgm.tv/img/smiles/musume/musume_${e.id}.gif',
+                    ),
                     placeholder: (context, url) =>
                         const SizedBox(width: 1, height: 1),
                     errorWidget: (context, error, stackTrace) {
@@ -185,7 +190,9 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
               } else if (e is BBCodeSticker) {
                 return WidgetSpan(
                   child: CachedNetworkImage(
-                    imageUrl: 'https://bangumi.tv/img/smiles/${e.id}.gif',
+                    imageUrl: platformResourceUrl(
+                      'https://bangumi.tv/img/smiles/${e.id}.gif',
+                    ),
                     placeholder: (context, url) =>
                         const SizedBox(width: 1, height: 1),
                     errorWidget: (context, error, stackTrace) {

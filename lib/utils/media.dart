@@ -1,7 +1,7 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'package:kazumi/services/platform/platform_paths.dart';
 
 String decodeVideoSource(String iframeUrl) {
   final decodedUrl = Uri.decodeFull(iframeUrl);

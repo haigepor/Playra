@@ -1,0 +1,2 @@
+# Preserve the upstream package bytes, especially the embedded CA certificate bundle.
+* -text

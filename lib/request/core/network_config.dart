@@ -1,6 +1,7 @@
-import 'dart:io';
+import 'package:kazumi/services/platform/platform_io.dart';
 
-import 'package:dio/io.dart';
+import 'package:dio/dio.dart';
+import 'package:kazumi/request/core/network_adapter.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
@@ -38,22 +39,7 @@ class NetworkConfig {
     return null;
   }
 
-  IOHttpClientAdapter createAdapter() {
-    return IOHttpClientAdapter(
-      createHttpClient: () {
-        final client = HttpClient();
-        if (hasProxy) {
-          client.findProxy = (_) => 'PROXY $proxyHost:$proxyPort';
-        } else if (Platform.isWindows) {
-          client.findProxy = SystemProxyService.findProxy;
-        }
-        if (allowBadCertificates) {
-          client.badCertificateCallback = (cert, host, port) => true;
-        }
-        return client;
-      },
-    );
-  }
+  HttpClientAdapter createAdapter() => createNetworkAdapter(this);
 
   NetworkConfig copyWith({
     Duration? connectTimeout,

@@ -5,6 +5,8 @@ analyzer:
     - .cache/**
     - .dart_tool/**
     - build/**
+    # 上游包测试使用独立 dev_dependencies，不纳入应用分析范围。
+    - third_party/ech_http/test/**
     - fastlane/**
     - lib/bbcode/generated/**
     - "**/*.g.dart"
