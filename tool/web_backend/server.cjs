@@ -13,6 +13,7 @@ const root = process.env.KAZUMI_WEB_ROOT
   ? path.resolve(process.env.KAZUMI_WEB_ROOT)
   : path.resolve(__dirname, '../../build/web');
 const port = Number(process.env.KAZUMI_WEB_PORT || 8930);
+const sourceApiPort = Number(process.env.KAZUMI_SOURCE_API_PORT || 8940);
 const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript',
   '.json': 'application/json', '.wasm': 'application/wasm', '.css': 'text/css',
@@ -176,6 +177,23 @@ const server = http.createServer(async (req, res) => {
   try {
     verifyOrigin(req);
     const url = new URL(req.url, `http://${req.headers.host}`);
+    if (url.pathname.startsWith('/api/v1/')) {
+      // 固定本机业务服务，保持 Web 同源；不允许客户端指定转发目标。
+      const headers = { ...req.headers, host: `127.0.0.1:${sourceApiPort}` };
+      const outgoing = http.request({ hostname: '127.0.0.1', port: sourceApiPort,
+        path: url.pathname + url.search, method: req.method, headers });
+      const response = new Promise((resolve, reject) => {
+        outgoing.once('response', resolve); outgoing.once('error', reject);
+      });
+      req.pipe(outgoing);
+      const incoming = await response;
+      res.statusCode = incoming.statusCode;
+      for (const [name, value] of Object.entries(incoming.headers)) {
+        if (value != null && !['connection', 'transfer-encoding'].includes(name)) res.setHeader(name, value);
+      }
+      res.once('close', () => { outgoing.destroy(); incoming.destroy(); });
+      await pipeline(incoming, res); return;
+    }
     if (url.pathname === '/api/health') {
       res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ status: 'ok' })); return;
     }
@@ -185,7 +203,9 @@ const server = http.createServer(async (req, res) => {
       const chunks = []; let size = 0;
       for await (const chunk of req) { size += chunk.length; if (size > 32768) throw new Error('请求过大'); chunks.push(chunk); }
       const data = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-      const output = url.pathname === '/api/parse' ? await parseVideo(data, upstreamRequest) : await captcha(data, upstreamRequest);
+      const abort = new AbortController();
+      res.once('close', () => abort.abort());
+      const output = url.pathname === '/api/parse' ? await parseVideo(data, upstreamRequest, { signal: abort.signal }) : await captcha(data, upstreamRequest);
       res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(output)); return;
     }
     if (!['GET', 'HEAD'].includes(req.method)) { res.statusCode = 405; res.end(); return; }

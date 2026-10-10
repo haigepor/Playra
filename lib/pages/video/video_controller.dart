@@ -11,6 +11,8 @@ import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/repositories/download_repository.dart';
 import 'package:kazumi/services/download/download_manager.dart';
 import 'package:kazumi/services/video_source/services.dart';
+import 'package:kazumi/services/source/source_playback_service.dart';
+import 'package:kazumi/services/source/source_models.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:mobx/mobx.dart';
 import 'package:kazumi/services/logging/logger.dart';
@@ -144,7 +146,7 @@ abstract class _VideoPageController with Store implements Disposable {
   final IDownloadRepository downloadRepository;
   final IDownloadManager downloadManager;
 
-  WebViewVideoSourceService? _videoSourceService;
+  SourcePlaybackService? _videoSourceService;
 
   final StreamController<String> _logStreamController =
       StreamController<String>.broadcast();
@@ -593,7 +595,7 @@ abstract class _VideoPageController with Store implements Disposable {
     required AsyncSession session,
     required PlayerController playerController,
   }) async {
-    _videoSourceService ??= WebViewVideoSourceService();
+    _videoSourceService ??= SourcePlaybackService();
 
     await _logSubscription?.cancel();
     _logSubscription = _videoSourceService!.onLog.listen((log) {
@@ -607,6 +609,8 @@ abstract class _VideoPageController with Store implements Disposable {
         url,
         useLegacyParser: currentPlugin.useLegacyParser,
         offset: offset,
+        context: SourceContext(providerId: currentPlugin.providerId,
+          sessionId: 'playback', timeout: const Duration(seconds: 55)),
       );
 
       if (session.isStale) {

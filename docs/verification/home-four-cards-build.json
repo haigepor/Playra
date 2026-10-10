@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-11 02:36:02",
+  "scope": "four recommendation cards, 2x2",
+  "build": "PASS",
+  "buildSeconds": 116.1,
+  "automaticTests": "NOT_RUN_USER_REQUEST",
+  "preview": "http://127.0.0.1:8933/#/tab/popular/",
+  "rollback": [
+    ".dart_tool/home-four-cards-view-baseline.dart",
+    ".dart_tool/home-four-cards-controller-baseline.dart"
+  ]
+}

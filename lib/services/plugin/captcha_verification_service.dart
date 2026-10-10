@@ -4,6 +4,7 @@ import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/async_single_flight.dart';
 import 'package:kazumi/webview/captcha/captcha_webview_controller.dart';
+import 'package:kazumi/services/source/source_models.dart';
 
 /// 验证码验证服务
 ///
@@ -21,6 +22,8 @@ import 'package:kazumi/webview/captcha/captcha_webview_controller.dart';
 /// [PluginCookieManager]，再将 HTML 交给 onVerified。UI 能解析该 HTML 时直接
 /// 展示结果，否则回落到重新检索。
 class CaptchaVerificationService {
+  CaptchaVerificationService({SourceContext? context}) : context = context ?? SourceContext();
+  final SourceContext context;
   CaptchaWebviewController? _controller;
 
   final StreamController<String?> _captchaImageStreamController =
@@ -76,7 +79,7 @@ class CaptchaVerificationService {
       onFinalizing?.call();
       final pageHtml = await _finalize.run(() =>
           _saveCookiesAndUnload(current, pluginName, logPrefix: logPrefix));
-      if (_disposed || !_claimOutcome()) return;
+      if (_disposed || context.cancelToken.isCancelled || !_claimOutcome()) return;
       onVerified(pageHtml);
     }
 
@@ -87,7 +90,7 @@ class CaptchaVerificationService {
   }
 
   Future<void> _ensureInitialized() async {
-    if (_isInitialized || _disposed) return;
+    if (_isInitialized || _disposed || context.cancelToken.isCancelled) return;
     _controller = CaptchaWebviewControllerFactory.getController();
     final initializedFuture = _controller!.onInitialized.first
         .timeout(const Duration(seconds: 10), onTimeout: () => false);
@@ -192,6 +195,7 @@ class CaptchaVerificationService {
   /// 认领必须发生在任何 await 之前，这样即使验证恰好在此刻通过，
   /// 其 onVerified 也不会再提交结果，由调用方按取消语义收尾。
   Future<void> cancelAndSave(String pluginName) async {
+    context.cancelToken.cancel('verification cancelled');
     _claimOutcome();
     _disappearedSub?.cancel();
     _disappearedSub = null;
@@ -269,6 +273,7 @@ class CaptchaVerificationService {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    context.cancelToken.cancel('verification disposed');
     _imageFoundSub?.cancel();
     _disappearedSub?.cancel();
     _logSub?.cancel();

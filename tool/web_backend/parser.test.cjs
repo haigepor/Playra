@@ -32,3 +32,14 @@ test('button verification exports the resulting page and closes its isolated ses
     assert.match((await captcha({ action: 'data', id }, request)).html, /data-verified="1"/);
   } finally { await captcha({ action: 'close', id }, request); }
 });
+test('cancellation closes parsing context and permits a subsequent request', { timeout: 10000 }, async () => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 150);
+  try {
+    await assert.rejects(parseVideo({ url: 'https://example.org/' },
+      upstream('<html><body>waiting</body></html>'), { signal: controller.signal }), /取消/);
+  } finally { clearTimeout(timer); }
+  const result = await parseVideo({ url: 'https://example.org/' }, upstream(
+    '<video src="https://example.org/after-cancel.mp4"></video>'));
+  assert.equal(result.url, 'https://example.org/after-cancel.mp4');
+});

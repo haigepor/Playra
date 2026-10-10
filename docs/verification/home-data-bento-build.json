@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-11 02:08:20",
+  "scope": "modern homepage only",
+  "build": "PASS",
+  "buildSeconds": 119.8,
+  "automaticTests": "NOT_RUN_USER_REQUEST",
+  "preview": "http://127.0.0.1:8933/#/tab/popular/",
+  "browserAction": "reload requested",
+  "sourceDirectoryAdapters": [
+    "DM84",
+    "7sefun"
+  ],
+  "rollback": [
+    ".dart_tool/home-data-catalog-baseline.dart",
+    ".dart_tool/home-data-controller-baseline.dart",
+    ".dart_tool/home-data-view-baseline.dart",
+    ".dart_tool/home-data-discover-baseline.dart",
+    ".dart_tool/home-bento-controller-baseline.dart",
+    ".dart_tool/home-bento-view-baseline.dart",
+    ".dart_tool/home-bento-shell-baseline.dart"
+  ],
+  "catalogSnapshot": {
+    "at": "2026-10-11 02:08:45",
+    "source": "DM84",
+    "directoryRecords": 148,
+    "uniqueCandidates": 320,
+    "accepted": 291,
+    "season": 83,
+    "chinese": 23,
+    "japanese": 109,
+    "animeMovies": 146,
+    "sourceMatched": 29,
+    "failed": [],
+    "playbackVerified": false
+  }
+}

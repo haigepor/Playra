@@ -1,12 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'home_theme.dart';
 import 'modern_home_controller.dart';
+import 'home_content_algorithm.dart';
 
 String homeTitle(BangumiItem item) =>
     item.nameCn.isEmpty ? item.name : item.nameCn;
@@ -24,15 +25,18 @@ class ModernHomeView extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onSearch,
+    required this.onCalendar,
+    required this.onBrowse,
     required this.onHistory,
     required this.onToggleTheme,
     required this.onDetails,
     required this.onResume,
   });
   final ModernHomeController controller;
-  final VoidCallback onSearch, onHistory, onToggleTheme;
+  final VoidCallback onSearch, onCalendar, onHistory, onToggleTheme;
   final ValueChanged<BangumiItem> onDetails;
   final ValueChanged<History> onResume;
+  final ValueChanged<String> onBrowse;
 
   @override
   Widget build(BuildContext context) => ModernHomeScope(
@@ -40,235 +44,235 @@ class ModernHomeView extends StatelessWidget {
       builder: (context) => Scaffold(
         body: SafeArea(
           bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final width = math.min(constraints.maxWidth, 760.0) - 40;
-              final columns = width < 310
-                  ? 2
-                  : width > 560
-                  ? 4
-                  : 3;
-              final posterWidth = (width - (columns - 1) * 12) / columns;
-              final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: ListenableBuilder(
-                    listenable: controller,
-                    builder: (context, _) {
-                      final items = controller.items;
-                      final recent = controller.recent;
-                      return RefreshIndicator(
-                        onRefresh: () async {
-                          controller.reloadHistory();
-                          await controller.refresh();
-                        },
-                        child: CustomScrollView(
-                          key: const PageStorageKey('modern-home-scroll'),
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          slivers: [
-                            SliverPadding(
-                              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                              sliver: SliverList.list(
-                                children: [
-                                  _BrandHeader(
-                                    onHistory: onHistory,
-                                    onToggleTheme: onToggleTheme,
-                                  ),
-                                  const SizedBox(height: 22),
-                                  Text(
-                                    '找到今天的心动番剧',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -.7,
-                                      height: 1.25,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  _SearchEntry(onSearch: onSearch),
-                                  const SizedBox(height: 16),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
-                                      for (final feed in HomeFeed.values)
-                                        Semantics(
-                                          selected: controller.feed == feed,
-                                          child: ShadButton.raw(
-                                            key: ValueKey(
-                                              'home-feed-${feed.name}',
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) {
+                  final items = controller.items;
+                  final recent = controller.recent;
+                  final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+                  // 固定导航独立于内容滚动，子分类展开仍可平滑改变内容区高度。
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                        child: Column(
+                          children: [
+                            _FeedSelector(controller: controller),
+                            _AnimeFilters(controller: controller),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: () async {
+                            controller.reloadHistory();
+                            await controller.refresh();
+                          },
+                          child: CustomScrollView(
+                            key: const PageStorageKey('modern-home-scroll'),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  4,
+                                  20,
+                                  0,
+                                ),
+                                sliver: SliverList.list(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _SearchEntry(
+                                            onSearch: onSearch,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        FilledButton.icon(
+                                          key: const ValueKey('home-calendar'),
+                                          onPressed: onCalendar,
+                                          icon: const Icon(
+                                            LucideIcons.calendarDays,
+                                            size: 17,
+                                          ),
+                                          label: const Text(
+                                            '排期表',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
                                             ),
-                                            height: 38,
+                                          ),
+                                          style: FilledButton.styleFrom(
+                                            minimumSize: const Size(0, 44),
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 18,
+                                              horizontal: 12,
                                             ),
-                                            variant: controller.feed == feed
-                                                ? ShadButtonVariant.primary
-                                                : ShadButtonVariant.ghost,
-                                            onPressed: () =>
-                                                controller.selectFeed(feed),
-                                            child: Text(
-                                              feed.label,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
                                             ),
                                           ),
                                         ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 14),
-                                  if (items.isNotEmpty)
-                                    _Featured(
-                                      item: items.first,
-                                      onDetails: () => onDetails(items.first),
-                                    )
-                                  else if (controller.loading)
-                                    const _LoadingFeature()
-                                  else
-                                    _EmptyFeed(
-                                      message: controller.error ?? '暂时没有可展示的番剧',
-                                      retry: controller.refresh,
+                                      ],
                                     ),
-                                  const SizedBox(height: 22),
-                                  _SectionHeading(
-                                    title: '继续观看',
-                                    subtitle: '把故事接着看完',
-                                    actionLabel: '全部',
-                                    onAction: onHistory,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  if (recent.isEmpty)
-                                    const _EmptyWatch()
-                                  else
-                                    SizedBox(
-                                      height: 94 + 32 * (scale - 1).clamp(0, 3),
-                                      child: ListView.separated(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: recent.length,
-                                        separatorBuilder: (_, _) =>
-                                            const SizedBox(width: 12),
-                                        itemBuilder: (_, index) =>
-                                            _ContinueCard(
-                                              history: recent[index],
-                                              width: math.min(
-                                                width -
-                                                    (recent.length > 1
-                                                        ? 20
-                                                        : 0),
-                                                350,
-                                              ),
-                                              onTap: () =>
-                                                  onResume(recent[index]),
-                                            ),
-                                      ),
-                                    ),
-                                  const SizedBox(height: 22),
-                                  _SectionHeading(
-                                    title: controller.feed == HomeFeed.season
-                                        ? '新番放映'
-                                        : '大家都在看',
-                                    subtitle: controller.feed == HomeFeed.season
-                                        ? '从新故事里，找到新的期待'
-                                        : '总有一部，值得你按下播放',
-                                    actionLabel:
-                                        controller.feed == HomeFeed.season
-                                        ? '热门'
-                                        : '新番',
-                                    onAction: () => controller.selectFeed(
-                                      controller.feed == HomeFeed.season
-                                          ? HomeFeed.popular
-                                          : HomeFeed.season,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  if (controller.error != null &&
-                                      items.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 14,
-                                      ),
-                                      child: _EmptyFeed(
-                                        message: controller.error!,
+                                    const SizedBox(height: 14),
+                                    if (!controller.feed.hasContentSource)
+                                      _CategoryPending(feed: controller.feed)
+                                    else if (items.isNotEmpty &&
+                                        controller.feed == HomeFeed.recommended)
+                                      _RecommendationBento(
+                                        items: controller.featuredItems,
+                                        canShuffle:
+                                            items.length >
+                                            ModernHomeController
+                                                .featuredBatchSize,
+                                        onShuffle: controller.shuffleFeatured,
+                                        onDetails: onDetails,
+                                      )
+                                    else if (items.isNotEmpty)
+                                      _Featured(
+                                        item: items.first,
+                                        onDetails: () => onDetails(items.first),
+                                      )
+                                    else if (controller.loading ||
+                                        controller.catalogLoading)
+                                      const _LoadingFeature()
+                                    else
+                                      _EmptyFeed(
+                                        message:
+                                            controller.error ?? '暂时没有可展示的番剧',
                                         retry: controller.refresh,
                                       ),
-                                    ),
+                                    if (controller.error != null &&
+                                        items.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 12),
+                                        child: _EmptyFeed(
+                                          message: controller.error!,
+                                          retry: controller.refresh,
+                                        ),
+                                      ),
+                                    if (recent.isNotEmpty) ...[
+                                      const SizedBox(height: 18),
+                                      _SectionHeading(
+                                        title: '继续观看',
+                                        subtitle: '',
+                                        actionLabel: '全部',
+                                        onAction: onHistory,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      LayoutBuilder(
+                                        builder: (context, bounds) => SizedBox(
+                                          height:
+                                              94 + 32 * (scale - 1).clamp(0, 3),
+                                          child: ListView.separated(
+                                            scrollDirection: Axis.horizontal,
+                                            itemCount: recent.length,
+                                            separatorBuilder: (_, _) =>
+                                                const SizedBox(width: 12),
+                                            itemBuilder: (_, index) =>
+                                                _ContinueCard(
+                                                  history: recent[index],
+                                                  width: math.min(
+                                                    bounds.maxWidth -
+                                                        (recent.length > 1
+                                                            ? 20
+                                                            : 0),
+                                                    350,
+                                                  ),
+                                                  onTap: () =>
+                                                      onResume(recent[index]),
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              SliverList.list(
+                                children: [
+                                  if (controller.catalog.hasStructuredData &&
+                                      controller.feed.hasContentSource)
+                                    for (final channel in controller.channels)
+                                      _ChannelRail(
+                                        id: channel.id,
+                                        title: channel.title,
+                                        items: channel.items,
+                                        controller: controller,
+                                        onDetails: onDetails,
+                                        onMore: () => _showChannelItems(
+                                          context,
+                                          channel,
+                                          controller,
+                                          onDetails,
+                                        ),
+                                      ),
+                                  if (!controller
+                                      .catalog
+                                      .hasStructuredData) ...[
+                                    if (items.isNotEmpty)
+                                      _ChannelRail(
+                                        id: 'main',
+                                        title: switch (controller.feed) {
+                                          HomeFeed.recommended => '今日推荐',
+                                          HomeFeed.popular => '人气热播',
+                                          HomeFeed.season => '新番放送',
+                                          HomeFeed.japanese => '日漫热播',
+                                          HomeFeed.chinese => '国漫热播',
+                                          _ => '${controller.feed.label}精选',
+                                        },
+                                        items: items,
+                                        controller: controller,
+                                        onDetails: onDetails,
+                                        onMore: () =>
+                                            onBrowse(switch (controller.feed) {
+                                              HomeFeed.chinese => '中国',
+                                              HomeFeed.japanese => '日本',
+                                              _ => '',
+                                            }),
+                                      ),
+                                    if (controller.feed.hasContentSource) ...[
+                                      _ChannelRail(
+                                        id: 'chinese',
+                                        onMore: () => onBrowse('中国'),
+                                        title: '国漫剧场',
+                                        items: controller.catalog.chinese,
+                                        controller: controller,
+                                        onDetails: onDetails,
+                                        loading: controller.catalogLoading,
+                                        failed: controller.catalog.failed
+                                            .contains('chinese'),
+                                      ),
+                                      _ChannelRail(
+                                        id: 'japanese',
+                                        onMore: () => onBrowse('日本'),
+                                        title: '日漫精选',
+                                        items: controller.catalog.japanese,
+                                        controller: controller,
+                                        onDetails: onDetails,
+                                        loading: controller.catalogLoading,
+                                        failed: controller.catalog.failed
+                                            .contains('japanese'),
+                                      ),
+                                    ],
+                                  ],
+                                  const SizedBox(height: 24),
                                 ],
                               ),
-                            ),
-                            SliverPadding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              sliver: SliverGrid.builder(
-                                itemCount: items.length,
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: columns,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 16,
-                                      mainAxisExtent:
-                                          posterWidth * 1.42 + 65 * scale,
-                                    ),
-                                itemBuilder: (_, index) => _PosterCard(
-                                  item: items[index],
-                                  onTap: () => onDetails(items[index]),
-                                ),
-                              ),
-                            ),
-                            SliverPadding(
-                              padding: const EdgeInsets.fromLTRB(
-                                20,
-                                18,
-                                20,
-                                28,
-                              ),
-                              sliver: SliverToBoxAdapter(
-                                child: Center(
-                                  child: controller.loading && items.isNotEmpty
-                                      ? const Padding(
-                                          padding: EdgeInsets.all(12),
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : controller.hasMore
-                                      ? ShadButton.outline(
-                                          key: const ValueKey('home-load-more'),
-                                          onPressed: controller.loadMore,
-                                          trailing: const Icon(
-                                            LucideIcons.chevronDown,
-                                            size: 16,
-                                          ),
-                                          child: const Text('加载更多'),
-                                        )
-                                      : items.isNotEmpty
-                                      ? Text(
-                                          '好故事，值得慢慢发现',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                        )
-                                      : const SizedBox.shrink(),
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
@@ -276,83 +280,598 @@ class ModernHomeView extends StatelessWidget {
   );
 }
 
-class _BrandHeader extends StatelessWidget {
-  const _BrandHeader({required this.onHistory, required this.onToggleTheme});
-  final VoidCallback onHistory, onToggleTheme;
+class _FeedSelector extends StatefulWidget {
+  const _FeedSelector({required this.controller});
+  final ModernHomeController controller;
+
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      SvgPicture.asset(
-        'assets/images/modern-home-mark.svg',
-        width: 36,
-        height: 36,
-        excludeFromSemantics: true,
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Kazumi',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -.7,
-                height: 1.15,
+  State<_FeedSelector> createState() => _FeedSelectorState();
+}
+
+class _FeedSelectorState extends State<_FeedSelector> {
+  double? _dragPosition;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 300);
+    return LayoutBuilder(
+      builder: (context, bounds) {
+        const categories = HomeFeed.primaryCategories;
+        final width = math.max(
+          math.min(bounds.maxWidth, 420 * scale),
+          350 * scale,
+        );
+        final cellWidth = width / categories.length;
+        final activeFeed = widget.controller.feed.isAnimeCategory
+            ? HomeFeed.anime
+            : widget.controller.feed;
+        final position =
+            _dragPosition ?? categories.indexOf(activeFeed).toDouble();
+        final selected = position.round();
+
+        double positionAt(double x) =>
+            (x / cellWidth - .5).clamp(0, categories.length - 1).toDouble();
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: width,
+            height: 42 * scale,
+            child: GestureDetector(
+              key: const ValueKey('home-feed-selector'),
+              behavior: HitTestBehavior.opaque,
+              // 超出可视宽度时将横向手势交给滚动容器，保证末尾分类可达。
+              onHorizontalDragStart: width > bounds.maxWidth
+                  ? null
+                  : (_) => setState(() {
+                      _dragPosition = categories.indexOf(activeFeed).toDouble();
+                    }),
+              // 手指移动时只更新视觉位置，松开后再请求对应频道的数据。
+              onHorizontalDragUpdate: width > bounds.maxWidth
+                  ? null
+                  : (details) => setState(() {
+                      _dragPosition = positionAt(details.localPosition.dx);
+                    }),
+              onHorizontalDragEnd: width > bounds.maxWidth
+                  ? null
+                  : (_) {
+                      final feed =
+                          categories[(_dragPosition ?? position).round()];
+                      setState(() => _dragPosition = null);
+                      widget.controller.selectFeed(feed);
+                    },
+              onHorizontalDragCancel: width > bounds.maxWidth
+                  ? null
+                  : () => setState(() => _dragPosition = null),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    bottom: 8,
+                    child: Row(
+                      children: [
+                        for (final feed in categories)
+                          Expanded(
+                            child: Semantics(
+                              selected: categories.indexOf(feed) == selected,
+                              child: TextButton(
+                                key: ValueKey('home-feed-${feed.name}'),
+                                onPressed: () =>
+                                    widget.controller.selectFeed(feed),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  foregroundColor: colors.onSurfaceVariant,
+                                  overlayColor: Colors.transparent,
+                                ),
+                                child: Text(
+                                  feed.label,
+                                  style: TextStyle(
+                                    fontFamily: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.fontFamily,
+                                    fontSize:
+                                        categories.indexOf(feed) == selected
+                                        ? 16
+                                        : 14,
+                                    height: 1.2,
+                                    fontWeight:
+                                        categories.indexOf(feed) == selected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    letterSpacing: 0,
+                                    color: categories.indexOf(feed) == selected
+                                        ? colors.onSurface
+                                        : colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    left: cellWidth / 2 - 10,
+                    right: cellWidth / 2 - 10,
+                    bottom: 2,
+                    height: 3,
+                    child: IgnorePointer(
+                      child: AnimatedAlign(
+                        duration: _dragPosition == null
+                            ? duration
+                            : Duration.zero,
+                        curve: Curves.easeInOutCubic,
+                        alignment: Alignment(
+                          position * 2 / (categories.length - 1) - 1,
+                          0,
+                        ),
+                        child: Container(
+                          width: 20,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 3),
-            Text(
-              '发现新的故事',
-              style: TextStyle(
-                fontSize: 10,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AnimeFilters extends StatefulWidget {
+  const _AnimeFilters({required this.controller});
+  final ModernHomeController controller;
+
+  @override
+  State<_AnimeFilters> createState() => _AnimeFiltersState();
+}
+
+class _AnimeFiltersState extends State<_AnimeFilters> {
+  static const _feeds = [
+    HomeFeed.anime,
+    HomeFeed.season,
+    HomeFeed.japanese,
+    HomeFeed.chinese,
+    HomeFeed.animeMovies,
+  ];
+  double? _dragPosition;
+
+  @override
+  void didUpdateWidget(covariant _AnimeFilters oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.controller.feed.isAnimeCategory) _dragPosition = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final visible = widget.controller.feed.isAnimeCategory;
+    final scale = MediaQuery.textScalerOf(context).scale(12) / 12;
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 280);
+    final position =
+        _dragPosition ??
+        _feeds
+            .indexOf(widget.controller.feed)
+            .clamp(0, _feeds.length - 1)
+            .toDouble();
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: visible ? 1 : 0, end: visible ? 1 : 0),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      // 保持子分类挂载，用高度、透明度和位移过渡展开，避免突然挤动搜索栏。
+      builder: (context, reveal, child) => ClipRect(
+        child: Align(
+          alignment: Alignment.topLeft,
+          heightFactor: reveal,
+          child: IgnorePointer(
+            ignoring: !visible,
+            child: ExcludeFocus(
+              excluding: !visible,
+              child: ExcludeSemantics(
+                excluding: !visible,
+                child: Opacity(
+                  opacity: reveal,
+                  child: Transform.translate(
+                    offset: Offset(0, -6 * (1 - reveal)),
+                    child: child,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: LayoutBuilder(
+          builder: (context, bounds) {
+            final width = 300 * scale;
+            final cellWidth = width / _feeds.length;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: width,
+                height: 36 * scale,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragStart: width > bounds.maxWidth
+                      ? null
+                      : (_) => setState(() {
+                          _dragPosition = position;
+                        }),
+                  onHorizontalDragUpdate: width > bounds.maxWidth
+                      ? null
+                      : (details) => setState(() {
+                          _dragPosition =
+                              (details.localPosition.dx / cellWidth - .5)
+                                  .clamp(0, _feeds.length - 1)
+                                  .toDouble();
+                        }),
+                  onHorizontalDragEnd: width > bounds.maxWidth
+                      ? null
+                      : (_) {
+                          final feed =
+                              _feeds[(_dragPosition ?? position).round()];
+                          setState(() => _dragPosition = null);
+                          widget.controller.selectFeed(feed);
+                        },
+                  onHorizontalDragCancel: width > bounds.maxWidth
+                      ? null
+                      : () => setState(() => _dragPosition = null),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        left: 4,
+                        right: 4,
+                        child: IgnorePointer(
+                          child: AnimatedAlign(
+                            alignment: Alignment(
+                              position * 2 / (_feeds.length - 1) - 1,
+                              0,
+                            ),
+                            duration: _dragPosition == null
+                                ? duration
+                                : Duration.zero,
+                            curve: Curves.easeInOutCubic,
+                            child: Container(
+                              width: cellWidth - 8,
+                              height: 36 * scale,
+                              decoration: BoxDecoration(
+                                color: colors.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          for (final feed in _feeds)
+                            Expanded(
+                              child: Semantics(
+                                selected:
+                                    _feeds.indexOf(feed) == position.round(),
+                                child: TextButton(
+                                  onPressed: () =>
+                                      widget.controller.selectFeed(feed),
+                                  style: TextButton.styleFrom(
+                                    minimumSize: Size(0, 36 * scale),
+                                    padding: EdgeInsets.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    overlayColor: Colors.transparent,
+                                  ),
+                                  child: Text(
+                                    feed == HomeFeed.anime ? '全部' : feed.label,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color:
+                                          _feeds.indexOf(feed) ==
+                                              position.round()
+                                          ? colors.primary
+                                          : colors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryPending extends StatelessWidget {
+  const _CategoryPending({required this.feed});
+  final HomeFeed feed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 44),
+      child: Column(
+        children: [
+          Icon(
+            switch (feed) {
+              HomeFeed.movies => Icons.movie_outlined,
+              HomeFeed.television => Icons.live_tv_outlined,
+              HomeFeed.variety => Icons.mic_none_outlined,
+              _ => Icons.auto_stories_outlined,
+            },
+            size: 30,
+            color: colors.primary,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '${feed.label}频道',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '内容即将上线',
+            style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChannelRail extends StatelessWidget {
+  const _ChannelRail({
+    required this.id,
+    required this.title,
+    required this.items,
+    required this.controller,
+    required this.onDetails,
+    required this.onMore,
+    this.loading = false,
+    this.failed = false,
+  });
+  final String id, title;
+  final List<BangumiItem> items;
+  final ModernHomeController controller;
+  final ValueChanged<BangumiItem> onDetails;
+  final VoidCallback onMore;
+  final bool loading, failed;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 20, right: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 16,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (failed)
+                  TextButton(
+                    onPressed: controller.refreshCatalog,
+                    child: const Text('重试'),
+                  )
+                else
+                  TextButton(
+                    key: ValueKey('home-more-$id'),
+                    onPressed: onMore,
+                    style: TextButton.styleFrom(
+                      foregroundColor: colors.onSurfaceVariant,
+                      padding: const EdgeInsets.only(left: 8),
+                      minimumSize: const Size(0, 40),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('查看更多', style: TextStyle(fontSize: 11)),
+                        SizedBox(width: 4),
+                        Icon(LucideIcons.chevronRight, size: 14),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                height: 80,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        failed ? '这个栏目暂时未加载，点击重试' : '暂时没有番剧',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, bounds) {
+                final width = ((bounds.maxWidth - 40) / 3.1 - 8).clamp(
+                  104.0,
+                  144.0,
+                );
+                return SizedBox(
+                  height: width * 1.42 + 48 * scale,
+                  child: ScrollConfiguration(
+                    behavior: const _HomeScrollBehavior(),
+                    child: ListView.separated(
+                      key: PageStorageKey('home-channel-$id'),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 12),
+                      itemBuilder: (_, index) => SizedBox(
+                        width: width,
+                        child: _PosterCard(
+                          item: items[index],
+                          controller: controller,
+                          onTap: () => onDetails(items[index]),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 展开同一份栏目快照，避免标签搜索放宽类型条件后混入其他分类。
+Future<void> _showChannelItems(
+  BuildContext context,
+  HomeChannel channel,
+  ModernHomeController controller,
+  ValueChanged<BangumiItem> onDetails,
+) => showModalBottomSheet<void>(
+  context: context,
+  useRootNavigator: true,
+  isScrollControlled: true,
+  backgroundColor: Theme.of(context).colorScheme.surface,
+  showDragHandle: true,
+  builder: (sheetContext) => ModernHomeScope(
+    child: DraggableScrollableSheet(
+      initialChildSize: .82,
+      minChildSize: .4,
+      maxChildSize: .94,
+      expand: false,
+      builder: (context, scrollController) => SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      channel.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: '关闭',
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    icon: const Icon(LucideIcons.x, size: 20),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, bounds) {
+                  final scale = MediaQuery.textScalerOf(context).scale(13) / 13;
+                  final columns = ((bounds.maxWidth - 40) / (116 * scale))
+                      .floor()
+                      .clamp(2, 6);
+                  final width =
+                      (bounds.maxWidth - 40 - 12 * (columns - 1)) / columns;
+                  return ListenableBuilder(
+                    listenable: controller,
+                    builder: (context, _) => ScrollConfiguration(
+                      behavior: const _HomeScrollBehavior(),
+                      child: GridView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        itemCount: channel.allItems.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 16,
+                          mainAxisExtent: width * 1.42 + 48 * scale,
+                        ),
+                        itemBuilder: (context, index) => _PosterCard(
+                          item: channel.allItems[index],
+                          controller: controller,
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            onDetails(channel.allItems[index]);
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
-      _HeaderButton(
-        id: 'home-history',
-        label: '历史记录',
-        icon: LucideIcons.history,
-        action: onHistory,
-      ),
-      const SizedBox(width: 8),
-      _HeaderButton(
-        id: 'home-theme',
-        label: '切换明暗主题',
-        action: onToggleTheme,
-        icon: Theme.of(context).brightness == Brightness.dark
-            ? LucideIcons.moon
-            : LucideIcons.sun,
-      ),
-    ],
-  );
-}
-
-class _HeaderButton extends StatelessWidget {
-  const _HeaderButton({
-    required this.id,
-    required this.label,
-    required this.icon,
-    required this.action,
-  });
-  final String id, label;
-  final IconData icon;
-  final VoidCallback action;
-  @override
-  Widget build(BuildContext context) => IconButton.filledTonal(
-    key: ValueKey(id),
-    tooltip: label,
-    onPressed: action,
-    icon: Icon(icon, size: 19),
-    style: IconButton.styleFrom(
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
-      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
     ),
-  );
+  ),
+);
+
+/// 浏览器验收支持鼠标拖动，安卓沿用触摸滚动与平台惯性。
+class _HomeScrollBehavior extends MaterialScrollBehavior {
+  const _HomeScrollBehavior();
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    ...super.dragDevices,
+    PointerDeviceKind.mouse,
+  };
 }
 
 class _SearchEntry extends StatelessWidget {
@@ -360,6 +879,7 @@ class _SearchEntry extends StatelessWidget {
   final VoidCallback onSearch;
   @override
   Widget build(BuildContext context) => Semantics(
+    container: true,
     label: '搜索番剧、角色或关键词',
     button: true,
     onTap: onSearch,
@@ -375,7 +895,7 @@ class _SearchEntry extends StatelessWidget {
           onTap: onSearch,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
             child: Row(
               children: [
                 Icon(
@@ -383,7 +903,7 @@ class _SearchEntry extends StatelessWidget {
                   size: 19,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 7),
                 Expanded(
                   child: Text(
                     '搜索番剧、角色或关键词',
@@ -395,11 +915,6 @@ class _SearchEntry extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(
-                  LucideIcons.arrowUpRight,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
               ],
             ),
           ),
@@ -409,6 +924,212 @@ class _SearchEntry extends StatelessWidget {
   );
 }
 
+class _RecommendationBento extends StatelessWidget {
+  const _RecommendationBento({
+    required this.items,
+    required this.canShuffle,
+    required this.onShuffle,
+    required this.onDetails,
+  });
+  final List<BangumiItem> items;
+  final bool canShuffle;
+  final VoidCallback onShuffle;
+  final ValueChanged<BangumiItem> onDetails;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, bounds) {
+      final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+      final rowHeight =
+          ((bounds.maxWidth - 10) / 2 * .75).clamp(112.0, 142.0) +
+          48 * (scale - 1).clamp(0, 3);
+      final rows = (items.length + 1) ~/ 2;
+      return Column(
+        children: [
+          SizedBox(
+            height: rowHeight * rows + 10 * (rows - 1),
+            child: AnimatedSwitcher(
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
+              child: Column(
+                key: ValueKey(items.map((i) => i.id).join('-')),
+                children: [
+                  for (var row = 0; row < rows; row++) ...[
+                    if (row > 0) const SizedBox(height: 10),
+                    SizedBox(
+                      height: rowHeight,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var column = 0; column < 2; column++) ...[
+                            if (column > 0) const SizedBox(width: 10),
+                            Expanded(
+                              child: row * 2 + column < items.length
+                                  ? _BentoCard(
+                                      item: items[row * 2 + column],
+                                      onTap: () =>
+                                          onDetails(items[row * 2 + column]),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            key: const ValueKey('home-shuffle-featured'),
+            onPressed: canShuffle ? onShuffle : null,
+            icon: const Icon(LucideIcons.refreshCw, size: 14),
+            label: const Text('换一批', style: TextStyle(fontSize: 12)),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              overlayColor: Colors.transparent,
+              minimumSize: const Size(104, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              shape: const StadiumBorder(),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+class _BentoCard extends StatefulWidget {
+  const _BentoCard({required this.item, required this.onTap});
+  final BangumiItem item;
+  final VoidCallback onTap;
+  @override
+  State<_BentoCard> createState() => _BentoCardState();
+}
+
+class _BentoCardState extends State<_BentoCard> {
+  bool _hovered = false;
+
+  Widget _cover(double width, double height) => ClipRect(
+    child: AnimatedScale(
+      scale: _hovered ? 1.04 : 1,
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      child: NetworkImgLayer(
+        src: homeCover(widget.item),
+        width: width,
+        height: height,
+        type: 'bg',
+        borderRadius: BorderRadius.zero,
+      ),
+    ),
+  );
+
+  Widget _rating() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const Icon(LucideIcons.star, size: 12, color: Color(0xffe7b65c)),
+      const SizedBox(width: 4),
+      Flexible(
+        child: Text(
+          widget.item.ratingScore > 0
+              ? widget.item.ratingScore.toStringAsFixed(1)
+              : '暂无评分',
+          semanticsLabel: widget.item.ratingScore > 0
+              ? '评分 ' + widget.item.ratingScore.toStringAsFixed(1)
+              : '暂无评分',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            height: 1.2,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return Semantics(
+      button: true,
+      label: '查看推荐 ' + homeTitle(widget.item),
+      child: Material(
+        color: colors.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: colors.outlineVariant.withValues(alpha: .55)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.onTap,
+          hoverColor: Colors.transparent,
+          child: MouseRegion(
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: LayoutBuilder(
+              builder: (context, bounds) {
+                // 横向推荐卡用竖版缩略图，标题不再覆盖封面，也不将海报裁成横幅。
+                final coverWidth = math.min(
+                  bounds.maxWidth * .43,
+                  bounds.maxHeight * .68,
+                );
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: coverWidth,
+                      child: _cover(coverWidth, bounds.maxHeight),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 12,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              homeTitle(widget.item),
+                              maxLines: scale > 1.3 ? 2 : 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.onSurface,
+                                fontSize: 12,
+                                height: 1.4,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            _rating(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Featured extends StatelessWidget {
   const _Featured({required this.item, required this.onDetails});
   final BangumiItem item;
@@ -416,10 +1137,10 @@ class _Featured extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    final metadata = [
+    final metadata = {
       ...item.metaTags,
       ...item.tags.map((tag) => tag.name),
-    ].toSet().take(2).join(' · ');
+    }.take(2).join(' · ');
     return Material(
       key: const ValueKey('home-featured'),
       color: const Color(0xff222e50),
@@ -428,7 +1149,7 @@ class _Featured extends StatelessWidget {
       child: InkWell(
         onTap: onDetails,
         child: SizedBox(
-          height: 208 + 110 * (scale - 1).clamp(0, 3),
+          height: 176 + 110 * (scale - 1).clamp(0, 3),
           child: Stack(
             children: [
               Positioned.fill(
@@ -595,14 +1316,15 @@ class _SectionHeading extends StatelessWidget {
                 height: 1.3,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            if (subtitle.isNotEmpty) const SizedBox(height: 4),
+            if (subtitle.isNotEmpty)
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -615,53 +1337,6 @@ class _SectionHeading extends StatelessWidget {
         child: Text(actionLabel, style: const TextStyle(fontSize: 12)),
       ),
     ],
-  );
-}
-
-class _EmptyWatch extends StatelessWidget {
-  const _EmptyWatch();
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: Row(
-      children: [
-        SvgPicture.asset(
-          'assets/images/modern-home-empty-watch.svg',
-          width: 84,
-          height: 66,
-          excludeFromSemantics: true,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '好故事，从第一帧开始',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '看过的番剧会留在这里，随时继续。',
-                style: TextStyle(
-                  fontSize: 11,
-                  height: 1.5,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
   );
 }
 
@@ -758,81 +1433,180 @@ class _ContinueCard extends StatelessWidget {
   }
 }
 
-class _PosterCard extends StatelessWidget {
-  const _PosterCard({required this.item, required this.onTap});
+class _PosterCard extends StatefulWidget {
+  const _PosterCard({
+    required this.item,
+    required this.controller,
+    required this.onTap,
+  });
   final BangumiItem item;
+  final ModernHomeController controller;
   final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => Semantics(
-    label: '查看 ${homeTitle(item)}',
-    button: true,
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: ValueKey('home-poster-${item.id}'),
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) => NetworkImgLayer(
-                src: homeCover(item),
-                width: constraints.maxWidth,
-                height: constraints.maxWidth * 1.42,
-                type: 'bg',
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              homeTitle(item),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                if (item.ratingScore > 0) ...[
-                  Icon(
-                    LucideIcons.star,
-                    size: 11,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    item.ratingScore.toStringAsFixed(1),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Theme.of(context).colorScheme.primary,
+  State<_PosterCard> createState() => _PosterCardState();
+}
+
+class _PosterCardState extends State<_PosterCard> {
+  bool _hovered = false;
+  @override
+  void initState() {
+    super.initState();
+    _requestSchedule();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PosterCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _requestSchedule();
+  }
+
+  void _requestSchedule() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.controller.ensureSchedule(widget.item.id);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    final airing = widget.controller.scheduleLabel(item);
+    return Semantics(
+      label:
+          '查看 ${homeTitle(item)}，评分 ${item.ratingScore > 0 ? item.ratingScore.toStringAsFixed(1) : '暂无'}，$airing',
+      button: true,
+      excludeSemantics: true,
+      onTap: widget.onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey('home-poster-${item.id}'),
+          onTap: widget.onTap,
+          hoverColor: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LayoutBuilder(
+                builder: (context, bounds) => ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: bounds.maxWidth,
+                    height: bounds.maxWidth * 1.42,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        MouseRegion(
+                          onEnter: (_) => setState(() => _hovered = true),
+                          onExit: (_) => setState(() => _hovered = false),
+                          child: AnimatedScale(
+                            key: ValueKey('home-cover-scale-${item.id}'),
+                            scale: _hovered ? 1.04 : 1,
+                            duration: MediaQuery.disableAnimationsOf(context)
+                                ? Duration.zero
+                                : const Duration(milliseconds: 240),
+                            curve: Curves.easeOutCubic,
+                            child: NetworkImgLayer(
+                              src: homeCover(item),
+                              width: bounds.maxWidth,
+                              height: bounds.maxWidth * 1.42,
+                              type: 'bg',
+                              borderRadius: BorderRadius.zero,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: bounds.maxWidth * 1.42 * .36,
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              key: ValueKey('home-cover-shade-${item.id}'),
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [
+                                    Color(0x50000000),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: Container(
+                            key: ValueKey('home-rating-${item.id}'),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 5,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: Color(0xffe7b65c),
+                              borderRadius: BorderRadius.only(
+                                bottomRight: Radius.circular(9),
+                              ),
+                            ),
+                            child: Text(
+                              item.ratingScore > 0
+                                  ? item.ratingScore.toStringAsFixed(1)
+                                  : '暂无',
+                              semanticsLabel: item.ratingScore > 0
+                                  ? '评分 ${item.ratingScore.toStringAsFixed(1)}'
+                                  : '暂无评分',
+                              style: const TextStyle(
+                                color: Color(0xff272017),
+                                fontSize: 11,
+                                height: 1.2,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 6,
+                          right: 6,
+                          left: 6,
+                          child: IgnorePointer(
+                            child: Text(
+                              airing,
+                              key: ValueKey('home-airing-${item.id}'),
+                              maxLines: 2,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                height: 1.3,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 7),
-                ],
-                if (item.airDate.length >= 4)
-                  Expanded(
-                    child: Text(
-                      item.airDate.substring(0, 4),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                homeTitle(item),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _EmptyFeed extends StatelessWidget {
@@ -880,7 +1654,7 @@ class _LoadingFeature extends StatelessWidget {
   const _LoadingFeature();
   @override
   Widget build(BuildContext context) => Container(
-    height: 208,
+    height: 176,
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(22),

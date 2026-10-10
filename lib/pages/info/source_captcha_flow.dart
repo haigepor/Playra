@@ -21,7 +21,8 @@ class _SourceCaptchaFlow {
 
   void start(Plugin plugin, String keyword) {
     unawaited(_dialogs.run((task) async {
-      final service = CaptchaVerificationService();
+      final service = CaptchaVerificationService(context: SourceContext(
+        providerId: plugin.providerId, sessionId: 'verification'));
       final verified = Completer<String>();
       final config = plugin.antiCrawlerConfig;
       final searchUrl = plugin.searchURL

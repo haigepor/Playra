@@ -4,12 +4,15 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/theme_provider.dart';
 import 'package:kazumi/modules/history/history_module.dart';
+import 'package:kazumi/navigation.dart';
+import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/repositories/history_repository.dart';
 import 'package:kazumi/services/player/history_playback_service.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
 import 'package:kazumi/services/storage/storage.dart';
 import '../home/modern_home_controller.dart';
+import '../home/home_catalog.dart';
 import '../home/modern_home_view.dart';
 
 /// 路由适配层：新版视图不直接读取全局容器或启动独立业务仓库。
@@ -29,6 +32,11 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
     super.initState();
     final repository = inject<IHistoryRepository>();
     controller = ModernHomeController(
+      loadCatalog: () => HomeCatalog.load(
+        rules: inject<PluginsController>().pluginList,
+        force: true,
+      ),
+      loadDetail: HomeCatalog.loadDetail,
       readHistory: repository.getAllHistories,
       historyChanges: repository.changes,
     );
@@ -85,6 +93,12 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
   Widget build(BuildContext context) => ModernHomeView(
     controller: controller,
     onSearch: () => context.pushNamed('/search/'),
+    // 从根路由切换频道，让底部导航同步选中日历，避免只替换嵌套页面。
+    onCalendar: () =>
+        (rootNavigatorKey.currentContext ?? context).navigate('/tab/timeline/'),
+    onBrowse: (tag) => context.pushNamed(
+      tag.isEmpty ? '/search/' : '/search/${Uri.encodeComponent(tag)}',
+    ),
     onHistory: () => context.pushNamed('/settings/history/'),
     onToggleTheme: _toggleTheme,
     onDetails: (item) => context.pushNamed('/info/', arguments: item),

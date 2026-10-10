@@ -98,6 +98,9 @@ class _HomePreviewState extends State<_HomePreview> {
   Widget build(BuildContext context) => ModernHomeView(
     controller: controller,
     onSearch: () {},
+    onCalendar: () =>
+        (rootNavigatorKey.currentContext ?? context).navigate('/tab/timeline/'),
+    onBrowse: (_) {},
     onHistory: () {},
     onToggleTheme: () {},
     onDetails: (_) {},
@@ -138,6 +141,7 @@ Future<void> _mount(
   await tester.pumpWidget(
     ModularApp(
       module: _module(_SharedData(), preview: preview),
+      navigatorKey: rootNavigatorKey,
       initialRoute: '/tab/popular/',
       navigatorObservers: [rootRouteObserver],
       provide: (scoped) =>
@@ -175,6 +179,21 @@ InterfaceStyleController _controller({
 );
 
 void main() {
+  testWidgets('home calendar entry selects its destination and returns home', (
+    tester,
+  ) async {
+    await _mount(tester, _controller(style: 'modern'), preview: true);
+    await tester.tap(find.byKey(const ValueKey('home-calendar')));
+    await tester.pumpAndSettle();
+    expect(find.text('modern-timeline'), findsOneWidget);
+    final selected = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    expect(selected.selectedIndex, 1);
+    await tester.tap(find.text('发现'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ModernHomeView), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'switching replaces page state, retains shared data, and supports both return directions',
     (tester) async {
@@ -280,7 +299,8 @@ void main() {
         ]);
       });
       await _mount(tester, _controller(style: 'modern'), preview: true);
-      expect(find.text('发现新的故事'), findsWidgets);
+      expect(find.byTooltip('Kazumi'), findsNothing);
+      expect(find.byKey(const ValueKey('home-calendar')), findsOneWidget);
       expect(find.text('搜索番剧、角色或关键词'), findsOneWidget);
       final boundary = tester.renderObject<RenderRepaintBoundary>(
         find.byKey(const ValueKey('preview-boundary')),
@@ -288,9 +308,11 @@ void main() {
       await tester.runAsync(() async {
         final image = await boundary.toImage(pixelRatio: 1);
         final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        await File(
-          'docs/verification/android-modern-home-redesign-widget.png',
-        ).writeAsBytes(png!.buffer.asUint8List());
+        final screenshot = File(
+          'docs/verification/android-modern-home-channels-widget.png',
+        );
+        await screenshot.parent.create(recursive: true);
+        await screenshot.writeAsBytes(png!.buffer.asUint8List());
         image.dispose();
       });
       expect(tester.takeException(), isNull);

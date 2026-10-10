@@ -628,6 +628,7 @@ abstract class _DownloadController with Store {
         final source = await lease.resolve(
           fullUrl,
           useLegacyParser: plugin.useLegacyParser,
+          providerId: plugin.providerId,
           timeout: const Duration(seconds: 30),
         );
         m3u8Url = source.url;

@@ -10,6 +10,7 @@ import 'package:kazumi/request/apis/plugin_catalog_api.dart';
 import 'package:kazumi/modules/plugin/plugin_http_module.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/async_serial_queue.dart';
+import 'package:kazumi/services/source/source_service.dart';
 import 'package:kazumi/utils/async_single_flight.dart';
 import 'package:kazumi/utils/version.dart';
 
@@ -218,12 +219,16 @@ abstract class _PluginsController with Store {
     bool flag = false;
     for (int i = 0; i < pluginList.length; ++i) {
       if (pluginNameKey(pluginList[i].name) == pluginNameKey(plugin.name)) {
+        // 远程更新不能改变已持久化来源身份，否则历史与收藏会失去关联。
+        plugin.sourceId = pluginList[i].sourceId ??
+            SourceDefinition.fromJson(pluginList[i].toJson()).manifest.id;
         pluginList.replaceRange(i, i + 1, [plugin]);
         flag = true;
         break;
       }
     }
     if (!flag) {
+      plugin.sourceId ??= SourceDefinition.fromJson(plugin.toJson()).manifest.id;
       pluginList.add(plugin);
     }
   }

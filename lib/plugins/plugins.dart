@@ -6,6 +6,9 @@ import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/services/plugin/api_rule_engine.dart';
 import 'package:kazumi/utils/episode_url.dart';
 import 'package:kazumi/utils/http_headers.dart';
+import 'package:kazumi/services/source/source_service.dart';
+import 'package:kazumi/services/source/source_models.dart';
+import 'package:kazumi/request/core/network_exception.dart';
 
 export 'package:kazumi/services/plugin/rule_engine_models.dart'
     show
@@ -47,6 +50,9 @@ class Plugin {
   ApiSearchConfig searchApiConfig;
   ApiChapterConfig chapterApiConfig;
   AntiCrawlerConfig antiCrawlerConfig;
+  String? sourceId;
+  Map<String, dynamic> sourceConfig;
+  String get providerId => sourceId ?? SourceDefinition.fromJson(toJson()).manifest.id;
 
   Plugin({
     required this.api,
@@ -73,8 +79,11 @@ class Plugin {
     ApiSearchConfig? searchApiConfig,
     ApiChapterConfig? chapterApiConfig,
     AntiCrawlerConfig? antiCrawlerConfig,
+    this.sourceId,
+    Map<String, dynamic>? sourceConfig,
   })  : searchApiConfig = searchApiConfig ?? ApiSearchConfig(),
         chapterApiConfig = chapterApiConfig ?? ApiChapterConfig(),
+        sourceConfig = sourceConfig ?? <String, dynamic>{},
         antiCrawlerConfig = antiCrawlerConfig ?? AntiCrawlerConfig.empty();
 
   factory Plugin.fromJson(Map<String, dynamic> json) {
@@ -82,6 +91,8 @@ class Plugin {
       api: json['api']?.toString() ?? '1',
       type: json['type'] as String? ?? 'anime',
       name: json['name'] as String? ?? '',
+      sourceId: json['sourceId'] as String?,
+      sourceConfig: Map<String, dynamic>.from(json['sourceConfig'] as Map? ?? const {}),
       version: json['version']?.toString() ?? '',
       muliSources: json['muliSources'] as bool? ?? true,
       useWebview: json['useWebview'] as bool? ?? true,
@@ -152,6 +163,8 @@ class Plugin {
       'api': api,
       'type': type,
       'name': name,
+      if (sourceId != null) 'sourceId': sourceId,
+      if (sourceConfig.isNotEmpty) 'sourceConfig': sourceConfig,
       'version': version,
       'muliSources': muliSources,
       'useWebview': useWebview,
@@ -206,10 +219,10 @@ class Plugin {
     String keyword, {
     RuleCancelToken? cancelToken,
   }) {
-    return _ruleEngine.search(
-      _executionConfig,
+    return SourceService.shared.traceSearch(
+      SourceDefinition.fromJson(toJson()),
       keyword,
-      cancelToken: cancelToken,
+      context: SourceContext(cancelToken: cancelToken),
     );
   }
 
@@ -217,10 +230,10 @@ class Plugin {
     String source, {
     RuleCancelToken? cancelToken,
   }) {
-    return _ruleEngine.queryChapters(
-      _executionConfig,
+    return SourceService.shared.traceChapters(
+      SourceDefinition.fromJson(toJson()),
       source,
-      cancelToken: cancelToken,
+      context: SourceContext(cancelToken: cancelToken),
     );
   }
 
@@ -237,7 +250,19 @@ class Plugin {
     RuleCancelToken? cancelToken,
   }) async {
     try {
-      return (await traceSearch(keyword, cancelToken: cancelToken)).response;
+      final result = await SourceService.shared.search(
+        SourceDefinition.fromJson(toJson()), keyword,
+        context: SourceContext(cancelToken: cancelToken), paginate: false);
+      if (result.items.isEmpty) throw NoResultException(name);
+      return PluginSearchResponse(pluginName: name, data: result.items
+        .map((e) => SearchItem(name: e.title, src: e.ref.rawRef)).toList());
+    } on SourceException catch (error) {
+      if (error.code == 'CHALLENGE_REQUIRED') throw CaptchaRequiredException(name);
+      if (error.code == 'CANCELLED') {
+        throw NetworkException(type: NetworkExceptionType.cancel, message: error.message);
+      }
+      if (shouldRethrow) throw SearchErrorException(name, cause: error);
+      return PluginSearchResponse(pluginName: name, data: <SearchItem>[]);
     } on CaptchaRequiredException {
       rethrow;
     } on NoResultException {
@@ -252,7 +277,18 @@ class Plugin {
     String source, {
     RuleCancelToken? cancelToken,
   }) async {
-    return (await traceChapters(source, cancelToken: cancelToken)).roads;
+    try {
+      final definition = SourceDefinition.fromJson(toJson());
+      final lines = await SourceService.shared.lines(definition,
+        SourceRef(providerId: definition.manifest.id, rawRef: source),
+        context: SourceContext(cancelToken: cancelToken));
+      return lines.map((line) => line.toRoad()).toList();
+    } on SourceException catch (error) {
+      if (error.code == 'CANCELLED') {
+        throw NetworkException(type: NetworkExceptionType.cancel, message: error.message);
+      }
+      throw ChapterErrorException(name, cause: error);
+    }
   }
 
   String buildFullUrl(String urlItem) {

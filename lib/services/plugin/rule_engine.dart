@@ -1,11 +1,10 @@
 import 'package:dio/dio.dart';
+import 'rule_engine_runtime_standalone.dart'
+    if (dart.library.ui) 'rule_engine_runtime_flutter.dart' as runtime;
 import 'package:kazumi/modules/search/plugin_search_module.dart';
 import 'package:kazumi/plugins/api_rule_config.dart';
-import 'package:kazumi/request/clients/plugin_site_client.dart';
 import 'package:kazumi/request/core/network_exception.dart';
-import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/api_rule_strategy.dart';
-import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart';
 import 'package:kazumi/services/plugin/xpath_rule_strategy.dart';
 
@@ -23,7 +22,7 @@ class RuleEngine {
     ApiRuleStrategy apiStrategy = const ApiRuleStrategy(),
     XPathRuleStrategy xpathStrategy = const XPathRuleStrategy(),
     bool logFailures = true,
-  })  : _requestExecutor = requestExecutor ?? _DefaultRuleRequestExecutor(),
+  })  : _requestExecutor = requestExecutor ?? runtime.createRuleRequestExecutor(),
         _apiStrategy = apiStrategy,
         _xpathStrategy = xpathStrategy,
         _logFailures = logFailures;
@@ -37,13 +36,14 @@ class RuleEngine {
     RuleExecutionConfig config,
     String keyword, {
     CancelToken? cancelToken,
+    Map<String, Object?> variables = const {},
   }) async {
     late final PreparedRuleRequest request;
     try {
       request = config.searchMode == RuleMode.api
           ? _apiStrategy.prepareRequest(
               config.searchApiConfig.request,
-              <String, Object?>{'keyword': keyword},
+              <String, Object?>{...variables, 'keyword': keyword},
             )
           : _xpathStrategy.prepareSearchRequest(config, keyword);
     } catch (error, stackTrace) {
@@ -118,7 +118,7 @@ class RuleEngine {
       );
     } catch (error) {
       if (_logFailures) {
-        KazumiLogger().i(
+        runtime.logRuleInfo(
           'Plugin: ${config.pluginName} harvested page not parseable, '
           'falling back to re-search ($error)',
         );
@@ -270,7 +270,7 @@ class RuleEngine {
   ) {
     if (!_logFailures || diagnostics.isEmpty) return;
     final preview = diagnostics.take(3).join('; ');
-    KazumiLogger().w(
+    runtime.logRuleWarning(
       'Plugin: ${config.pluginName} $phase skipped ${diagnostics.length} '
       'node(s): $preview',
     );
@@ -283,73 +283,10 @@ class RuleEngine {
     StackTrace stackTrace,
   ) {
     if (!_logFailures) return;
-    KazumiLogger().w(
+    runtime.logRuleWarning(
       'Plugin: ${config.pluginName} $phase failed',
       error: error,
       stackTrace: stackTrace,
     );
-  }
-}
-
-class _DefaultRuleRequestExecutor implements RuleRequestExecutor {
-  @override
-  Future<String> execute(
-    PreparedRuleRequest request,
-    RuleExecutionConfig config, {
-    CancelToken? cancelToken,
-  }) async {
-    final cookieHeader = request.includeCookies
-        ? await _cookieHeaderFor(config.pluginName, request.url)
-        : '';
-    final verifiedUserAgent = cookieHeader.isNotEmpty
-        ? PluginCookieManager.instance.userAgentFor(config.pluginName)
-        : null;
-    // Header names are lowercased so a rule-supplied 'User-Agent' collides
-    // with ours instead of being sent as a second, conflicting header.
-    final headers = <String, dynamic>{
-      'referer': '${config.baseUrl}/',
-      if (cookieHeader.isNotEmpty) 'cookie': cookieHeader,
-      for (final entry in request.headers.entries)
-        entry.key.toLowerCase(): entry.value,
-      // Clearance cookies are bound to the User-Agent they were issued to,
-      // so the verified UA overrides the rule's own; sending a different one
-      // would make the site serve the challenge page again.
-      if (verifiedUserAgent != null) 'user-agent': verifiedUserAgent,
-    };
-    if (request.method == 'POST') {
-      switch (request.bodyType) {
-        case ApiBodyType.json:
-          headers.putIfAbsent('content-type', () => 'application/json');
-          break;
-        case ApiBodyType.form:
-          headers.putIfAbsent(
-            'content-type',
-            () => 'application/x-www-form-urlencoded',
-          );
-          break;
-      }
-    }
-    return PluginSiteClient.instance.requestText(
-      request.url,
-      method: request.method,
-      headers: headers,
-      queryParameters: request.query,
-      data: request.method == 'POST' ? request.body : null,
-      cancelToken: cancelToken,
-    );
-  }
-
-  Future<String> _cookieHeaderFor(String pluginName, String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return '';
-    try {
-      final cookies =
-          await PluginCookieManager.instance.loadForRequest(pluginName, uri);
-      return cookies
-          .map((cookie) => '${cookie.name}=${cookie.value}')
-          .join('; ');
-    } catch (_) {
-      return '';
-    }
   }
 }

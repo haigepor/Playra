@@ -32,6 +32,13 @@
   <title>kazumi</title>
   <link rel="manifest" href="manifest.json">
 
+  <style>
+    /* Flutter 的语义容器可能覆盖整屏；统一关闭浏览器触摸着色，保留组件选中与键盘焦点。 */
+    html, body, body * {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

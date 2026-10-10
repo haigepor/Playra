@@ -30,12 +30,15 @@ ShadColorScheme modernHomeColors(Brightness brightness) =>
         ring: Color(0xff5267d9),
       );
 
-/// 页内杂志主题继承字体和明暗模式，品牌色集中定义，便于统一调整。
-ThemeData modernHomeTheme(ThemeData base) {
-  final zinc = modernHomeColors(base.brightness);
+/// 首页可独立使用暗色，保留旧版和其他页面的全局主题偏好。
+ThemeData modernHomeTheme(ThemeData base, {bool forceDark = false}) {
+  final brightness = forceDark ? Brightness.dark : base.brightness;
+  final zinc = modernHomeColors(brightness);
   return base.copyWith(
+    brightness: brightness,
     scaffoldBackgroundColor: zinc.background,
     colorScheme: base.colorScheme.copyWith(
+      brightness: brightness,
       primary: zinc.primary,
       onPrimary: zinc.primaryForeground,
       surface: zinc.background,
@@ -91,7 +94,7 @@ class ModernHomeScope extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final material = modernHomeTheme(Theme.of(context));
+    final material = modernHomeTheme(Theme.of(context), forceDark: true);
     return Theme(
       data: material,
       child: ShadTheme(

@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-11 02:23:35",
+  "scope": "recommendation cards style",
+  "build": "PASS",
+  "buildSeconds": 116.8,
+  "automaticTests": "NOT_RUN_USER_REQUEST",
+  "encoding": "UTF8_NO_BOM",
+  "preview": "http://127.0.0.1:8933/#/tab/popular/",
+  "source": "lib/presentation/modern/home/modern_home_view.dart",
+  "rollback": ".dart_tool/home-bento-redesign-baseline.dart"
+}

@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:kazumi/services/video_source/video_source_service.dart';
-import 'package:kazumi/services/video_source/webview_video_source_service.dart';
+import 'package:kazumi/services/source/source_playback_service.dart';
+import 'package:kazumi/services/source/source_models.dart';
 
 class VideoSourceResolverPool {
   final List<_VideoSourceResolverWorker> _workers = [];
@@ -110,6 +111,7 @@ class VideoSourceResolverLease {
   Future<VideoSource> resolve(
     String episodeUrl, {
     required bool useLegacyParser,
+    String? providerId,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   }) async {
@@ -119,6 +121,7 @@ class VideoSourceResolverLease {
     return _worker.resolve(
       episodeUrl,
       useLegacyParser: useLegacyParser,
+      providerId: providerId,
       offset: offset,
       timeout: timeout,
     );
@@ -136,7 +139,7 @@ class VideoSourceResolverLease {
 }
 
 class _VideoSourceResolverWorker {
-  final WebViewVideoSourceService _service = WebViewVideoSourceService();
+  final SourcePlaybackService _service = SourcePlaybackService();
   bool isBusy = false;
   bool isRetired = false;
 
@@ -145,6 +148,7 @@ class _VideoSourceResolverWorker {
   Future<VideoSource> resolve(
     String episodeUrl, {
     required bool useLegacyParser,
+    String? providerId,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   }) {
@@ -153,6 +157,8 @@ class _VideoSourceResolverWorker {
       useLegacyParser: useLegacyParser,
       offset: offset,
       timeout: timeout,
+      context: SourceContext(providerId: providerId, sessionId: 'download',
+        timeout: timeout + const Duration(seconds: 20)),
     );
   }
 

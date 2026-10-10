@@ -24,22 +24,32 @@ class ModernShell extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     body: outlet,
     bottomNavigationBar: Theme(
-      data: modernHomeTheme(Theme.of(context)),
+      data: modernHomeTheme(Theme.of(context), forceDark: selectedIndex <= 2),
       child: DecoratedBox(
         decoration: BoxDecoration(
+          color: modernHomeTheme(
+            Theme.of(context),
+            forceDark: selectedIndex <= 2,
+          ).navigationBarTheme.backgroundColor,
           border: Border(
             top: BorderSide(
               color: modernHomeTheme(
                 Theme.of(context),
+                forceDark: selectedIndex <= 2,
               ).colorScheme.outlineVariant,
             ),
           ),
         ),
-        child: NavigationBar(
-          key: const ValueKey('modern-navigation'),
-          selectedIndex: selectedIndex,
-          onDestinationSelected: selectDestination,
-          destinations: destinations,
+        // 外层先消费系统底部安全区，NavigationBar 内部不会再次叠加同一间距。
+        child: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.only(bottom: 8),
+          child: NavigationBar(
+            key: const ValueKey('modern-navigation'),
+            selectedIndex: selectedIndex,
+            onDestinationSelected: selectDestination,
+            destinations: destinations,
+          ),
         ),
       ),
     ),

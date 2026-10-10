@@ -65,9 +65,14 @@ class PluginSearchService {
       infoController.pluginSearchStatus[plugin.name] =
           PluginSearchStatus.pending;
     }
-    await Future.wait(
-      plugins.map((plugin) => _queryPlugin(plugin, keyword)),
-    );
+    var next = 0;
+    Future<void> worker() async {
+      while (!_isCancelled && next < plugins.length) {
+        final plugin = plugins[next++];
+        await _queryPlugin(plugin, keyword);
+      }
+    }
+    await Future.wait(List.generate(plugins.length.clamp(0, 4), (_) => worker()));
   }
 
   Future<void> _queryPlugin(Plugin plugin, String keyword) async {
