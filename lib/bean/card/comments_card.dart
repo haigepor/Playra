@@ -9,19 +9,26 @@ class CommentsCard extends StatelessWidget {
   const CommentsCard({
     super.key,
     required CommentItem this.commentItem,
+    this.showRating = true,
+    this.numericRating = false,
   }) : _isOwn = false;
 
   const CommentsCard.bone({super.key})
       : commentItem = null,
+        showRating = true,
+        numericRating = false,
         _isOwn = false;
 
   const CommentsCard.own({
     super.key,
     required CommentItem this.commentItem,
+    this.showRating = true,
+    this.numericRating = false,
   }) : _isOwn = true;
 
   final CommentItem? commentItem;
   final bool _isOwn;
+  final bool showRating, numericRating;
 
   @override
   Widget build(BuildContext context) {
@@ -99,8 +106,10 @@ class CommentsCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                RatingBarIndicator(
+                if(showRating) const SizedBox(width: 8),
+                if(showRating && numericRating) Text('${item.comment.rate}/10',
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary)),
+                if(showRating && !numericRating) RatingBarIndicator(
                   itemCount: 5,
                   rating: item.comment.rate.toDouble() / 2,
                   itemBuilder: (context, index) => const Icon(

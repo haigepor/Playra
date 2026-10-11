@@ -41,6 +41,7 @@ class _SourceSheetView extends StatefulWidget {
     required this.onOpenBrowser,
     required this.onPlay,
     required this.onClose,
+    this.emptyIllustration,
   });
 
   final String keyword;
@@ -53,6 +54,7 @@ class _SourceSheetView extends StatefulWidget {
   final ValueChanged<String> onOpenBrowser;
   final void Function(String sourceName, SearchItem result) onPlay;
   final VoidCallback onClose;
+  final Widget? emptyIllustration;
 
   @override
   State<_SourceSheetView> createState() => _SourceSheetViewState();
@@ -284,6 +286,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
             GeneralEmptyState(
               icon: Icons.search_off_rounded,
               title: '没有找到匹配结果',
+              illustration: widget.emptyIllustration,
               compact: true,
               actions: [
                 StateActionButton.tonal(

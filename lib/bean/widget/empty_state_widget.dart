@@ -10,12 +10,14 @@ class GeneralEmptyState extends StatelessWidget {
     required this.title,
     this.actions = const [],
     this.compact = false,
+    this.illustration,
   });
 
   final IconData icon;
   final String title;
   final List<Widget> actions;
   final bool compact;
+  final Widget? illustration;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,7 @@ class GeneralEmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              StateIconBadge(
+              illustration ?? StateIconBadge(
                 icon: icon,
                 size: modern
                     ? 48

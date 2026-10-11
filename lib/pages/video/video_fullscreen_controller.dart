@@ -86,9 +86,14 @@ class VideoFullscreenController {
 
   Future<void> close() {
     if (_closeFuture != null) return _closeFuture!;
+    return _closeFuture = detach();
+  }
+
+  /// 切换新旧界面只卸载视图，路由控制器仍需支持重新挂载。
+  Future<void> detach() {
     _revision++;
     _removeEntry();
     _route = null;
-    return _closeFuture = _requestFullscreen(false);
+    return _requestFullscreen(false);
   }
 }

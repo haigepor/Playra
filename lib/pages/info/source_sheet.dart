@@ -34,9 +34,12 @@ part 'source_captcha_flow.dart';
 part 'source_sheet_view.dart';
 
 class SourceSheet extends StatefulWidget {
-  const SourceSheet({super.key, required this.infoController});
+  const SourceSheet({super.key, required this.infoController, this.onSelected, this.emptyIllustration});
 
   final InfoController infoController;
+  /// 新版原位播放；未传入时保留旧版播放路由行为。
+  final ValueChanged<OnlineVideoPlaybackArgs>? onSelected;
+  final Widget? emptyIllustration;
 
   @override
   State<SourceSheet> createState() => _SourceSheetState();
@@ -132,16 +135,20 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
             plugin.queryChapterRoads(searchItem.src, cancelToken: cancelToken),
       );
       if (roads.isEmpty) throw ChapterErrorException(plugin.name);
-      task.withContext((context) => context.pushNamed(
-            '/video/',
-            arguments: OnlineVideoPlaybackArgs(
+      final args = OnlineVideoPlaybackArgs(
               bangumiItem: widget.infoController.bangumiItem,
               plugin: plugin,
               title: searchItem.name,
               src: searchItem.src,
               roads: roads,
-            ),
-          ));
+            );
+      task.withContext((context) {
+        if (widget.onSelected case final onSelected?) {
+          onSelected(args);
+        } else {
+          context.pushNamed('/video/', arguments: args);
+        }
+      });
     }, onError: (error, stackTrace) {
       KazumiLogger().w('SourceSheet: failed to query playlist', error: error);
       KazumiDialog.showToast(message: '未能获取播放列表，请重试或选择其他结果');
@@ -203,6 +210,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
             if (group.hasResults) firstResultSource ??= group.name;
           }
           return _SourceSheetView(
+            emptyIllustration: widget.emptyIllustration,
             keyword: _keyword,
             groups: groupsByName.values.toList(),
             firstResultSource: firstResultSource,

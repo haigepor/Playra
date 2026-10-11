@@ -6,6 +6,9 @@ import 'package:kazumi/pages/route_error_page.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/pages/video/video_page.dart';
 import 'package:kazumi/pages/video/video_playback_args.dart';
+import 'package:kazumi/pages/info/info_controller.dart';
+import 'package:kazumi/presentation/interface_page_host.dart';
+import 'package:kazumi/presentation/modern/pages/modern_player_detail_page.dart';
 
 final videoModule = createModule(
   path: '/video',
@@ -13,6 +16,7 @@ final videoModule = createModule(
     c.route(
       '/',
       provide: (s) => s
+        ..add<InfoController>(InfoController.new)
         ..add<VideoPageController>(VideoPageController.new)
         ..add<PlayerController>(PlayerController.new),
       child: (context, state) {
@@ -20,12 +24,23 @@ final videoModule = createModule(
         if (args is! VideoPlaybackArgs) {
           return const RouteErrorPage(message: '播放参数无效，请返回后重试。');
         }
-        return VideoPage(
-          args: args,
-          playerController: context.read<PlayerController>(),
-          videoPageController: context.read<VideoPageController>(),
-          historyController: inject<HistoryController>(),
-          downloadController: inject<DownloadController>(),
+        return InterfacePageHost(
+          legacy: (_) => VideoPage(
+            args: args,
+            playerController: context.read<PlayerController>(),
+            videoPageController: context.read<VideoPageController>(),
+            historyController: inject<HistoryController>(),
+            downloadController: inject<DownloadController>(),
+          ),
+          modern: (_) => ModernPlayerDetailPage(
+            item: args.bangumiItem,
+            args: args,
+            infoController: context.read<InfoController>(),
+            videoController: context.read<VideoPageController>(),
+            playerController: context.read<PlayerController>(),
+            historyController: inject<HistoryController>(),
+            downloadController: inject<DownloadController>(),
+          ),
         );
       },
     );

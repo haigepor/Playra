@@ -423,7 +423,8 @@ class BangumiApi {
     return episodeInfo;
   }
 
-  static Future<List<EpisodeInfo>> getBangumiEpisodesByID(int id) async {
+  static Future<List<EpisodeInfo>> getBangumiEpisodesByID(int id,
+      {bool throwOnError = false}) async {
     final List<EpisodeInfo> episodeList = [];
     const int limit = 100;
     int offset = 0;
@@ -452,6 +453,7 @@ class BangumiApi {
     } catch (e) {
       KazumiLogger()
           .e('Network: resolve bangumi episode list failed', error: e);
+      if (throwOnError) rethrow;
     }
     return episodeList;
   }

@@ -475,6 +475,30 @@ abstract class _VideoPageController with Store implements Disposable {
     );
   }
 
+  /// 换源先作废旧解析并停止媒体，再安装新上下文，防止旧进度写到新来源。
+  Future<void> switchOnlineSource(OnlineVideoPlaybackArgs args, {
+    required VideoEpisodeSelection selection,
+    required PlayerController playerController,
+    int offset = 0,
+    void Function()? onReady,
+  }) async {
+    final session = _playbackSessions.begin();
+    _danmakuSessions.cancel();
+    _resetEpisodeComments();
+    _videoSourceService?.cancel();
+    _loading = true;
+    _errorMessage = null;
+    await playerController.stop();
+    if (session.isStale) return;
+    isOfflineMode = false;
+    _playbackHistoryIdentity = null;
+    applyPlaybackArgs(args);
+    resetEpisodeState(episode: selection.episode, road: selection.road);
+    onReady?.call();
+    await changeEpisode(selection.episode, currentRoad: selection.road,
+        offset: offset, playerController: playerController);
+  }
+
   Future<void> _changeOfflineEpisode(
     VideoEpisodeSelection selection,
     int offset, {
@@ -579,6 +603,14 @@ abstract class _VideoPageController with Store implements Disposable {
 
   void cancelAutomaticDanmakuLoad() {
     _danmakuSessions.cancel();
+  }
+
+  /// 外壳切换版本时路由作用域仍在；取消请求但保持控制器可再次使用。
+  void cancelPendingPlayback() {
+    _playbackSessions.cancel();
+    _danmakuSessions.cancel();
+    _commentSessions.cancel();
+    _videoSourceService?.cancel();
   }
 
   String? _getLocalVideoPath(

@@ -20,6 +20,7 @@ class EpisodeCommentsView extends StatelessWidget {
     required this.onToggleSort,
     required this.onSelectEpisode,
     required this.onRefresh,
+    this.emptyState,
   });
 
   final int episode;
@@ -31,6 +32,7 @@ class EpisodeCommentsView extends StatelessWidget {
   final VoidCallback onToggleSort;
   final VoidCallback onSelectEpisode;
   final VoidCallback onRefresh;
+  final Widget? emptyState;
 
   @override
   Widget build(BuildContext context) {
@@ -77,8 +79,8 @@ class EpisodeCommentsView extends StatelessWidget {
                 ),
               )
             else if (!isLoading && comments.isEmpty)
-              const SliverToBoxAdapter(
-                child: GeneralEmptyState(
+              SliverToBoxAdapter(
+                child: emptyState ?? const GeneralEmptyState(
                   icon: Icons.chat_bubble_outline_rounded,
                   title: '本集还没有讨论',
                 ),

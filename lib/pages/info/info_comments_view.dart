@@ -16,6 +16,10 @@ class InfoCommentsView extends StatelessWidget {
     required this.onReviewTap,
     required this.onRetry,
     required this.onLoadMore,
+    this.useOverlap = true,
+    this.header,
+    this.showRatings = true,
+    this.numericRatings = false,
   });
 
   static const _writeReviewLabel = '下面我简单喵两句';
@@ -29,6 +33,9 @@ class InfoCommentsView extends StatelessWidget {
   final VoidCallback onReviewTap;
   final VoidCallback onRetry;
   final VoidCallback onLoadMore;
+  final bool useOverlap;
+  final Widget? header;
+  final bool showRatings, numericRatings;
 
   CommentItem? get _ownComment {
     final review = interest;
@@ -74,10 +81,11 @@ class InfoCommentsView extends StatelessWidget {
             key: const PageStorageKey<String>('吐槽'),
             scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             slivers: [
-              SliverOverlapInjector(
+              if (useOverlap) SliverOverlapInjector(
                 handle:
                     NestedScrollView.sliverOverlapAbsorberHandleFor(context),
               ),
+              if (header != null) SliverToBoxAdapter(child: header),
               if (ownComment == null && !showEmpty)
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(gutter, 12, gutter, 8),
@@ -96,6 +104,7 @@ class InfoCommentsView extends StatelessWidget {
                         return _ownReview(ownComment);
                       }
                       return CommentsCard(
+                        showRating: showRatings, numericRating: numericRatings,
                         commentItem:
                             comments[index - (ownComment == null ? 0 : 1)],
                       );
@@ -180,7 +189,7 @@ class InfoCommentsView extends StatelessWidget {
     return Card.filled(
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        CommentsCard.own(commentItem: comment),
+        CommentsCard.own(commentItem: comment, showRating: showRatings, numericRating: numericRatings),
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
           child: Align(
