@@ -306,144 +306,97 @@ class _FeedSelector extends StatefulWidget {
   State<_FeedSelector> createState() => _FeedSelectorState();
 }
 
-class _FeedSelectorState extends State<_FeedSelector> {
-  double? _dragPosition;
+class _FeedSelectorState extends State<_FeedSelector>
+    with SingleTickerProviderStateMixin {
+  static const categories = HomeFeed.primaryCategories;
+  late final TabController _tabs;
+
+  int get selectedIndex => categories.indexOf(
+    widget.controller.feed.isAnimeCategory
+        ? HomeFeed.anime
+        : widget.controller.feed,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(
+      length: categories.length,
+      vsync: this,
+      initialIndex: selectedIndex,
+      animationDuration: const Duration(milliseconds: 260),
+    );
+    widget.controller.addListener(_syncSelection);
+  }
+
+  void _syncSelection() {
+    if (_tabs.index == selectedIndex) return;
+    _tabs.animateTo(
+      selectedIndex,
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _FeedSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_syncSelection);
+      widget.controller.addListener(_syncSelection);
+      _syncSelection();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncSelection);
+    _tabs.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    final duration = MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 300);
-    return LayoutBuilder(
-      builder: (context, bounds) {
-        const categories = HomeFeed.primaryCategories;
-        final width = math.max(
-          math.min(bounds.maxWidth, 420 * scale),
-          350 * scale,
-        );
-        final cellWidth = width / categories.length;
-        final activeFeed = widget.controller.feed.isAnimeCategory
-            ? HomeFeed.anime
-            : widget.controller.feed;
-        final position =
-            _dragPosition ?? categories.indexOf(activeFeed).toDouble();
-        final selected = position.round();
-
-        double positionAt(double x) =>
-            (x / cellWidth - .5).clamp(0, categories.length - 1).toDouble();
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: width,
-            height: 42 * scale,
-            child: GestureDetector(
-              key: const ValueKey('home-feed-selector'),
-              behavior: HitTestBehavior.opaque,
-              // 超出可视宽度时将横向手势交给滚动容器，保证末尾分类可达。
-              onHorizontalDragStart: width > bounds.maxWidth
-                  ? null
-                  : (_) => setState(() {
-                      _dragPosition = categories.indexOf(activeFeed).toDouble();
-                    }),
-              // 手指移动时只更新视觉位置，松开后再请求对应频道的数据。
-              onHorizontalDragUpdate: width > bounds.maxWidth
-                  ? null
-                  : (details) => setState(() {
-                      _dragPosition = positionAt(details.localPosition.dx);
-                    }),
-              onHorizontalDragEnd: width > bounds.maxWidth
-                  ? null
-                  : (_) {
-                      final feed =
-                          categories[(_dragPosition ?? position).round()];
-                      setState(() => _dragPosition = null);
-                      widget.controller.selectFeed(feed);
-                    },
-              onHorizontalDragCancel: width > bounds.maxWidth
-                  ? null
-                  : () => setState(() => _dragPosition = null),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    bottom: 8,
-                    child: Row(
-                      children: [
-                        for (final feed in categories)
-                          Expanded(
-                            child: Semantics(
-                              selected: categories.indexOf(feed) == selected,
-                              child: TextButton(
-                                key: ValueKey('home-feed-${feed.name}'),
-                                onPressed: () =>
-                                    widget.controller.selectFeed(feed),
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                  foregroundColor: colors.onSurfaceVariant,
-                                  overlayColor: Colors.transparent,
-                                ),
-                                child: Text(
-                                  feed.label,
-                                  style: TextStyle(
-                                    fontFamily: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium?.fontFamily,
-                                    fontSize:
-                                        categories.indexOf(feed) == selected
-                                        ? 16
-                                        : 14,
-                                    height: 1.2,
-                                    fontWeight:
-                                        categories.indexOf(feed) == selected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    letterSpacing: 0,
-                                    color: categories.indexOf(feed) == selected
-                                        ? colors.onSurface
-                                        : colors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    left: cellWidth / 2 - 10,
-                    right: cellWidth / 2 - 10,
-                    bottom: 2,
-                    height: 3,
-                    child: IgnorePointer(
-                      child: AnimatedAlign(
-                        duration: _dragPosition == null
-                            ? duration
-                            : Duration.zero,
-                        curve: Curves.easeInOutCubic,
-                        alignment: Alignment(
-                          position * 2 / (categories.length - 1) - 1,
-                          0,
-                        ),
-                        child: Container(
-                          width: 20,
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+    // 与追番分类复用原生指示器行为；横向手势浏览分类，不触发数据切换。
+    return TabBar(
+      key: const ValueKey('home-feed-selector'),
+      controller: _tabs,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+      dividerColor: Colors.transparent,
+      indicatorSize: TabBarIndicatorSize.label,
+      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+      splashFactory: NoSplash.splashFactory,
+      indicator: UnderlineTabIndicator(
+        borderRadius: BorderRadius.circular(2),
+        borderSide: BorderSide(width: 3, color: colors.primary),
+        insets: const EdgeInsets.symmetric(horizontal: 8),
+      ),
+      onTap: (index) => widget.controller.selectFeed(categories[index]),
+      tabs: [
+        for (var i = 0; i < categories.length; i++)
+          Tab(
+            key: ValueKey('home-feed-${categories[i].name}'),
+            height: 44,
+            child: Text(
+              categories[i].label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: selectedIndex == i
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+                color: selectedIndex == i
+                    ? colors.onSurface
+                    : colors.onSurfaceVariant,
               ),
             ),
           ),
-        );
-      },
+      ],
     );
   }
 }

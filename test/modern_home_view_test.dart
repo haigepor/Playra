@@ -142,7 +142,7 @@ void main() {
     },
   );
   testWidgets(
-    'compact channels support dragging the selector and omit pagination',
+    'primary tabs match library and scroll without changing the feed',
     (tester) async {
       final controller = ModernHomeController(
         loadFeed: (feed, _) async =>
@@ -154,15 +154,28 @@ void main() {
       await mountHome(tester, controller);
       expect(find.text('找到今天的心动番剧'), findsNothing);
       expect(find.byKey(const ValueKey('home-load-more')), findsNothing);
-      final start = tester.getCenter(
-        find.byKey(const ValueKey('home-feed-recommended')),
+      final selector = find.byKey(const ValueKey('home-feed-selector'));
+      final tabBar = tester.widget<TabBar>(selector);
+      expect(tabBar.indicatorSize, TabBarIndicatorSize.label);
+      final indicator = tabBar.indicator! as UnderlineTabIndicator;
+      expect(indicator.borderSide.width, 3);
+      expect(indicator.insets, const EdgeInsets.symmetric(horizontal: 8));
+      final selectedLabel = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('home-feed-recommended')),
+          matching: find.byType(Text),
+        ),
       );
-      final end = tester.getCenter(
-        find.byKey(const ValueKey('home-feed-season')),
-      );
-      await tester.dragFrom(start, end - start);
+      expect(selectedLabel.style!.fontSize, 14);
+      await tester.drag(selector, const Offset(-250, 0));
       await tester.pumpAndSettle();
-      expect(controller.feed, HomeFeed.season);
+      expect(controller.feed, HomeFeed.recommended);
+      await tester.tap(find.byKey(const ValueKey('home-feed-comicDrama')));
+      await tester.pumpAndSettle();
+      expect(controller.feed, HomeFeed.comicDrama);
+      controller.selectFeed(HomeFeed.season);
+      await tester.pumpAndSettle();
+      expect(tabBar.controller!.index, 2);
       expect(
         find.byKey(const PageStorageKey('home-channel-main')),
         findsOneWidget,
