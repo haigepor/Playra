@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
@@ -37,95 +38,95 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
 
   @override
   Widget build(BuildContext context) => SettingsDetailScaffold(
-        title: const Text('同步设置'),
-        body: ListenableBuilder(
-          listenable: BangumiSyncService(),
-          builder: (context, _) {
-            final bangumi = BangumiSyncService();
-            final hasToken =
-                GStorage.getSetting(SettingsKeys.bangumiAccessToken)
-                    .trim()
-                    .isNotEmpty;
-            final bangumiEnabled =
-                GStorage.getSetting(SettingsKeys.bangumiSyncEnable);
-            final hasServer =
-                GStorage.getSetting(SettingsKeys.webDavURL).trim().isNotEmpty;
-            final webDavEnabled =
-                GStorage.getSetting(SettingsKeys.webDavEnable);
-            final hasSyncContent =
-                GStorage.getSetting(SettingsKeys.webDavEnableHistory) ||
-                    GStorage.getSetting(SettingsKeys.webDavEnableCollect) ||
-                    GStorage.getSetting(SettingsKeys.webDavEnableDanmakuShield);
-            final colors = Theme.of(context).colorScheme;
-            final cards = [
-              _SyncServiceCard(
-                title: '追番同步',
-                service: 'Bangumi',
-                description: '与 Bangumi 保持相同的追番状态。',
-                content: '想看 · 在看 · 看过 · 搁置 · 抛弃',
-                icon: Icons.bookmarks_rounded,
-                color: colors.secondaryContainer,
-                onColor: colors.onSecondaryContainer,
-                status: bangumi.isConnecting
-                    ? _SyncStatus.connecting
-                    : bangumi.lastError != null
-                        ? _SyncStatus.connectionError
-                        : !hasToken
-                            ? _SyncStatus.unconnected
-                            : bangumiEnabled
-                                ? _SyncStatus.enabled
-                                : _SyncStatus.disabled,
-                action: hasToken ? '管理追番同步' : '连接 Bangumi',
-                onPressed: () => _open('/settings/bangumi/'),
-              ),
-              _SyncServiceCard(
-                title: '多设备同步',
-                service: 'WebDAV',
-                description: '通过自己的云盘，在其他设备接着看。',
-                content: '观看记录 · 收藏 · 弹幕屏蔽词',
-                icon: Icons.devices_rounded,
-                color: colors.tertiaryContainer,
-                onColor: colors.onTertiaryContainer,
-                status: !hasServer
-                    ? _SyncStatus.unconfigured
-                    : webDavEnabled
-                        ? hasSyncContent
-                            ? _SyncStatus.enabled
-                            : _SyncStatus.contentRequired
-                        : _SyncStatus.disabled,
-                action: hasServer ? '管理多设备同步' : '设置 WebDAV',
-                onPressed: () => _open('/settings/webdav/'),
-              ),
-            ];
-            return SyncPageBody(
-              children: [
-                const SyncPageIntro(
-                  icon: Icons.sync_rounded,
-                  title: '让追番保持同步',
-                  description: '选择需要的服务，也可以同时使用。',
-                ),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final largeText =
-                        MediaQuery.textScalerOf(context).scale(16) > 22;
-                    if (constraints.maxWidth >= 680 && !largeText) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: cards[0]),
-                          const SizedBox(width: 16),
-                          Expanded(child: cards[1]),
-                        ],
-                      );
-                    }
-                    return Column(spacing: 16, children: cards);
-                  },
-                ),
-              ],
-            );
-          },
-        ),
-      );
+    title: const Text('同步设置'),
+    body: ListenableBuilder(
+      listenable: BangumiSyncService(),
+      builder: (context, _) {
+        final bangumi = BangumiSyncService();
+        final hasToken = GStorage.getSetting(
+          SettingsKeys.bangumiAccessToken,
+        ).trim().isNotEmpty;
+        final bangumiEnabled = GStorage.getSetting(
+          SettingsKeys.bangumiSyncEnable,
+        );
+        final hasServer = GStorage.getSetting(
+          SettingsKeys.webDavURL,
+        ).trim().isNotEmpty;
+        final webDavEnabled = GStorage.getSetting(SettingsKeys.webDavEnable);
+        final hasSyncContent =
+            GStorage.getSetting(SettingsKeys.webDavEnableHistory) ||
+            GStorage.getSetting(SettingsKeys.webDavEnableCollect) ||
+            GStorage.getSetting(SettingsKeys.webDavEnableDanmakuShield);
+        final colors = Theme.of(context).colorScheme;
+        final cards = [
+          _SyncServiceCard(
+            title: '追番同步',
+            service: 'Bangumi',
+            description: '与 Bangumi 保持相同的追番状态。',
+            content: '想看 · 在看 · 看过 · 搁置 · 抛弃',
+            icon: Icons.bookmarks_rounded,
+            color: colors.secondaryContainer,
+            onColor: colors.onSecondaryContainer,
+            status: bangumi.isConnecting
+                ? _SyncStatus.connecting
+                : bangumi.lastError != null
+                ? _SyncStatus.connectionError
+                : !hasToken
+                ? _SyncStatus.unconnected
+                : bangumiEnabled
+                ? _SyncStatus.enabled
+                : _SyncStatus.disabled,
+            action: hasToken ? '管理追番同步' : '连接 Bangumi',
+            onPressed: () => _open('/settings/bangumi/'),
+          ),
+          _SyncServiceCard(
+            title: '多设备同步',
+            service: 'WebDAV',
+            description: '通过自己的云盘，在其他设备接着看。',
+            content: '观看记录 · 收藏 · 弹幕屏蔽词',
+            icon: Icons.devices_rounded,
+            color: colors.tertiaryContainer,
+            onColor: colors.onTertiaryContainer,
+            status: !hasServer
+                ? _SyncStatus.unconfigured
+                : webDavEnabled
+                ? hasSyncContent
+                      ? _SyncStatus.enabled
+                      : _SyncStatus.contentRequired
+                : _SyncStatus.disabled,
+            action: hasServer ? '管理多设备同步' : '设置 WebDAV',
+            onPressed: () => _open('/settings/webdav/'),
+          ),
+        ];
+        return SyncPageBody(
+          children: [
+            const SyncPageIntro(
+              icon: Icons.sync_rounded,
+              title: '让追番保持同步',
+              description: '选择需要的服务，也可以同时使用。',
+            ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final largeText =
+                    MediaQuery.textScalerOf(context).scale(16) > 22;
+                if (constraints.maxWidth >= 680 && !largeText) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: cards[0]),
+                      const SizedBox(width: 16),
+                      Expanded(child: cards[1]),
+                    ],
+                  );
+                }
+                return Column(spacing: 16, children: cards);
+              },
+            ),
+          ],
+        );
+      },
+    ),
+  );
 }
 
 class _SyncServiceCard extends StatelessWidget {
@@ -156,12 +157,13 @@ class _SyncServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final modern = ModernSettingsScope.isActiveOf(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(modern ? 16 : 24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(modern ? 16 : 28),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -170,8 +172,8 @@ class _SyncServiceCard extends StatelessWidget {
             children: [
               StateIconBadge(
                 icon: icon,
-                size: 56,
-                iconSize: 26,
+                size: modern ? 36 : 56,
+                iconSize: modern ? 20 : 26,
                 backgroundColor: color,
                 foregroundColor: onColor,
               ),
@@ -184,24 +186,40 @@ class _SyncServiceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(service,
-              style: theme.textTheme.labelLarge
-                  ?.copyWith(color: theme.colorScheme.primary)),
+          SizedBox(height: modern ? 12 : 20),
+          Text(
+            service,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
           const SizedBox(height: 6),
           Semantics(
             header: true,
-            child: Text(title,
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              title,
+              style:
+                  (modern
+                          ? theme.textTheme.titleLarge
+                          : theme.textTheme.headlineSmall)
+                      ?.copyWith(fontWeight: FontWeight.w600),
+            ),
           ),
           const SizedBox(height: 8),
-          Text(description, style: theme.textTheme.bodyMedium),
+          Text(
+            description,
+            style: modern
+                ? theme.textTheme.bodySmall
+                : theme.textTheme.bodyMedium,
+          ),
           const SizedBox(height: 16),
-          Text(content,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 24),
+          Text(
+            content,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: modern ? 16 : 24),
           StateActionButton.tonal(
             onPressed: onPressed,
             text: action,
@@ -223,13 +241,13 @@ class _SyncStatusChip extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final (background, foreground) = switch (status) {
       _SyncStatus.connectionError => (
-          colors.errorContainer,
-          colors.onErrorContainer
-        ),
+        colors.errorContainer,
+        colors.onErrorContainer,
+      ),
       _SyncStatus.enabled => (
-          colors.primaryContainer,
-          colors.onPrimaryContainer
-        ),
+        colors.primaryContainer,
+        colors.onPrimaryContainer,
+      ),
       _ => (colors.surfaceContainerHighest, colors.onSurfaceVariant),
     };
     return Container(
@@ -244,11 +262,12 @@ class _SyncStatusChip extends StatelessWidget {
           Icon(status.icon, size: 16, color: foreground),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(status.label,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelMedium
-                    ?.copyWith(color: foreground)),
+            child: Text(
+              status.label,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: foreground),
+            ),
           ),
         ],
       ),

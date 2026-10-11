@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 const double tonalCardRadius = 24;
 
@@ -14,9 +15,20 @@ class TonalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(tonalCardRadius),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(padding: padding, child: child),
-      );
+    color: Theme.of(context).colorScheme.surfaceContainerLow,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(
+        ModernSettingsScope.isActiveOf(context) ? 16 : tonalCardRadius,
+      ),
+      side: ModernSettingsScope.isActiveOf(context)
+          ? BorderSide(
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: .5),
+            )
+          : BorderSide.none,
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Padding(padding: padding, child: child),
+  );
 }

@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/bean/widget/split_list_row.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
+import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
 
 enum _TileKind { plain, toggle, radio }
 
 class SettingsList extends StatelessWidget {
-  const SettingsList({
-    super.key,
-    required this.sections,
-    this.maxWidth = 1000,
-  });
+  const SettingsList({super.key, required this.sections, this.maxWidth = 1000});
 
   final List<Widget> sections;
 
@@ -23,7 +21,9 @@ class SettingsList extends StatelessWidget {
       itemCount: sections.length,
       itemBuilder: (context, index) => Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
+          constraints: BoxConstraints(
+            maxWidth: ModernSettingsScope.isActiveOf(context) ? 760 : maxWidth,
+          ),
           child: sections[index],
         ),
       ),
@@ -50,13 +50,22 @@ class SettingsSection extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return Padding(
-      padding: margin ?? const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding:
+          margin ??
+          (ModernSettingsScope.isActiveOf(context)
+              ? const EdgeInsets.fromLTRB(20, 0, 20, 24)
+              : const EdgeInsets.fromLTRB(16, 0, 16, 16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (title != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: EdgeInsets.fromLTRB(
+                ModernSettingsScope.isActiveOf(context) ? 2 : 16,
+                0,
+                16,
+                8,
+              ),
               child: SectionHeader(title: title!),
             ),
           SplitListGroup(children: tiles),
@@ -64,8 +73,9 @@ class SettingsSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: DefaultTextStyle.merge(
-                style: textTheme.bodySmall
-                    ?.copyWith(color: colorScheme.onSurfaceVariant),
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 child: bottomInfo!,
               ),
             ),
@@ -126,8 +136,14 @@ class _TileLabel extends StatelessWidget {
     return Row(
       children: [
         if (leading != null) ...[
-          Icon(leading, size: 24, color: secondary),
-          const SizedBox(width: 16),
+          Icon(
+            ModernSettingsScope.isActiveOf(context)
+                ? modernSettingsIcon(leading!)
+                : leading,
+            size: ModernSettingsScope.isActiveOf(context) ? 20 : 24,
+            color: secondary,
+          ),
+          SizedBox(width: ModernSettingsScope.isActiveOf(context) ? 12 : 16),
         ],
         Expanded(
           child: Column(
@@ -171,11 +187,15 @@ class SettingsCategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final modern = ModernSettingsScope.isActiveOf(context);
     return InkWell(
       onTap: onTap,
       onHighlightChanged: SplitListRow.pressReporterOf(context),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: modern ? 14 : 16,
+          vertical: 12,
+        ),
         child: Row(
           children: [
             Container(
@@ -183,15 +203,17 @@ class SettingsCategoryTile extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: colorScheme.secondaryContainer,
-                shape: BoxShape.circle,
+                borderRadius: modern
+                    ? BorderRadius.circular(10)
+                    : BorderRadius.circular(18),
               ),
               child: Icon(
-                icon,
+                modern ? modernSettingsIcon(icon) : icon,
                 size: 18,
                 color: colorScheme.onSecondaryContainer,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: modern ? 12 : 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,16 +222,18 @@ class SettingsCategoryTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     description,
-                    style: textTheme.bodySmall
-                        ?.copyWith(color: colorScheme.onSurfaceVariant),
-                    maxLines: 1,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: modern ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             Icon(
-              Icons.chevron_right_rounded,
+              modern ? LucideIcons.chevronRight : Icons.chevron_right_rounded,
+              size: modern ? 16 : null,
               color: colorScheme.onSurfaceVariant,
             ),
           ],
@@ -264,8 +288,10 @@ class SettingsSliderTile extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(8),
@@ -280,15 +306,21 @@ class SettingsSliderTile extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Slider(
-            value: value,
-            min: min,
-            max: max,
-            divisions: divisions,
-            showValueIndicator: ShowValueIndicator.never,
-            padding: EdgeInsets.zero,
-            onChanged: onChanged,
+          SizedBox(height: ModernSettingsScope.isActiveOf(context) ? 4 : 8),
+          // 手柄缩小后仍保留 48dp 的拖动区域，安卓上更容易操作。
+          ConstrainedBox(
+            constraints: ModernSettingsScope.isActiveOf(context)
+                ? const BoxConstraints.tightFor(height: 48)
+                : const BoxConstraints(),
+            child: Slider(
+              value: value,
+              min: min,
+              max: max,
+              divisions: divisions,
+              showValueIndicator: ShowValueIndicator.never,
+              padding: EdgeInsets.zero,
+              onChanged: onChanged,
+            ),
           ),
         ],
       ),
@@ -306,10 +338,10 @@ class SettingsTile<T> extends StatelessWidget {
     this.value,
     this.onPressed,
     this.enabled = true,
-  })  : _kind = _TileKind.plain,
-        onToggle = null,
-        initialValue = null,
-        radioValue = null;
+  }) : _kind = _TileKind.plain,
+       onToggle = null,
+       initialValue = null,
+       radioValue = null;
 
   /// Row taps pass null to [onToggle]; switch gestures pass the new value.
   const SettingsTile.switchTile({
@@ -320,11 +352,11 @@ class SettingsTile<T> extends StatelessWidget {
     this.leading,
     this.description,
     this.enabled = true,
-  })  : _kind = _TileKind.toggle,
-        trailing = null,
-        value = null,
-        onPressed = null,
-        radioValue = null;
+  }) : _kind = _TileKind.toggle,
+       trailing = null,
+       value = null,
+       onPressed = null,
+       radioValue = null;
 
   const SettingsTile.radioTile({
     super.key,
@@ -333,12 +365,12 @@ class SettingsTile<T> extends StatelessWidget {
     this.leading,
     this.description,
     this.enabled = true,
-  })  : _kind = _TileKind.radio,
-        trailing = null,
-        value = null,
-        onPressed = null,
-        onToggle = null,
-        initialValue = null;
+  }) : _kind = _TileKind.radio,
+       trailing = null,
+       value = null,
+       onPressed = null,
+       onToggle = null,
+       initialValue = null;
 
   final Widget title;
 
@@ -372,52 +404,102 @@ class SettingsTile<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final secondary =
-        enabled ? colorScheme.onSurfaceVariant : _disabledOn(context);
+    final secondary = enabled
+        ? colorScheme.onSurfaceVariant
+        : _disabledOn(context);
+    final modern = ModernSettingsScope.isActiveOf(context);
 
     return InkWell(
       onTap: _tapHandler(context),
       onHighlightChanged: SplitListRow.pressReporterOf(context),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: modern ? 14 : 16,
+          vertical: 12,
+        ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 32),
-          child: Row(
-            children: [
-              Expanded(
-                child: _TileLabel(
-                  title: title,
-                  leading: leading,
-                  description: description,
-                  enabled: enabled,
-                ),
-              ),
-              if (value != null) ...[
-                const SizedBox(width: 12),
-                DefaultTextStyle.merge(
-                  style: textTheme.bodyMedium?.copyWith(color: secondary),
-                  child: value!,
-                ),
-              ],
-              if (trailing != null) ...[
-                const SizedBox(width: 8),
-                IconTheme.merge(
-                  data: IconThemeData(color: secondary),
-                  child: trailing!,
-                ),
-              ],
-              if (_kind == _TileKind.toggle) ...[
-                const SizedBox(width: 12),
-                Switch(
-                  value: initialValue ?? false,
-                  onChanged: enabled ? onToggle : null,
-                ),
-              ],
-              if (_kind == _TileKind.radio) ...[
-                const SizedBox(width: 12),
-                Radio<T>(value: radioValue as T, enabled: enabled),
-              ],
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final below =
+                  modern &&
+                  value != null &&
+                  constraints.maxWidth < 340 &&
+                  MediaQuery.textScalerOf(context).scale(14) > 18;
+              final valueWidget = value == null
+                  ? null
+                  : DefaultTextStyle.merge(
+                      style: textTheme.bodyMedium?.copyWith(color: secondary),
+                      child: value!,
+                    );
+              final row = Row(
+                children: [
+                  Expanded(
+                    child: _TileLabel(
+                      title: title,
+                      leading: leading,
+                      description: description,
+                      enabled: enabled,
+                    ),
+                  ),
+                  if (valueWidget != null && !below) ...[
+                    const SizedBox(width: 12),
+                    if (modern)
+                      // 只限制长值的最大宽度，让短值贴右而不是占半行。
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * .42,
+                        ),
+                        child: valueWidget,
+                      )
+                    else
+                      valueWidget,
+                  ],
+                  if (trailing != null) ...[
+                    const SizedBox(width: 8),
+                    IconTheme.merge(
+                      data: IconThemeData(color: secondary),
+                      child: trailing!,
+                    ),
+                  ],
+                  if (_kind == _TileKind.toggle) ...[
+                    const SizedBox(width: 12),
+                    if (modern)
+                      // 只缩小绘制尺寸；命中检测保留原开关的触摸范围。
+                      Transform.scale(
+                        scale: .8,
+                        alignment: Alignment.centerRight,
+                        transformHitTests: false,
+                        child: Switch(
+                          value: initialValue ?? false,
+                          onChanged: enabled ? onToggle : null,
+                        ),
+                      )
+                    else
+                      Switch(
+                        value: initialValue ?? false,
+                        onChanged: enabled ? onToggle : null,
+                      ),
+                  ],
+                  if (_kind == _TileKind.radio) ...[
+                    const SizedBox(width: 12),
+                    Radio<T>(value: radioValue as T, enabled: enabled),
+                  ],
+                  if (modern &&
+                      _kind == _TileKind.plain &&
+                      onPressed != null &&
+                      value == null &&
+                      trailing == null)
+                    Icon(LucideIcons.chevronRight, size: 16, color: secondary),
+                ],
+              );
+              return below
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [row, const SizedBox(height: 8), valueWidget!],
+                    )
+                  : row;
+            },
           ),
         ),
       ),

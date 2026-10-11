@@ -21,37 +21,32 @@ class ModernShell extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: outlet,
-    bottomNavigationBar: Theme(
-      data: modernHomeTheme(Theme.of(context), forceDark: selectedIndex <= 2),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: modernHomeTheme(
-            Theme.of(context),
-            forceDark: selectedIndex <= 2,
-          ).navigationBarTheme.backgroundColor,
-          border: Border(
-            top: BorderSide(
-              color: modernHomeTheme(
-                Theme.of(context),
-                forceDark: selectedIndex <= 2,
-              ).colorScheme.outlineVariant,
+  Widget build(BuildContext context) {
+    final theme = modernHomeTheme(Theme.of(context), forceDark: true);
+    return Scaffold(
+      body: outlet,
+      bottomNavigationBar: Theme(
+        data: theme,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.navigationBarTheme.backgroundColor,
+            border: Border(
+              top: BorderSide(color: theme.colorScheme.outlineVariant),
+            ),
+          ),
+          // 外层先消费系统底部安全区，NavigationBar 内部不会再次叠加同一间距。
+          child: SafeArea(
+            top: false,
+            minimum: const EdgeInsets.only(bottom: 8),
+            child: NavigationBar(
+              key: const ValueKey('modern-navigation'),
+              selectedIndex: selectedIndex,
+              onDestinationSelected: selectDestination,
+              destinations: destinations,
             ),
           ),
         ),
-        // 外层先消费系统底部安全区，NavigationBar 内部不会再次叠加同一间距。
-        child: SafeArea(
-          top: false,
-          minimum: const EdgeInsets.only(bottom: 8),
-          child: NavigationBar(
-            key: const ValueKey('modern-navigation'),
-            selectedIndex: selectedIndex,
-            onDestinationSelected: selectDestination,
-            destinations: destinations,
-          ),
-        ),
       ),
-    ),
-  );
+    );
+  }
 }

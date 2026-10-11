@@ -1,10 +1,10 @@
 # 新版「我的」页面：设计方案与实施交接
 
-更新：2026-10-11。项目 `D:/project/Playra`。本文件包含已核实的现状、选定的设计方向、待实施步骤，以及已制作的 SVG 资产。
+更新：2026-10-11。项目 `C:\Users\haige\Desktop\Playra`。本文件保留设计时的现状与实施契约，Flutter 落地结果见[实施验收记录](verification/modern-profile-implementation.zh.md)。
 
-**本次交付为设计与素材准备。「我的」Flutter 页面仍是原有实现。** [交互设计预览](design/modern-profile-preview.html) 使用明确标注的示例数据，可以切换空数据、同步状态、320/390/760px 和大字体；它用于说明布局，不等同应用运行结果。
+**新版「我的」Flutter 页面已按本方案实施。** [交互设计预览](design/modern-profile-preview.html) 保持为带示例数据的设计参照；真实统计、生命周期、构建及运行证据以实施验收记录为准。
 
-## 1. 工作基线与改造范围
+## 1. 设计阶段工作基线与改造范围
 
 - `main` 是自有 Playra 分支；`kazumi-upstream` 跟踪官方 `upstream/main`。保留共同祖先。
 - `07f07cbc`：Git 同步说明及 Android 构建环境适配；`2701f65e`：发现、日历、追番视觉优化；`286554bc`：初版交接。这三个提交已经推送到 origin/main。后续必须重新检查实时 Git 状态。
@@ -12,7 +12,7 @@
 - 本次修改范围：本交接文档、设计预览、两张 profile SVG。下一阶段才接入 Flutter 页面与必需的路由/主题接线。
 - 下一阶段不修改同步协议、历史统计定义、播放器、存储格式或旧版页面；不进行 Flutter/Gradle/依赖升级。
 
-## 2. 现状审美与功能诊断
+## 2. 改造前的审美与功能诊断
 
 ### 2.1 已核实的页面结构
 
@@ -323,9 +323,9 @@ lib/presentation/modern/modern_shell.dart   新版四根页底部颜色统一
 | `docs/design/modern-profile-preview.html` | DONE | 带明确示例数据标签的交互设计参照 |
 | `assets/images/modern-profile-decoration.svg` | DONE | 有记录时的足迹卡线稿 |
 | `assets/images/modern-profile-empty.svg` | DONE | 零记录时的辅助插画 |
-| profile Flutter代码及相关接线 | NEXT | 按第8节实施 |
+| profile Flutter代码及相关接线 | DONE | 已按第8节实施，见实施验收记录 |
 
-本轮文档回滚基线 `286554bc`；新增的三份设计文件尚未被生产界面引用，按文件恢复/移除即可。恢复前检查后续改动，不对整个仓库硬重置。先前三页视觉提交的回滚点为 `2701f65e`，与本轮文档素材回滚分开。
+设计阶段文档回滚基线 `286554bc`；两张 SVG 现已由新版 Flutter 页面引用，不能直接删除。实施前代码基线为 `3ee8a34e`，逐文件备份在 `.dart_tool/modern-profile-implementation/`。恢复前检查后续改动，不对整个仓库硬重置。先前三页视觉提交的回滚点为 `2701f65e`，与本轮实施分开。
 
 ### 本次设计资产验证记录
 
@@ -361,7 +361,7 @@ $env:Path="$PWD\.tooling\bin;$PWD\.tooling\python-tools\cmake\data\bin;$PWD\.too
 ## 12. 可直接复制的实施提示词
 
 ```text
-请根据 D:\project\Playra\docs\handoff-modern-profile.zh.md 实施安卓新版「我的」页面改造。先读取整份文档、docs/design/modern-profile-preview.html、当前仓库指令和实时 git status/git log；明确设计预览是示例数据，当前 Flutter 我的页还未改造。
+请根据 C:\Users\haige\Desktop\Playra\docs\handoff-modern-profile.zh.md 实施安卓新版「我的」页面改造。先读取整份文档、docs/design/modern-profile-preview.html、当前仓库指令和实时 git status/git log；明确设计预览是示例数据，当前 Flutter 我的页还未改造。
 
 视觉方向已经选定：个人观看手记。默认深色，沿用前三页蓝紫强调色和 Lucide 图标；紧凑「我的」工具栏和唯一设置动作；真实观看足迹；历史/下载/规则三个快捷入口；观看偏好、数据与同步、应用三个分组。320px大字体时快捷入口纵排，列表自然增高，底部沿用ModernShell。使用已经准备的modern-profile-decoration.svg和modern-profile-empty.svg：有记录和空态择一出现，不能重复堆叠。
 

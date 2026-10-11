@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
+import 'package:kazumi/presentation/modern/settings/modern_back_button.dart';
 
 class SettingsPaneScope extends InheritedWidget {
   const SettingsPaneScope({
@@ -47,30 +50,38 @@ class SettingsDetailScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = SettingsPaneScope.of(context);
+    final modern = ModernSettingsScope.isActiveOf(context);
     final PreferredSizeWidget appBar;
 
     if (scope != null && scope.embedded) {
       final paneLeading =
           leading ??
           ((scope.showBackButton ||
+                  // 嵌套 push 不一定更新设置壳层 location，直接读取内层返回栈。
+                  (RouterOutlet.of(context)?.canPop ?? false) ||
                   (ModalRoute.of(context)?.impliesAppBarDismissal ?? false))
-              ? BackButton(onPressed: scope.onBack)
+              ? modern
+                    ? ModernBackButton(onPressed: scope.onBack)
+                    : BackButton(onPressed: scope.onBack)
               : null);
       appBar = AppBar(
         backgroundColor: Colors.transparent,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 64,
+        toolbarHeight: modern ? 52 : 64,
         titleSpacing: paneLeading == null
             ? 24
             : NavigationToolbar.kMiddleSpacing,
         leading: paneLeading,
         title: title,
-        titleTextStyle: Theme.of(context).textTheme.headlineSmall,
+        titleTextStyle: modern
+            ? Theme.of(context).appBarTheme.titleTextStyle
+            : Theme.of(context).textTheme.headlineSmall,
         actions: actions,
       );
     } else {
       appBar = SysAppBar(
+        toolbarHeight: modern ? 52 : null,
         title: title,
         actions: actions,
         leading:

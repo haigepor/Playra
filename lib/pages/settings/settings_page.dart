@@ -7,6 +7,7 @@ import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/pages/settings/player_settings.dart';
 import 'package:kazumi/utils/constants.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 class _SettingsCategory {
   const _SettingsCategory({
@@ -184,9 +185,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _replaceCategory(String path) {
     final outlet = _outletKey.currentState!;
     // Nested pushes leave _location unchanged, so check the stack as well.
-    if (!outlet.canPop &&
-        !_isSecondaryRoute &&
-        _selectedCategoryPath == path) {
+    if (!outlet.canPop && !_isSecondaryRoute && _selectedCategoryPath == path) {
       return;
     }
     _categoryNavigation = null;
@@ -220,59 +219,64 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final wide = constraints.maxWidth > LayoutBreakpoint.compact['width']!;
-      return NavigatorPopHandler<Object?>(
-        onPopWithResult: (_) => _goBack(),
-        child: Scaffold(
-          appBar: wide
-              ? SysAppBar(
-                  title: const Text('设置'),
-                  leading: BackButton(onPressed: _exitSettings),
-                )
-              : null,
-          body: SafeArea(
-            top: false,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Keep the outlet at the same tree position on resize.
-                SizedBox(
-                  width: wide ? 280 : 0,
-                  child: Offstage(
-                    offstage: !wide,
-                    child: _SettingsMenu(
-                      wide: true,
-                      selectedPath: _selectedCategoryPath,
-                      onSelect: _replaceCategory,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: SettingsPaneScope(
-                    embedded: wide,
-                    showBackButton: _isSecondaryRoute,
-                    onBack: _goBack,
-                    child: NotificationListener<_SettingsCategorySelected>(
-                      onNotification: (notification) {
-                        _pushCategory(notification.path);
-                        return true;
-                      },
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          pageTransitionsTheme: settingsPageTransitionsTheme,
-                        ),
-                        child: RouterOutlet(key: _outletKey),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth > LayoutBreakpoint.compact['width']!;
+        return NavigatorPopHandler<Object?>(
+          onPopWithResult: (_) => _goBack(),
+          child: Scaffold(
+            appBar: wide
+                ? SysAppBar(
+                    title: const Text('设置'),
+                    toolbarHeight: ModernSettingsScope.isActiveOf(context)
+                        ? 52
+                        : null,
+                    leading: BackButton(onPressed: _exitSettings),
+                  )
+                : null,
+            body: SafeArea(
+              top: false,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Keep the outlet at the same tree position on resize.
+                  SizedBox(
+                    width: wide ? 280 : 0,
+                    child: Offstage(
+                      offstage: !wide,
+                      child: _SettingsMenu(
+                        wide: true,
+                        selectedPath: _selectedCategoryPath,
+                        onSelect: _replaceCategory,
                       ),
                     ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: SettingsPaneScope(
+                      embedded: wide,
+                      showBackButton: _isSecondaryRoute,
+                      onBack: _goBack,
+                      child: NotificationListener<_SettingsCategorySelected>(
+                        onNotification: (notification) {
+                          _pushCategory(notification.path);
+                          return true;
+                        },
+                        child: Theme(
+                          data: Theme.of(context).copyWith(
+                            pageTransitionsTheme: settingsPageTransitionsTheme,
+                          ),
+                          child: RouterOutlet(key: _outletKey),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
@@ -287,9 +291,12 @@ class SettingsIndexPage extends StatelessWidget {
     return Scaffold(
       appBar: SysAppBar(
         title: const Text('设置'),
-        leading: BackButton(onPressed: () {
-          if (!context.maybePop()) context.navigate('/tab/my');
-        }),
+        toolbarHeight: ModernSettingsScope.isActiveOf(context) ? 52 : null,
+        leading: BackButton(
+          onPressed: () {
+            if (!context.maybePop()) context.navigate('/tab/my');
+          },
+        ),
       ),
       body: _SettingsMenu(
         wide: false,
@@ -312,12 +319,13 @@ class _SettingsMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final modern = ModernSettingsScope.isActiveOf(context);
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
       child: ListView(
         padding: wide
             ? const EdgeInsets.fromLTRB(4, 0, 0, 12)
-            : const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            : EdgeInsets.fromLTRB(modern ? 20 : 16, 8, modern ? 20 : 16, 24),
         children: [
           for (final group in _settingsGroups)
             if (wide) ...[
@@ -333,7 +341,7 @@ class _SettingsMenu extends StatelessWidget {
                 ),
             ] else
               Padding(
-                padding: const EdgeInsets.only(top: 16),
+                padding: EdgeInsets.only(top: modern ? 24 : 16),
                 child: ContentSection.group(
                   title: group.title,
                   children: [
@@ -368,6 +376,7 @@ class _RailDestination extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final modern = ModernSettingsScope.isActiveOf(context);
     final foreground = selected
         ? colorScheme.onSecondaryContainer
         : colorScheme.onSurfaceVariant;
@@ -375,27 +384,34 @@ class _RailDestination extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
         color: selected ? colorScheme.secondaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(modern ? 12 : 28),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: SizedBox(
-            height: 56,
-            child: Row(
-              children: [
-                const SizedBox(width: 16),
-                Icon(category.icon, size: 24, color: foreground),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    category.label,
-                    style: textTheme.labelLarge?.copyWith(color: foreground),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: [
+                  const SizedBox(width: 16),
+                  Icon(
+                    modern ? modernSettingsIcon(category.icon) : category.icon,
+                    size: modern ? 20 : 24,
+                    color: foreground,
                   ),
-                ),
-                const SizedBox(width: 12),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      category.label,
+                      style: textTheme.labelLarge?.copyWith(color: foreground),
+                      maxLines: modern ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+              ),
             ),
           ),
         ),

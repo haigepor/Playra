@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/presentation/shared/tab_shell.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/bangumi/sync_priority.dart';
@@ -164,6 +165,13 @@ class _ModernLibraryPageState extends State<ModernLibraryPage>
     onChangeType: _changeType,
     onSync: () => unawaited(_sync()),
     onStyle: () => context.pushNamed('/settings/interface'),
-    onDiscover: () => context.pushNamed('/tab/popular/'),
+    onDiscover: () {
+      final select = TabDestinationScope.maybeOf(context);
+      if (select != null) {
+        select(0);
+      } else {
+        context.pushNamed('/tab/popular/');
+      }
+    },
   );
 }

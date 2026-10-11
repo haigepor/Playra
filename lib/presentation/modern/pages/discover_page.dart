@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/presentation/shared/tab_shell.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/theme_provider.dart';
 import 'package:kazumi/modules/history/history_module.dart';
@@ -93,9 +94,15 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
   Widget build(BuildContext context) => ModernHomeView(
     controller: controller,
     onSearch: () => context.pushNamed('/search/'),
-    // 从根路由切换频道，让底部导航同步选中日历，避免只替换嵌套页面。
-    onCalendar: () =>
-        (rootNavigatorKey.currentContext ?? context).navigate('/tab/timeline/'),
+    // 交给主壳层切换，移动端不会重建整个分页缓存。
+    onCalendar: () {
+      final select = TabDestinationScope.maybeOf(context);
+      if (select != null) {
+        select(1);
+      } else {
+        (rootNavigatorKey.currentContext ?? context).navigate('/tab/timeline/');
+      }
+    },
     onBrowse: (tag) => context.pushNamed(
       tag.isEmpty ? '/search/' : '/search/${Uri.encodeComponent(tag)}',
     ),

@@ -25,34 +25,46 @@ import 'package:kazumi/pages/settings/theme_settings_page.dart';
 import 'package:kazumi/pages/settings/update_settings.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/services/sync/danmaku_shield_sync_service.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 final settingsModule = createModule(
   path: '/settings',
   register: (c) {
     c.route(
       '/',
-      child: (context, state) => SettingsPage(location: state.uri.path),
+      child: (context, state) =>
+          SettingsAppearanceHost(child: SettingsPage(location: state.uri.path)),
       children: (sub) {
         sub
           ..route('/', child: (context, state) => const SettingsIndexPage())
           ..route('/sync', child: (context, state) => const SyncSettingsPage())
-          ..route('/bangumi/',
-              child: (context, state) => const BangumiSyncPage())
-          ..route('/webdav/',
-              child: (context, state) => WebDavSyncPage(
-                    danmakuShieldSync: inject<DanmakuShieldSyncService>(),
-                  ))
-          ..route('/webdav/editor',
-              child: (context, state) => const WebDavServerPage())
+          ..route(
+            '/bangumi/',
+            child: (context, state) => const BangumiSyncPage(),
+          )
+          ..route(
+            '/webdav/',
+            child: (context, state) => WebDavSyncPage(
+              danmakuShieldSync: inject<DanmakuShieldSyncService>(),
+            ),
+          )
+          ..route(
+            '/webdav/editor',
+            child: (context, state) => const WebDavServerPage(),
+          )
           ..route(
             '/update',
             child: (context, state) => const UpdateSettingsPage(),
           )
-          ..route('/storage',
-              child: (context, state) => const StorageSettingsPage())
+          ..route(
+            '/storage',
+            child: (context, state) => const StorageSettingsPage(),
+          )
           ..route('/storage/logs', child: (context, state) => const LogsPage())
-          ..route('/theme',
-              child: (context, state) => const ThemeSettingsPage())
+          ..route(
+            '/theme',
+            child: (context, state) => const ThemeSettingsPage(),
+          )
           ..route(
             '/theme/display',
             child: (context, state) => const SetDisplayMode(),
@@ -61,8 +73,10 @@ final settingsModule = createModule(
             '/keyboard',
             child: (context, state) => const KeyboardSettingsPage(),
           )
-          ..route('/player',
-              child: (context, state) => const PlayerSettingsPage())
+          ..route(
+            '/player',
+            child: (context, state) => const PlayerSettingsPage(),
+          )
           ..route(
             '/player/decoder',
             child: (context, state) => const DecoderSettings(),
@@ -93,10 +107,12 @@ final settingsModule = createModule(
       // Root route: the license browser must cover the settings shell.
       ..route(
         '/about/license',
-        child: (context, state) => const LicensePage(
-          applicationName: 'Kazumi',
-          applicationVersion: ApiEndpoints.version,
-          applicationLegalese: 'Kazumi · GNU General Public License v3.0',
+        child: (context, state) => const SettingsAppearanceHost(
+          child: LicensePage(
+            applicationName: 'Kazumi',
+            applicationVersion: ApiEndpoints.version,
+            applicationLegalese: 'Kazumi · GNU General Public License v3.0',
+          ),
         ),
       )
       ..module(historyModule)

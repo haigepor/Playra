@@ -12,7 +12,7 @@ final myModule = createModule(
       transition: TransitionType.none,
       child: (context, state) => InterfacePageHost(
         legacy: (_) => MyPage(controller: inject<MyController>()),
-        modern: (_) => const ModernProfilePage(),
+        modern: (_) => ModernProfilePage(controller: inject<MyController>()),
       ),
     );
   },

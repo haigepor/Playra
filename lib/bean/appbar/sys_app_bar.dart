@@ -6,6 +6,8 @@ import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:kazumi/utils/device.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
+import 'package:kazumi/presentation/modern/settings/modern_back_button.dart';
 
 class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double? toolbarHeight;
@@ -35,13 +37,19 @@ class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
       }
       appBarActions.add(const SizedBox(width: 8));
     }
+    final modern = ModernSettingsScope.isActiveOf(context);
+    final suppliedLeading = leading is BackButton && modern
+        ? ModernBackButton(onPressed: (leading as BackButton).onPressed)
+        : leading;
     final appBarLeading =
-        leading ??
+        suppliedLeading ??
         ((ModalRoute.of(context)?.impliesAppBarDismissal ?? false)
-            ? IconButton(
-                onPressed: () => context.maybePop(),
-                icon: const Icon(Icons.arrow_back),
-              )
+            ? modern
+                  ? const ModernBackButton()
+                  : IconButton(
+                      onPressed: () => context.maybePop(),
+                      icon: const Icon(Icons.arrow_back),
+                    )
             : null);
 
     return GestureDetector(

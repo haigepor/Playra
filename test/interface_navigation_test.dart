@@ -27,7 +27,15 @@ Module _module(_SharedData shared, {bool preview = false}) => createModule(
           c.route(
             '/',
             transition: TransitionType.none,
-            child: (context, state) => IndexPage(location: state.uri.path),
+            child: (context, state) => IndexPage(
+              location: state.uri.path,
+              mobilePageBuilders: [
+                for (final page in ['popular', 'timeline', 'collect', 'my'])
+                  (_) => preview && page == 'popular'
+                      ? const _HomePreview()
+                      : _Page(name: 'modern-$page', shared: shared),
+              ],
+            ),
             children: (sub) {
               for (final page in ['popular', 'timeline', 'collect', 'my']) {
                 sub.route(

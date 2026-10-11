@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 /// Shrink-wraps in slivers and scrolls within bounded viewports.
 class GeneralEmptyState extends StatelessWidget {
@@ -21,11 +22,12 @@ class GeneralEmptyState extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final modern = ModernSettingsScope.isActiveOf(context);
 
     return Center(
       child: SingleChildScrollView(
         primary: false,
-        padding: compact
+        padding: compact || modern
             ? const EdgeInsets.all(16)
             : const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
         child: ConstrainedBox(
@@ -35,12 +37,20 @@ class GeneralEmptyState extends StatelessWidget {
             children: [
               StateIconBadge(
                 icon: icon,
-                size: compact ? 56 : 88,
-                iconSize: compact ? 28 : 36,
+                size: modern
+                    ? 48
+                    : compact
+                    ? 56
+                    : 88,
+                iconSize: modern
+                    ? 22
+                    : compact
+                    ? 28
+                    : 36,
                 backgroundColor: colorScheme.secondaryContainer,
                 foregroundColor: colorScheme.onSecondaryContainer,
               ),
-              SizedBox(height: compact ? 16 : 24),
+              SizedBox(height: compact || modern ? 16 : 24),
               Semantics(
                 header: true,
                 liveRegion: true,
@@ -50,13 +60,13 @@ class GeneralEmptyState extends StatelessWidget {
                   style:
                       (compact ? textTheme.titleMedium : textTheme.titleLarge)
                           ?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
                 ),
               ),
               if (actions.isNotEmpty) ...[
-                SizedBox(height: compact ? 16 : 24),
+                SizedBox(height: compact || modern ? 16 : 24),
                 Wrap(
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,

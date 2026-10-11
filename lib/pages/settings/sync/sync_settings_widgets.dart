@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:kazumi/bean/widget/state_presentation.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 class SyncPageBody extends StatelessWidget {
   const SyncPageBody({super.key, required this.children, this.maxWidth = 880});
@@ -10,21 +11,23 @@ class SyncPageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 20,
-                children: children,
-              ),
-            ),
+    top: false,
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: ModernSettingsScope.isActiveOf(context) ? 760 : maxWidth,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: ModernSettingsScope.isActiveOf(context) ? 16 : 20,
+            children: children,
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class SyncPageIntro extends StatelessWidget {
@@ -42,6 +45,7 @@ class SyncPageIntro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final modern = ModernSettingsScope.isActiveOf(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -49,24 +53,34 @@ class SyncPageIntro extends StatelessWidget {
         children: [
           StateIconBadge(
             icon: icon,
-            size: 64,
-            iconSize: 28,
+            size: modern ? 40 : 64,
+            iconSize: modern ? 20 : 28,
             backgroundColor: theme.colorScheme.primaryContainer,
             foregroundColor: theme.colorScheme.onPrimaryContainer,
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: modern ? 12 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Semantics(
                   header: true,
-                  child: Text(title, style: theme.textTheme.headlineSmall),
+                  child: Text(
+                    title,
+                    style: modern
+                        ? theme.textTheme.titleLarge
+                        : theme.textTheme.headlineSmall,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                Text(description,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                Text(
+                  description,
+                  style:
+                      (modern
+                              ? theme.textTheme.bodySmall
+                              : theme.textTheme.bodyMedium)
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
               ],
             ),
           ),
@@ -99,7 +113,9 @@ class SyncFeedback extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: error ? colors.errorContainer : colors.secondaryContainer,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(
+            ModernSettingsScope.isActiveOf(context) ? 16 : 20,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,8 +127,8 @@ class SyncFeedback extends StatelessWidget {
                   error
                       ? Icons.error_outline_rounded
                       : busy
-                          ? Icons.sync_rounded
-                          : Icons.check_circle_outline_rounded,
+                      ? Icons.sync_rounded
+                      : Icons.check_circle_outline_rounded,
                   size: 20,
                   color: error
                       ? colors.onErrorContainer
@@ -120,11 +136,14 @@ class SyncFeedback extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(message,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: error
-                              ? colors.onErrorContainer
-                              : colors.onSecondaryContainer)),
+                  child: Text(
+                    message,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: error
+                          ? colors.onErrorContainer
+                          : colors.onSecondaryContainer,
+                    ),
+                  ),
                 ),
               ],
             ),
