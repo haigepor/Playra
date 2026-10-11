@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/services.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import '../widgets/modern_page_art.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/collect/collect_type.dart';
 import 'package:kazumi/modules/history/history_module.dart';
@@ -94,132 +95,141 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
           child: Scaffold(
             body: SafeArea(
               bottom: false,
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: ListenableBuilder(
-                    listenable: widget.controller,
-                    builder: (context, _) {
-                      final controller = widget.controller;
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 6, 12, 0),
-                            child: Row(
-                              children: [
-                                const Expanded(
-                                  child: Text(
-                                    '放送日历',
-                                    style: TextStyle(
-                                      fontSize: 21,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                ShadButton.ghost(
-                                  key: const ValueKey('calendar-season'),
-                                  size: ShadButtonSize.sm,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                  ),
-                                  onPressed: () => _showSeason(context),
-                                  trailing: const Icon(
-                                    LucideIcons.chevronDown,
-                                    size: 14,
-                                  ),
-                                  child: Text(
-                                    controller.seasonLabel,
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: _weekSelector(context),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 4, 12, 0),
-                            child: Row(
-                              children: [
-                                _filterButton(
-                                  context,
-                                  '全部',
-                                  !controller.watchingOnly,
-                                  () => controller.setFilters(
-                                    watchingOnly: false,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                _filterButton(
-                                  context,
-                                  '仅追番',
-                                  controller.watchingOnly,
-                                  () =>
-                                      controller.setFilters(watchingOnly: true),
-                                ),
-                                const Spacer(),
-                                if (!controller.isToday)
-                                  TextButton(
-                                    onPressed: controller.goToday,
-                                    style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
+              child: ModernPageArt(
+                kind: ModernPageArtKind.calendar,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: ListenableBuilder(
+                      listenable: widget.controller,
+                      builder: (context, _) {
+                        final controller = widget.controller;
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 12, 0),
+                              child: Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      '放送日历',
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    child: const Text(
-                                      '今天',
-                                      style: TextStyle(fontSize: 12),
+                                  ),
+                                  ShadButton.ghost(
+                                    key: const ValueKey('calendar-season'),
+                                    height: 48,
+                                    size: ShadButtonSize.sm,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                    ),
+                                    onPressed: () => _showSeason(context),
+                                    trailing: const Icon(
+                                      LucideIcons.chevronDown,
+                                      size: 14,
+                                    ),
+                                    child: Text(
+                                      controller.seasonLabel,
+                                      style: const TextStyle(fontSize: 12),
                                     ),
                                   ),
-                                IconButton(
-                                  key: const ValueKey('calendar-filters'),
-                                  tooltip: '筛选与排序',
-                                  onPressed: () => _showFilters(context),
-                                  icon: Badge(
-                                    isLabelVisible: controller.hasFilters,
-                                    smallSize: 5,
-                                    child: Icon(
-                                      LucideIcons.slidersHorizontal,
-                                      size: 19,
-                                      color: controller.hasFilters
-                                          ? colors.primary
-                                          : colors.onSurfaceVariant,
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: _weekSelector(context),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 4, 12, 0),
+                              child: Row(
+                                children: [
+                                  _filterButton(
+                                    context,
+                                    '全部',
+                                    !controller.watchingOnly,
+                                    () => controller.setFilters(
+                                      watchingOnly: false,
                                     ),
                                   ),
+                                  const SizedBox(width: 6),
+                                  _filterButton(
+                                    context,
+                                    '仅追番',
+                                    controller.watchingOnly,
+                                    () => controller.setFilters(
+                                      watchingOnly: true,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  if (!controller.isToday)
+                                    TextButton(
+                                      onPressed: controller.goToday,
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 5,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        '今天',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  IconButton(
+                                    key: const ValueKey('calendar-filters'),
+                                    tooltip: '筛选与排序',
+                                    onPressed: () => _showFilters(context),
+                                    icon: Badge(
+                                      isLabelVisible: controller.hasFilters,
+                                      smallSize: 5,
+                                      child: Icon(
+                                        LucideIcons.slidersHorizontal,
+                                        size: 19,
+                                        color: controller.hasFilters
+                                            ? colors.primary
+                                            : colors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (controller.loading &&
+                                controller.snapshot != null)
+                              const LinearProgressIndicator(minHeight: 2),
+                            Expanded(
+                              child: ScrollConfiguration(
+                                behavior: const MaterialScrollBehavior()
+                                    .copyWith(
+                                      dragDevices: {
+                                        PointerDeviceKind.touch,
+                                        PointerDeviceKind.mouse,
+                                        PointerDeviceKind.trackpad,
+                                      },
+                                    ),
+                                child: PageView.builder(
+                                  key: const ValueKey('calendar-days'),
+                                  controller: _pages,
+                                  itemCount: 7,
+                                  onPageChanged: (index) {
+                                    if (_pageAnimating) return;
+                                    _day = index + 1;
+                                    controller.selectWeekday(index + 1);
+                                  },
+                                  itemBuilder: (context, index) =>
+                                      _dayList(context, index + 1),
                                 ),
-                              ],
-                            ),
-                          ),
-                          if (controller.loading && controller.snapshot != null)
-                            const LinearProgressIndicator(minHeight: 2),
-                          Expanded(
-                            child: ScrollConfiguration(
-                              behavior: const MaterialScrollBehavior().copyWith(
-                                dragDevices: {
-                                  PointerDeviceKind.touch,
-                                  PointerDeviceKind.mouse,
-                                  PointerDeviceKind.trackpad,
-                                },
-                              ),
-                              child: PageView.builder(
-                                key: const ValueKey('calendar-days'),
-                                controller: _pages,
-                                itemCount: 7,
-                                onPageChanged: (index) {
-                                  if (_pageAnimating) return;
-                                  _day = index + 1;
-                                  controller.selectWeekday(index + 1);
-                                },
-                                itemBuilder: (context, index) =>
-                                    _dayList(context, index + 1),
                               ),
                             ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -306,7 +316,7 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                               Text(
                                 '周${'一二三四五六日'[day - 1]}',
                                 style: TextStyle(
-                                  fontSize: controller.weekday == day ? 15 : 13,
+                                  fontSize: 14,
                                   fontWeight: controller.weekday == day
                                       ? FontWeight.w600
                                       : FontWeight.w400,
@@ -319,7 +329,7 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                                     ? '今天'
                                     : '${controller.dayEntries(day).length}部',
                                 style: TextStyle(
-                                  fontSize: 9,
+                                  fontSize: 10,
                                   color:
                                       controller.currentSeason &&
                                           controller.today == day

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import '../widgets/modern_page_art.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/collect/collect_layout.dart';
 import 'package:kazumi/modules/collect/collect_type.dart';
@@ -128,283 +129,297 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
             child: Scaffold(
               body: SafeArea(
                 bottom: false,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: ListenableBuilder(
-                      listenable: widget.controller,
-                      builder: (context, _) {
-                        final controller = widget.controller;
-                        final colors = Theme.of(context).colorScheme;
-                        final entries = controller.entries;
-                        return Column(
-                          children: [
-                            Padding(
-                              key: const ValueKey('library-header'),
-                              padding: const EdgeInsets.fromLTRB(20, 8, 12, 0),
-                              child: Row(
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      '追番',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w700,
+                child: ModernPageArt(
+                  kind: ModernPageArtKind.library,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1200),
+                      child: ListenableBuilder(
+                        listenable: widget.controller,
+                        builder: (context, _) {
+                          final controller = widget.controller;
+                          final colors = Theme.of(context).colorScheme;
+                          final entries = controller.entries;
+                          return Column(
+                            children: [
+                              Padding(
+                                key: const ValueKey('library-header'),
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  0,
+                                  12,
+                                  0,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        '追番',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  IconButton(
-                                    tooltip: '搜索追番',
-                                    onPressed: _toggleSearch,
-                                    icon: Icon(
-                                      _searchOpen
-                                          ? LucideIcons.x
-                                          : LucideIcons.search,
-                                      size: 21,
-                                      color: colors.onSurfaceVariant,
+                                    IconButton(
+                                      key: const ValueKey('library-search'),
+                                      tooltip: '搜索追番',
+                                      onPressed: _toggleSearch,
+                                      icon: Icon(
+                                        _searchOpen
+                                            ? LucideIcons.x
+                                            : LucideIcons.search,
+                                        size: 21,
+                                        color: colors.onSurfaceVariant,
+                                      ),
                                     ),
-                                  ),
-                                  IconButton(
-                                    tooltip: '更多操作',
-                                    onPressed: () => _showMore(context),
-                                    icon: Icon(
-                                      LucideIcons.ellipsis,
-                                      size: 21,
-                                      color: colors.onSurfaceVariant,
+                                    IconButton(
+                                      tooltip: '更多操作',
+                                      onPressed: () => _showMore(context),
+                                      icon: Icon(
+                                        LucideIcons.ellipsis,
+                                        size: 21,
+                                        color: colors.onSurfaceVariant,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            TabBar(
-                              controller: _tabs,
-                              isScrollable: true,
-                              tabAlignment: TabAlignment.start,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              labelPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              dividerColor: Colors.transparent,
-                              indicatorSize: TabBarIndicatorSize.label,
-                              overlayColor: const WidgetStatePropertyAll(
-                                Colors.transparent,
-                              ),
-                              splashFactory: NoSplash.splashFactory,
-                              indicator: UnderlineTabIndicator(
-                                borderRadius: BorderRadius.circular(2),
-                                borderSide: BorderSide(
-                                  width: 3,
-                                  color: colors.primary,
+                                  ],
                                 ),
-                                insets: const EdgeInsets.symmetric(
+                              ),
+                              TabBar(
+                                controller: _tabs,
+                                isScrollable: true,
+                                tabAlignment: TabAlignment.start,
+                                padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                 ),
-                              ),
-                              onTap: (index) =>
-                                  controller.selectCategory(_categories[index]),
-                              tabs: [
-                                for (final category in _categories)
-                                  Tab(
-                                    key: ValueKey(
-                                      'library-category-${category?.value ?? 0}',
-                                    ),
-                                    height: 48,
-                                    child: Text(
-                                      category?.label ?? '全部',
-                                      style: TextStyle(
-                                        fontSize:
-                                            controller.category == category
-                                            ? 16
-                                            : 14,
-                                        fontWeight:
-                                            controller.category == category
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                        color: controller.category == category
-                                            ? colors.onSurface
-                                            : colors.onSurfaceVariant,
+                                labelPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                dividerColor: Colors.transparent,
+                                indicatorSize: TabBarIndicatorSize.label,
+                                overlayColor: const WidgetStatePropertyAll(
+                                  Colors.transparent,
+                                ),
+                                splashFactory: NoSplash.splashFactory,
+                                indicator: UnderlineTabIndicator(
+                                  borderRadius: BorderRadius.circular(2),
+                                  borderSide: BorderSide(
+                                    width: 3,
+                                    color: colors.primary,
+                                  ),
+                                  insets: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                ),
+                                onTap: (index) => controller.selectCategory(
+                                  _categories[index],
+                                ),
+                                tabs: [
+                                  for (final category in _categories)
+                                    Tab(
+                                      key: ValueKey(
+                                        'library-category-${category?.value ?? 0}',
+                                      ),
+                                      height: 44,
+                                      child: Text(
+                                        category?.label ?? '全部',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight:
+                                              controller.category == category
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                          color: controller.category == category
+                                              ? colors.onSurface
+                                              : colors.onSurfaceVariant,
+                                        ),
                                       ),
                                     ),
+                                ],
+                              ),
+                              if (_searchOpen)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    12,
+                                    20,
+                                    0,
                                   ),
-                              ],
-                            ),
-                            if (_searchOpen)
+                                  child: ShadInput(
+                                    controller: _search,
+                                    focusNode: _searchFocus,
+                                    placeholder: const Text('搜索名称或别名'),
+                                    leading: Icon(
+                                      LucideIcons.search,
+                                      size: 17,
+                                      color: colors.onSurfaceVariant,
+                                    ),
+                                    trailing: _search.text.isEmpty
+                                        ? null
+                                        : IconButton(
+                                            tooltip: '清空搜索',
+                                            icon: Icon(
+                                              LucideIcons.x,
+                                              size: 16,
+                                              color: colors.onSurfaceVariant,
+                                            ),
+                                            onPressed: () {
+                                              _search.clear();
+                                              controller.setQuery('');
+                                              _resetScroll();
+                                            },
+                                          ),
+                                    onChanged: (value) {
+                                      controller.setQuery(value);
+                                      _resetScroll();
+                                    },
+                                  ),
+                                ),
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   20,
-                                  12,
-                                  20,
+                                  0,
+                                  14,
                                   0,
                                 ),
-                                child: ShadInput(
-                                  controller: _search,
-                                  focusNode: _searchFocus,
-                                  placeholder: const Text('搜索名称或别名'),
-                                  leading: Icon(
-                                    LucideIcons.search,
-                                    size: 17,
-                                    color: colors.onSurfaceVariant,
-                                  ),
-                                  trailing: _search.text.isEmpty
-                                      ? null
-                                      : IconButton(
-                                          tooltip: '清空搜索',
-                                          icon: Icon(
-                                            LucideIcons.x,
-                                            size: 16,
-                                            color: colors.onSurfaceVariant,
-                                          ),
-                                          onPressed: () {
-                                            _search.clear();
-                                            controller.setQuery('');
-                                            _resetScroll();
-                                          },
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        controller.query.trim().isEmpty
+                                            ? '${controller.count(controller.category)} 部番剧'
+                                            : '${entries.length} 部匹配',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: colors.onSurfaceVariant,
                                         ),
-                                  onChanged: (value) {
-                                    controller.setQuery(value);
-                                    _resetScroll();
+                                      ),
+                                    ),
+                                    ShadButton.ghost(
+                                      key: const ValueKey('library-sort'),
+                                      height: 44,
+                                      size: ShadButtonSize.sm,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                      ),
+                                      onPressed: () => _showSort(context),
+                                      trailing: const Icon(
+                                        LucideIcons.chevronDown,
+                                        size: 13,
+                                      ),
+                                      child: Text(
+                                        controller.sort.label,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (controller.error != null)
+                                TextButton(
+                                  onPressed: controller.reloadLocal,
+                                  child: Text(controller.error!),
+                                ),
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final scale =
+                                        MediaQuery.textScalerOf(
+                                          context,
+                                        ).scale(14) /
+                                        14;
+                                    final minimumWidth =
+                                        310 * math.max(1, scale);
+                                    final columns =
+                                        controller.layout == CollectLayout.cards
+                                        ? ((constraints.maxWidth - 28) /
+                                                  minimumWidth)
+                                              .floor()
+                                              .clamp(1, 3)
+                                        : (constraints.maxWidth >=
+                                                  math.max(
+                                                    900,
+                                                    minimumWidth * 2 + 40,
+                                                  )
+                                              ? 2
+                                              : 1);
+                                    return CustomScrollView(
+                                      key: const ValueKey('library-results'),
+                                      controller: _scroll,
+                                      keyboardDismissBehavior:
+                                          ScrollViewKeyboardDismissBehavior
+                                              .onDrag,
+                                      slivers: [
+                                        if (entries.isEmpty)
+                                          SliverFillRemaining(
+                                            hasScrollBody: false,
+                                            child: _empty(context, controller),
+                                          )
+                                        else
+                                          SliverPadding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              20,
+                                              4,
+                                              20,
+                                              20,
+                                            ),
+                                            sliver: SliverGrid.builder(
+                                              itemCount: entries.length,
+                                              gridDelegate:
+                                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                                    crossAxisCount: columns,
+                                                    mainAxisExtent:
+                                                        LibraryCard.heightFor(
+                                                          context,
+                                                        ),
+                                                    mainAxisSpacing: 12,
+                                                    crossAxisSpacing: 12,
+                                                  ),
+                                              itemBuilder: (context, index) {
+                                                final entry = entries[index];
+                                                return LibraryCard(
+                                                  key: ValueKey(
+                                                    'library-card-${entry.item.id}',
+                                                  ),
+                                                  entry: entry,
+                                                  showRating: widget.showRating,
+                                                  pending: controller.isPending(
+                                                    entry.item.id,
+                                                  ),
+                                                  onDetails: () => widget
+                                                      .onDetails(entry.item),
+                                                  onResume:
+                                                      !controller.canSync ||
+                                                          entry.history == null
+                                                      ? null
+                                                      : () => widget.onResume(
+                                                          entry.history!,
+                                                        ),
+                                                  onManage:
+                                                      controller.canEdit(
+                                                        entry.item.id,
+                                                      )
+                                                      ? () => _showStatus(
+                                                          context,
+                                                          entry,
+                                                        )
+                                                      : null,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                      ],
+                                    );
                                   },
                                 ),
                               ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 5, 14, 5),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      controller.query.trim().isEmpty
-                                          ? '${controller.count(controller.category)} 部番剧'
-                                          : '${entries.length} 部匹配',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ),
-                                  ShadButton.ghost(
-                                    key: const ValueKey('library-sort'),
-                                    size: ShadButtonSize.sm,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                    ),
-                                    onPressed: () => _showSort(context),
-                                    trailing: const Icon(
-                                      LucideIcons.chevronDown,
-                                      size: 13,
-                                    ),
-                                    child: Text(
-                                      controller.sort.label,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (controller.error != null)
-                              TextButton(
-                                onPressed: controller.reloadLocal,
-                                child: Text(controller.error!),
-                              ),
-                            Expanded(
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final scale =
-                                      MediaQuery.textScalerOf(
-                                        context,
-                                      ).scale(14) /
-                                      14;
-                                  final minimumWidth = 310 * math.max(1, scale);
-                                  final columns =
-                                      controller.layout == CollectLayout.cards
-                                      ? ((constraints.maxWidth - 28) /
-                                                minimumWidth)
-                                            .floor()
-                                            .clamp(1, 3)
-                                      : (constraints.maxWidth >=
-                                                math.max(
-                                                  900,
-                                                  minimumWidth * 2 + 40,
-                                                )
-                                            ? 2
-                                            : 1);
-                                  return CustomScrollView(
-                                    key: const ValueKey('library-results'),
-                                    controller: _scroll,
-                                    keyboardDismissBehavior:
-                                        ScrollViewKeyboardDismissBehavior
-                                            .onDrag,
-                                    slivers: [
-                                      if (entries.isEmpty)
-                                        SliverFillRemaining(
-                                          hasScrollBody: false,
-                                          child: _empty(context, controller),
-                                        )
-                                      else
-                                        SliverPadding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                            20,
-                                            4,
-                                            20,
-                                            20,
-                                          ),
-                                          sliver: SliverGrid.builder(
-                                            itemCount: entries.length,
-                                            gridDelegate:
-                                                SliverGridDelegateWithFixedCrossAxisCount(
-                                                  crossAxisCount: columns,
-                                                  mainAxisExtent:
-                                                      LibraryCard.heightFor(
-                                                        context,
-                                                      ),
-                                                  mainAxisSpacing: 12,
-                                                  crossAxisSpacing: 12,
-                                                ),
-                                            itemBuilder: (context, index) {
-                                              final entry = entries[index];
-                                              return LibraryCard(
-                                                key: ValueKey(
-                                                  'library-card-${entry.item.id}',
-                                                ),
-                                                entry: entry,
-                                                showRating: widget.showRating,
-                                                pending: controller.isPending(
-                                                  entry.item.id,
-                                                ),
-                                                onDetails: () => widget
-                                                    .onDetails(entry.item),
-                                                onResume:
-                                                    !controller.canSync ||
-                                                        entry.history == null
-                                                    ? null
-                                                    : () => widget.onResume(
-                                                        entry.history!,
-                                                      ),
-                                                onManage:
-                                                    controller.canEdit(
-                                                      entry.item.id,
-                                                    )
-                                                    ? () => _showStatus(
-                                                        context,
-                                                        entry,
-                                                      )
-                                                    : null,
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),

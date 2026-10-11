@@ -92,12 +92,11 @@ void main() {
     expect(find.text('上次看到第七话'), findsOneWidget);
     expect(find.text('12:34'), findsOneWidget);
     final searchButton = tester.widget<IconButton>(
-      find.widgetWithIcon(
-        IconButton,
-        (tester.widget<IconButton>(find.byTooltip('搜索追番')).icon as Icon).icon!,
-      ),
+      find.byKey(const ValueKey('library-search')),
     );
-    final searchContext = tester.element(find.byTooltip('搜索追番'));
+    final searchContext = tester.element(
+      find.byKey(const ValueKey('library-search')),
+    );
     expect(
       (searchButton.icon as Icon).color,
       Theme.of(searchContext).colorScheme.onSurfaceVariant,
