@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Playra · 我的页面设计参照</title>
+<style>
+@font-face{font-family:MiSans;src:url('../../assets/fonts/MiSans-Regular.ttf') format('truetype');font-display:swap}
+:root{color-scheme:dark;--bg:#11141c;--card:#1b202c;--muted:#202638;--text:#edf0f8;--sub:#a5afc5;--line:#30384a;--accent:#a7b7ff}
+*{box-sizing:border-box}body{margin:0;background:#0b0e14;color:var(--text);font:14px MiSans,system-ui,sans-serif}button,select{font:inherit}button{cursor:pointer}a{color:var(--accent)}button:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}button,select{color:inherit}button:disabled{cursor:default}
+.board{max-width:1240px;margin:auto;padding:32px 24px}.eyebrow{font-size:11px;letter-spacing:2px;color:var(--accent)}h1{font-size:28px;font-weight:600;margin:10px 0} .intro{color:var(--sub);line-height:1.8;max-width:720px;margin:0 0 24px}.controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:16px 0 24px}.controls label{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--sub)}select{border:1px solid var(--line);border-radius:8px;background:var(--card);min-height:40px;padding:6px 10px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:40px;align-items:start}.stage{min-width:0;display:flex;justify-content:center}.phone{width:390px;max-width:100%;height:844px;display:flex;flex-direction:column;position:relative;background:var(--bg);border:1px solid var(--line);border-radius:22px;overflow:hidden;font-size:calc(14px * var(--scale,1))}.safe{height:24px;flex-shrink:0}.toolbar{min-height:48px;display:flex;align-items:center;padding:0 12px 0 20px;gap:12px;flex-shrink:0}.toolbar h2{font-size:1.57em;margin:0;flex:1;font-weight:700}.icon-button{border:0;background:transparent;width:48px;height:48px;display:grid;place-items:center;border-radius:10px;color:var(--sub)}svg.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.scroll{overflow:auto;scrollbar-width:thin;flex:1;padding:12px 20px 24px;min-height:0}.footprint{position:relative;padding:16px;border:1px solid #30384a80;border-radius:16px;background:var(--card);overflow:hidden;min-height:148px}.footprint .art{position:absolute;right:0;top:0;width:248px;height:132px;opacity:.11;pointer-events:none}.footprint .empty-art{display:none;position:absolute;right:12px;top:10px;width:80px;height:auto;opacity:.45;pointer-events:none}.footprint h3{font-size:1em;font-weight:600;margin:0 0 6px;position:relative}.footprint p{font-size:.86em;line-height:1.6;color:var(--sub);margin:0;position:relative;max-width:78%}.numbers{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.number{font-size:2em;font-weight:700;line-height:1.25}.stat-label{display:block;color:var(--sub);font-size:.86em;margin-top:6px;line-height:1.5}.cta{border:0;background:transparent;color:var(--accent);min-height:44px;padding:10px 0 0;display:none;font-size:.86em;text-align:left}.empty .art{display:none}.empty .empty-art{display:block}.empty .cta{display:block}.empty .footprint p,.empty .footprint h3{max-width:calc(100% - 72px)}.quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.quick button{background:transparent;border:0;border-radius:12px;padding:8px 0 10px;min-height:88px;display:flex;align-items:center;flex-direction:column;gap:6px;text-align:center}.quick .tile-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--muted);color:var(--accent)}.quick .tile-icon svg{width:22px;height:22px}.quick strong{font-size:.93em;font-weight:500;line-height:1.4}.quick small{font-size:.72em;color:var(--sub);line-height:1.5}.quick .tile-copy{display:flex;flex-direction:column;gap:4px;min-width:0}.group{margin-top:24px}.group h3{font-size:.86em;font-weight:600;color:var(--sub);margin:0 0 8px 2px}.group-box{background:var(--card);border:1px solid #30384a80;border-radius:16px;overflow:hidden}.row{width:100%;min-height:56px;padding:12px 14px;background:transparent;border:0;display:flex;gap:12px;align-items:center;text-align:left;position:relative}.row+.row:before{content:'';position:absolute;top:0;left:46px;right:14px;height:1px;background:#30384a80}.row>.icon{color:var(--sub)}.row .chevron{width:16px;height:16px;color:var(--sub);margin-left:auto}.row-text{flex:1;min-width:0;font-size:1em;line-height:1.5}.row-text small{display:block;font-size:.86em;color:var(--sub);line-height:1.6;margin-top:2px;overflow-wrap:anywhere}.badge{font-size:.78em;color:var(--accent);white-space:nowrap}.row.status-error .row-text small{color:#ffb4ab}.footer{text-align:center;color:var(--sub);font-size:.78em;margin-top:24px}.navigation{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;min-height:80px;padding:8px 10px;background:var(--card);border-top:1px solid var(--line);font-size:12px}.nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--sub)}.nav-icon{display:grid;place-items:center;width:52px;height:30px;border-radius:12px}.nav-item.active{color:var(--accent)}.nav-item.active .nav-icon{background:var(--muted)}.large .quick{grid-template-columns:1fr}.large .quick button{min-height:64px;flex-direction:row;gap:12px;padding:10px 12px;text-align:left;background:#1b202c80}.large .footprint .art{opacity:.07}.large .badge{white-space:normal;max-width:5em}.notes{padding-top:8px;color:var(--sub);line-height:1.85;font-size:13px}.notes h2{font-size:16px;color:var(--text);font-weight:600;margin:0 0 12px}.notes p{margin:0 0 24px}.notes .label{color:var(--accent);font-size:11px;letter-spacing:1px}.asset{display:block;width:100%;height:140px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin:12px 0 6px;object-fit:contain}.asset.empty-preview{height:104px;padding:8px}.notes code{font-size:11px;overflow-wrap:anywhere}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:min(90vw,520px);padding:12px 18px;background:#edf0f8;color:#182142;border-radius:10px;box-shadow:0 8px 32px #0006;z-index:10;line-height:1.6}.toast[hidden]{display:none}button:hover{background-color:#a7b7ff0b}button:active{background-color:#a7b7ff18}
+@media(max-width:760px){.board{padding:20px 12px}.layout{display:flex;flex-direction:column;gap:24px}.stage{width:100%}.notes{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:20px}.notes .overview{grid-column:1/-1}h1{font-size:23px}.phone{border-radius:16px}.controls{gap:12px}}
+@media(max-width:390px){.notes{display:block}.phone{border-radius:12px}.board{padding:16px 8px}.controls label{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><defs>
+<symbol id="settings" viewBox="0 0 24 24"><path d="m9 3-.6 2.2-2 .9-2-.6-2 3.5 1.5 1.7v2.6L2.4 15l2 3.5 2-.6 2 .9L9 21h4l.6-2.2 2-.9 2 .6 2-3.5-1.5-1.7v-2.6L19.6 9l-2-3.5-2 .6-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></symbol>
+<symbol id="history" viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.6 7.3M3 4v7h7M12 7v5l3 2"/></symbol>
+<symbol id="download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 15v5h16v-5"/></symbol>
+<symbol id="rules" viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 1 1 6 0h4v6a3 3 0 1 0 0 6v4h-6a3 3 0 1 0-6 0H4v-6a3 3 0 1 0 0-6Z"/></symbol>
+<symbol id="palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c2 0 3-1 2-3s0-3 2-3h2c5 0 4-12-6-12Z"/><path d="M7 10h.01M10 6h.01M15 7h.01M18 11h.01" stroke-width="3"/></symbol>
+<symbol id="sliders" viewBox="0 0 24 24"><path d="M3 7h4m4 0h10M3 17h10m4 0h4M7 4v6m6 4v6M11 4v6M17 14v6"/></symbol>
+<symbol id="message" viewBox="0 0 24 24"><path d="M21 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3ZM7 8h10M7 12h7"/></symbol>
+<symbol id="layout" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></symbol>
+<symbol id="sync" viewBox="0 0 24 24"><path d="M20 4v5h-5M4 20v-5h5M4.6 8a8 8 0 0 1 13-3l2.4 4M4 15l2.4 4a8 8 0 0 0 13-3"/></symbol>
+<symbol id="cloud" viewBox="0 0 24 24"><path d="M6 18a5 5 0 0 1-1-9 7 7 0 0 1 13-2 5.5 5.5 0 0 1 0 11ZM12 10v5m-2-2 2 2 2-2"/></symbol>
+<symbol id="drive" viewBox="0 0 24 24"><path d="m6 4-3 10v6h18v-6L18 4ZM3 14h18M6 17h.01M10 17h.01"/></symbol>
+<symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+<symbol id="flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v7L4 20h16l-6-10V3M7 15h10"/></symbol>
+<symbol id="chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+<symbol id="compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 16 2-6 6-2-2 6Z"/></symbol>
+<symbol id="calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18M7 14h3m4 0h3M7 17h3"/></symbol>
+<symbol id="bookmark" viewBox="0 0 24 24"><path d="M5 3h14v18l-7-4-7 4Z"/></symbol>
+<symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol>
+</defs></svg>
+<main class="board">
+<div class="eyebrow">PLAYRA / DESIGN STUDY 04</div>
+<h1>我的 · 个人观看手记</h1>
+<p class="intro">设计参照，尚未接入 Flutter。以下数字与连接状态均为示例数据；点击入口仅说明目标路由。用控件比较空态、字号与窄屏布局。</p>
+<div class="controls">
+<label>画布宽度<select id="width"><option value="390">390px 手机</option><option value="320">320px 窄屏</option><option value="760">760px 宽屏</option></select></label>
+<label>文字大小<select id="scale"><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option></select></label>
+<label>观看记录<select id="records"><option value="populated">有记录（示例）</option><option value="empty">零记录</option></select></label>
+<label>同步状态<select id="sync-state"><option value="local">未连接 / 未配置</option><option value="pending">Bangumi 待验证</option><option value="connecting">Bangumi 正在验证</option><option value="connected">已连接 / 已开启</option><option value="error">Bangumi 连接异常</option><option value="disabled">已连接 / 同步关闭</option><option value="content">WebDAV 待选内容</option></select></label>
+</div>
+<div class="layout"><div class="stage"><section class="phone" aria-label="我的页面设计预览">
+<div class="safe" aria-hidden="true"></div>
+<header class="toolbar"><h2>我的</h2><button class="icon-button" aria-label="全部设置" data-route="/settings/"><svg class="icon"><use href="#settings"/></svg></button></header>
+<div class="scroll" tabindex="0" aria-label="页面内容，可滚动">
+<section class="footprint" aria-labelledby="footprint-heading">
+<img class="art" src="../../assets/images/modern-profile-decoration.svg" alt="">
+<img class="empty-art" src="../../assets/images/modern-profile-empty.svg" alt="">
+<h3 id="footprint-heading">观看足迹</h3><p id="footprint-copy">每一段故事，都有迹可循</p>
+<div class="numbers"><div><span class="number" id="bangumi-count">24</span><span class="stat-label">有观看记录的番剧</span></div><div><span class="number" id="episode-count">168</span><span class="stat-label">记录过的集数</span></div></div>
+<button class="cta" data-route="根 Tab 切换 → /tab/popular/">去发现番剧 →</button>
+</section>
+<nav class="quick" aria-label="常用功能">
+<button data-route="/settings/history/"><span class="tile-icon"><svg class="icon"><use href="#history"/></svg></span><span class="tile-copy"><strong>历史记录</strong><small id="history-copy">回到上次观看</small></span></button>
+<button data-route="/settings/download/"><span class="tile-icon"><svg class="icon"><use href="#download"/></svg></span><span class="tile-copy"><strong>离线缓存</strong><small>6 集任务（示例）</small></span></button>
+<button data-route="/settings/plugin/"><span class="tile-icon"><svg class="icon"><use href="#rules"/></svg></span><span class="tile-copy"><strong>播放规则</strong><small>管理播放来源</small></span></button>
+</nav>
+<section class="group"><h3>观看偏好</h3><div class="group-box">
+<button class="row" data-route="/settings/theme"><svg class="icon"><use href="#palette"/></svg><span class="row-text">外观设置</span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+<button class="row" data-route="/settings/player"><svg class="icon"><use href="#sliders"/></svg><span class="row-text">播放设置</span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+<button class="row" data-route="/settings/danmaku/"><svg class="icon"><use href="#message"/></svg><span class="row-text">弹幕设置</span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+<button class="row" data-route="/settings/interface"><svg class="icon"><use href="#layout"/></svg><span class="row-text">页面版本</span><span class="badge">新版 · 预览</span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+</div></section>
+<section class="group"><h3>数据与同步</h3><div class="group-box">
+<button class="row" id="bangumi-row" data-route="/settings/bangumi/"><svg class="icon"><use href="#sync"/></svg><span class="row-text">Bangumi 追番同步<small id="bangumi-state">未连接 · 连接后可同步追番</small></span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+<button class="row" data-route="/settings/webdav/"><svg class="icon"><use href="#cloud"/></svg><span class="row-text">WebDAV 多设备同步<small id="webdav-state">未配置 · 使用自己的云盘</small></span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+<button class="row" data-route="/settings/sync"><svg class="icon"><use href="#layout"/></svg><span class="row-text">全部同步设置</span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+<button class="row" data-route="/settings/storage"><svg class="icon"><use href="#drive"/></svg><span class="row-text">存储管理</span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+</div></section>
+<section class="group"><h3>应用</h3><div class="group-box">
+<button class="row" data-route="/settings/about/"><svg class="icon"><use href="#info"/></svg><span class="row-text">关于应用</span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+<button class="row" data-route="/ui/components"><svg class="icon"><use href="#flask"/></svg><span class="row-text">组件实验室</span><svg class="icon chevron"><use href="#chevron"/></svg></button>
+</div></section>
+<footer class="footer">Playra · 版本由构建信息提供</footer>
+</div>
+<div class="navigation" aria-label="底部导航外观示意，当前我的">
+<span class="nav-item"><span class="nav-icon"><svg class="icon"><use href="#compass"/></svg></span>发现</span>
+<span class="nav-item"><span class="nav-icon"><svg class="icon"><use href="#calendar"/></svg></span>日历</span>
+<span class="nav-item"><span class="nav-icon"><svg class="icon"><use href="#bookmark"/></svg></span>追番</span>
+<span class="nav-item active"><span class="nav-icon"><svg class="icon"><use href="#user"/></svg></span>我的</span>
+</div>
+</section></div>
+<aside class="notes"><div class="overview"><div class="label">设计意图</div><h2>把自己的内容放在前面</h2><p>首屏呈现真实足迹与常用动作。设置按用途归组，用文字层级表达优先级，让边框和装饰退到背景。</p><div class="label">数据约束</div><p>记录集数不表示完播。下载数量包含所有状态的任务。账号连接、同步开启和同步成功是不同状态。</p></div>
+<div><div class="label">有记录 · 卡内装饰</div><img class="asset" src="../../assets/images/modern-profile-decoration.svg" alt="开放书页与书签线稿"><code>modern-profile-decoration.svg</code><p>源图满不透明度供检查；卡片中仅使用 .11 alpha。</p></div>
+<div><div class="label">零记录 · 替换插画</div><img class="asset empty-preview" src="../../assets/images/modern-profile-empty.svg" alt="简化手记空态插画"><code>modern-profile-empty.svg</code><p>零记录时替代页头装饰，避免两张插画叠加。</p></div>
+</aside></div>
+</main><div class="toast" role="status" hidden></div>
+<script>
+const q=s=>document.querySelector(s),phone=q('.phone');
+document.querySelectorAll('svg.icon').forEach(el=>el.setAttribute('aria-hidden','true'));
+function update(){
+  const scale=Number(q('#scale').value),width=Number(q('#width').value),empty=q('#records').value==='empty';
+  phone.style.width=width+'px';phone.style.setProperty('--scale',scale);
+  phone.classList.toggle('large',scale>=1.5);phone.classList.toggle('empty',empty);
+  q('#bangumi-count').textContent=empty?'0':'24';q('#episode-count').textContent=empty?'0':'168';
+  q('#bangumi-count').parentElement.setAttribute('aria-label','有观看记录的番剧，'+(empty?'0':'24')+'部');
+  q('#episode-count').parentElement.setAttribute('aria-label','记录过的集数，'+(empty?'0':'168')+'集');
+  q('#footprint-heading').textContent=empty?'你的观看足迹，从这里开始':'观看足迹';
+  q('#footprint-copy').textContent=empty?'观看后，记录会保存在这里':'每一段故事，都有迹可循';
+  q('#history-copy').textContent=empty?'暂无观看记录':'回到上次观看';
+  const state=q('#sync-state').value;
+  const states={local:['未连接 · 连接后可同步追番','未配置 · 使用自己的云盘'],pending:['待验证 · 打开设置检查连接','已配置 · 同步关闭'],connecting:['正在验证连接','已配置 · 同步关闭'],connected:['已连接 · 追番同步已开启','已开启 · 查看同步设置'],error:['连接异常 · 点击检查','已开启 · 查看同步设置'],disabled:['已连接 · 同步关闭','已配置 · 同步关闭'],content:['未连接 · 连接后可同步追番','待选择同步内容']};
+  q('#bangumi-state').textContent=states[state][0];q('#webdav-state').textContent=states[state][1];
+  q('#bangumi-row').classList.toggle('status-error',state==='error');
+}
+document.querySelectorAll('select').forEach(el=>el.addEventListener('change',update));
+let toastTimer;document.querySelectorAll('[data-route]').forEach(el=>el.addEventListener('click',()=>{
+  clearTimeout(toastTimer);q('.toast').textContent='设计预览：实现后进入 '+el.dataset.route;q('.toast').hidden=false;
+  toastTimer=setTimeout(()=>q('.toast').hidden=true,2800);
+}));update();
+</script>
+</body></html>
