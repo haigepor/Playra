@@ -26,7 +26,32 @@
 
 两条分支保留共同祖先，便于普通合并；职责分别是官方原版和 Playra 定制。后续官方更新不能使用 `ours` 策略，否则会丢弃新功能和修复。
 
-原有 `.gitignore` 改动、`MERGE_REPORT.md`、`recipes.json` 和 `fastlane/.libmpv-android-video-build` 子模块内的改动仍留在工作区，没有纳入本次提交。切换分支前，应先明确保存这些改动；子模块内的改动需要在子模块中单独处理。
+## 2026-10-11 新克隆核验
+
+工作区 `D:/project/Playra` 是完整克隆，并非浅克隆。远程 `origin/main` 为 `072d7e67`，`origin/kazumi-upstream` 和官方 `upstream/main` 均为 `2768c230`。分支间提交数量是官方独有 0 条、Playra 独有 2 条；两次定制提交均为单父提交，没有在该范围产生合并提交。
+
+```text
+官方历史（1930 条可达提交）── 2768c230  upstream/main、kazumi-upstream、origin/kazumi-upstream
+                              └── adce00db ── 072d7e67  main、origin/main
+```
+
+图形界面把祖先与后代画在同一条线上是正常现象：两个分支是两个提交指针，不等于必须立即出现两条岔开的线。官方出现新提交后，在同步分支快进更新而 main 尚未集成时，图形就会自然分叉。官方分支本身没有包含 Playra 定制代码。
+
+用户已确认保留共同祖先。新克隆已补齐 `upstream` 和本地 `kazumi-upstream`，仅获取官方 main；`main` 跟踪 `origin/main`，`kazumi-upstream` 跟踪 `upstream/main`。仓库默认推送远程与两条本地分支的 `pushRemote` 均为 `origin`，不会默认向官方仓库推送。本次未重写历史或推送远程。
+
+核验与查看：
+
+```powershell
+git branch -vv
+git remote -v
+git rev-list --left-right --count upstream/main...origin/kazumi-upstream
+git log --oneline kazumi-upstream..main
+git log --graph --decorate --oneline main kazumi-upstream upstream/main -20
+```
+
+本次变更前的 Git 配置和全部 refs 历史位于 `.git/codex-backups/git-organization-20261011/config.before` 与 `before.bundle`。bundle 是历史备份，不覆盖工作区，也不在正常分支列表显示；恢复配置前先确认后续是否有新增设置。2026-10-10 文档中的旧机器备份与 reflog 不随新克隆传递，不能在此工作区据此承诺恢复更早的定制小提交。
+
+2026-10-10 整理时，原有 `.gitignore`、`MERGE_REPORT.md`、`recipes.json` 和 `fastlane/.libmpv-android-video-build` 子模块内的改动曾留在旧工作区；这不是 2026-10-11 新克隆的当前状态。切换分支前，应以实时 `git status` 保存工作区改动；子模块内的改动需要在子模块中单独处理。
 
 ## 同步官方分支
 
@@ -61,11 +86,11 @@ git diff main...kazumi-upstream
 ```powershell
 git switch main
 git pull --ff-only origin main
-git switch -c integration/kazumi-update-YYYYMMDD
+git switch -c codex/kazumi-update-YYYYMMDD
 git merge --no-ff kazumi-upstream
 # 处理冲突，检查改动，完成针对性测试和目标平台验证。
 git switch main
-git merge --ff-only integration/kazumi-update-YYYYMMDD
+git merge --ff-only codex/kazumi-update-YYYYMMDD
 git push origin main
 ```
 
