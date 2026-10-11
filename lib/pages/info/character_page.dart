@@ -12,6 +12,7 @@ import 'package:kazumi/modules/character/character_full_item.dart';
 import 'package:kazumi/modules/comments/comment_item.dart';
 import 'package:kazumi/pages/info/character_info_view.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
+import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
 
 class CharacterPage extends StatefulWidget {
   const CharacterPage({
@@ -20,12 +21,14 @@ class CharacterPage extends StatefulWidget {
     required this.characterName,
     required this.characterRelation,
     this.actorNames = const [],
+    this.modern = false,
   });
 
   final int characterID;
   final String characterName;
   final String characterRelation;
   final List<String> actorNames;
+  final bool modern;
 
   @override
   State<CharacterPage> createState() => _CharacterPageState();
@@ -41,8 +44,9 @@ class _CharacterPageState extends State<CharacterPage> {
     setState(() {
       _character = null;
     });
-    final character =
-        await BangumiApi.getCharacterByCharacterID(widget.characterID);
+    final character = await BangumiApi.getCharacterByCharacterID(
+      widget.characterID,
+    );
     if (mounted) {
       setState(() {
         _character = character;
@@ -57,7 +61,8 @@ class _CharacterPageState extends State<CharacterPage> {
     });
     try {
       final response = await BangumiApi.getCharacterCommentsByCharacterID(
-          widget.characterID);
+        widget.characterID,
+      );
       if (!mounted) return;
       setState(() {
         _comments = response.commentList;
@@ -84,6 +89,12 @@ class _CharacterPageState extends State<CharacterPage> {
 
   @override
   Widget build(BuildContext context) {
+    return widget.modern
+        ? ModernSecondaryScope(child: Builder(builder: _buildPage))
+        : _buildPage(context);
+  }
+
+  Widget _buildPage(BuildContext context) {
     final name = widget.characterName.trim();
     return DefaultTabController(
       length: 2,
@@ -95,10 +106,36 @@ class _CharacterPageState extends State<CharacterPage> {
               title: name.isEmpty ? '人物' : name,
               onClose: () => Navigator.of(context).pop(),
             ),
-            const ConnectedTabs(
-              padding: materialBottomSheetTabsPadding,
-              labels: ['资料', '吐槽'],
-            ),
+            if (widget.modern)
+              TabBar(
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.label,
+                labelStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                indicator: UnderlineTabIndicator(
+                  borderRadius: BorderRadius.circular(2),
+                  borderSide: BorderSide(
+                    width: 3,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  insets: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                tabs: const [
+                  Tab(height: 48, text: '资料'),
+                  Tab(height: 48, text: '吐槽'),
+                ],
+              )
+            else
+              const ConnectedTabs(
+                padding: materialBottomSheetTabsPadding,
+                labels: ['资料', '吐槽'],
+              ),
             Expanded(
               child: TabBarView(
                 children: [_characterInfoBody, _characterCommentsBody],
@@ -121,17 +158,33 @@ class _CharacterPageState extends State<CharacterPage> {
     }
 
     if (character == null) {
+      if (widget.modern) {
+        return const SingleChildScrollView(
+          padding: materialBottomSheetContentPadding,
+          child: Skeletonizer.zone(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Bone(height: 132, width: double.infinity, uniRadius: 12),
+                SizedBox(height: 16),
+                Bone.multiText(lines: 5),
+              ],
+            ),
+          ),
+        );
+      }
       return const SingleChildScrollView(
         padding: materialBottomSheetContentPadding,
         child: Skeletonizer.zone(
-            child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Bone(height: 300, width: double.infinity, uniRadius: 28),
-            SizedBox(height: 24),
-            Bone.multiText(lines: 5),
-          ],
-        )),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Bone(height: 300, width: double.infinity, uniRadius: 28),
+              SizedBox(height: 24),
+              Bone.multiText(lines: 5),
+            ],
+          ),
+        ),
       );
     }
     return CharacterInfoView(
@@ -146,10 +199,7 @@ class _CharacterPageState extends State<CharacterPage> {
     return CustomScrollView(
       scrollBehavior: const ScrollBehavior().copyWith(
         scrollbars: false,
-        dragDevices: {
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.touch,
-        },
+        dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch},
       ),
       slivers: [
         SliverPadding(
@@ -177,6 +227,16 @@ class _CharacterPageState extends State<CharacterPage> {
       );
     }
     if (_comments.isEmpty) {
+      if (widget.modern) {
+        return const SliverFillRemaining(
+          hasScrollBody: false,
+          child: SecondaryEmptyState(
+            title: '还没有评论',
+            description: '这里会展示人物相关的吐槽。',
+            asset: 'modern-player-empty-discussion',
+          ),
+        );
+      }
       return const SliverFillRemaining(
         hasScrollBody: false,
         child: GeneralEmptyState(

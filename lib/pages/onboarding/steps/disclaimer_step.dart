@@ -5,6 +5,7 @@ import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/bean/widget/tonal_card.dart';
 import 'package:kazumi/pages/onboarding/onboarding_step_layout.dart';
 import 'package:kazumi/services/logging/logger.dart';
+import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
 
 class DisclaimerStep extends StatefulWidget {
   const DisclaimerStep({super.key});
@@ -47,7 +48,9 @@ class _DisclaimerStepState extends State<DisclaimerStep> {
     final textTheme = Theme.of(context).textTheme;
     return OnboardingStepLayout(
       leading: const OnboardingStepIcon(icon: Icons.waving_hand_rounded),
-      title: '欢迎来到 Kazumi',
+      title: ModernSecondaryScope.isActiveOf(context)
+          ? '欢迎来到 Playra'
+          : '欢迎来到 Kazumi',
       child: TonalCard(
         padding: const EdgeInsets.all(24),
         child: _statementsText == null

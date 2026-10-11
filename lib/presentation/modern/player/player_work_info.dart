@@ -234,6 +234,7 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
                       itemCount: count,
                       itemBuilder: (_, i) => index == 1
                           ? CharacterCard(
+                              modern: true,
                               characterItem: widget.controller.characterList[i],
                             )
                           : StaffCard(

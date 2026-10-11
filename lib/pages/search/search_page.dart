@@ -18,15 +18,20 @@ import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/date_time.dart';
 import 'package:kazumi/utils/search_parser.dart';
+import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
+import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
+import 'package:kazumi/presentation/modern/widgets/modern_anime_cover.dart';
 
 part 'search_filter_sheet.dart';
 part 'search_widgets.dart';
+part 'modern_search_widgets.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key, required this.controller, this.inputTag = ''});
+  const SearchPage({super.key, required this.controller, this.inputTag = '', this.modern = false});
 
   final SearchPageController controller;
   final String inputTag;
+  final bool modern;
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -40,6 +45,7 @@ class _SearchPageState extends State<SearchPage> {
   final _searchHeaderKey = GlobalKey();
   String? _submittedQuery;
   bool _managingHistory = false;
+  void _setHistoryManagement(bool enabled) => setState(() => _managingHistory = enabled);
 
   SearchPageController get _controller => widget.controller;
   bool get _hasSearched => _submittedQuery != null;
@@ -102,11 +108,15 @@ class _SearchPageState extends State<SearchPage> {
     final result = await showAdaptiveBottomSheet<_SearchFilterResult>(
       context: context,
       maxHeightFactor: 0.9,
-      builder: (_) => _SearchFilterSheet(
-        initialState: SearchParser(_input.text).toFilterState(),
-        initialNotShowWatched: _controller.notShowWatchedBangumis,
-        initialNotShowAbandoned: _controller.notShowAbandonedBangumis,
-      ),
+      builder: (_) {
+        final sheet = _SearchFilterSheet(
+          initialState: SearchParser(_input.text).toFilterState(),
+          initialNotShowWatched: _controller.notShowWatchedBangumis,
+          initialNotShowAbandoned: _controller.notShowAbandonedBangumis,
+        );
+        // 弹层不继承普通 InheritedWidget，需显式承接新版标志和局部主题。
+        return widget.modern ? ModernSecondaryScope(child: sheet) : sheet;
+      },
     );
     if (!mounted || result == null) return;
     await _controller.setNotShowWatchedBangumis(result.notShowWatched);
@@ -141,26 +151,30 @@ class _SearchPageState extends State<SearchPage> {
         focusNode: _inputFocus,
         hintText: '搜索番剧名称',
         textInputAction: TextInputAction.search,
-        constraints: const BoxConstraints(minHeight: 64),
+        constraints: BoxConstraints(minHeight: widget.modern ? 48 : 64),
+        shape: widget.modern ? WidgetStatePropertyAll(RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12), side: BorderSide(color: colors.outline))) : null,
         elevation: const WidgetStatePropertyAll(0),
-        backgroundColor: WidgetStatePropertyAll(colors.surfaceContainerHigh),
+        backgroundColor: WidgetStatePropertyAll(widget.modern
+            ? colors.surfaceContainerLow
+            : colors.surfaceContainerHigh),
         padding:
             const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 8)),
         leading: IconButton(
           tooltip: '搜索',
           onPressed: () => _submit(_input.text),
-          icon: const Icon(Icons.search_rounded),
+          icon: Icon(widget.modern ? LucideIcons.search : Icons.search_rounded, size: widget.modern ? 20 : null),
         ),
         trailing: [
           if (value.text.isNotEmpty || _hasSearched)
             IconButton(
                 tooltip: '清空搜索',
                 onPressed: _clearSearch,
-                icon: const Icon(Icons.close_rounded)),
+                icon: Icon(widget.modern ? LucideIcons.x : Icons.close_rounded, size: widget.modern ? 18 : null)),
           IconButton(
             tooltip: '以图搜番',
             onPressed: _imageSearch,
-            icon: const Icon(Icons.image_search_rounded),
+            icon: Icon(widget.modern ? LucideIcons.scanLine : Icons.image_search_rounded, size: widget.modern ? 20 : null),
           ),
         ],
         onSubmitted: _submit,
@@ -367,6 +381,7 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.modern) return _modernPage();
     return Scaffold(
       appBar: const SysAppBar(
           backgroundColor: Colors.transparent, title: Text('番剧搜索')),

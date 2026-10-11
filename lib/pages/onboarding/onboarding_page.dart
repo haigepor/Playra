@@ -17,16 +17,19 @@ import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/update/startup_update_check.dart';
+import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({
     super.key,
     required this.pluginsController,
     required this.myController,
+    this.modern = false,
   });
 
   final PluginsController pluginsController;
   final MyController myController;
+  final bool modern;
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -179,7 +182,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             MediaQuery.textScalerOf(context).scale(16) > 24;
         final secondary = TextButton(
           style: TextButton.styleFrom(
-            minimumSize: const Size(88, 56),
+            minimumSize: Size(88, widget.modern ? 48 : 56),
             foregroundColor: theme.colorScheme.onSurfaceVariant,
           ),
           onPressed: _installingBundled
@@ -191,7 +194,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
         );
         final primary = FilledButton.icon(
           style: FilledButton.styleFrom(
-            minimumSize: const Size(176, 56),
+            minimumSize: Size(176, widget.modern ? 48 : 56),
+            shape: widget.modern
+                ? RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                : null,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             textStyle: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
@@ -202,7 +210,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
           icon: _installingBundled
               ? const LoadingIndicator(size: 24, semanticsLabel: '正在准备内置规则')
               : Icon(
-                  _isLastStep
+                  widget.modern
+                      ? (_isLastStep
+                            ? LucideIcons.check
+                            : LucideIcons.arrowRight)
+                      : _isLastStep
                       ? Icons.check_rounded
                       : Icons.arrow_forward_rounded,
                 ),
@@ -236,22 +248,53 @@ class _OnboardingPageState extends State<OnboardingPage> {
       if (!didPop) unawaited(_navigate(forward: false));
     },
     child: Scaffold(
-      appBar: const SysAppBar(),
+      appBar: widget.modern
+          ? const SysAppBar(title: Text('开始使用 Playra'))
+          : const SysAppBar(),
       body: SafeArea(
         top: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1184),
+            constraints: BoxConstraints(maxWidth: widget.modern ? 760 : 1184),
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: MediaQuery.sizeOf(context).width < 600 ? 20 : 32,
               ),
               child: Column(
                 children: [
-                  _OnboardingProgress(
-                    labels: _steps.map((step) => step.label).toList(),
-                    currentIndex: _currentIndex,
-                  ),
+                  if (widget.modern)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(_steps[_currentIndex].label),
+                              ),
+                              Text(
+                                '${_currentIndex + 1} / ${_steps.length}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          LinearProgressIndicator(
+                            value: (_currentIndex + 1) / _steps.length,
+                            minHeight: 2,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    _OnboardingProgress(
+                      labels: _steps.map((step) => step.label).toList(),
+                      currentIndex: _currentIndex,
+                    ),
                   Expanded(
                     child: PageView(
                       controller: _pageController,

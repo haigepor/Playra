@@ -7,6 +7,7 @@ import 'package:kazumi/bean/widget/empty_state_widget.dart';
 import 'package:kazumi/bean/widget/image_preview.dart';
 import 'package:kazumi/bean/widget/tonal_card.dart';
 import 'package:kazumi/modules/character/character_full_item.dart';
+import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
 
 class CharacterInfoView extends StatelessWidget {
   const CharacterInfoView({
@@ -27,6 +28,7 @@ class CharacterInfoView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final modern = ModernSecondaryScope.isActiveOf(context);
     final fields =
         character.infobox.where((field) => field.key != '引用来源').toList();
     final quickFields = fields
@@ -51,7 +53,7 @@ class CharacterInfoView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TonalCard(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(modern ? 12 : 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -120,11 +122,11 @@ class CharacterInfoView extends StatelessWidget {
       key: const PageStorageKey('character-info'),
       padding: materialBottomSheetContentPadding,
       child: LayoutBuilder(builder: (context, constraints) {
-        final sideBySide = constraints.maxWidth >= 480 && useCompactColumns;
+        final sideBySide = constraints.maxWidth >= (modern ? 260 : 480) && useCompactColumns;
         final portraitWidth =
-            sideBySide ? constraints.maxWidth * 0.40 : constraints.maxWidth;
+            modern ? 88.0 : sideBySide ? constraints.maxWidth * 0.40 : constraints.maxWidth;
         final screenHeight = MediaQuery.sizeOf(context).height;
-        final portraitHeight = sideBySide
+        final portraitHeight = modern ? 132.0 : sideBySide
             ? (screenHeight * 0.42).clamp(240.0, 400.0)
             : (screenHeight * 0.30).clamp(200.0, 300.0);
         final portrait = _CharacterPortrait(
@@ -247,7 +249,7 @@ class _CharacterPortrait extends StatelessWidget {
       label: '查看人物原图',
       child: Material(
         color: colors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(ModernSecondaryScope.isActiveOf(context) ? 12 : 28),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => ImageViewer.show(

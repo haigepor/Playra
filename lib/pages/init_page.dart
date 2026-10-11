@@ -19,6 +19,8 @@ import 'package:kazumi/services/platform/windows_shortcut.dart';
 import 'package:kazumi/services/platform/platform_environment_service.dart';
 import 'package:kazumi/services/update/startup_update_check.dart';
 import 'package:kazumi/navigation.dart';
+import 'package:kazumi/presentation/interface_page_host.dart';
+import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
 
 class InitPage extends StatefulWidget {
   const InitPage({
@@ -349,6 +351,42 @@ class LoadingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Container());
+    return InterfacePageHost(
+      legacy: (_) => Scaffold(body: Container()),
+      modern: (_) => ModernSecondaryScope(
+        child: Builder(
+          builder: (context) => Scaffold(
+            body: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SecondaryArtwork(
+                        asset: 'modern-onboarding-decoration',
+                        width: 160,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Playra',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('正在准备你的观看空间'),
+                      const SizedBox(height: 24),
+                      const SizedBox(
+                        width: 120,
+                        child: LinearProgressIndicator(minHeight: 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

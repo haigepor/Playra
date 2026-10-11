@@ -60,7 +60,12 @@ class _SearchSortMenu extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           ),
           iconAlignment: IconAlignment.end,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+          icon: Icon(
+            ModernSecondaryScope.isActiveOf(context)
+                ? LucideIcons.chevronDown
+                : Icons.keyboard_arrow_down_rounded,
+            size: ModernSecondaryScope.isActiveOf(context) ? 18 : 20,
+          ),
           label: Text(_sortLabel(value)),
         ),
       ),

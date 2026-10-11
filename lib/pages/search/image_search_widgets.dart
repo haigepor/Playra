@@ -10,6 +10,14 @@ class _ImageSourceSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    if (ModernSecondaryScope.isActiveOf(context)) {
+      return SecondaryTabs(
+        labels: const ['上传截图', '图片链接'],
+        selected: useUrl ? 1 : 0,
+        enabled: enabled,
+        onChanged: (index) => onChanged(index == 1),
+      );
+    }
     return Row(
         spacing: 4,
         children: [false, true].map((url) {
@@ -141,6 +149,13 @@ class _ImageSearchResults extends StatelessWidget {
           retryText: '重新识别',
         );
       }
+      if (ModernSecondaryScope.isActiveOf(context)) {
+        return const SecondaryEmptyState(
+          title: '没有找到匹配画面',
+          description: '试试清晰的正片截图，保留原始画面比例。',
+          asset: 'modern-image-search-empty',
+        );
+      }
       return const GeneralEmptyState(
         icon: Icons.image_search_rounded,
         title: '没有找到匹配画面',
@@ -193,7 +208,7 @@ class _ImageSearchLoadingState extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 32),
           child: Column(children: [
-            const LoadingIndicator(size: 72, semanticsLabel: '正在匹配动画画面'),
+            LoadingIndicator(size: ModernSecondaryScope.isActiveOf(context) ? 32 : 72, semanticsLabel: '正在匹配动画画面'),
             const SizedBox(height: 24),
             Text('正在寻找这一幕',
                 textAlign: TextAlign.center,
@@ -269,7 +284,7 @@ class _BestMatch extends StatelessWidget {
     return Material(
       color: colors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(ModernSecondaryScope.isActiveOf(context) ? 16 : 24),
         side: BorderSide(color: colors.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,

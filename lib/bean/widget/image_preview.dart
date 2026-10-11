@@ -9,6 +9,7 @@ import 'package:photo_view/photo_view_gallery.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/bean/widget/media_error_widget.dart';
 import 'package:kazumi/utils/device.dart';
+import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
 
 class ImageViewerRouteArgs {
   ImageViewerRouteArgs({
@@ -28,12 +29,14 @@ class ImageViewer extends StatefulWidget {
   final List<String> imageUrls;
   final int initialIndex;
   final Object? heroTag;
+  final bool modern;
 
   ImageViewer({
     super.key,
     required List<String> imageUrls,
     this.initialIndex = 0,
     this.heroTag,
+    this.modern = false,
   }) : imageUrls = List.unmodifiable(imageUrls);
 
   static Object heroTagFor(String imageUrl, int index) => '$imageUrl-$index';
@@ -182,14 +185,15 @@ class _ImageViewerState extends State<ImageViewer> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.5),
-        shape: BoxShape.circle,
+        shape: widget.modern ? BoxShape.rectangle : BoxShape.circle,
+        borderRadius: widget.modern ? BorderRadius.circular(10) : null,
       ),
       child: IconButton(
         onPressed: onPressed,
         icon: Icon(
           icon,
           color: onPressed != null ? Colors.white : Colors.white38,
-          size: 32,
+          size: widget.modern ? 20 : 32,
         ),
       ),
     );
@@ -208,11 +212,18 @@ class _ImageViewerState extends State<ImageViewer> {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
+                shape: widget.modern ? BoxShape.rectangle : BoxShape.circle,
+                borderRadius: widget.modern ? BorderRadius.circular(10) : null,
               ),
               child: IconButton(
+                key: const ValueKey('image-preview-close'),
+                tooltip: '关闭图片预览',
                 onPressed: _closePreview,
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(
+                  widget.modern ? LucideIcons.x : Icons.close,
+                  color: Colors.white,
+                  size: widget.modern ? 20 : null,
+                ),
               ),
             ),
           ),
@@ -245,7 +256,9 @@ class _ImageViewerState extends State<ImageViewer> {
               bottom: 0,
               child: Center(
                 child: _buildNavButton(
-                  icon: Icons.chevron_left,
+                  icon: widget.modern
+                      ? LucideIcons.chevronLeft
+                      : Icons.chevron_left,
                   onPressed: _currentIndex > 0 ? _goToPreviousImage : null,
                 ),
               ),
@@ -256,7 +269,9 @@ class _ImageViewerState extends State<ImageViewer> {
               bottom: 0,
               child: Center(
                 child: _buildNavButton(
-                  icon: Icons.chevron_right,
+                  icon: widget.modern
+                      ? LucideIcons.chevronRight
+                      : Icons.chevron_right,
                   onPressed: _currentIndex < widget.imageUrls.length - 1
                       ? _goToNextImage
                       : null,

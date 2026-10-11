@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:material_new_shapes/material_new_shapes.dart';
+import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
 
 /// Keeps the rule catalog lazy within the responsive onboarding scroll surface.
 class OnboardingStepLayout extends StatelessWidget {
@@ -30,6 +31,39 @@ class OnboardingStepLayout extends StatelessWidget {
   Widget _intro(BuildContext context,
       {required bool wide, bool compact = false}) {
     final theme = Theme.of(context);
+    if (ModernSecondaryScope.isActiveOf(context)) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SecondaryArtwork(
+              asset: 'modern-onboarding-decoration',
+              width: 132,
+            ),
+            const SizedBox(height: 12),
+            Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                subtitle!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
     final titleWidget = Semantics(
       header: true,
       child: Text(
@@ -152,6 +186,17 @@ class OnboardingStepIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    if (ModernSecondaryScope.isActiveOf(context)) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 20, color: colors.primary),
+      );
+    }
     final (background, foreground) = switch (shape) {
       OnboardingIconShape.cookie => (
           colors.secondaryContainer,

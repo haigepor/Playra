@@ -8,16 +8,16 @@ class CharacterCard extends StatelessWidget {
   const CharacterCard({
     super.key,
     required this.characterItem,
+    this.modern = false,
   });
 
   final CharacterItem characterItem;
+  final bool modern;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: BangumiAvatar(
-        imageUrl: characterItem.avator.grid,
-      ),
+      leading: BangumiAvatar(imageUrl: characterItem.avator.grid),
       title: Text(
         characterItem.name,
         overflow: TextOverflow.ellipsis,
@@ -32,6 +32,7 @@ class CharacterCard extends StatelessWidget {
           context: context,
           builder: (context) {
             return CharacterPage(
+              modern: modern,
               characterID: characterItem.id,
               characterName: characterItem.name,
               characterRelation: characterItem.relation,

@@ -202,7 +202,8 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
               child: ListView(
             shrinkWrap: true,
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+            padding: EdgeInsets.fromLTRB(ModernSecondaryScope.isActiveOf(context) ? 20 : 24, 8,
+              ModernSecondaryScope.isActiveOf(context) ? 20 : 24, 16),
             children: [
               if (_draft.isIdSearch)
                 ListTile(
@@ -403,7 +404,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
                           onPressed: _apply,
                           style: FilledButton.styleFrom(
                               minimumSize: const Size(48, 56)),
-                          child: const Text('查看结果'))),
+                          child: Text(ModernSecondaryScope.isActiveOf(context) ? '应用筛选' : '查看结果'))),
                 ])),
         ]);
       }),

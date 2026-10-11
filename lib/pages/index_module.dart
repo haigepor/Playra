@@ -25,6 +25,8 @@ import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/services/shaders/shader_asset_service.dart';
 import 'package:kazumi/services/sync/danmaku_shield_sync_service.dart';
+import 'package:kazumi/presentation/interface_page_host.dart';
+import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
 
 final _tabTransition = CustomTransition(
   duration: const Duration(milliseconds: 70),
@@ -86,17 +88,41 @@ final indexModule = createModule(
       )
       ..route(
         '/onboarding',
-        child: (context, state) => OnboardingPage(
-          pluginsController: inject<PluginsController>(),
-          myController: inject<MyController>(),
+        child: (context, state) => InterfacePageHost(
+          legacy: (_) => OnboardingPage(
+            pluginsController: inject<PluginsController>(),
+            myController: inject<MyController>(),
+          ),
+          modern: (_) => ModernSecondaryScope(
+            child: OnboardingPage(
+              pluginsController: inject<PluginsController>(),
+              myController: inject<MyController>(),
+              modern: true,
+            ),
+          ),
         ),
         transition: TransitionType.none,
       )
       ..route(
         '/error',
-        child: (context, state) => Scaffold(
-          appBar: AppBar(title: const Text('Kazumi')),
-          body: const GeneralErrorWidget(title: '初始化失败', errMsg: '请重新启动应用后再试。'),
+        child: (context, state) => InterfacePageHost(
+          legacy: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Kazumi')),
+            body: const GeneralErrorWidget(
+              title: '初始化失败',
+              errMsg: '请重新启动应用后再试。',
+            ),
+          ),
+          modern: (_) => ModernSecondaryScope(
+            child: Scaffold(
+              body: SecondaryFailureView(
+                title: '初始化失败',
+                message: '应用未能完成准备，请退出并重新启动。',
+                actionLabel: '返回启动页',
+                action: () => context.navigate('/'),
+              ),
+            ),
+          ),
         ),
       )
       ..module(tabModule)
@@ -115,10 +141,18 @@ final indexModule = createModule(
           if (args is! ImageViewerRouteArgs) {
             return const RouteErrorPage(message: '图片预览参数无效，请返回后重试。');
           }
-          return ImageViewer(
-            imageUrls: args.imageUrls,
-            initialIndex: args.initialIndex,
-            heroTag: args.heroTag,
+          return InterfacePageHost(
+            legacy: (_) => ImageViewer(
+              imageUrls: args.imageUrls,
+              initialIndex: args.initialIndex,
+              heroTag: args.heroTag,
+            ),
+            modern: (_) => ImageViewer(
+              imageUrls: args.imageUrls,
+              initialIndex: args.initialIndex,
+              heroTag: args.heroTag,
+              modern: true,
+            ),
           );
         },
         transition: _imagePreviewTransition,

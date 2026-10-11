@@ -26,6 +26,9 @@ abstract class _SearchPageController with Store {
 
   int _searchOffset = 0;
   int _searchGeneration = 0;
+  bool _lastSearchFailed = false;
+  // 与旧版 isTimeOut 保持兼容；新版区分空结果和请求失败。
+  bool get lastSearchFailed => _lastSearchFailed;
 
   bool hasMoreSearchResults = true;
 
@@ -69,6 +72,7 @@ abstract class _SearchPageController with Store {
     final generation = type == 'add' ? _searchGeneration : ++_searchGeneration;
     isLoading = true;
     isTimeOut = false;
+    _lastSearchFailed = false;
     if (type != 'add') {
       bangumiList.clear();
       _searchOffset = 0;
@@ -92,6 +96,7 @@ abstract class _SearchPageController with Store {
         bangumiList.add(item);
       }
       hasMoreSearchResults = false;
+      _lastSearchFailed = item == null;
       isLoading = false;
       isTimeOut = bangumiList.isEmpty;
       return;
@@ -112,6 +117,7 @@ abstract class _SearchPageController with Store {
       // Discard stale responses before mutating the current search.
       if (generation != _searchGeneration) return;
       if (page == null) {
+        _lastSearchFailed = true;
         break;
       }
       pagesFetched++;

@@ -20,13 +20,20 @@ import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/modules/search/image_search_module.dart';
 import 'package:kazumi/pages/search/search_controller.dart';
+import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
+import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
 
 part 'image_search_widgets.dart';
 
 class ImageSearchPage extends StatefulWidget {
-  const ImageSearchPage({super.key, required this.controller});
+  const ImageSearchPage({
+    super.key,
+    required this.controller,
+    this.modern = false,
+  });
 
   final SearchPageController controller;
+  final bool modern;
 
   @override
   State<ImageSearchPage> createState() => _ImageSearchPageState();
@@ -270,12 +277,18 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
     return Scaffold(
       backgroundColor: colors.surface,
       appBar: SysAppBar(
+        title: widget.modern ? const Text('以图搜番') : null,
         backgroundColor: colors.surface,
         actions: [
           IconButton(
             onPressed: _showHelp,
             tooltip: '搜图小贴士',
-            icon: const Icon(Icons.help_outline_rounded),
+            icon: Icon(
+              widget.modern
+                  ? LucideIcons.circleHelp
+                  : Icons.help_outline_rounded,
+              size: widget.modern ? 20 : null,
+            ),
           ),
         ],
       ),
@@ -442,30 +455,38 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          header: true,
-          child: Text(
-            showResults
-                ? '搜索图片'
-                : short
-                ? '用截图找到番名'
-                : '这一幕，\n出自哪部番？',
-            style:
-                (showResults || short ? type.headlineSmall : type.displaySmall)
-                    ?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colors.onSurface,
-                    ),
+        if (!widget.modern)
+          Semantics(
+            header: true,
+            child: Text(
+              showResults
+                  ? '搜索图片'
+                  : short
+                  ? '用截图找到番名'
+                  : '这一幕，\n出自哪部番？',
+              style:
+                  (showResults || short
+                          ? type.headlineSmall
+                          : type.displaySmall)
+                      ?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colors.onSurface,
+                      ),
+            ),
           ),
-        ),
-        if (!showResults && !short) ...[
+        if (widget.modern && !showResults) ...[
+          Text(
+            '用一张动画截图，找到番名与出现的集数。',
+            style: type.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+          ),
+        ] else if (!showResults && !short) ...[
           const SizedBox(height: 8),
           Text(
             '用一张截图，找到番名与出现的集数。',
             style: type.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
           ),
         ],
-        SizedBox(height: short ? 12 : 24),
+        SizedBox(height: widget.modern || short ? 12 : 24),
         _ImageSourceSelector(
           useUrl: _useUrl,
           enabled: !busy,
@@ -533,10 +554,15 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                     )
                   : Column(
                       children: [
-                        const _ImageSearchEmblem(size: 72),
+                        if (widget.modern)
+                          const SecondaryArtwork(
+                            asset: 'modern-image-search-empty',
+                          )
+                        else
+                          const _ImageSearchEmblem(size: 72),
                         const SizedBox(height: 12),
                         Text(
-                          '截图预览',
+                          widget.modern ? '选择一张动画截图' : '截图预览',
                           textAlign: TextAlign.center,
                           style: type.titleMedium?.copyWith(
                             color: colors.onSurfaceVariant,
@@ -587,7 +613,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         if (inlineAction) _buildPrimaryAction(searching),
         const SizedBox(height: 12),
         Text(
-          '由 trace.moe 识别动画截图',
+          widget.modern ? '识别时，图片或链接会发送至 trace.moe' : '由 trace.moe 识别动画截图',
           textAlign: TextAlign.center,
           style: type.bodySmall?.copyWith(color: colors.onSurfaceVariant),
         ),
@@ -614,7 +640,9 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
           ? _search
           : null,
       style: ButtonStyle(
-        minimumSize: const WidgetStatePropertyAll(Size.fromHeight(56)),
+        minimumSize: WidgetStatePropertyAll(
+          Size.fromHeight(widget.modern ? 48 : 56),
+        ),
         padding: const WidgetStatePropertyAll(
           EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         ),
@@ -624,7 +652,11 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         shape: WidgetStateProperty.resolveWith(
           (states) => RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(
-              states.contains(WidgetState.pressed) ? 16 : 28,
+              widget.modern
+                  ? 12
+                  : states.contains(WidgetState.pressed)
+                  ? 16
+                  : 28,
             ),
           ),
         ),
@@ -633,9 +665,12 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
       icon: searching || _isPicking
           ? LoadingIndicator(size: 24, color: colors.onSurfaceVariant)
           : Icon(
-              _hasImage
+              widget.modern
+                  ? (_hasImage ? LucideIcons.scanLine : LucideIcons.imagePlus)
+                  : _hasImage
                   ? Icons.image_search_rounded
                   : Icons.add_photo_alternate_outlined,
+              size: widget.modern ? 20 : null,
             ),
       label: Text(
         searching
@@ -668,7 +703,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: colors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(widget.modern ? 16 : 24),
         ),
         child: _useUrl
             ? Image.network(
