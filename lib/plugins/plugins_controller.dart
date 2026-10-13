@@ -1,10 +1,13 @@
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:mobx/mobx.dart';
 import 'package:flutter/services.dart' show rootBundle, AssetManifest;
 import 'package:kazumi/services/platform/platform_paths.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/services/plugin/plugin_validity_tracker.dart';
+import 'package:kazumi/services/source/source_policy.dart';
+import 'package:kazumi/services/network/metered_network_service.dart';
 import 'package:kazumi/services/plugin/plugin_install_time_tracker.dart';
 import 'package:kazumi/request/apis/plugin_catalog_api.dart';
 import 'package:kazumi/modules/plugin/plugin_http_module.dart';
@@ -117,6 +120,21 @@ abstract class _PluginsController with Store {
       await newPluginDirectory!.create(recursive: true);
     }
     await _loadAllPlugins();
+    final policyFile = File('${newPluginDirectory!.path}/source-policy.json');
+    try {
+      if (await policyFile.exists()) {
+        SourcePolicy.shared.restore(await policyFile.readAsString());
+      }
+    } catch (error) {
+      KazumiLogger().w('来源本地策略读取失败，保留默认策略', error: error);
+    }
+    SourcePolicy.shared.environment = kIsWeb
+        ? 'web'
+        : defaultTargetPlatform.name;
+    SourcePolicy.shared.environmentProvider = () =>
+        '${kIsWeb ? 'web' : defaultTargetPlatform.name}|${MeteredNetworkService.isMetered ? 'mobile' : 'local'}';
+    SourcePolicy.shared.persist = (json) =>
+        policyFile.writeAsString(json).then((_) {});
   }
 
   // Loads all plugins from the directory, populates the plugin list, and saves to plugins.json if needed
@@ -170,14 +188,31 @@ abstract class _PluginsController with Store {
           asset.startsWith('assets/plugins/') && asset.endsWith('.json'),
     );
 
+    final bundled = <Plugin>[];
     for (var filePath in jsonFiles) {
       final jsonString = await rootBundle.loadString(filePath);
       final plugin = Plugin.fromJson(jsonDecode(jsonString));
-      pluginList.add(plugin);
+      bundled.add(plugin);
     }
-    await _savePlugins();
+    // 先完整读取，再在已有串行事务中补齐；重试不重复安装，也不覆盖自定义规则。
+    final installed = await _mutateAndPersist(() {
+      final ids = pluginList.map((p) => p.providerId).toSet();
+      final names = pluginList.map((p) => pluginNameKey(p.name)).toSet();
+      var added = 0;
+      for (final plugin in bundled) {
+        if (ids.contains(plugin.providerId) ||
+            names.contains(pluginNameKey(plugin.name))) {
+          continue;
+        }
+        ids.add(plugin.providerId);
+        names.add(pluginNameKey(plugin.name));
+        pluginList.add(plugin);
+        added++;
+      }
+      return added;
+    }, errorMessage: 'Plugin: failed to persist bundled rules');
     KazumiLogger().i(
-      'Plugin: ${jsonFiles.length} plugin files copied to ${newPluginDirectory!.path}',
+      'Plugin: $installed bundled rules added to ${newPluginDirectory!.path}',
     );
   }
 
@@ -220,7 +255,8 @@ abstract class _PluginsController with Store {
     for (int i = 0; i < pluginList.length; ++i) {
       if (pluginNameKey(pluginList[i].name) == pluginNameKey(plugin.name)) {
         // 远程更新不能改变已持久化来源身份，否则历史与收藏会失去关联。
-        plugin.sourceId = pluginList[i].sourceId ??
+        plugin.sourceId =
+            pluginList[i].sourceId ??
             SourceDefinition.fromJson(pluginList[i].toJson()).manifest.id;
         pluginList.replaceRange(i, i + 1, [plugin]);
         flag = true;
@@ -228,7 +264,9 @@ abstract class _PluginsController with Store {
       }
     }
     if (!flag) {
-      plugin.sourceId ??= SourceDefinition.fromJson(plugin.toJson()).manifest.id;
+      plugin.sourceId ??= SourceDefinition.fromJson(
+        plugin.toJson(),
+      ).manifest.id;
       pluginList.add(plugin);
     }
   }

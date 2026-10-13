@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:kazumi/services/video_source/video_source_service.dart';
 import 'package:kazumi/services/source/source_playback_service.dart';
 import 'package:kazumi/services/source/source_models.dart';
+import 'package:kazumi/services/source/source_service.dart';
 
 class VideoSourceResolverPool {
   final List<_VideoSourceResolverWorker> _workers = [];
@@ -112,6 +113,7 @@ class VideoSourceResolverLease {
     String episodeUrl, {
     required bool useLegacyParser,
     String? providerId,
+    SourceDefinition? definition,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   }) async {
@@ -122,6 +124,7 @@ class VideoSourceResolverLease {
       episodeUrl,
       useLegacyParser: useLegacyParser,
       providerId: providerId,
+      definition: definition,
       offset: offset,
       timeout: timeout,
     );
@@ -149,6 +152,7 @@ class _VideoSourceResolverWorker {
     String episodeUrl, {
     required bool useLegacyParser,
     String? providerId,
+    SourceDefinition? definition,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   }) {
@@ -157,8 +161,12 @@ class _VideoSourceResolverWorker {
       useLegacyParser: useLegacyParser,
       offset: offset,
       timeout: timeout,
-      context: SourceContext(providerId: providerId, sessionId: 'download',
-        timeout: timeout + const Duration(seconds: 20)),
+      definition: definition,
+      context: SourceContext(
+        providerId: providerId,
+        sessionId: 'download',
+        timeout: timeout + const Duration(seconds: 20),
+      ),
     );
   }
 

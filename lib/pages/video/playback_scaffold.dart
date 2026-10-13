@@ -317,6 +317,11 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
     });
   }
 
+  Future<void> retryPlayback() async {
+    if (!mounted || _isExiting) return;
+    await videoPageController.retryPlayback(playerController);
+  }
+
   void _toggleSidePanel() => _sidePanelKey.currentState?.toggle();
 
   void _closeSidePanel() => _sidePanelKey.currentState?.close();
@@ -404,15 +409,19 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
     OnlineVideoPlaybackArgs args,
     VideoEpisodeSelection selection, {
     int offset = 0,
+    Duration? expectedDuration,
+    VoidCallback? onReady,
   }) async {
     if (!mounted || _isExiting) return;
     await videoPageController.switchOnlineSource(
       args,
       selection: selection,
       offset: offset,
+      expectedDuration: expectedDuration,
       playerController: playerController,
       onReady: () {
         if (mounted) setState(() => hasPlayback = true);
+        onReady?.call();
       },
     );
   }
@@ -436,10 +445,21 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                     builder: (context) {
                       final errorMessage = videoPageController.errorMessage;
                       if (errorMessage != null) {
-                        return MediaErrorWidget(
-                          title: '暂时无法播放',
-                          errMsg: errorMessage,
-                          icon: Icons.videocam_off_outlined,
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: MediaErrorWidget(
+                                title: '暂时无法播放',
+                                errMsg: errorMessage,
+                                icon: Icons.videocam_off_outlined,
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: retryPlayback,
+                              icon: const Icon(Icons.refresh_rounded, size: 18),
+                              label: const Text('重试当前集'),
+                            ),
+                          ],
                         );
                       }
                       return Center(

@@ -8,6 +8,8 @@ import 'package:kazumi/utils/episode_url.dart';
 import 'package:kazumi/utils/http_headers.dart';
 import 'package:kazumi/services/source/source_service.dart';
 import 'package:kazumi/services/source/source_models.dart';
+import 'package:kazumi/services/source/source_policy.dart';
+import 'package:kazumi/services/source/source_profile.dart';
 import 'package:kazumi/request/core/network_exception.dart';
 
 export 'package:kazumi/services/plugin/rule_engine_models.dart'
@@ -52,7 +54,11 @@ class Plugin {
   AntiCrawlerConfig antiCrawlerConfig;
   String? sourceId;
   Map<String, dynamic> sourceConfig;
-  String get providerId => sourceId ?? SourceDefinition.fromJson(toJson()).manifest.id;
+  String get providerId =>
+      sourceId ?? SourceDefinition.fromJson(toJson()).manifest.id;
+  SourceProfile get profile =>
+      SourcePolicy.shared.profile(providerId, toJson());
+  bool get enabled => SourcePolicy.shared.enabled(providerId);
 
   Plugin({
     required this.api,
@@ -81,18 +87,20 @@ class Plugin {
     AntiCrawlerConfig? antiCrawlerConfig,
     this.sourceId,
     Map<String, dynamic>? sourceConfig,
-  })  : searchApiConfig = searchApiConfig ?? ApiSearchConfig(),
-        chapterApiConfig = chapterApiConfig ?? ApiChapterConfig(),
-        sourceConfig = sourceConfig ?? <String, dynamic>{},
-        antiCrawlerConfig = antiCrawlerConfig ?? AntiCrawlerConfig.empty();
+  }) : searchApiConfig = searchApiConfig ?? ApiSearchConfig(),
+       chapterApiConfig = chapterApiConfig ?? ApiChapterConfig(),
+       sourceConfig = sourceConfig ?? <String, dynamic>{},
+       antiCrawlerConfig = antiCrawlerConfig ?? AntiCrawlerConfig.empty();
 
   factory Plugin.fromJson(Map<String, dynamic> json) {
     return Plugin(
       api: json['api']?.toString() ?? '1',
-      type: json['type'] as String? ?? 'anime',
+      type: json['type'] as String? ?? 'unknown',
       name: json['name'] as String? ?? '',
       sourceId: json['sourceId'] as String?,
-      sourceConfig: Map<String, dynamic>.from(json['sourceConfig'] as Map? ?? const {}),
+      sourceConfig: Map<String, dynamic>.from(
+        json['sourceConfig'] as Map? ?? const {},
+      ),
       version: json['version']?.toString() ?? '',
       muliSources: json['muliSources'] as bool? ?? true,
       useWebview: json['useWebview'] as bool? ?? true,
@@ -199,21 +207,21 @@ class Plugin {
   bool get requiresNewerClient => int.parse(api) > ApiEndpoints.apiLevel;
 
   RuleExecutionConfig get _executionConfig => RuleExecutionConfig(
-        pluginName: name,
-        baseUrl: baseUrl,
-        usePost: usePost,
-        searchMode: searchMode,
-        chapterMode: chapterMode,
-        searchUrl: searchURL,
-        searchList: searchList,
-        searchName: searchName,
-        searchResult: searchResult,
-        chapterRoads: chapterRoads,
-        chapterResult: chapterResult,
-        searchApiConfig: searchApiConfig,
-        chapterApiConfig: chapterApiConfig,
-        antiCrawlerConfig: antiCrawlerConfig,
-      );
+    pluginName: name,
+    baseUrl: baseUrl,
+    usePost: usePost,
+    searchMode: searchMode,
+    chapterMode: chapterMode,
+    searchUrl: searchURL,
+    searchList: searchList,
+    searchName: searchName,
+    searchResult: searchResult,
+    chapterRoads: chapterRoads,
+    chapterResult: chapterResult,
+    searchApiConfig: searchApiConfig,
+    chapterApiConfig: chapterApiConfig,
+    antiCrawlerConfig: antiCrawlerConfig,
+  );
 
   Future<RuleSearchTrace> traceSearch(
     String keyword, {
@@ -251,15 +259,27 @@ class Plugin {
   }) async {
     try {
       final result = await SourceService.shared.search(
-        SourceDefinition.fromJson(toJson()), keyword,
-        context: SourceContext(cancelToken: cancelToken), paginate: false);
+        SourceDefinition.fromJson(toJson()),
+        keyword,
+        context: SourceContext(cancelToken: cancelToken),
+        paginate: false,
+      );
       if (result.items.isEmpty) throw NoResultException(name);
-      return PluginSearchResponse(pluginName: name, data: result.items
-        .map((e) => SearchItem(name: e.title, src: e.ref.rawRef)).toList());
+      return PluginSearchResponse(
+        pluginName: name,
+        data: result.items
+            .map((e) => SearchItem(name: e.title, src: e.ref.rawRef))
+            .toList(),
+      );
     } on SourceException catch (error) {
-      if (error.code == 'CHALLENGE_REQUIRED') throw CaptchaRequiredException(name);
+      if (error.code == 'CHALLENGE_REQUIRED') {
+        throw CaptchaRequiredException(name);
+      }
       if (error.code == 'CANCELLED') {
-        throw NetworkException(type: NetworkExceptionType.cancel, message: error.message);
+        throw NetworkException(
+          type: NetworkExceptionType.cancel,
+          message: error.message,
+        );
       }
       if (shouldRethrow) throw SearchErrorException(name, cause: error);
       return PluginSearchResponse(pluginName: name, data: <SearchItem>[]);
@@ -279,13 +299,21 @@ class Plugin {
   }) async {
     try {
       final definition = SourceDefinition.fromJson(toJson());
-      final lines = await SourceService.shared.lines(definition,
+      final lines = await SourceService.shared.lines(
+        definition,
         SourceRef(providerId: definition.manifest.id, rawRef: source),
-        context: SourceContext(cancelToken: cancelToken));
+        context: SourceContext(cancelToken: cancelToken),
+      );
       return lines.map((line) => line.toRoad()).toList();
     } on SourceException catch (error) {
       if (error.code == 'CANCELLED') {
-        throw NetworkException(type: NetworkExceptionType.cancel, message: error.message);
+        throw NetworkException(
+          type: NetworkExceptionType.cancel,
+          message: error.message,
+        );
+      }
+      if (error.code == 'CHALLENGE_REQUIRED') {
+        throw CaptchaRequiredException(name);
       }
       throw ChapterErrorException(name, cause: error);
     }

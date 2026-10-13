@@ -9,6 +9,8 @@ import 'package:kazumi/services/plugin/rule_engine_models.dart';
 import 'package:kazumi/services/plugin/api_rule_strategy.dart';
 import 'source_models.dart';
 import 'rule_directory_config.dart';
+import 'source_profile.dart';
+import 'source_resolve_config.dart';
 
 class SourceDefinition {
   SourceDefinition._(this._json, this.manifest, this.execution);
@@ -48,6 +50,7 @@ class SourceDefinition {
         version: data['version']?.toString() ?? '',
         apiLevel: api,
         origin: origin,
+        profile: SourceProfile.fromJson(data),
         capabilities: [
           'search',
           'episodes',
@@ -85,6 +88,27 @@ class SourceService {
     for (final entry in (_health[id] ?? <String, SourceHealth>{}).entries)
       entry.key: entry.value.toJson(),
   };
+
+  Future<SourceResolvedMedia?> resolveApi(
+    SourceDefinition source,
+    String episodeUrl, {
+    SourceContext? context,
+  }) async {
+    final raw = source.options['resolveApi'];
+    if (raw is! Map) return null;
+    final config = SourceResolveConfig(Map<String, dynamic>.from(raw));
+    config.validate();
+    final ctx = context ?? SourceContext(providerId: source.manifest.id);
+    return observe(source.manifest.id, 'resolve', ctx, () async {
+      final response = await engine.executeApi(
+        source.execution,
+        config.request,
+        {'episodeUrl': episodeUrl, 'source': episodeUrl},
+        cancelToken: ctx.cancelToken,
+      );
+      return config.parse(response);
+    });
+  }
 
   Future<T> observe<T>(
     String id,
@@ -132,6 +156,13 @@ class SourceService {
   }
 
   static SourceException mapError(Object error, String id) {
+    // 引擎为兼容旧调用方包装错误，运行服务的错误码仍需保留。
+    final cause = error is SearchErrorException
+        ? error.cause
+        : error is ChapterErrorException
+        ? error.cause
+        : null;
+    if (cause is SourceException) return cause;
     if (error is SourceException) return error;
     if (error is CaptchaRequiredException) {
       return SourceException('CHALLENGE_REQUIRED', '需要完成来源验证', providerId: id);

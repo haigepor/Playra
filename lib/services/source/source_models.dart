@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart';
+import 'source_profile.dart';
 
 class SourceException implements Exception {
   const SourceException(this.code, this.message, {this.providerId});
@@ -52,10 +53,12 @@ class SourceManifest {
     required this.apiLevel,
     this.origin = 'imported',
     this.capabilities = const ['search', 'episodes', 'resolve'],
+    this.profile = const SourceProfile(domains: []),
   });
   final String id, name, version, origin;
   final int apiLevel;
   final List<String> capabilities;
+  final SourceProfile profile;
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
@@ -63,6 +66,7 @@ class SourceManifest {
     'ruleApiLevel': apiLevel,
     'origin': origin,
     'capabilities': capabilities,
+    ...profile.toJson(),
   };
 }
 

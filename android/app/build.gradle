@@ -2,6 +2,7 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+    id "com.chaquo.python"
 }
 
 def localProperties = new Properties()
@@ -20,6 +21,12 @@ if (flutterVersionCode == null) {
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
+}
+
+def releaseKeyProperties = new Properties()
+def releaseKeyFile = rootProject.file('key.properties')
+if (releaseKeyFile.exists()) {
+    releaseKeyFile.withReader('UTF-8') { releaseKeyProperties.load(it) }
 }
 
 android {
@@ -51,13 +58,26 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
+        }
     }
 
+    signingConfigs {
+        if (releaseKeyFile.exists()) {
+            release {
+                storeFile rootProject.file(releaseKeyProperties['storeFile'])
+                storePassword releaseKeyProperties['storePassword']
+                keyAlias releaseKeyProperties['keyAlias']
+                keyPassword releaseKeyProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig releaseKeyFile.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
 }
@@ -67,6 +87,40 @@ flutter {
 }
 
 dependencies {}
+
+// 仅复制固定接入模块和标准库 SDK，不把诊断脚本/电脑身份打进 APK。
+def embeddedPythonDir = layout.buildDirectory.dir("embeddedPython")
+def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
+    doFirst {
+        def sdkDir = file("../../tool/source_runtime/vendor/miomedia")
+        def required = ["__init__.py", "block.py", "client.py", "config.py", "device.py",
+                        "playback.py", "profile.py", "selftest.py", "signature.py",
+                        "suite.py", "transport.py", "bf_tables.bin"]
+        if (!required.every { new File(sdkDir, it).isFile() }) {
+            throw new GradleException("Missing private SDK input: docs/release/build-inputs.zh.md")
+        }
+    }
+    from("../../tool/source_runtime") {
+        include "adapters.py", "miomedia_adapter.py", "android_bridge.py"
+        include "vendor/__init__.py", "vendor/miomedia/*.py"
+        // M6 的固定查表资源由原样 SDK 读取，不能只打包 Python 模块。
+        include "vendor/miomedia/bf_tables.bin"
+    }
+    into(embeddedPythonDir)
+}
+chaquopy {
+    defaultConfig {
+        version = "3.11"
+        def configuredPython = System.getenv("PLAYRA_BUILD_PYTHON")
+        if (configuredPython) { buildPython(configuredPython) }
+    }
+    sourceSets {
+        getByName("main") { srcDir(embeddedPythonDir.get().asFile) }
+    }
+}
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("PythonSources") }.configureEach {
+    dependsOn(stageEmbeddedPython)
+}
 
 // F-droid splits APKs by ABI, and requires different versionCode for each ABI.
 // For flutter version X.Y.Z, version code is X0Y0ZA, where A is the ABI code.

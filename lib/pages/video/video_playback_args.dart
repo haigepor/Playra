@@ -19,12 +19,14 @@ class OnlineVideoPlaybackArgs extends VideoPlaybackArgs {
     required this.title,
     required this.src,
     required this.roads,
+    this.automatic = false,
   });
 
   final Plugin plugin;
   final String title;
   final String src;
   final List<Road> roads;
+  final bool automatic;
 }
 
 class OfflineVideoPlaybackArgs extends VideoPlaybackArgs {

@@ -6,6 +6,7 @@ import 'package:ech_http/ech_http.dart';
 import 'package:http/http.dart' as http;
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/request/core/network_config.dart';
+import 'package:kazumi/request/core/bangumi_request_policy.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/bangumi_acceleration.dart';
 import 'package:kazumi/services/network/bangumi_ech_resolver.dart';
@@ -18,7 +19,13 @@ class BangumiAccelerationInterceptor extends Interceptor {
     options.extra.remove(_echRequestKey);
     final uri = options.uri;
     if (ApiEndpoints.bangumiPublicApiHosts.contains(uri.host)) {
-      switch (BangumiAcceleration.current) {
+      final override = options.extra[bangumiAccelerationOverride];
+      final mode =
+          BangumiAcceleration.values
+              .where((mode) => mode.name == override)
+              .firstOrNull ??
+          BangumiAcceleration.current;
+      switch (mode) {
         case BangumiAcceleration.direct:
           break;
         case BangumiAcceleration.ech:

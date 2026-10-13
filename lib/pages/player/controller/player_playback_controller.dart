@@ -81,6 +81,9 @@ abstract class _PlayerPlaybackController with Store {
 
   _OwnedPlayer? _ownedPlayer;
   Player? get mediaPlayer => _ownedPlayer?.player;
+
+  /// 仅当前媒体实例上报；来源控制器决定是否重试，避免错误提示自行循环。
+  void Function(String message)? onMediaError;
   VideoController? videoController;
 
   final AsyncSerialQueue _prefetchWrites = AsyncSerialQueue();
@@ -90,6 +93,7 @@ abstract class _PlayerPlaybackController with Store {
   late String hardwareDecoder;
   bool androidEnableOpenSLES = true;
   bool autoPlay = true;
+  bool startupSuspended = false;
   bool playerDebugMode = false;
   int buttonSkipTime = 80;
   int arrowKeySkipTime = 10;
@@ -144,6 +148,7 @@ abstract class _PlayerPlaybackController with Store {
 
   @action
   void resetForInit() {
+    startupSuspended = false;
     playing = false;
     loading = true;
     isBuffering = true;
@@ -436,6 +441,7 @@ abstract class _PlayerPlaybackController with Store {
       bool showPlayerError = GStorage.getSetting(SettingsKeys.showPlayerError);
       player.stream.error.listen((event) {
         if (isCurrentPlayer(player)) {
+          onMediaError?.call(event.toString());
           final actionableMessage = PlayerErrorMapper.toActionableMessage(
             event,
             isBuffering: playerBuffering,

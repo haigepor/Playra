@@ -1,0 +1,63 @@
+{
+  "api": "8",
+  "type": "movie",
+  "sourceId": "runtime-template-screen",
+  "name": "影视运行模板（未接入）",
+  "version": "0.1.0",
+  "muliSources": true,
+  "useWebview": false,
+  "useNativePlayer": true,
+  "usePost": false,
+  "useLegacyParser": false,
+  "adBlocker": false,
+  "userAgent": "",
+  "baseURL": "https://source-runtime.playra.invalid",
+  "searchURL": "",
+  "searchList": "",
+  "searchName": "",
+  "searchResult": "",
+  "chapterRoads": "",
+  "chapterResult": "",
+  "referer": "",
+  "searchMode": "api",
+  "chapterMode": "api",
+  "searchApiConfig": {
+    "request": {
+      "method": "GET",
+      "url": "https://source-runtime.playra.invalid/v1/adapters/template/search",
+      "query": { "q": "@keyword", "page": "@page", "pageSize": "@pageSize" }
+    },
+    "listPath": "$.data[*]",
+    "namePath": "$.name",
+    "sourcePath": "$.url"
+  },
+  "chapterApiConfig": {
+    "request": {
+      "method": "GET",
+      "url": "https://source-runtime.playra.invalid/v1/adapters/template/episodes",
+      "query": { "source": "@source" }
+    },
+    "format": "nested",
+    "roadsPath": "$.data.roads[*]",
+    "roadNamePath": "$.name",
+    "episodesPath": "$.episodes[*]",
+    "episodeNamePath": "$.name",
+    "episodeUrlPath": "$.url"
+  },
+  "sourceConfig": {
+    "domains": ["screen"],
+    "searchPagination": { "enabled": true, "totalPath": "$.total", "hasMorePath": "$.hasMore" },
+    "resolveApi": {
+      "request": {
+        "method": "POST",
+        "url": "https://source-runtime.playra.invalid/v1/adapters/template/resolve",
+        "bodyType": "json",
+        "body": { "episodeUrl": "@episodeUrl" }
+      },
+      "urlPath": "$.data.url",
+      "headersPath": "$.data.headers",
+      "formatPath": "$.data.format",
+      "expiresAtPath": "$.data.expiresAt"
+    }
+  }
+}

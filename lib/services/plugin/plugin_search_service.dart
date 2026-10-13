@@ -5,6 +5,7 @@ import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart';
 import 'package:kazumi/utils/async_session.dart';
+import 'package:kazumi/services/source/source_candidates.dart';
 
 class PluginSearchService {
   PluginSearchService({
@@ -19,6 +20,8 @@ class PluginSearchService {
   /// Per-plugin sessions so a replacement query (alias/manual search)
   /// invalidates the write-back of the still-running previous one.
   final Map<String, AsyncSessionOwner> _querySessions = {};
+  final AsyncSessionOwner _batchSessions = AsyncSessionOwner();
+  final Map<String, RuleCancelToken> _queryTokens = {};
   bool _isCancelled = false;
 
   Future<void> querySource(String keyword, String pluginName) async {
@@ -44,58 +47,130 @@ class PluginSearchService {
       if (plugin.name != pluginName) continue;
       final result = plugin.parseHarvestedSearch(html);
       if (result == null) return false;
-      infoController.pluginSearchResponseList.removeWhere(
-        (response) => response.pluginName == pluginName,
-      );
+      // 验证结果与正常查询共用代次，防止旧搜索在验证后覆盖结果。
+      final session = _querySessions
+          .putIfAbsent(pluginName, AsyncSessionOwner.new)
+          .begin();
+      final token = _beginQuery(pluginName);
       infoController.pluginSearchStatus[pluginName] =
-          PluginSearchStatus.success;
-      pluginsController.validityTracker.markSearchValid(pluginName);
-      infoController.pluginSearchResponseList.add(result);
+          PluginSearchStatus.pending;
+      _publishPrepared(plugin, result, session, cancelToken: token);
       return true;
     }
     return false;
   }
 
   Future<void> queryAllSource(String keyword) async {
+    if (_isCancelled) return;
+    final batch = _batchSessions.begin();
+    for (final owner in _querySessions.values) {
+      owner.cancel();
+    }
+    for (final token in _queryTokens.values) {
+      token.cancel('replaced');
+    }
     infoController.pluginSearchResponseList.clear();
     infoController.pluginSearchStatus.clear();
 
-    final plugins = List<Plugin>.of(pluginsController.pluginList);
+    final plugins = SourceCandidates.shared.eligible(
+      pluginsController.pluginList,
+      infoController.bangumiItem,
+    );
+    final queuedTokens = <String, RuleCancelToken>{};
     for (final plugin in plugins) {
+      queuedTokens[plugin.name] = _beginQuery(plugin.name);
       infoController.pluginSearchStatus[plugin.name] =
           PluginSearchStatus.pending;
     }
     var next = 0;
     Future<void> worker() async {
-      while (!_isCancelled && next < plugins.length) {
+      while (!_isCancelled && batch.isActive && next < plugins.length) {
         final plugin = plugins[next++];
-        await _queryPlugin(plugin, keyword);
+        await _queryPlugin(
+          plugin,
+          keyword,
+          queuedToken: queuedTokens[plugin.name],
+        );
       }
     }
-    await Future.wait(List.generate(plugins.length.clamp(0, 4), (_) => worker()));
+
+    await Future.wait(
+      List.generate(plugins.length.clamp(0, 4), (_) => worker()),
+    );
   }
 
-  Future<void> _queryPlugin(Plugin plugin, String keyword) async {
+  Future<void> _queryPlugin(
+    Plugin plugin,
+    String keyword, {
+    RuleCancelToken? queuedToken,
+  }) async {
     if (_isCancelled) return;
+    // 队列尚未启动时发生人工查询，旧批次不得重新抢占该来源。
+    if (queuedToken != null &&
+        !identical(_queryTokens[plugin.name], queuedToken)) {
+      return;
+    }
     final session = _querySessions
         .putIfAbsent(plugin.name, AsyncSessionOwner.new)
         .begin();
+    final token = queuedToken ?? _beginQuery(plugin.name);
     try {
       final result = await plugin.queryBangumi(
         keyword,
         shouldRethrow: true,
-        cancelToken: _cancelToken,
+        cancelToken: token,
       );
       if (_isCancelled || session.isStale) return;
-      infoController.pluginSearchStatus[plugin.name] =
-          PluginSearchStatus.success;
-      if (result.data.isNotEmpty) {
-        pluginsController.validityTracker.markSearchValid(plugin.name);
-      }
-      infoController.pluginSearchResponseList.add(result);
+      await _publishPrepared(
+        plugin,
+        result,
+        session,
+        cancelToken: token,
+        allowUnmatched:
+            keyword !=
+            (infoController.bangumiItem.nameCn.isEmpty
+                ? infoController.bangumiItem.name
+                : infoController.bangumiItem.nameCn),
+      );
     } catch (error) {
       if (_isCancelled || session.isStale) return;
       _handleSearchError(plugin, error);
+    }
+  }
+
+  Future<void> _publishPrepared(
+    Plugin plugin,
+    PluginSearchResponse result,
+    AsyncSession session, {
+    required RuleCancelToken cancelToken,
+    bool allowUnmatched = false,
+  }) async {
+    try {
+      final candidates = await SourceCandidates.shared.prepare(
+        infoController.bangumiItem,
+        plugin,
+        result.data,
+        cancelToken: cancelToken,
+        allowUnmatched: allowUnmatched,
+      );
+      if (_isCancelled || session.isStale) return;
+      infoController.pluginSearchResponseList.removeWhere(
+        (r) => r.pluginName == plugin.name,
+      );
+      infoController.pluginSearchStatus[plugin.name] = candidates.isEmpty
+          ? PluginSearchStatus.noResult
+          : PluginSearchStatus.success;
+      if (candidates.isNotEmpty) {
+        pluginsController.validityTracker.markSearchValid(plugin.name);
+      }
+      infoController.pluginSearchResponseList.add(
+        PluginSearchResponse(
+          pluginName: plugin.name,
+          data: candidates.map((c) => c.item).toList(),
+        ),
+      );
+    } catch (error) {
+      if (!_isCancelled && session.isActive) _handleSearchError(plugin, error);
     }
   }
 
@@ -123,6 +198,15 @@ class PluginSearchService {
 
   void cancel() {
     _isCancelled = true;
+    _batchSessions.cancel();
     _cancelToken.cancel();
+  }
+
+  RuleCancelToken _beginQuery(String name) {
+    _queryTokens[name]?.cancel('replaced');
+    final token = RuleCancelToken();
+    _queryTokens[name] = token;
+    _cancelToken.whenCancel.then((_) => token.cancel());
+    return token;
   }
 }

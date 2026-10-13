@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'runtime/source_runtime.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:kazumi/services/plugin/rule_engine.dart';
 import 'source_directory.dart';
 import 'source_gateway.dart';
+import 'source_policy.dart';
 import 'source_models.dart';
 import 'source_service.dart';
 
@@ -175,7 +177,11 @@ class SourceHttpServer {
     'pagination': page.pagination.toJson(),
   };
 
-  String _mediaUrl(String url, Map<String, String> headers) {
+  String _mediaUrl(
+    String url,
+    Map<String, String> headers, {
+    DateTime? expiresAt,
+  }) {
     _media.removeWhere(
       (_, ticket) => ticket.expiresAt.isBefore(DateTime.now()),
     );
@@ -184,7 +190,7 @@ class SourceHttpServer {
     _media[token] = (
       url: url,
       headers: headers,
-      expiresAt: DateTime.now().add(const Duration(hours: 2)),
+      expiresAt: expiresAt ?? DateTime.now().add(const Duration(hours: 2)),
     );
     return gateway.base.resolve('/api/v1/media/$token').toString();
   }
@@ -325,8 +331,32 @@ class SourceHttpServer {
         request.response.statusCode = 201;
         output = {'id': id, 'expiresInSeconds': 1800};
       } else if (path.length == 3 && path[2] == 'sources' && method == 'GET') {
+        final domain = request.uri.queryParameters['domain'];
+        if (domain != null && !const ['anime', 'screen'].contains(domain)) {
+          throw const SourceException(
+            'INVALID_ARGUMENT',
+            'domain 必须是 anime 或 screen',
+          );
+        }
         output = {
-          'data': sources.values.map((s) => s.manifest.toJson()).toList(),
+          'data': sources.values
+              .where(
+                (s) =>
+                    request.uri.queryParameters['domain'] == null ||
+                    SourcePolicy.shared
+                        .profile(s.manifest.id, s.toJson())
+                        .supports(request.uri.queryParameters['domain']!),
+              )
+              .map(
+                (s) => {
+                  ...s.manifest.toJson(),
+                  ...SourcePolicy.shared
+                      .profile(s.manifest.id, s.toJson())
+                      .toJson(),
+                  'enabled': SourcePolicy.shared.enabled(s.manifest.id),
+                },
+              )
+              .toList(),
         };
       } else if (path[2] == 'sources' && path.length >= 4) {
         final source = _source(path[3]);
@@ -334,8 +364,33 @@ class SourceHttpServer {
           throw const SourceException('METHOD_NOT_ALLOWED', '接口仅支持 GET');
         }
         if (path.length == 4) {
-          output = {'data': source.manifest.toJson()};
+          output = {
+            'data': {
+              ...source.manifest.toJson(),
+              ...SourcePolicy.shared
+                  .profile(source.manifest.id, source.toJson())
+                  .toJson(),
+              'enabled': SourcePolicy.shared.enabled(source.manifest.id),
+            },
+          };
         } else {
+          final domain = request.uri.queryParameters['domain'];
+          if (domain != null && !const ['anime', 'screen'].contains(domain)) {
+            throw const SourceException(
+              'INVALID_ARGUMENT',
+              'domain 必须是 anime 或 screen',
+            );
+          }
+          if (path[4] != 'health' &&
+              !SourcePolicy.shared.enabled(source.manifest.id)) {
+            throw const SourceException('SOURCE_DISABLED', '来源已禁用');
+          }
+          if (domain != null &&
+              !SourcePolicy.shared
+                  .profile(source.manifest.id, source.toJson())
+                  .supports(domain)) {
+            throw const SourceException('DOMAIN_MISMATCH', '来源不支持该内容领域');
+          }
           final session = _session(request);
           final ctx = SourceContext(
             sessionId: request.headers.value('x-kazumi-session')!,
@@ -410,7 +465,23 @@ class SourceHttpServer {
         // 每个来源结果都经过 session 服务，同一会话内可继续调用剧集接口。
         final data = <Map<String, dynamic>>[];
         var next = 0;
-        final providers = sources.values.toList();
+        final domain = request.uri.queryParameters['domain'];
+        if (domain != null && !const ['anime', 'screen'].contains(domain)) {
+          throw const SourceException(
+            'INVALID_ARGUMENT',
+            'domain 必须是 anime 或 screen',
+          );
+        }
+        final providers = sources.values
+            .where(
+              (s) =>
+                  SourcePolicy.shared.enabled(s.manifest.id) &&
+                  (domain == null ||
+                      SourcePolicy.shared
+                          .profile(s.manifest.id, s.toJson())
+                          .supports(domain)),
+            )
+            .toList();
         Future<void> worker() async {
           while (next < providers.length) {
             final source = providers[next++];
@@ -456,7 +527,7 @@ class SourceHttpServer {
           : const SourceException('INTERNAL_ERROR', '服务请求失败');
       request.response.statusCode = switch (mapped.code) {
         'SESSION_REQUIRED' => 401,
-        'FORBIDDEN' => 403,
+        'FORBIDDEN' || 'SOURCE_DISABLED' => 403,
         'NOT_FOUND' => 404,
         'METHOD_NOT_ALLOWED' => 405,
         'CHALLENGE_REQUIRED' => 409,
@@ -465,7 +536,7 @@ class SourceHttpServer {
         'UNSUPPORTED' => 422,
         'SOURCE_ERROR' || 'PARSE_ERROR' => 502,
         'TIMEOUT' => 504,
-        'INVALID_ARGUMENT' || 'INVALID_REFERENCE' => 400,
+        'INVALID_ARGUMENT' || 'INVALID_REFERENCE' || 'DOMAIN_MISMATCH' => 400,
         _ => 500,
       };
       request.response.headers.contentType = ContentType.json;
@@ -489,6 +560,9 @@ class SourceHttpServer {
     if (path.length == baseLength && request.method == 'POST') {
       final data = await _body(request);
       final source = _source(data['providerId'] as String? ?? '');
+      if (!SourcePolicy.shared.enabled(source.manifest.id)) {
+        throw const SourceException('SOURCE_DISABLED', '来源已禁用');
+      }
       if (session.jobs.length >= 8) {
         throw const SourceException('BUSY', '会话任务过多');
       }
@@ -636,19 +710,46 @@ class SourceHttpServer {
         job.context,
         () async {
           final raw = source.toJson();
+          final apiMedia = await session.service.resolveApi(
+            source,
+            url,
+            context: job.context,
+          );
+          if (apiMedia != null) {
+            return {
+              'url': _mediaUrl(
+                apiMedia.url,
+                apiMedia.headers,
+                expiresAt: apiMedia.expiresAt,
+              ),
+              'format': apiMedia.format,
+              'expiresAt':
+                  (apiMedia.expiresAt ??
+                          DateTime.now().add(const Duration(hours: 2)))
+                      .toUtc()
+                      .toIso8601String(),
+            };
+          }
           final headers = await session.gateway.playbackHeaders(
             source.manifest.id,
             url,
             userAgent: raw['userAgent'] as String?,
             referer: raw['referer'] as String?,
           );
-          final parsed = await session.gateway.browser('parse', {
-            'url': url,
-            'headers': headers,
-            'userAgent': headers['user-agent'],
-            'cookie': headers['cookie'],
-            'useLegacyParser': raw['useLegacyParser'] == true,
-          }, cancelToken: job.context.cancelToken);
+          final uri = Uri.parse(url);
+          final direct = RegExp(
+            r'\.(m3u8|mp4|mkv|webm)$',
+            caseSensitive: false,
+          ).hasMatch(uri.path);
+          final parsed = direct
+              ? <String, dynamic>{'url': url}
+              : await session.gateway.browser('parse', {
+                  'url': url,
+                  'headers': headers,
+                  'userAgent': headers['user-agent'],
+                  'cookie': headers['cookie'],
+                  'useLegacyParser': raw['useLegacyParser'] == true,
+                }, cancelToken: job.context.cancelToken);
           final media = parsed['url'];
           if (media is! String ||
               !['http', 'https'].contains(Uri.tryParse(media)?.scheme)) {
@@ -736,5 +837,14 @@ class SourceHttpServer {
 }
 
 // 默认请求器只负责网络，XPath/JSONPath 始终由已有引擎执行。
-RuleEngine gatewayEngine(SourceGateway gateway) =>
-    RuleEngine(requestExecutor: gateway, logFailures: false);
+RuleEngine gatewayEngine(SourceGateway gateway) => RuleEngine(
+  requestExecutor: SourceRuntimeExecutor(
+    gateway,
+    runtime: SourceRuntimeClient(
+      endpoint: gateway.base.resolve('/api/runtime/v1/').toString(),
+      allowInsecure: true,
+      client: gateway.client,
+    ),
+  ),
+  logFailures: false,
+);

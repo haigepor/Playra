@@ -42,6 +42,12 @@ class SettingKey<T> {
 // Add new settings here. SettingsKeys is the public typed registry used by
 // callers; new keys can use literal string names directly.
 class SettingsKeys {
+  // null 仅用于旧版本迁移；准备好规则并不等于已经完成引导。
+  static const onboardingCompleted = SettingKey<bool?>(
+    'onboardingCompleted',
+    null,
+    group: SettingGroup.misc,
+  );
   static const hAenable = SettingKey<bool>(
     _SettingBoxKey.hAenable,
     true,
@@ -286,8 +292,14 @@ class SettingsKeys {
   );
   static const androidUiStyle = SettingKey<String>(
     'androidUiStyle',
-    'legacy',
+    'modern',
     group: SettingGroup.interface,
+  );
+  // 一次性迁移旧设备的页面选择；完成后仍允许用户主动切回旧版。
+  static const androidModernDefaultApplied = SettingKey<bool>(
+    'androidModernDefaultApplied',
+    false,
+    group: SettingGroup.misc,
   );
   static const webDavEnable = SettingKey<bool>(
     _SettingBoxKey.webDavEnable,
@@ -564,6 +576,7 @@ class SettingsKeys {
   );
 
   static final List<SettingKey<Object?>> all = [
+    onboardingCompleted,
     hAenable,
     hardwareDecoder,
     searchEnhanceEnable,
@@ -613,6 +626,7 @@ class SettingsKeys {
     enableSystemProxy,
     defaultStartupPage,
     androidUiStyle,
+    androidModernDefaultApplied,
     webDavEnable,
     webDavEnableHistory,
     webDavEnableCollect,

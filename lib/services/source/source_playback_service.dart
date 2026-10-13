@@ -4,6 +4,7 @@ import 'package:kazumi/services/video_source/video_source_service.dart';
 import 'package:kazumi/services/video_source/webview_video_source_service.dart';
 import 'source_models.dart';
 import 'source_service.dart';
+import 'package:kazumi/services/video_source/video_source_format.dart';
 
 /// 保留现有平台 WebView，只在来源服务边界统一超时、取消与健康记录。
 class SourcePlaybackService extends WebViewVideoSourceService {
@@ -17,6 +18,7 @@ class SourcePlaybackService extends WebViewVideoSourceService {
     int offset = 0,
     Duration timeout = const Duration(seconds: 15),
     SourceContext? context,
+    SourceDefinition? definition,
   }) async {
     _context?.cancelToken.cancel('replaced');
     final effective = kIsWeb && timeout < const Duration(seconds: 45)
@@ -36,6 +38,42 @@ class SourcePlaybackService extends WebViewVideoSourceService {
       }),
     );
     try {
+      if (definition != null) {
+        final media = await SourceService.shared.resolveApi(
+          definition,
+          episodeUrl,
+          context: ctx,
+        );
+        if (media != null) {
+          return VideoSource(
+            url: media.url,
+            offset: offset,
+            type: VideoSourceType.online,
+            format: media.format == 'hls'
+                ? VideoSourceFormat.hls
+                : VideoSourceFormat.auto,
+            headers: media.headers,
+            expiresAt: media.expiresAt,
+          );
+        }
+      }
+      final uri = Uri.tryParse(episodeUrl);
+      if (uri != null &&
+          ['http', 'https'].contains(uri.scheme) &&
+          RegExp(
+            r'\.(m3u8|mp4|mkv|webm)$',
+            caseSensitive: false,
+          ).hasMatch(uri.path)) {
+        ctx.checkActive();
+        return VideoSource(
+          url: episodeUrl,
+          offset: offset,
+          type: VideoSourceType.online,
+          format: uri.path.toLowerCase().endsWith('.m3u8')
+              ? VideoSourceFormat.hls
+              : VideoSourceFormat.auto,
+        );
+      }
       return await SourceService.shared.observe(
         ctx.providerId ?? providerId,
         'resolve',
@@ -60,7 +98,7 @@ class SourcePlaybackService extends WebViewVideoSourceService {
         throw const VideoSourceCancelledException();
       }
       if (error.code == 'TIMEOUT') throw VideoSourceTimeoutException(effective);
-      throw VideoSourceNotFoundException(error.message);
+      rethrow;
     } finally {
       if (identical(_context, ctx)) _context = null;
     }

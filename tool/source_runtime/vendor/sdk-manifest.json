@@ -1,0 +1,65 @@
+{
+  "sdkVersion": "playback-adtoken-ecsm-fast-20261012",
+  "files": [
+    {
+      "file": "__init__.py",
+      "sha256": "27fed9d94d034daf905721ae11a41b5d6066063337f94291929b56ed1cceb81f",
+      "unchanged": true
+    },
+    {
+      "file": "bf_tables.bin",
+      "sha256": "8db771263736ba4009df42755457a35af2554be0135f1d243be85d5eda392018",
+      "unchanged": true
+    },
+    {
+      "file": "block.py",
+      "sha256": "b72a6ae4c4ce69db07fbd9603391e3fb6b91d49067692b6504f27bae1b3c2f0b",
+      "unchanged": true
+    },
+    {
+      "file": "client.py",
+      "sha256": "92187856e7cf411ae5ac436cf4262c760becec9cc3a8900fd95bc5448eca668b",
+      "unchanged": true
+    },
+    {
+      "file": "config.py",
+      "sha256": "8aa2f040f799541699f8dde5589ca31e27c7381fea3a3e849ade43b2b03710a3",
+      "unchanged": false
+    },
+    {
+      "file": "device.py",
+      "sha256": "99e88dc756412eea3af1a3a7b895579725f8096d373e3bd3dd7435f61c2aebaa",
+      "unchanged": true
+    },
+    {
+      "file": "playback.py",
+      "sha256": "2ed4ca6c2972a9e7c987ee84caefae35d2682dbb89ab9243ccaa2f733db3be35",
+      "unchanged": true
+    },
+    {
+      "file": "profile.py",
+      "sha256": "810e09600fdff2b439a2f2178b5f7563ca249eb2c68b0078c9ca9a2ebf025610",
+      "unchanged": false
+    },
+    {
+      "file": "selftest.py",
+      "sha256": "169ce6993cd66ef9473012099d3e50931af8120c48b4c42e0ed97738145754c2",
+      "unchanged": true
+    },
+    {
+      "file": "signature.py",
+      "sha256": "349e868c21ba519b0196215ecc9d074858c734ea351f5be2bc4f1f56ea163ccd",
+      "unchanged": true
+    },
+    {
+      "file": "suite.py",
+      "sha256": "6bbe14d21f19fb285c97ed192be5f2ee2b2b5fb581aed23354125a468d690333",
+      "unchanged": true
+    },
+    {
+      "file": "transport.py",
+      "sha256": "1cee245fc1119985f114f6dc69585aab3e64e8140077c832252f049fc01a152c",
+      "unchanged": true
+    }
+  ]
+}

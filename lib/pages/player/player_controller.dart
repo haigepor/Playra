@@ -344,6 +344,7 @@ class PlayerController implements Disposable {
   }
 
   Future<void> pause({bool enableSync = true}) async {
+    playback.startupSuspended = true;
     final player = playback.mediaPlayer;
     if (player == null) return;
     danmaku.canvasController.pause();
@@ -362,6 +363,7 @@ class PlayerController implements Disposable {
   }
 
   Future<void> play({bool enableSync = true}) async {
+    playback.startupSuspended = false;
     final player = playback.mediaPlayer;
     if (player == null) return;
     danmaku.canvasController.resume();

@@ -18,6 +18,8 @@ class VideoSource {
 
   /// 播放偏移量（秒）
   final int offset;
+  final Map<String, String> headers;
+  final DateTime? expiresAt;
 
   /// 视频源类型
   final VideoSourceType type;
@@ -30,6 +32,8 @@ class VideoSource {
     required this.offset,
     required this.type,
     this.format = VideoSourceFormat.auto,
+    this.headers = const {},
+    this.expiresAt,
   });
 
   @override

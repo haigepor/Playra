@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/request/clients/bangumi_client.dart';
@@ -423,8 +424,12 @@ class BangumiApi {
     return episodeInfo;
   }
 
-  static Future<List<EpisodeInfo>> getBangumiEpisodesByID(int id,
-      {bool throwOnError = false}) async {
+  static Future<List<EpisodeInfo>> getBangumiEpisodesByID(
+    int id, {
+    bool throwOnError = false,
+    CancelToken? cancelToken,
+    void Function(List<EpisodeInfo>)? onPage,
+  }) async {
     final List<EpisodeInfo> episodeList = [];
     const int limit = 100;
     int offset = 0;
@@ -439,20 +444,27 @@ class BangumiApi {
         final jsonData = await _client.get(
           ApiEndpoints.bangumiAPIDomain + ApiEndpoints.bangumiEpisodeByID,
           queryParameters: params,
+          cancelToken: cancelToken,
         );
         total ??= jsonData['total'] as int?;
         final data = jsonData['data'] as List<dynamic>? ?? [];
         if (data.isEmpty) {
           break;
         }
-        episodeList.addAll(data
-            .whereType<Map<String, dynamic>>()
-            .map((jsonItem) => EpisodeInfo.fromJson(jsonItem)));
+        episodeList.addAll(
+          data.whereType<Map<String, dynamic>>().map(
+            (jsonItem) => EpisodeInfo.fromJson(jsonItem),
+          ),
+        );
         offset += data.length;
+        // 长篇番剧逐页交付目录；调用方保存真实 id/sort，不以显示位置推断集数。
+        onPage?.call(List.unmodifiable(episodeList));
       } while (total == null || offset < total);
     } catch (e) {
-      KazumiLogger()
-          .e('Network: resolve bangumi episode list failed', error: e);
+      KazumiLogger().e(
+        'Network: resolve bangumi episode list failed',
+        error: e,
+      );
       if (throwOnError) rethrow;
     }
     return episodeList;

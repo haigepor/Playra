@@ -74,8 +74,12 @@ class SourceHttpClient {
   }
 
   String _source(String id) => '/api/v1/sources/${Uri.encodeComponent(id)}';
-  Future<Map<String, dynamic>> sources() =>
-      _call('GET', '/api/v1/sources', session: false);
+  Future<Map<String, dynamic>> sources({String? domain}) => _call(
+    'GET',
+    '/api/v1/sources',
+    session: false,
+    query: {'domain': ?domain},
+  );
   Future<Map<String, dynamic>> categories(String id) =>
       _call('GET', '${_source(id)}/categories');
   Future<Map<String, dynamic>> health(String id) =>
@@ -83,6 +87,7 @@ class SourceHttpClient {
   Future<Map<String, dynamic>> search(
     String keyword, {
     String? providerId,
+    String? domain,
     int page = 1,
     int pageSize = 20,
     SourceContext? context,
@@ -91,7 +96,12 @@ class SourceHttpClient {
     return _call(
       'GET',
       providerId == null ? '/api/v1/search' : '${_source(providerId)}/search',
-      query: {'q': keyword, 'page': page, 'pageSize': pageSize},
+      query: {
+        'q': keyword,
+        'page': page,
+        'pageSize': pageSize,
+        'domain': ?domain,
+      },
       context: context,
     );
   }

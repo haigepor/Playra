@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/request/core/network_config.dart';
+import 'package:kazumi/request/core/bangumi_request_policy.dart';
 import 'package:kazumi/services/network/bangumi_acceleration.dart';
 
 class BangumiAccelerationInterceptor extends Interceptor {
@@ -11,6 +12,7 @@ class BangumiAccelerationInterceptor extends Interceptor {
     // 保留原生镜像行为，避免浏览器搜索依赖第三方镜像授权。
     if (ApiEndpoints.bangumiPublicApiHosts.contains(options.uri.host) &&
         BangumiAcceleration.current == BangumiAcceleration.mirror &&
+        options.extra[bangumiAccelerationOverride] == null &&
         options.method != 'POST') {
       final uri = options.uri;
       options.path =

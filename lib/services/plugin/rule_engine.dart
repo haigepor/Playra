@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'rule_engine_runtime_standalone.dart'
-    if (dart.library.ui) 'rule_engine_runtime_flutter.dart' as runtime;
+    if (dart.library.ui) 'rule_engine_runtime_flutter.dart'
+    as runtime;
 import 'package:kazumi/modules/search/plugin_search_module.dart';
 import 'package:kazumi/plugins/api_rule_config.dart';
 import 'package:kazumi/request/core/network_exception.dart';
@@ -22,15 +23,28 @@ class RuleEngine {
     ApiRuleStrategy apiStrategy = const ApiRuleStrategy(),
     XPathRuleStrategy xpathStrategy = const XPathRuleStrategy(),
     bool logFailures = true,
-  })  : _requestExecutor = requestExecutor ?? runtime.createRuleRequestExecutor(),
-        _apiStrategy = apiStrategy,
-        _xpathStrategy = xpathStrategy,
-        _logFailures = logFailures;
+  }) : _requestExecutor =
+           requestExecutor ?? runtime.createRuleRequestExecutor(),
+       _apiStrategy = apiStrategy,
+       _xpathStrategy = xpathStrategy,
+       _logFailures = logFailures;
 
   final RuleRequestExecutor _requestExecutor;
   final ApiRuleStrategy _apiStrategy;
   final XPathRuleStrategy _xpathStrategy;
   final bool _logFailures;
+
+  /// 外部解析接口与搜索/剧集复用同一请求器、鉴权和取消边界。
+  Future<String> executeApi(
+    RuleExecutionConfig config,
+    ApiRequestConfig request,
+    Map<String, Object?> variables, {
+    CancelToken? cancelToken,
+  }) => _requestExecutor.execute(
+    _apiStrategy.prepareRequest(request, variables),
+    config,
+    cancelToken: cancelToken,
+  );
 
   Future<RuleSearchTrace> search(
     RuleExecutionConfig config,

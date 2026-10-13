@@ -1,0 +1,1483 @@
+{
+  "date": "2026-10-12",
+  "total": 132,
+  "methods": {
+    "POST": 130,
+    "GET": 2
+  },
+  "groups": {
+    "广告": 8,
+    "认证与设备": 20,
+    "内容与目录": 27,
+    "用户与消息": 15,
+    "客户端配置与更新": 3,
+    "会员与任务": 20,
+    "社区互动": 26,
+    "播放与下载": 13
+  },
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "ad/claimReward",
+      "documents": [
+        "ads",
+        "index"
+      ],
+      "description": "奖励领取；返回 granted/rejected；需要真实业务条件",
+      "group": "广告",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "ad/getConfig",
+      "documents": [
+        "ads",
+        "index"
+      ],
+      "description": "广告配置：appKey/enable/nonce/rewardEligible/slots",
+      "group": "广告",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "ad/getRewardStatus",
+      "documents": [
+        "ads",
+        "index"
+      ],
+      "description": "奖励状态；完整字段待核验",
+      "group": "广告",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "ad/getSignature",
+      "documents": [
+        "ads",
+        "index"
+      ],
+      "description": "广告展示签名：signature/expiresIn/shouldShow/remainingToday/denyReason",
+      "group": "广告",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "ad/getSlots",
+      "documents": [
+        "ads",
+        "index"
+      ],
+      "description": "广告槽位列表：slotCode/placementId/minWatchSeconds/allowEarlyClose/s2sVerify",
+      "group": "广告",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "ad/reportClose",
+      "documents": [
+        "ads",
+        "index"
+      ],
+      "description": "关闭广告上报；返回 status/message/amount",
+      "group": "广告",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "ad/reportEvent",
+      "documents": [
+        "ads",
+        "index"
+      ],
+      "description": "展示/错误等广告事件上报；返回 status",
+      "group": "广告",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "ad/reportNoFill",
+      "documents": [
+        "ads",
+        "index"
+      ],
+      "description": "无填充事件上报；返回 status",
+      "group": "广告",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/bindEmail",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "绑定邮箱",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "GET",
+      "path": "auth/bootstrap.jpg",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "会话配置资源；内嵌 masterSecret/signSecret/b64tTable/fpAlgo/keyVersion/configVersion；本轮未实现下载装配",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/changePassword",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "修改密码",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/defaultAvatars",
+      "documents": [
+        "auth"
+      ],
+      "description": "默认头像列表",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/exchangeLegacyToken",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "旧版令牌兑换",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/generateCaptcha",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "生成人机验证",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/listEmailWhitelist",
+      "documents": [
+        "auth"
+      ],
+      "description": "邮箱白名单",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/login",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "登录",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/negotiate",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "设备登记、派生密钥一致性、serverTime、algorithms、protocol、keyVersion；本轮 PASS，内部调用",
+      "group": "认证与设备",
+      "verification": "PASS（默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "auth/passwordPolicy",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "密码策略",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/refreshToken",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "刷新令牌",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/register",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "注册",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/resetPassword",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "重置密码",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/sendVerifyCode",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "发送验证码",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/status",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "登录态查询",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "auth/verifyCaptcha",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "校验人机验证",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "banner/list",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "data.banners：轮播列表；本轮返回 20 条",
+      "group": "内容与目录",
+      "verification": "PASS（默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "bubble-skin/catalog",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "气泡皮肤目录",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "calendar/schedule/calendar",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "新片周历 + 每日更新列表",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "category/filter/dimensions",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "筛选维度",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "category/type/listActive",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "启用分类",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "category/types",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "`{types:[{id,name,code,icon,...}]}`",
+      "group": "内容与目录",
+      "verification": "HTTP 404（上一轮默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "category/videos",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "分类视频列表",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "GET",
+      "path": "check-update",
+      "documents": [
+        "auth",
+        "index"
+      ],
+      "description": "客户端版本信息；使用独立更新接入点，字段待核验",
+      "group": "客户端配置与更新",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "coin/records",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "金币流水",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/create",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "发表评论",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/danmaku",
+      "documents": [
+        "community",
+        "index",
+        "playback"
+      ],
+      "description": "`{list:[{time,type,color,author,text,id,likes,fontSize,skinId,...}]}`",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/danmaku/delete",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "删除弹幕",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/danmaku/report",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "举报弹幕",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/danmaku/send",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "发送弹幕",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/delete",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "删除评论",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/list",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "评论列表（也可用 `video/comments`）",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/my",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "我的评论",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/replies",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "评论回复列表",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "comment/report",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "举报评论",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "config/batchSet",
+      "documents": [
+        "auth",
+        "index",
+        "user"
+      ],
+      "description": "客户端配置读写（见[认证与账户](auth.md)）",
+      "group": "客户端配置与更新",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "config/resolve",
+      "documents": [
+        "auth",
+        "index",
+        "user"
+      ],
+      "description": "客户端配置读写（见[认证与账户](auth.md)）",
+      "group": "客户端配置与更新",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "device/delete",
+      "documents": [
+        "auth",
+        "index",
+        "user"
+      ],
+      "description": "注销设备",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "device/heartbeat",
+      "documents": [
+        "auth",
+        "index",
+        "user"
+      ],
+      "description": "设备心跳",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "device/list",
+      "documents": [
+        "auth",
+        "index",
+        "user"
+      ],
+      "description": "登录设备列表",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "device/setPrimary",
+      "documents": [
+        "auth",
+        "index",
+        "user"
+      ],
+      "description": "设为主设备",
+      "group": "认证与设备",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "diagnostic/play",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "播放诊断",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "download/batch/order",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "批量下载排序",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "download/cacheList",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "缓存列表",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "download/credential/claim",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "领取下载凭证",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "download/credential/release",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "释放下载凭证",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "download/credential/renew",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "续期下载凭证",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "download/episodes",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "可下载剧集",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "download/quota",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "下载配额查询（配额与会员等级相关）",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "download/resolve",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "下载地址解析",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "episode/like",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "剧集点赞",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "episode/like-count",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "剧集点赞计数",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "episode/liked-status",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "剧集点赞状态",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "favorite/batchDelete",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "批量删除",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "favorite/create",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "添加收藏",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "favorite/delete",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "删除收藏",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "favorite/list",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "收藏列表",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "favorite/status",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "收藏状态",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "feedback/list",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "我的反馈",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "feedback/replies",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "反馈回复",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "feedback/reply",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "回复反馈",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "feedback/submit",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "提交反馈",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "feedback/types",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "反馈类型",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "guide/listActive",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "引导位",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "history/list",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "分页",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "history/report",
+      "documents": [
+        "content",
+        "index",
+        "playback"
+      ],
+      "description": "进度上报",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "home/modules",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "`{list:[{id:\"MOD_818368\",name:\"七天热播榜\",k:\"hot\",layout:\"strip\",...}]}`",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "home/recommend",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "data.guessYouLike：title/videos/hasMore/pageinfo；本轮返回 10 个作品",
+      "group": "内容与目录",
+      "verification": "PASS（默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "interaction/liked-status",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "互动状态查询",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "interaction/operate",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "互动操作（点赞等）",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "membership/catalog",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "会员等级全量表",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "notice/messages",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "消息列表",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "notice/popup/list",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "弹窗公告列表",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "notice/popup/read",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "弹窗公告已读",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "notice/read",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "标记已读",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "notice/sessions",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "会话列表",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "notice/subscriptionFeed",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "订阅动态",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "notice/unreadCount",
+      "documents": [
+        "index",
+        "user"
+      ],
+      "description": "未读计数",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "resolve/episodes",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "data.episodes：episodeNum/episodeName/displayName/sourceId/code/isVip；本轮一条线路 288 集",
+      "group": "播放与下载",
+      "verification": "PASS（默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "resolve/exchange",
+      "documents": [
+        "ads",
+        "index",
+        "playback"
+      ],
+      "description": "data.playUrl/quality/expiresIn/isClientParse/luaScript/originalUrl；本轮空直链、需客户端解析",
+      "group": "播放与下载",
+      "verification": "PASS（默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "resolve/qualities",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "data.qualities/exchangeToken/expiresAt/isClientParse；实际返回 1080p 项",
+      "group": "播放与下载",
+      "verification": "PASS（默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "resolve/sign",
+      "documents": [
+        "index",
+        "playback"
+      ],
+      "description": "播放签名",
+      "group": "播放与下载",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "review/delete",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "删除影评",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "review/like",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "点赞影评",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "review/list",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "影评列表（评分分布 Excellent/Good/Fair/Average/Poor 也可用 `video/reviews`）",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "review/report",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "举报影评",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "review/submit",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "提交影评（含评分）",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "review/summary",
+      "documents": [
+        "community",
+        "index"
+      ],
+      "description": "影评汇总",
+      "group": "社区互动",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "signIn/rewardPreview",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "签到奖励预览",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "splash/active",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "开屏配置",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "task/complete",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "完成任务",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "task/config",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "任务配置",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "task/list",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "任务列表",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "task/reportShare",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "分享上报",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "task/signIn",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "每日签到",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "task/subscribe",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "任务订阅",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "task/watch-progress",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "观看进度任务上报",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "task/watch-progress/status",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "观看进度任务状态",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "updateProfile",
+      "documents": [
+        "auth",
+        "index",
+        "user"
+      ],
+      "description": "更新资料",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "userInfo",
+      "documents": [
+        "auth",
+        "index",
+        "user"
+      ],
+      "description": "用户信息",
+      "group": "用户与消息",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/categoryList",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "data.videos/pageinfo：默认作品列表；本轮返回 10 条，分页/分类筛选语义待核验",
+      "group": "内容与目录",
+      "verification": "PASS（默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "video/comments",
+      "documents": [
+        "community",
+        "content",
+        "index"
+      ],
+      "description": "当前剧集讨论列表 comments：用户昵称、头像、内容、点赞数、回复数等",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/detail",
+      "documents": [
+        "content",
+        "index",
+        "playback"
+      ],
+      "description": "data.video：作品 ID、标题、分类、简介、封面、评分、集数/更新信息；线路为 video.player",
+      "group": "内容与目录",
+      "verification": "PASS（默认环境）"
+    },
+    {
+      "method": "POST",
+      "path": "video/engagement-counts",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "互动计数",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/guessLike",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "猜你喜欢列表",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/idMapping",
+      "documents": [
+        "index"
+      ],
+      "description": "文档仅列出 ID 映射端点；映射方向与请求/响应结构待核验",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/modules",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "栏目配置",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/reviews",
+      "documents": [
+        "community",
+        "content",
+        "index"
+      ],
+      "description": "整部作品评分分布与影评列表；完整请求及分页结构待核验",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/schedule",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "播出时间表",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/search",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "关键词搜索",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/searchConfig",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "搜索配置（热搜词等）",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/searchSuggest",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "搜索建议",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/similar",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "同类推荐",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/stats",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "`{items:[{videoId,likeCount,favoriteCount}]}`",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "video/subscribe",
+      "documents": [
+        "content",
+        "index"
+      ],
+      "description": "追番/订阅",
+      "group": "内容与目录",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "vip/info",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "当前会员状态",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "vip/redeem",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "卡密兑换",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "vipCenter/info",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "会员中心汇总",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "vipCenter/plans",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "开通套餐",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "wallet/info",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "金包余额",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "welfare/bindInviteCode",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "绑定邀请码",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "welfare/claim",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "领取福利",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "welfare/hub",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "福利中心",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    },
+    {
+      "method": "POST",
+      "path": "welfare/inviteInfo",
+      "documents": [
+        "index",
+        "membership"
+      ],
+      "description": "邀请信息",
+      "group": "会员与任务",
+      "verification": "仅文档，未联调"
+    }
+  ]
+}

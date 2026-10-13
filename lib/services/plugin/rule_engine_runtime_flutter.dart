@@ -5,9 +5,10 @@ import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'package:kazumi/plugins/api_rule_config.dart';
 import 'rule_engine.dart';
 import 'rule_engine_models.dart';
+import 'package:kazumi/services/source/runtime/source_runtime.dart';
 
 RuleRequestExecutor createRuleRequestExecutor() =>
-    PlatformRuleRequestExecutor();
+    SourceRuntimeExecutor(PlatformRuleRequestExecutor());
 void logRuleWarning(String message, {Object? error, StackTrace? stackTrace}) =>
     KazumiLogger().w(message, error: error, stackTrace: stackTrace);
 void logRuleInfo(String message) => KazumiLogger().i(message);
