@@ -1,6 +1,12 @@
 param([int]$Port = 8933, [switch]$Build, [switch]$NoOpen, [int]$RuntimePort = 0)
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
+  . (Join-Path $PSScriptRoot 'use-dev-env.ps1')
+}
+$flutter = if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
+  Join-Path $env:PLAYRA_FLUTTER_HOME 'bin\flutter.bat'
+} else { Join-Path $projectRoot '.tooling\flutter\bin\flutter.bat' }
 $previewRoot = Join-Path $projectRoot 'build\modern-home-preview'
 $previousPort = $env:KAZUMI_WEB_PORT
 $previousRoot = $env:KAZUMI_WEB_ROOT
@@ -8,7 +14,7 @@ $previousRuntimePort = $env:PLAYRA_SOURCE_RUNTIME_PORT
 Push-Location -LiteralPath $projectRoot
 try {
   if ($Build -or -not (Test-Path -LiteralPath (Join-Path $previewRoot 'index.html'))) {
-    & '.\.tooling\flutter\bin\flutter.bat' build web --target lib/main_home_preview.dart --output build/modern-home-preview --no-wasm-dry-run
+    & $flutter build web --target lib/main_home_preview.dart --output build/modern-home-preview --no-wasm-dry-run
     if ($LASTEXITCODE -ne 0) { throw 'Android home preview build failed' }
   }
   if (-not (Test-Path -LiteralPath 'tool\web_backend\node_modules\playwright')) {

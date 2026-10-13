@@ -69,7 +69,7 @@ python tool/miomedia_sdk_input.py sync --sdk-directory "C:/path/to/sdk/python/mi
 flutter pub get
 ```
 
-本仓库的 Windows 启动/构建脚本使用 `.tooling/flutter/bin/flutter.bat`。新设备需要自行准备该工具链；仅下载源码不会包含它。
+本仓库的 Windows 启动/构建脚本默认使用 `.tooling/flutter/bin/flutter.bat`。本机工具路径可在忽略的 `.tooling/dev-environment.json` 中配置，仓库内路径相对于检出根目录解析；有配置时启动器会自动使用它。新设备需要分别准备工具与私有 SDK，详见 [多设备路径与开发环境](docs/development/web-android-environment.zh.md)。
 
 ### Android
 
@@ -141,6 +141,7 @@ git fetch upstream main --no-tags --no-recurse-submodules
 | 主题 | 入口 |
 | --- | --- |
 | 构建与发布 | [私有 SDK、正式签名与 CI 输入](docs/release/build-inputs.zh.md) · [版本引用策略](docs/release/tag-policy.zh.md) |
+| 多设备开发 | [路径分工、D 盘环境与新设备恢复](docs/development/web-android-environment.zh.md) · [Web/Android 与 SDK 分析](docs/analysis/web-android-sdk-20261013.zh.md) |
 | 内容与播放 | [MioMedia 内容/播放接入](docs/miomedia-content-playback.zh.md) · [七天榜单记录](docs/verification/miomedia-seven-day-ranking.zh.md) |
 | 运行时与接口 | [算法运行时](docs/source-algorithm-runtime.zh.md) · [来源 HTTP API](docs/source-http-api.md) |
 | 界面设计 | [播放详情](docs/design/modern-player-detail.zh.md) · [二级页面](docs/design/modern-secondary-pages.zh.md) · [局部细修](docs/design/modern-secondary-polish.zh.md) |

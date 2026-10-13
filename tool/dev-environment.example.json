@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "flutterHome": ".tooling/flutter",
+  "python": ".tooling/python/cpython-3.11.15-windows-x86_64-none/python.exe",
+  "nodeHome": ".tooling/node/node-v22.23.3-win-x64",
+  "javaHome": ".tooling/java/jdk-17.0.20.1+1",
+  "androidSdk": "D:/Android/Sdk"
+}

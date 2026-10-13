@@ -2,7 +2,12 @@ param([int]$Port = 8931, [switch]$Build, [switch]$NoOpen,
   [int]$RuntimePort = 0)
 $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$flutter = Join-Path $projectRoot '.tooling\flutter\bin\flutter.bat'
+if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
+  . (Join-Path $PSScriptRoot 'use-dev-env.ps1')
+}
+$flutter = if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
+  Join-Path $env:PLAYRA_FLUTTER_HOME 'bin\flutter.bat'
+} else { Join-Path $projectRoot '.tooling\flutter\bin\flutter.bat' }
 $savedRuntimePort = $env:PLAYRA_SOURCE_RUNTIME_PORT
 Push-Location -LiteralPath $projectRoot
 try {

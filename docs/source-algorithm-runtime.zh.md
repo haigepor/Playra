@@ -1,40 +1,42 @@
 # Web / Android 来源算法运行骨架
 
-更新：2026-10-12。项目：`C:\Users\haige\Desktop\Playra`。
+更新：2026-10-13。所有命令从当前设备的仓库根目录执行；工具位置与多设备迁移统一参照 [开发环境与路径说明](development/web-android-environment.zh.md)。
 
 ## 当前边界
 
-已建立共用 HTTP 契约、Flutter 请求入口、Web 固定桥接和 Python 适配器模板。Python 在电脑或服务器上运行，Android 通过 HTTP 调用，不在 APK 内嵌 Python。模板尚未接入真实影视站点，也没有加解密算法；模板的能力列表为空，业务请求明确返回 `UNSUPPORTED`。
+已建立 Flutter 请求入口、Web 固定桥接、Python 适配器与 Android 内置运行时。Web 的 Python 在电脑或服务端运行；Android 默认通过 Kotlin/Chaquopy 在 APK 内调用 SDK，无需电脑服务。MioMedia 已接入 11 个受限 SDK 操作，见 [当前代码与 SDK 分析](analysis/web-android-sdk-20261013.zh.md)。模板适配器仍没有真实资源，其能力列表为空，业务请求返回 `UNSUPPORTED`。
 
 示例规则不自动导入、不进入内置规则目录。原有 16 条动漫规则仍交给原请求器。本次没有改变来源排名、首页分类和播放器界面。
 
 ## 调用关系
 
 ```text
-页面 → SourceService → RuleEngine → SourceRuntimeExecutor
+普通来源页面 → SourceService → RuleEngine → SourceRuntimeExecutor
   普通规则 URL → 原平台请求器
   https://source-runtime.playra.invalid/v1/... → 算法服务
     Web：同源 /api/runtime/v1/... → Node 固定桥接 → Python
-    Android：构建时配置的服务地址 → Python
+    Android：显式外部地址才走 HTTP；模板不提供资源
+MioMedia 页面 → MioMediaService → SourceRuntimeClient
+  Web：同源 Node 桥接 → Python SDK
+  Android：MethodChannel → Kotlin → Chaquopy/Python SDK
 ```
 
-`source-runtime.playra.invalid` 是显式规则标记，不是需要解析的实际域名。仅允许 `/v1/health`、`/v1/adapters` 和登记适配器的 `search / episodes / resolve` 路由。它与项目既有“对外来源 HTTP API”职责不同：前者运行某个适配器，后者对外提供统一来源服务。
+`source-runtime.playra.invalid` 是显式规则标记，不是需要解析的实际域名。HTTP 服务允许 `/v1/health`、`/v1/adapters`、登记适配器的 `search / episodes / resolve` 路由，以及固定 MioMedia `sdk` 路由。它与项目既有“对外来源 HTTP API”职责不同：前者运行某个适配器，后者对外提供统一来源服务。
 
 ## 本机启动 Web
 
-需要 Python 3.11+ 和项目已有 Node / Flutter 环境。本机验证使用 Python 3.13。
+需要完整私有 SDK 和 Python 3.11 / Node 22 / 项目指定 Flutter。先按环境说明准备本机配置；每个终端分别激活。
 
 终端一（保持运行）：
 
 ```powershell
-Set-Location 'C:\Users\haige\Desktop\Playra'
-py -3 -X utf8 tool/source_runtime/server.py --port 8945
+. ./tool/use-dev-env.ps1
+python -B -X utf8 tool/source_runtime/server.py --port 8945
 ```
 
 终端二：
 
 ```powershell
-Set-Location 'C:\Users\haige\Desktop\Playra'
 .\tool\start-web.ps1 -Port 8931 -RuntimePort 8945 -Build
 Invoke-RestMethod 'http://127.0.0.1:8931/api/runtime/v1/health'
 ```
@@ -45,15 +47,14 @@ Web 默认使用当前页面同源 `/api/runtime/v1/`，无需在规则里写机
 
 ## Android 开发连接
 
-Android 默认未配置算法地址，返回 `RUNTIME_UNAVAILABLE`，不影响普通规则。构建时传入服务基址，要求尾部包含协议路径 `/v1/`。
+Android 默认使用 APK 内置 SDK，直接运行 `./tool/build-android.ps1` 即可。只有需要调试外部 HTTP 服务时，才在构建时传入服务基址，尾部包含协议路径 `/v1/`。
 
 连接设备并通过 USB 调试时，可执行：
 
 ```powershell
-& 'C:\Android\Sdk\platform-tools\adb.exe' reverse tcp:8945 tcp:8945
+. ./tool/use-dev-env.ps1
+adb reverse tcp:8945 tcp:8945
 .\tool\build-android.ps1 `
-  -AndroidSdk 'C:/Android/Sdk' `
-  -JavaHome 'C:/Program Files/Eclipse Adoptium/jdk-21.0.10.7-hotspot' `
   -RuntimeUrl 'http://127.0.0.1:8945/v1/' -RuntimeAllowHttp
 ```
 
@@ -70,6 +71,7 @@ Android 默认未配置算法地址，返回 `RUNTIME_UNAVAILABLE`，不影响�
 | `GET /v1/adapters/{id}/search` | `q, page, pageSize` | `data: [{name, url}], total, hasMore` |
 | `GET /v1/adapters/{id}/episodes` | `source` | `data: {roads: [{name, episodes: [{name, url}]}]}` |
 | `POST /v1/adapters/{id}/resolve` | JSON `{episodeUrl}` | `data: {url, headers, format, expiresAt}` |
+| `POST /v1/adapters/miomedia/sdk` | JSON `{operation, payload}` | `data` 与 `meta` |
 
 业务请求必须携带 `X-Kazumi-Request: 1`；Flutter 和 Web 桥接自动添加。`X-Playra-Timeout-Ms` 为 1–60000 毫秒，默认总预算 20 秒。Web 桥接最大预算 20 秒。错误响应为 `{"error":{"code":"UNSUPPORTED","message":"UNSUPPORTED"}}`，不会返回原始异常或密钥。
 
@@ -77,7 +79,7 @@ Android 默认未配置算法地址，返回 `RUNTIME_UNAVAILABLE`，不影响�
 
 请求体上限 32 KiB，响应上限 2 MiB，Python 操作并发上限 4。请求取消、断开和超时传递到 `RuntimeContext`；适配器必须主动检查上下文，并为自己的 HTTP 请求配置剩余超时时间。线程不能强行终止忽略取消的 Python 算法，该任务仍占并发名额，避免超时后无限启动线程。CPU 密集型或不可取消算法接入时，应再改为隔离进程执行。
 
-## 后续真实接入顺序
+## 新增其他适配器的接入顺序
 
 1. 在 `tool/source_runtime/adapters.py` 新建受维护的适配器类，显式登记到 `registered_adapters()`；不要通过请求上传或指定可执行脚本。
 2. 明确真实来源身份、媒体域和已实现能力，提供对应的 `manifest()`，完成后将 `implemented` 设为真实状态。当前模板使用 `screen` 域；示例规则 `type: movie`。电视剧接入时应按现有领域模型单独声明，不能把所有影视结果都归为电影。

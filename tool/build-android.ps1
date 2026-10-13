@@ -9,7 +9,14 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$flutter = Join-Path $projectRoot '.tooling\flutter\bin\flutter.bat'
+if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
+  . (Join-Path $PSScriptRoot 'use-dev-env.ps1') -AndroidSdk $AndroidSdk -JavaHome $JavaHome
+  if (-not $AndroidSdk) { $AndroidSdk = $env:ANDROID_HOME }
+  if (-not $JavaHome) { $JavaHome = $env:JAVA_HOME }
+}
+$flutter = if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
+  Join-Path $env:PLAYRA_FLUTTER_HOME 'bin\flutter.bat'
+} else { Join-Path $projectRoot '.tooling\flutter\bin\flutter.bat' }
 if (-not $AndroidSdk) {
   $AndroidSdk = $env:ANDROID_SDK_ROOT
 }
@@ -53,7 +60,8 @@ try {
   $env:ANDROID_HOME = [IO.Path]::GetFullPath($AndroidSdk)
   $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
   $env:JAVA_HOME = [IO.Path]::GetFullPath($JavaHome)
-  $env:Path = "$env:JAVA_HOME\bin;$projectRoot\.tooling\flutter\bin;$env:ANDROID_HOME\platform-tools;$env:Path"
+  $flutterBin = Split-Path -Parent $flutter
+  $env:Path = "$env:JAVA_HOME\bin;$flutterBin;$env:ANDROID_HOME\platform-tools;$env:Path"
   $env:NO_PROXY = (@('localhost', '127.0.0.1', '::1', $savedEnvironment['NO_PROXY']) |
     Where-Object { $_ }) -join ','
   $pubCache = $env:PUB_CACHE
