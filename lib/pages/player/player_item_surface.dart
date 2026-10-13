@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
+import 'package:flutter/foundation.dart';
+import 'package:kazumi/services/player/web_player_surface.dart';
 
 class PlayerItemSurface extends StatefulWidget {
   const PlayerItemSurface({
     super.key,
     required this.playerController,
+    this.onNext,
+    this.onDanmaku,
   });
 
   final PlayerController playerController;
+  final VoidCallback? onNext, onDanmaku;
 
   @override
   State<PlayerItemSurface> createState() => _PlayerItemSurfaceState();
@@ -31,7 +36,14 @@ class _PlayerItemSurfaceState extends State<PlayerItemSurface> {
       }
 
       final aspectRatioMode = playerController.panel.aspectRatioMode;
-      final video = Video(
+      final Widget video = kIsWeb
+          ? WebPlayerSurface(
+              controller: playerController.playback.videoController!,
+              fit: aspectRatioMode.fit,
+              onNext: widget.onNext,
+              onDanmaku: widget.onDanmaku,
+            )
+          : Video(
         controller: playerController.playback.videoController!,
         controls: NoVideoControls,
         pauseUponEnteringBackgroundMode: false,

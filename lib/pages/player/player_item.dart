@@ -1438,6 +1438,48 @@ class _PlayerItemState extends State<PlayerItem>
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      // Web DOM 控件直接接收指针；原生手势层保持原样，避免两套控件争抢事件。
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: PlayerItemSurface(
+              playerController: playerController,
+              onNext: () => handlePreNextEpisode('next'),
+              onDanmaku: handleDanmaku,
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DanmakuScreen(
+                key: _danmuKey,
+                createdController: (controller) {
+                  playerController.danmaku.canvasController = controller;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) playerController.updateDanmakuSpeed();
+                  });
+                },
+                option: DanmakuOption(
+                  hideTop: _hideTop, hideScroll: _hideScroll, hideBottom: _hideBottom,
+                  area: _danmakuArea, opacity: _opacity, fontSize: _fontSize,
+                  duration: _danmakuDuration, lineHeight: _danmakuLineHeight,
+                  strokeWidth: _border ? _danmakuBorderSize : 0,
+                  fontWeight: _danmakuFontWeight, massiveMode: _massiveMode,
+                  fontFamily: _danmakuUseSystemFont ? null : customAppFontFamily,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 8, top: 4,
+            child: IconButton(
+              tooltip: '返回', onPressed: widget.onBackPressed,
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    }
     return Observer(
       builder: (context) {
         return ClipRect(

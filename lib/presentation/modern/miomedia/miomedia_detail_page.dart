@@ -7,7 +7,8 @@ import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
-import 'package:kazumi/services/platform/resource_url.dart';
+import 'package:kazumi/services/player/source_media_player.dart';
+import 'package:kazumi/services/player/web_player_surface.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_playback_coordinator.dart';
 import 'miomedia_playing_mark.dart';
@@ -38,7 +39,7 @@ class _MioDetailPageState extends State<MioDetailPage> {
   MioEpisode? _requestedEpisode;
   Player? _player;
   VideoController? _videoController;
-  StreamSubscription<String>? _mediaErrors;
+  final _mediaSession = SourceMediaPlayer();
   final _activity = ValueNotifier(false);
   final _activitySubscriptions = <StreamSubscription<dynamic>>[];
   Future<void> _mediaTail = Future.value();
@@ -198,24 +199,18 @@ class _MioDetailPageState extends State<MioDetailPage> {
     try {
       await previous;
       if (!current()) return false;
-      final player = _player ??= Player();
-      _videoController ??= VideoController(player);
-      if (_activitySubscriptions.isEmpty) {
-        _activitySubscriptions.addAll([
-          player.stream.playing.listen((_) => _updateActivity()),
-          player.stream.buffering.listen((_) => _updateActivity()),
-          player.stream.position.listen((_) => _updateActivity()),
-        ]);
+      for (final subscription in _activitySubscriptions) {
+        await subscription.cancel();
       }
-      await _mediaErrors?.cancel();
-      await player.stop();
+      _activitySubscriptions.clear();
+      if (!current()) return false;
+      setState(() {
+        _player = null;
+        _videoController = null;
+      });
+      _activity.value = false;
       if (!current()) return false;
       var error = '', started = false;
-      _mediaErrors = player.stream.error.listen((message) {
-        if (!current()) return;
-        error = message;
-        if (started) setState(() => playMessage = '媒体加载失败，请检查网络或切换线路');
-      });
       final headers = <String, String>{};
       if (media['headers'] is Map) {
         for (final entry in (media['headers'] as Map).entries) {
@@ -227,14 +222,26 @@ class _MioDetailPageState extends State<MioDetailPage> {
         playingCode = episode.code;
         playingNumber = episode.number;
       });
-      final url = platformResourceUrl(media['url'] as String, headers: headers);
-      await player.open(
-        Media(
-          url,
-          // 来源请求头已交给 Web 同源网关，原生平台仍直接传递。
-          httpHeaders: kIsWeb ? null : headers,
-        ),
+      final player = await _mediaSession.open(
+        media['url'] as String, headers,
+        canInstall: current,
+        onError: (message) {
+          if (!current()) return;
+          error = message;
+          if (started) setState(() => playMessage = '媒体加载失败，请检查网络或切换线路');
+        },
       );
+      if (player == null || !current()) return false;
+      setState(() {
+        _player = player;
+        _videoController = _mediaSession.controller;
+      });
+      _activitySubscriptions.addAll([
+        player.stream.playing.listen((_) => _updateActivity()),
+        player.stream.buffering.listen((_) => _updateActivity()),
+        player.stream.position.listen((_) => _updateActivity()),
+      ]);
+      final url = _mediaSession.mediaUrl;
       final clock = Stopwatch()..start();
       while (current() && clock.elapsed < const Duration(seconds: 25)) {
         final state = player.state;
@@ -541,8 +548,7 @@ class _MioDetailPageState extends State<MioDetailPage> {
       unawaited(subscription.cancel());
     }
     _activity.dispose();
-    unawaited(_mediaErrors?.cancel() ?? Future.value());
-    unawaited(_mediaTail.then((_) => _player?.dispose()));
+    unawaited(_mediaTail.then((_) => _mediaSession.dispose()));
     if (widget.service == null) service.dispose();
     super.dispose();
   }
@@ -571,7 +577,18 @@ class _MioDetailPageState extends State<MioDetailPage> {
                     fit: StackFit.expand,
                     children: [
                       if (_videoController != null)
-                        Video(controller: _videoController!)
+                        kIsWeb
+                            ? WebPlayerSurface(
+                                controller: _videoController!,
+                                onNext: () {
+                                  final index = episodes.indexWhere((episode) =>
+                                      episode.code == playingCode && episode.number == playingNumber);
+                                  if (index >= 0 && index + 1 < episodes.length) {
+                                    unawaited(play(episodes[index + 1]));
+                                  }
+                                },
+                              )
+                            : Video(controller: _videoController!)
                       else
                         LayoutBuilder(
                           builder: (context, size) => Stack(
