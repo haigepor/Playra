@@ -12,6 +12,7 @@ import 'package:kazumi/utils/format.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/video_source/services.dart';
+import 'package:kazumi/services/source/source_service.dart';
 import 'package:kazumi/request/apis/danmaku_api.dart';
 import 'package:mobx/mobx.dart';
 
@@ -621,6 +622,7 @@ abstract class _DownloadController with Store {
       );
 
       String? m3u8Url;
+      Map<String, String> resolvedHeaders = {};
       try {
         if (lease.isCancelled) {
           throw const VideoSourceCancelledException();
@@ -629,9 +631,11 @@ abstract class _DownloadController with Store {
           fullUrl,
           useLegacyParser: plugin.useLegacyParser,
           providerId: plugin.providerId,
+          definition: SourceDefinition.fromJson(plugin.toJson()),
           timeout: const Duration(seconds: 30),
         );
         m3u8Url = source.url;
+        resolvedHeaders = source.headers;
       } on VideoSourceTimeoutException {
         if (lease.isCancelled) {
           wasCancelled = true;
@@ -684,7 +688,7 @@ abstract class _DownloadController with Store {
 
       await _startBackgroundServiceIfNeeded();
 
-      final httpHeaders = plugin.buildHttpHeaders();
+      final httpHeaders = {...plugin.buildHttpHeaders(), ...resolvedHeaders};
       bool adBlockerEnabled =
           _repository.getForceAdBlocker() || plugin.adBlocker;
 

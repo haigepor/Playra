@@ -73,11 +73,11 @@ extension _ModernSearch on _SearchPageState {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            const Expanded(child: Text('最近搜索')),
-            if (histories.isNotEmpty) ...[
+        if (histories.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Expanded(child: Text('最近搜索')),
               if (_managingHistory)
                 TextButton(
                   onPressed: () async {
@@ -91,8 +91,8 @@ extension _ModernSearch on _SearchPageState {
                 child: Text(_managingHistory ? '完成' : '管理'),
               ),
             ],
-          ],
-        ),
+          ),
+        ],
         if (histories.isEmpty)
           const SecondaryEmptyState(
             title: '找到下一部想看的番剧',
@@ -153,7 +153,11 @@ extension _ModernSearch on _SearchPageState {
               children: [
                 Expanded(
                   child: Text(
-                    busy ? '正在搜索…' : '已加载 ${items.length} 部',
+                    busy
+                        ? '正在搜索…'
+                        : all.isEmpty && _controller.lastSearchFailed
+                            ? '搜索结果'
+                            : '已加载 ${items.length} 部',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -183,6 +187,10 @@ extension _ModernSearch on _SearchPageState {
                   children: [
                     for (final tag in filters.tags)
                       InputChip(
+                        backgroundColor: c.surfaceContainerLow,
+                        side: BorderSide.none,
+                        labelStyle: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: c.onSurfaceVariant),
                         label: Text(tag),
                         onPressed: _showFilters,
                         deleteIcon: const Icon(LucideIcons.x, size: 14),
@@ -195,6 +203,10 @@ extension _ModernSearch on _SearchPageState {
                       ),
                     if (filters.season.isNotEmpty || filters.dateRange != null)
                       InputChip(
+                        backgroundColor: c.surfaceContainerLow,
+                        side: BorderSide.none,
+                        labelStyle: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: c.onSurfaceVariant),
                         onPressed: _showFilters,
                         deleteIcon: const Icon(LucideIcons.x, size: 14),
                         deleteButtonTooltipMessage: '移除放送时间条件',
@@ -211,6 +223,10 @@ extension _ModernSearch on _SearchPageState {
                         filters.rankRange != null ||
                         filters.weekdays.isNotEmpty)
                       ActionChip(
+                        backgroundColor: c.surfaceContainerLow,
+                        side: BorderSide.none,
+                        labelStyle: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: c.onSurfaceVariant),
                         label: const Text('更多条件'),
                         onPressed: _showFilters,
                       ),
@@ -221,7 +237,7 @@ extension _ModernSearch on _SearchPageState {
         ),
       ),
       if (busy && all.isEmpty)
-        const SliverToBoxAdapter(child: _SearchLoadingState())
+        SliverToBoxAdapter(child: _modernSearchSkeleton(width))
       else if (all.isEmpty)
         SliverToBoxAdapter(
           child: SecondaryEmptyState(
@@ -250,13 +266,18 @@ extension _ModernSearch on _SearchPageState {
         )
       else
         _ModernSearchGrid(items: items, width: width),
+      if (busy && all.isNotEmpty)
+        SliverToBoxAdapter(child: Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: _modernSearchSkeleton(width, count: 3),
+        )),
       if (all.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(top: 20),
             child: Center(
               child: busy
-                  ? const LoadingIndicator(size: 24)
+                  ? const SizedBox.shrink()
                   : _controller.lastSearchFailed
                   ? TextButton(
                       onPressed: _loadMore,
@@ -274,6 +295,17 @@ extension _ModernSearch on _SearchPageState {
           ),
         ),
     ];
+  }
+
+  Widget _modernSearchSkeleton(double width, {int count = 6}) {
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final columns = math.max(1, (width / (scale > 1.5 ? 220 : 136)).floor());
+    final cardWidth = (width - (columns - 1) * 12) / columns;
+    return SkeletonPosters(horizontal: false, count: count,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns, crossAxisSpacing: 12, mainAxisSpacing: 20,
+        mainAxisExtent: cardWidth / .7 + 72 * scale,
+      ));
   }
 }
 

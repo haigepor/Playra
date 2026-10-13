@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/services.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -199,9 +200,6 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                                 ],
                               ),
                             ),
-                            if (controller.loading &&
-                                controller.snapshot != null)
-                              const LinearProgressIndicator(minHeight: 2),
                             Expanded(
                               child: ScrollConfiguration(
                                 behavior: const MaterialScrollBehavior()
@@ -479,30 +477,7 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
           if (controller.loading && controller.snapshot == null)
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: SliverList.list(
-                children: [
-                  for (var i = 0; i < 4; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Container(
-                        height: 126,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              sliver: const SliverToBoxAdapter(child: SkeletonInfoList()),
             ),
           if (!controller.loading && items.isEmpty)
             SliverToBoxAdapter(

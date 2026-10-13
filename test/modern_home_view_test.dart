@@ -66,7 +66,7 @@ void main() {
       addTearDown(controller.dispose);
       await controller.refresh();
       await mountHome(tester, controller, onBrowse: (tag) => opened = tag);
-      final rail = find.byKey(const PageStorageKey('home-channel-main'));
+      final rail = find.byKey(const PageStorageKey('home-channel-anime'));
       final poster = find.byKey(const ValueKey('home-poster-0'));
       final rating = tester.getTopLeft(
         find.byKey(const ValueKey('home-rating-0')),
@@ -114,6 +114,8 @@ void main() {
         1,
       );
       await mouse.removePointer();
+      await tester.ensureVisible(rail);
+      await tester.pumpAndSettle();
       final scrollable = find
           .descendant(of: rail, matching: find.byType(Scrollable))
           .first;
@@ -125,7 +127,7 @@ void main() {
         greaterThan(before),
       );
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('home-more-chinese')),
+        find.byKey(const ValueKey('home-more-anime')),
         200,
         scrollable: find
             .descendant(
@@ -134,8 +136,29 @@ void main() {
             )
             .first,
       );
-      await tester.tap(find.byKey(const ValueKey('home-more-chinese')));
-      expect(opened, '中国');
+      final vertical = tester
+          .state<ScrollableState>(
+            find
+                .descendant(
+                  of: find.byType(CustomScrollView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          )
+          .position;
+      // 保留固定分类栏的空间，避免按钮被滚到栏后而点不中。
+      vertical.jumpTo(
+        (vertical.pixels - 110).clamp(
+          vertical.minScrollExtent,
+          vertical.maxScrollExtent,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('home-more-anime')));
+      await tester.pumpAndSettle();
+      expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+      expect(find.text('动漫推荐'), findsWidgets);
+      expect(opened, isNull);
       expect(find.text('左右滑动'), findsNothing);
       expect(find.byKey(const ValueKey('home-load-more')), findsNothing);
       expect(tester.takeException(), isNull);
@@ -243,7 +266,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('home-search')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('home-calendar')));
-      await tester.tap(find.byKey(const ValueKey('home-featured-details')));
+      await tester.tap(find.text('番剧 1').first);
       await tester.ensureVisible(
         find.byKey(ValueKey('home-resume-${history.key}')),
       );
@@ -270,14 +293,16 @@ void main() {
       addTearDown(controller.dispose);
       await controller.refresh();
       await mountHome(tester, controller);
-      expect(find.text('暂时无法获取番剧，请检查网络后重试'), findsOneWidget);
+      expect(find.text('这个分类暂时没有符合条件的作品'), findsOneWidget);
       empty = false;
-      await tester.tap(find.text('重试'));
+      await tester.tap(find.text('重试').first);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('home-featured')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('home-feed-season')));
+      expect(find.bySemanticsLabel(RegExp('查看推荐 番剧 1')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('home-feed-anime')));
       await tester.pumpAndSettle();
-      expect(controller.items.single.id, 3);
+      await tester.tap(find.text('新番'));
+      await tester.pumpAndSettle();
+      expect(controller.items.single.id, HomeFeed.season.index + 1);
       expect(controller.hasMore, isFalse);
       expect(tester.takeException(), isNull);
     },

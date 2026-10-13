@@ -1,9 +1,6 @@
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
 import 'package:kazumi/request/clients/bangumi_client.dart';
-import 'package:kazumi/request/core/dio_factory.dart';
-import 'package:dio/dio.dart' show Options;
-import 'package:kazumi/utils/constants.dart' show bangumiHTTPHeader;
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/services/network/bangumi_acceleration.dart';
 import 'package:kazumi/plugins/plugins.dart';
@@ -52,6 +49,7 @@ class HomeCatalog {
     this.japanese = const [],
     this.airing = const {},
     this.failed = const {},
+    this.pending = const {},
     this.subjects = const {},
     this.algorithm,
     this.source = const HomeRuleCatalog(),
@@ -59,6 +57,7 @@ class HomeCatalog {
   final List<BangumiItem> chinese, japanese;
   final Map<int, HomeAiring> airing;
   final Set<String> failed;
+  final Set<String> pending;
   final Map<int, HomeSubject> subjects;
   final HomeContentAlgorithm? algorithm;
   final HomeRuleCatalog source;
@@ -73,6 +72,8 @@ class HomeCatalog {
   static String _cacheKey = '';
   static Future<HomeCatalog>? _pending;
   static String _pendingKey = '';
+  static final Map<String, Set<void Function(HomeCatalog)>> _listeners = {};
+  static final Map<String, HomeCatalog> _progress = {};
 
   static Future<List<BangumiItem>> loadCategory(
     String tag, {
@@ -100,40 +101,119 @@ class HomeCatalog {
   static Future<HomeCatalog> load({
     Iterable<Plugin> rules = const [],
     bool force = false,
+    void Function(HomeCatalog)? onUpdate,
   }) {
     final installed = rules.toList();
-    final key = installed.map((p) => '${p.name}@${p.baseUrl}').join('|');
+    final key =
+        '${BangumiAcceleration.current.name}|'
+        '${installed.map((p) => '${p.providerId}@${p.version}@${p.baseUrl}@${p.enabled}').join('|')}';
     if (!force &&
         _lastGood != null &&
         _cacheKey == key &&
         _cachedAt != null &&
         DateTime.now().difference(_cachedAt!) < const Duration(minutes: 5)) {
+      onUpdate?.call(_lastGood!);
       return Future.value(_lastGood);
     }
-    if (_pending != null && _pendingKey == key) return _pending!;
+    final listeners = _listeners.putIfAbsent(key, () => {});
+    if (onUpdate != null) {
+      listeners.add(onUpdate);
+      if (_progress[key] case final current?) onUpdate(current);
+    }
+    Future<HomeCatalog> subscribe(Future<HomeCatalog> future) =>
+        future.whenComplete(() => listeners.remove(onUpdate));
+    if (_pending != null && _pendingKey == key) return subscribe(_pending!);
     _pendingKey = key;
-    return _pending = _loadStructured(installed)
-        .then((result) {
-          if (result.hasStructuredData && key == _pendingKey) {
-            _lastGood = result;
-            _cachedAt = DateTime.now();
-            _cacheKey = key;
-          }
-          return result;
-        })
-        .whenComplete(() {
-          if (_pendingKey == key) _pending = null;
-        });
+    _pending =
+        _loadStructured(
+              installed,
+              onUpdate: (slice) {
+                _progress[key] = slice;
+                for (final listener in List.of(_listeners[key] ?? {})) {
+                  listener(slice);
+                }
+              },
+            )
+            .then((result) {
+              if (result.hasStructuredData && key == _pendingKey) {
+                _lastGood = result;
+                _cachedAt = DateTime.now();
+                _cacheKey = key;
+              }
+              return result;
+            })
+            .whenComplete(() {
+              if (_pendingKey == key) _pending = null;
+              _listeners.remove(key);
+              _progress.remove(key);
+            });
+    return subscribe(_pending!);
   }
 
-  static Future<HomeCatalog> _loadStructured(List<Plugin> rules) async {
+  static Future<HomeCatalog> _loadStructured(
+    List<Plugin> rules, {
+    void Function(HomeCatalog)? onUpdate,
+  }) async {
     final failed = <String>{};
     final subjects = <int, HomeSubject>{};
     final priorities = <int, int>{};
     final airing = <int, HomeAiring>{};
-    final sourceFuture = HomeRuleCatalog.load(
-      rules,
-    ).catchError((_) => const HomeRuleCatalog(failures: ['catalog']));
+    final pending = <String>{
+      'trending',
+      'schedule',
+      'chinese',
+      'japanese',
+      'movies-rank',
+      'source',
+      'source-metadata',
+    };
+    var source = const HomeRuleCatalog();
+    HomeCatalog snapshot() {
+      final sourceKeys = source.entries
+          .map((e) => HomeRuleCatalog.titleKey(e.title))
+          .toSet();
+      final algorithm = HomeContentAlgorithm(
+        subjects.values.map((entry) {
+          return [entry.item.nameCn, entry.item.name, ...entry.item.alias].any(
+                (title) =>
+                    title.isNotEmpty &&
+                    sourceKeys.contains(HomeRuleCatalog.titleKey(title)),
+              )
+              ? entry.withSource()
+              : entry;
+        }),
+      );
+      final accepted = {for (final e in algorithm.entries) e.item.id: e};
+      return HomeCatalog(
+        chinese: algorithm
+            .select(HomeAnimeBucket.chinese)
+            .map((e) => e.item)
+            .toList(),
+        japanese: algorithm
+            .select(HomeAnimeBucket.japanese)
+            .map((e) => e.item)
+            .toList(),
+        airing: {
+          for (final e in airing.entries)
+            if (accepted[e.key]?.isSeries == true) e.key: e.value,
+        },
+        subjects: accepted,
+        algorithm: algorithm,
+        source: source,
+        failed: Set.of(failed),
+        pending: Set.of(pending),
+      );
+    }
+
+    void publish() => onUpdate?.call(snapshot());
+    final sourceFuture = HomeRuleCatalog.load(rules)
+        .catchError((_) => const HomeRuleCatalog(failures: ['catalog']))
+        .then((result) {
+          source = result;
+          pending.remove('source');
+          publish();
+          return result;
+        });
     void ingest(Object? raw, {int priority = 1}) {
       if (raw is! Map) return;
       try {
@@ -160,10 +240,10 @@ class HomeCatalog {
     Future<void> movies(String sort, {int? year}) async {
       // 官方定义 type=2 + cat=3 为动画 Movie，不能与真人电影分类混用。
       // https://github.com/bangumi/api/blob/master/open-api/v0.yaml
-      // 当前加速镜像的 /v0/subjects 返回 404，目录单独直连官方；保留网络代理。
-      final response = await DioFactory.apiDio.get(
+      // 镜像不提供这个目录路由，官方请求仍需经过统一的 ECH/代理传输。
+      final json = await BangumiClient.instance.get(
         '${ApiEndpoints.bangumiAPIDomain}/v0/subjects',
-        options: Options(headers: bangumiHTTPHeader),
+        officialOnly: true,
         queryParameters: {
           'type': 2,
           'cat': 3,
@@ -173,7 +253,6 @@ class HomeCatalog {
           if (year != null) 'year': year,
         },
       );
-      final json = response.data;
       for (final raw in json['data'] as List? ?? const [])
         ingest(raw, priority: 2);
     }
@@ -195,12 +274,11 @@ class HomeCatalog {
 
     Future<void> trending() async {
       // 加速镜像没有 Next 趋势路由；本新增候选入口读取官方公开资料。
-      final response = await DioFactory.apiDio.get(
+      final json = await BangumiClient.instance.get(
         '${ApiEndpoints.bangumiAPINextDomain}/p1/trending/subjects',
-        options: Options(headers: bangumiHTTPHeader),
+        officialOnly: true,
         queryParameters: {'type': 2, 'limit': 40, 'offset': 0},
       );
-      final json = response.data;
       for (final raw in json['data'] as List? ?? const []) {
         if (raw is Map) ingest(raw['subject']);
       }
@@ -212,38 +290,23 @@ class HomeCatalog {
       ('chinese', () => tag('中国')),
       ('japanese', () => tag('日本')),
       ('movies-rank', () => movies('rank')),
-      // 无年份的日期榜前排是未来作品；按近三年补齐，再统一过滤未来日期。
-      (
-        'movies-date',
-        () async {
-          final year = DateTime.now().year;
-          for (final candidateYear in [year, year - 1, year - 2]) {
-            try {
-              await movies(
-                'date',
-                year: candidateYear,
-              ).timeout(const Duration(seconds: 8));
-            } catch (_) {
-              failed.add('movies-date-$candidateYear');
-            }
-          }
-        },
-      ),
     ];
     for (var start = 0; start < jobs.length; start += 3) {
       await Future.wait(
         jobs.skip(start).take(3).map((job) async {
           try {
-            await job.$2().timeout(
-              Duration(seconds: job.$1 == 'movies-date' ? 26 : 16),
-            );
+            await job.$2().timeout(const Duration(seconds: 16));
           } catch (_) {
             failed.add(job.$1);
+          } finally {
+            pending.remove(job.$1);
+            // 一栏完成即提交快照，慢请求只影响自己的栏位。
+            publish();
           }
         }),
       );
     }
-    final source = await sourceFuture;
+    source = await sourceFuture;
     if (source.entries.isEmpty) failed.add('source');
     final sourceKeys = source.entries
         .map((e) => HomeRuleCatalog.titleKey(e.title))
@@ -263,7 +326,8 @@ class HomeCatalog {
         if (!subjects.values.any((e) => named(e, {key}))) seeds[key] = entry;
       }
     }
-    final tasks = seeds.entries.toList();
+    // 首屏只做少量名称补齐，避免进入页面就逐条拉取整站资料。
+    final tasks = seeds.entries.take(4).toList();
     for (var start = 0; start < tasks.length; start += 3) {
       await Future.wait(
         tasks.skip(start).take(3).map((task) async {
@@ -297,10 +361,13 @@ class HomeCatalog {
               subjects[matches.single.item.id] = matches.single;
           } catch (_) {
             failed.add('source-metadata');
+          } finally {
+            publish();
           }
         }),
       );
     }
+    pending.remove('source-metadata');
     for (final id in subjects.keys.toList()) {
       if (named(subjects[id]!, sourceKeys))
         subjects[id] = subjects[id]!.withSource();
@@ -325,6 +392,7 @@ class HomeCatalog {
       subjects: accepted,
       algorithm: algorithm,
       source: source,
+      pending: Set.of(pending),
     );
   }
 

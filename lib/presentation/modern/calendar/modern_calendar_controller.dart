@@ -66,6 +66,7 @@ class ModernCalendarController extends ChangeNotifier {
   CancelToken? _request;
   var _version = 0, _activeDetails = 0;
   var _disposed = false, _followToday = true, _forceDetails = false;
+  bool _visible = true;
   final _detailQueue = <ScheduleEntry>[];
   final _detailSeen = <String>{};
   final _detailResults = <String, ScheduleEntry>{};
@@ -263,7 +264,10 @@ class ModernCalendarController extends ChangeNotifier {
   }
 
   void _pumpDetails() {
-    while (!_disposed && _activeDetails < 3 && _detailQueue.isNotEmpty) {
+    while (!_disposed &&
+        _visible &&
+        _activeDetails < 3 &&
+        _detailQueue.isNotEmpty) {
       final entry = _detailQueue.removeAt(0);
       final version = _version;
       final token = _request!;
@@ -285,6 +289,11 @@ class ModernCalendarController extends ChangeNotifier {
             }),
       );
     }
+  }
+
+  void setVisible(bool visible) {
+    _visible = visible;
+    if (visible) _pumpDetails();
   }
 
   void _flushDetails() {

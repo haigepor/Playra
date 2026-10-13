@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:kazumi/services/source/source_gateway.dart';
 import 'package:kazumi/services/source/source_http_server.dart';
 import 'package:kazumi/services/source/source_service.dart';
+import 'package:kazumi/services/source/source_policy.dart';
 
 Future<void> main(List<String> args) async {
   String? option(String key) {
@@ -14,6 +15,18 @@ Future<void> main(List<String> args) async {
   }
 
   final port = int.parse(option('--port') ?? '8940');
+  final policyPath = option('--policy');
+  if (policyPath != null) {
+    final policyFile = File(policyPath);
+    if (await policyFile.exists()) {
+      SourcePolicy.shared.restore(
+        await policyFile.readAsString(encoding: utf8),
+      );
+    }
+    SourcePolicy.shared.environment = 'http';
+    SourcePolicy.shared.persist = (json) =>
+        policyFile.writeAsString(json, encoding: utf8).then((_) {});
+  }
   final gatewayUri = Uri.parse(option('--gateway') ?? 'http://127.0.0.1:8933');
   if (!['127.0.0.1', 'localhost'].contains(gatewayUri.host) ||
       gatewayUri.scheme != 'http') {

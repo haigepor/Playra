@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 ShadColorScheme modernHomeColors(Brightness brightness) =>
@@ -43,6 +44,9 @@ ThemeData modernHomeTheme(ThemeData base, {bool forceDark = false}) {
       onPrimary: zinc.primaryForeground,
       surface: zinc.background,
       onSurface: zinc.foreground,
+      surfaceContainer: zinc.card,
+      surfaceContainerHigh: zinc.card,
+      surfaceContainerLowest: zinc.background,
       surfaceContainerHighest: zinc.muted,
       surfaceContainerLow: zinc.card,
       onSurfaceVariant: zinc.mutedForeground,
@@ -50,7 +54,63 @@ ThemeData modernHomeTheme(ThemeData base, {bool forceDark = false}) {
       outlineVariant: zinc.border,
       secondaryContainer: zinc.muted,
       onSecondaryContainer: zinc.primary,
+      primaryContainer: zinc.muted,
+      onPrimaryContainer: zinc.primary,
+      secondary: zinc.primary,
+      tertiary: zinc.primary,
+      surfaceTint: Colors.transparent,
     ),
+    // Material 弹层也使用新版色板，避免从全局种子色继承绿色表面。
+    dialogTheme: base.dialogTheme.copyWith(
+      backgroundColor: zinc.card,
+      surfaceTintColor: Colors.transparent,
+      titleTextStyle: base.textTheme.titleLarge?.copyWith(
+        color: zinc.foreground,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+      contentTextStyle: base.textTheme.bodyMedium?.copyWith(
+        color: zinc.mutedForeground,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    ),
+    bottomSheetTheme: base.bottomSheetTheme.copyWith(
+      backgroundColor: zinc.card,
+      modalBackgroundColor: zinc.card,
+      surfaceTintColor: Colors.transparent,
+      dragHandleColor: zinc.mutedForeground,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: zinc.background,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      labelStyle: TextStyle(color: zinc.mutedForeground),
+      helperStyle: TextStyle(color: zinc.mutedForeground),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: zinc.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: zinc.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: zinc.primary),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: zinc.primary,
+        minimumSize: const Size(48, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        overlayColor: zinc.primary.withValues(alpha: .08),
+      ),
+    ),
+    hoverColor: zinc.primary.withValues(alpha: .04),
+    highlightColor: zinc.primary.withValues(alpha: .06),
+    focusColor: zinc.primary.withValues(alpha: .12),
     textTheme: base.textTheme.apply(
       bodyColor: zinc.foreground,
       displayColor: zinc.foreground,
@@ -109,7 +169,7 @@ class ModernHomeScope extends StatelessWidget {
         child: Localizations.override(
           context: context,
           delegates: const [GlobalShadLocalizations.delegate],
-          child: child,
+          child: ContentSkeletonTheme(child: child),
         ),
       ),
     );

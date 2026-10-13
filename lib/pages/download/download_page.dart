@@ -282,6 +282,7 @@ class _DownloadPageState extends State<DownloadPage> {
 
   void _confirmDeleteEpisode(DownloadRecord record, DownloadEpisode episode) {
     KazumiDialog.show(
+      context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除下载'),
         content: Text(
@@ -317,6 +318,7 @@ class _DownloadPageState extends State<DownloadPage> {
 
   void _confirmDeleteRecord(DownloadRecord record) {
     KazumiDialog.show(
+      context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除全部下载'),
         content: Text('确定要删除「${record.bangumiName}」的所有下载文件吗？'),

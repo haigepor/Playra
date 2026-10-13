@@ -33,6 +33,8 @@ enum HomeFeed {
     comicDrama,
   ];
 
+  bool get isGeneralCategory => this == recommended || this == popular;
+
   bool get isAnimeCategory =>
       this == anime ||
       this == season ||
@@ -57,6 +59,7 @@ class ModernHomeController extends ChangeNotifier {
     required this.readHistory,
     Stream<void>? historyChanges,
     this.loadCatalog,
+    this.loadProgressiveCatalog,
     this.loadDetail,
   }) {
     reloadHistory();
@@ -65,6 +68,8 @@ class ModernHomeController extends ChangeNotifier {
 
   final HomeFeedLoader loadFeed;
   final Future<HomeCatalog> Function()? loadCatalog;
+  final Future<HomeCatalog> Function(void Function(HomeCatalog) onUpdate)?
+  loadProgressiveCatalog;
   final Future<Map<String, dynamic>> Function(int)? loadDetail;
   HomeCatalog catalog = const HomeCatalog();
   bool catalogLoading = false;
@@ -86,6 +91,7 @@ class ModernHomeController extends ChangeNotifier {
   int _offset = 0;
   int _request = 0;
   bool _disposed = false;
+  bool _visible = true;
   int _featuredBatch = 0;
   static const featuredBatchSize = 4;
 
@@ -114,16 +120,28 @@ class ModernHomeController extends ChangeNotifier {
     _ => HomeAnimeBucket.all,
   };
 
-  List<HomeChannel> get channels =>
-      catalog.algorithm?.channels(
-        animeBucket,
-        mode: feed == HomeFeed.recommended
-            ? 'recommended'
-            : feed == HomeFeed.popular
-            ? 'popular'
-            : 'anime',
-      ) ??
-      [];
+  List<HomeChannel> get channels => feed.isGeneralCategory
+      ? [
+          HomeChannel(
+            'anime',
+            feed == HomeFeed.popular ? '动漫热播' : '动漫推荐',
+            _items.where((e) => e.type == 2).toList(),
+          ),
+          // 影视来源尚未接入，明确留空；动漫电影仍属于动漫分类。
+          const HomeChannel('screen-movies', '电影', []),
+          const HomeChannel('screen-television', '电视剧', []),
+          const HomeChannel('screen-variety', '综艺', []),
+          const HomeChannel('screen-comic-drama', '漫剧', []),
+        ]
+      : catalog.algorithm?.channels(
+              animeBucket,
+              mode: feed == HomeFeed.recommended
+                  ? 'recommended'
+                  : feed == HomeFeed.popular
+                  ? 'popular'
+                  : 'anime',
+            ) ??
+            [];
 
   String scheduleLabel(BangumiItem item) {
     final subject = catalog.subjects[item.id];
@@ -176,52 +194,41 @@ class ModernHomeController extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    if (loadCatalog != null) {
-      await refreshCatalog();
-      if (!_disposed) await _load(reset: true);
-      return;
-    }
-    await Future.wait([
-      _load(reset: true),
-      if (feed.hasContentSource) refreshCatalog(),
-    ]);
+    // 与旧版一样先结束一页列表的等待，栏目目录独立增量更新。
+    final firstPage = _load(reset: true);
+    if (feed.hasContentSource) unawaited(refreshCatalog());
+    await firstPage;
   }
+
+  List<BangumiItem> _catalogItems(HomeFeed selectedFeed) =>
+      selectedFeed == HomeFeed.recommended ||
+          selectedFeed == HomeFeed.popular ||
+          selectedFeed == HomeFeed.anime
+      ? catalog.algorithm!.balanced(popular: selectedFeed == HomeFeed.popular)
+      : catalog.select(animeBucket);
 
   Future<void> refreshCatalog() => _catalogFuture ??= _refreshCatalog()
       .whenComplete(() => _catalogFuture = null);
 
   Future<void> _refreshCatalog() async {
-    if (_disposed || loadCatalog == null) return;
+    if (_disposed || (loadCatalog == null && loadProgressiveCatalog == null)) {
+      return;
+    }
     final request = ++_catalogRequest;
+    _scheduled.clear();
+    _scheduleQueue.clear();
     catalogLoading = true;
     notifyListeners();
     try {
-      final result = await loadCatalog!();
+      final result = loadProgressiveCatalog != null
+          ? await loadProgressiveCatalog!((slice) {
+              if (!_disposed && request == _catalogRequest) {
+                _applyCatalogSlice(slice);
+              }
+            })
+          : await loadCatalog!();
       if (_disposed || request != _catalogRequest) return;
-      catalog = HomeCatalog(
-        chinese: result.failed.contains('chinese')
-            ? catalog.chinese
-            : result.chinese,
-        japanese: result.failed.contains('japanese')
-            ? catalog.japanese
-            : result.japanese,
-        airing: !result.hasStructuredData || result.failed.contains('schedule')
-            ? catalog.airing
-            : result.airing,
-        failed: result.failed,
-        subjects: result.hasStructuredData ? result.subjects : catalog.subjects,
-        algorithm: result.hasStructuredData
-            ? result.algorithm
-            : catalog.algorithm,
-        source: result.source.entries.isNotEmpty
-            ? result.source
-            : catalog.source,
-      );
-      schedules
-        ..clear()
-        ..addAll(catalog.airing);
-      _scheduled.clear();
-      _scheduleQueue.clear();
+      _applyCatalogSlice(result);
     } catch (_) {
       if (_disposed || request != _catalogRequest) return;
       catalog = HomeCatalog(
@@ -236,9 +243,60 @@ class ModernHomeController extends ChangeNotifier {
     } finally {
       if (!_disposed && request == _catalogRequest) {
         catalogLoading = false;
+        if (catalog.hasStructuredData && feed.isAnimeCategory) {
+          // 目录先完成时作废较慢的首屏请求，避免它覆盖分类后的结果。
+          _request++;
+          _items = _catalogItems(feed);
+          _offset = _items.length;
+          loading = false;
+          hasMore = false;
+          error = _items.isEmpty ? '这个分类暂时没有符合条件的作品' : null;
+        }
         notifyListeners();
       }
     }
+  }
+
+  void _applyCatalogSlice(HomeCatalog result) {
+    catalog = HomeCatalog(
+      chinese: result.failed.contains('chinese')
+          ? catalog.chinese
+          : result.chinese,
+      japanese: result.failed.contains('japanese')
+          ? catalog.japanese
+          : result.japanese,
+      // 旧目录仍可下发放送安排；只有缺失的增量切片才保留旧值。
+      airing:
+          result.failed.contains('schedule') ||
+              (!result.hasStructuredData && result.airing.isEmpty)
+          ? catalog.airing
+          : result.airing,
+      failed: result.failed,
+      pending: result.pending,
+      subjects: result.hasStructuredData ? result.subjects : catalog.subjects,
+      algorithm: result.hasStructuredData
+          ? result.algorithm
+          : catalog.algorithm,
+      source: result.source.entries.isNotEmpty ? result.source : catalog.source,
+    );
+    // 小批次到达不清空已加载的放送时间，也不重复启动整组详情请求。
+    for (final entry in catalog.airing.entries) {
+      if (schedules[entry.key]?.weekday != entry.value.weekday ||
+          schedules[entry.key]?.time == null) {
+        schedules[entry.key] = entry.value;
+      }
+    }
+    if (feed.isAnimeCategory && catalog.hasStructuredData) {
+      final next = _catalogItems(feed);
+      if (next.isNotEmpty) {
+        _request++;
+        _items = next;
+        loading = false;
+        error = null;
+        hasMore = false;
+      }
+    }
+    notifyListeners();
   }
 
   /// 只补充可见海报的当前放送资料，最多三个并发，不阻塞封面显示。
@@ -254,11 +312,20 @@ class ModernHomeController extends ChangeNotifier {
   }
 
   void _drainSchedules() {
-    while (!_disposed && _activeSchedules < 3 && _scheduleQueue.isNotEmpty) {
+    while (!_disposed &&
+        _visible &&
+        _activeSchedules < 3 &&
+        _scheduleQueue.isNotEmpty) {
       final id = _scheduleQueue.removeAt(0);
       _activeSchedules++;
       unawaited(_fetchSchedule(id, _catalogRequest));
     }
+  }
+
+  void setVisible(bool visible) {
+    _visible = visible;
+    // Tab 缓存页仍然存活，离屏后停止新排队请求，返回时继续已有队列。
+    if (visible) _drainSchedules();
   }
 
   Future<void> _fetchSchedule(int id, int generation) async {
@@ -303,21 +370,14 @@ class ModernHomeController extends ChangeNotifier {
     notifyListeners();
     try {
       late final List<BangumiItem> fetched;
-      if (loadCatalog != null) {
-        if (_catalogFuture != null) await _catalogFuture;
+      if (catalog.hasStructuredData && !requestedFeed.isGeneralCategory) {
+        fetched = _catalogItems(requestedFeed);
+      } else if (requestedFeed == HomeFeed.animeMovies &&
+          (loadCatalog != null || loadProgressiveCatalog != null)) {
+        // 动漫电影不能用综合榜单冒充，资料不足时等待正确的分类目录。
+        await refreshCatalog();
         if (_disposed || request != _request) return;
-        if (!catalog.hasStructuredData) {
-          error = '暂时无法获取分类数据，请稍后重试';
-          return;
-        }
-        fetched =
-            requestedFeed == HomeFeed.recommended ||
-                requestedFeed == HomeFeed.popular ||
-                requestedFeed == HomeFeed.anime
-            ? catalog.algorithm!.balanced(
-                popular: requestedFeed == HomeFeed.popular,
-              )
-            : catalog.select(animeBucket);
+        fetched = catalog.hasStructuredData ? _catalogItems(requestedFeed) : [];
       } else {
         fetched = await loadFeed(requestedFeed, offset);
       }
@@ -341,7 +401,7 @@ class ModernHomeController extends ChangeNotifier {
       }
       _offset = offset + fetched.length;
       hasMore =
-          loadCatalog == null &&
+          (requestedFeed.isGeneralCategory || !catalog.hasStructuredData) &&
           requestedFeed != HomeFeed.season &&
           fetched.length >= 24 &&
           added > 0;

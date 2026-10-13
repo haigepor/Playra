@@ -1,12 +1,14 @@
 part of 'source_sheet.dart';
 
 void _showAliasPickerDialog({
+  required BuildContext context,
   required String sourceName,
   required List<String> aliases,
   required ValueChanged<String> onAliasSelected,
   required VoidCallback onAliasesChanged,
 }) {
   KazumiDialog.show(
+    context: context,
     builder: (context) => _AliasPickerDialog(
       sourceName: sourceName,
       aliases: aliases,
@@ -20,6 +22,7 @@ void _showAliasPickerDialog({
 }
 
 void _showCustomKeywordDialog({
+  required BuildContext context,
   required ValueChanged<String> onSubmit,
   required String initialKeyword,
   required String sourceName,
@@ -34,6 +37,7 @@ void _showCustomKeywordDialog({
   }
 
   KazumiDialog.show(
+    context: context,
     builder: (context) => AlertDialog(
       title: const Text('修改检索词'),
       content: TextFormField(
@@ -44,7 +48,6 @@ void _showCustomKeywordDialog({
           labelText: '检索关键词',
           helperText: '仅检索来源：$sourceName',
           helperMaxLines: 3,
-          border: const OutlineInputBorder(),
         ),
         onChanged: (value) => keyword = value,
         onFieldSubmitted: submit,
@@ -54,13 +57,12 @@ void _showCustomKeywordDialog({
           onPressed: KazumiDialog.dismiss,
           child: Text(
             '取消',
-            style: TextStyle(color: Theme.of(context).colorScheme.outline),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
-        TextButton(
-          onPressed: () => submit(keyword),
-          child: const Text('检索'),
-        ),
+        TextButton(onPressed: () => submit(keyword), child: const Text('检索')),
       ],
     ),
   );
@@ -86,6 +88,7 @@ class _AliasPickerDialog extends StatefulWidget {
 class _AliasPickerDialogState extends State<_AliasPickerDialog> {
   void _confirmDelete(int index) {
     KazumiDialog.show(
+      context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除确认'),
         content: const Text('删除后无法恢复，确认要永久删除这个别名吗？'),
@@ -133,8 +136,8 @@ class _AliasPickerDialogState extends State<_AliasPickerDialog> {
                   Text(
                     '仅检索来源：${widget.sourceName}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

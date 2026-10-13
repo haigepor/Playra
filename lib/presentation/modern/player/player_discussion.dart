@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kazumi/modules/bangumi/episode_item.dart';
 import 'package:kazumi/modules/comments/comment_item.dart';
@@ -13,9 +14,11 @@ class PlayerDiscussion extends StatefulWidget {
     super.key,
     required this.subjectId,
     required this.episode,
+    this.canonicalEpisode,
   });
   final int subjectId;
   final EpisodeRef? episode;
+  final EpisodeInfo? canonicalEpisode;
   @override
   State<PlayerDiscussion> createState() => _PlayerDiscussionState();
 }
@@ -41,6 +44,7 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
     if (oldWidget.subjectId != widget.subjectId) episodes = null;
     if (oldWidget.subjectId != widget.subjectId ||
         oldWidget.episode?.pageUrl != widget.episode?.pageUrl ||
+        oldWidget.canonicalEpisode?.id != widget.canonicalEpisode?.id ||
         oldWidget.episode?.displayTitle != widget.episode?.displayTitle) {
       matched = null;
       comments = [];
@@ -50,7 +54,9 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
 
   Future<void> refresh({EpisodeInfo? manual}) async {
     final request = ++version;
-    if (widget.episode == null && manual == null) {
+    if (widget.episode == null &&
+        widget.canonicalEpisode == null &&
+        manual == null) {
       setState(() {
         loading = false;
         error = false;
@@ -66,14 +72,18 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
     try {
       final list =
           episodes ??
-          await BangumiApi.getBangumiEpisodesByID(
-            widget.subjectId,
-            throwOnError: true,
-          );
+          (manual != null || widget.canonicalEpisode != null
+              ? null
+              : await BangumiApi.getBangumiEpisodesByID(
+                  widget.subjectId,
+                  throwOnError: true,
+                ));
       if (!mounted || request != version) return;
-      episodes = list;
+      if (list != null) episodes = list;
       final target =
-          manual ?? matchDiscussionEpisode(widget.episode!.displayTitle, list);
+          manual ??
+          widget.canonicalEpisode ??
+          matchDiscussionEpisode(widget.episode!.displayTitle, list ?? []);
       if (target == null) {
         setState(() {
           matched = null;
@@ -109,7 +119,15 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
   );
   Future<void> pick() async {
     if (episodes == null) {
-      await refresh();
+      try {
+        episodes = await BangumiApi.getBangumiEpisodesByID(
+          widget.subjectId,
+          throwOnError: true,
+        );
+      } catch (_) {
+        if (mounted) setState(() => error = true);
+        return;
+      }
       if (!mounted || episodes == null) return;
     }
     final chosen = await showModernPlayerSheet<EpisodeInfo>(
@@ -148,7 +166,7 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
         children: [
           const SizedBox(height: 24),
           if (loading)
-            const Center(child: CircularProgressIndicator())
+            const SkeletonComments()
           else ...[
             Text(
               error
@@ -169,8 +187,7 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
             ),
             if (error)
               TextButton(onPressed: refresh, child: const Text('重新加载')),
-            if (episodes?.isNotEmpty == true)
-              TextButton(onPressed: pick, child: const Text('匹配讨论分集')),
+            TextButton(onPressed: pick, child: const Text('匹配讨论分集')),
           ],
         ],
       );

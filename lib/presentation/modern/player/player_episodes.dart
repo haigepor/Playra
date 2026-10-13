@@ -2,7 +2,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
+import 'package:kazumi/modules/bangumi/episode_item.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
+import '../miomedia/miomedia_playing_mark.dart';
 
 Future<T?> showModernPlayerSheet<T>(BuildContext context, Widget child) {
   final media = MediaQuery.of(context);
@@ -111,14 +113,8 @@ class PlayerEpisodeButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (playing) ...[
-              SvgPicture.asset(
-                'assets/images/modern-player-playing-mark.svg',
-                width: 14,
-                height: 14,
-                excludeFromSemantics: true,
-                colorFilter: ColorFilter.mode(c.primary, BlendMode.srcIn),
-              ),
+            if (selected) ...[
+              MioPlayingMark(active: playing, color: c.primary),
               const SizedBox(width: 5),
             ],
             Flexible(
@@ -137,6 +133,99 @@ class PlayerEpisodeButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 未选源时展示资料目录，返回真实分集对象，自动匹配只使用正片集号。
+class PlayerCatalogEpisodesSheet extends StatefulWidget {
+  const PlayerCatalogEpisodesSheet({
+    super.key,
+    required this.episodes,
+    this.selectedId,
+  });
+  final List<EpisodeInfo> episodes;
+  final int? selectedId;
+  @override
+  State<PlayerCatalogEpisodesSheet> createState() =>
+      _PlayerCatalogEpisodesSheetState();
+}
+
+class _PlayerCatalogEpisodesSheetState
+    extends State<PlayerCatalogEpisodesSheet> {
+  bool descending = false;
+  late int segment =
+      math.max(
+        0,
+        widget.episodes.indexWhere((e) => e.id == widget.selectedId),
+      ) ~/
+      50;
+  @override
+  Widget build(BuildContext context) {
+    final episodes = [...widget.episodes]
+      ..sort((a, b) => a.episode.compareTo(b.episode));
+    final segments = (episodes.length + 49) ~/ 50;
+    final visible = episodes.skip(segment * 50).take(50).toList();
+    if (descending) visible.sort((a, b) => b.episode.compareTo(a.episode));
+    return Column(
+      children: [
+        const PlayerSheetHeader(title: '全部剧集'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text('点击剧集，自动匹配播放来源', style: TextStyle(fontSize: 12)),
+              ),
+              TextButton.icon(
+                onPressed: () => setState(() => descending = !descending),
+                icon: Icon(
+                  descending ? LucideIcons.arrowDown : LucideIcons.arrowUp,
+                  size: 16,
+                ),
+                label: Text(descending ? '降序' : '升序'),
+              ),
+            ],
+          ),
+        ),
+        if (segments > 1)
+          SizedBox(
+            height: 48,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: segments,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (_, i) => ChoiceChip(
+                label: Text(
+                  '${episodes[i * 50].episode.toInt()}–${episodes[math.min((i + 1) * 50, episodes.length) - 1].episode.toInt()}',
+                ),
+                selected: segment == i,
+                onSelected: (_) => setState(() => segment = i),
+              ),
+            ),
+          ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 112,
+              mainAxisExtent: 56,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+            ),
+            itemCount: visible.length,
+            itemBuilder: (_, i) {
+              final episode = visible[i];
+              return PlayerEpisodeButton(
+                title: '第${episode.episode.toInt()}集',
+                selected: episode.id == widget.selectedId,
+                onTap: () => Navigator.pop(context, episode),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

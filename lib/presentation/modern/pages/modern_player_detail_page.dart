@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
+import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -9,9 +11,11 @@ import 'package:kazumi/bean/dialog/adaptive_bottom_sheet.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/collect_button.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
+import 'package:kazumi/modules/bangumi/episode_item.dart';
 import 'package:kazumi/modules/download/download_module.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/services/player/history_playback_service.dart';
+import 'package:kazumi/services/source/source_candidates.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
 import 'package:kazumi/pages/download/download_controller.dart';
@@ -23,6 +27,7 @@ import 'package:kazumi/pages/info/info_controller.dart';
 import 'package:kazumi/pages/info/rating_review_dialog.dart';
 import 'package:kazumi/pages/info/source_sheet.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
+import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/pages/video/playback_identity.dart';
 import 'package:kazumi/pages/video/playback_scaffold.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
@@ -71,6 +76,12 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
       commentsError = false,
       commentsMore = true;
   bool relationsLoading = false, relationsError = false;
+  List<EpisodeInfo> catalogEpisodes = [];
+  EpisodeInfo? selectedCatalogEpisode;
+  bool episodesLoading = false, episodesError = false;
+  String? automaticSourceError;
+  final episodeCatalogCancel = RuleCancelToken();
+  RuleCancelToken? automaticSourceCancel;
   InfoController get info => widget.infoController;
   VideoPageController get video => widget.videoController;
   BangumiItem get item => info.bangumiItem;
@@ -79,6 +90,11 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
   bool get hasPlayback =>
       playbackKey.currentState?.hasPlayback ??
       widget.args is OfflineVideoPlaybackArgs;
+
+  void playbackReady() {
+    // 外壳已进入播放会话，下方视图马上显示来源目录，不等待解析 Future 结束。
+    if (mounted) setState(() {});
+  }
 
   History? get resumeCandidate {
     final candidates =
@@ -97,7 +113,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
 
   Future<void> resume(BuildContext context) async {
     final history = resumeCandidate;
-    if (history == null) return chooseSource(context);
+    if (history == null) return playAutomatically();
     if (dialogs.isRunning) return;
     await dialogs.run((task) async {
       final cancel = RuleCancelToken();
@@ -110,29 +126,25 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
       if (!mounted || !context.mounted) return;
       if (result is! HistoryPlaybackReady ||
           result.args is! OnlineVideoPlaybackArgs) {
-        KazumiDialog.showToast(message: '历史来源暂不可用，请重新选择来源');
+        final number = regularEpisodeNumber(history.lastWatchEpisodeName);
+        await playAutomatically(number: number);
         return;
       }
       final args = result.args as OnlineVideoPlaybackArgs;
       final verified = verifiedResume(args, [history]);
-      final selection =
-          verified?.selection ??
-          await showModernPlayerSheet<VideoEpisodeSelection>(
-            context,
-            PlayerEpisodesSheet(
-              roads: args.roads,
-              selected: const VideoEpisodeSelection(episode: 1, road: 0),
-              sourceName: args.plugin.name,
-              confirmSource: true,
-            ),
-          );
-      if (!mounted || selection == null) return;
+      if (verified == null) {
+        await playAutomatically(
+          number: regularEpisodeNumber(history.lastWatchEpisodeName),
+        );
+        return;
+      }
+      final selection = verified.selection;
+      if (!mounted) return;
       await playbackKey.currentState?.startSource(
         args,
         selection,
-        offset:
-            verified != null &&
-                GStorage.getSetting(SettingsKeys.playResume) == true
+        onReady: playbackReady,
+        offset: GStorage.getSetting(SettingsKeys.playResume) == true
             ? verified.offset
             : 0,
       );
@@ -146,26 +158,23 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     video.bangumiItem = widget.item;
     unawaited(loadInfo());
     unawaited(loadRelations());
+    unawaited(loadEpisodeCatalog());
     // 在线路由只提供来源上下文；身份不匹配时先确认目标，不能猜历史索引。
     if (widget.args case final OnlineVideoPlaybackArgs args) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         final resume = verifiedResume(args, widget.historyController.histories);
+        // 显式在线来源入口已有上下文，直接从已核实的历史或该来源首集开始。
         final selection =
             resume?.selection ??
-            await showModernPlayerSheet<VideoEpisodeSelection>(
-              playbackKey.currentContext!,
-              PlayerEpisodesSheet(
-                roads: args.roads,
-                selected: const VideoEpisodeSelection(episode: 1, road: 0),
-                sourceName: args.plugin.name,
-                confirmSource: true,
-              ),
-            );
-        if (!mounted || selection == null) return;
+            const VideoEpisodeSelection(episode: 1, road: 0);
+        if (!mounted || args.roads.isEmpty || args.roads.first.data.isEmpty) {
+          return;
+        }
         await playbackKey.currentState?.startSource(
           args,
           selection,
+          onReady: playbackReady,
           offset:
               resume != null &&
                   GStorage.getSetting(SettingsKeys.playResume) == true
@@ -178,12 +187,106 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
 
   @override
   void dispose() {
+    episodeCatalogCancel.cancel('page disposed');
+    automaticSourceCancel?.cancel('page disposed');
     tabs.dispose();
     super.dispose();
   }
 
   void tabChanged() {
     if (tabs.index == 2 && !commentsLoaded && !commentsLoading) loadComments();
+  }
+
+  Future<void> loadEpisodeCatalog() async {
+    if (episodesLoading || episodeCatalogCancel.isCancelled) return;
+    setState(() {
+      episodesLoading = true;
+      episodesError = false;
+    });
+    try {
+      final list = await BangumiApi.getBangumiEpisodesByID(
+        item.id,
+        throwOnError: true,
+        cancelToken: episodeCatalogCancel,
+        onPage: (page) {
+          if (!mounted) return;
+          setState(
+            () => catalogEpisodes = page
+                .where(
+                  (e) =>
+                      e.type == 0 &&
+                      e.episode > 0 &&
+                      e.episode == e.episode.toInt(),
+                )
+                .toList(),
+          );
+        },
+      );
+      if (!mounted) return;
+      setState(
+        () => catalogEpisodes = list
+            .where(
+              (e) =>
+                  e.type == 0 &&
+                  e.episode > 0 &&
+                  e.episode == e.episode.toInt(),
+            )
+            .toList(),
+      );
+    } catch (_) {
+      if (mounted) setState(() => episodesError = true);
+    } finally {
+      if (mounted) setState(() => episodesLoading = false);
+    }
+  }
+
+  Future<void> playAutomatically({EpisodeInfo? episode, int? number}) async {
+    if (choosingSource || video.isOfflineMode && hasPlayback) return;
+    selectedCatalogEpisode =
+        episode ?? selectedCatalogEpisode ?? catalogEpisodes.firstOrNull;
+    final targetNumber = number ?? selectedCatalogEpisode?.episode.toInt() ?? 1;
+    final cancel = RuleCancelToken();
+    automaticSourceCancel?.cancel('superseded');
+    automaticSourceCancel = cancel;
+    setState(() {
+      choosingSource = true;
+      automaticSourceError = null;
+    });
+    try {
+      final choice = await SourceCandidates.shared
+          .selectEpisode(
+            item,
+            inject<PluginsController>().pluginList.toList(),
+            targetNumber,
+            cancel,
+          )
+          .timeout(const Duration(seconds: 30), onTimeout: () => null);
+      if (!mounted || cancel.isCancelled) return;
+      // 找到可用目录即停止余下探测；解析与首帧失败继续由现有播放会话自动换源。
+      cancel.cancel('candidate selected');
+      setState(() => choosingSource = false);
+      if (choice == null) {
+        setState(
+          () => automaticSourceError = '暂未找到第 $targetNumber 集的可用来源，可重试或手动换源',
+        );
+        return;
+      }
+      await playbackKey.currentState?.startSource(
+        choice.candidate.args(item, automatic: true),
+        VideoEpisodeSelection(episode: choice.episode, road: choice.road),
+        onReady: playbackReady,
+      );
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (mounted && identical(automaticSourceCancel, cancel)) {
+        setState(() => automaticSourceError = '自动选源失败，请重试或手动换源');
+      }
+    } finally {
+      cancel.cancel('selection finished');
+      if (mounted && identical(automaticSourceCancel, cancel)) {
+        setState(() => choosingSource = false);
+      }
+    }
   }
 
   Future<void> loadInfo() async {
@@ -280,6 +383,19 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
 
   Future<void> chooseSource(BuildContext themedContext) async {
     if (choosingSource) return;
+    automaticSourceCancel?.cancel('manual source selection');
+    automaticSourceCancel = null;
+    final oldNumber = hasPlayback
+        ? regularEpisodeNumber(
+            video.resolveEpisode(video.selectedEpisode)?.displayTitle ?? '',
+          )
+        : null;
+    final oldPosition = hasPlayback
+        ? widget.playerController.playback.playerPosition.inSeconds
+        : 0;
+    final oldDuration = hasPlayback
+        ? widget.playerController.playback.playerDuration
+        : null;
     setState(() => choosingSource = true);
     try {
       final args = await showAdaptiveBottomSheet<OnlineVideoPlaybackArgs>(
@@ -287,6 +403,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         maxHeightFactor: .9,
         builder: (sheetContext) => SourceSheet(
           infoController: info,
+          episodeNumber: oldNumber,
           emptyIllustration: SvgPicture.asset(
             'assets/images/modern-player-empty-source.svg',
             width: 136,
@@ -301,6 +418,22 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
           ? verifiedResume(args, widget.historyController.histories)
           : null;
       var target = resume?.selection;
+      final sameWorkCandidate = SourceCandidates.shared.find(
+        item,
+        args.plugin,
+        args.src,
+      );
+      if (target == null && oldNumber != null) {
+        final matched = sameWorkCandidate?.matched == true
+            ? sameWorkCandidate?.matchEpisode(oldNumber)
+            : null;
+        if (matched != null) {
+          target = VideoEpisodeSelection(
+            episode: matched.episode,
+            road: matched.road,
+          );
+        }
+      }
       target ??= await showModernPlayerSheet<VideoEpisodeSelection>(
         themedContext,
         PlayerEpisodesSheet(
@@ -311,11 +444,30 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         ),
       );
       if (!mounted || target == null) return;
+      // 选源弹层打开时播放仍可继续，提交时重新读取实际进度。
+      final livePosition =
+          widget.playerController.playback.playerPosition.inSeconds;
+      final liveDuration = widget.playerController.playback.playerDuration;
       final offset =
           resume != null && GStorage.getSetting(SettingsKeys.playResume) == true
           ? resume.offset
+          : sameWorkCandidate?.matched == true &&
+                oldNumber != null &&
+                regularEpisodeNumber(
+                      args.roads[target.road].identifier[target.episode - 1],
+                    ) ==
+                    oldNumber
+          ? (livePosition > 0 ? livePosition : oldPosition)
           : 0;
-      await playbackKey.currentState?.startSource(args, target, offset: offset);
+      await playbackKey.currentState?.startSource(
+        args,
+        target,
+        onReady: playbackReady,
+        offset: offset,
+        expectedDuration: oldDuration == null
+            ? null
+            : (liveDuration > Duration.zero ? liveDuration : oldDuration),
+      );
       if (mounted) setState(() {});
     } finally {
       if (mounted) setState(() => choosingSource = false);
@@ -336,7 +488,21 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
   }
 
   Future<void> allEpisodes(BuildContext context) async {
-    if (!hasPlayback) return chooseSource(context);
+    if (!hasPlayback) {
+      if (catalogEpisodes.isEmpty) {
+        await loadEpisodeCatalog();
+        if (!mounted || !context.mounted || catalogEpisodes.isEmpty) return;
+      }
+      final episode = await showModernPlayerSheet<EpisodeInfo>(
+        context,
+        PlayerCatalogEpisodesSheet(
+          episodes: catalogEpisodes,
+          selectedId: selectedCatalogEpisode?.id,
+        ),
+      );
+      if (mounted && episode != null) await playAutomatically(episode: episode);
+      return;
+    }
     final result = await showModernPlayerSheet<VideoEpisodeSelection>(
       context,
       PlayerEpisodesSheet(
@@ -410,20 +576,19 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                       border: ShadBorder(radius: BorderRadius.circular(26)),
                     ),
                     child: choosingSource
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                        ? const LoadingIndicator(
+                            size: 26,
+                            color: Color(0xff182142),
                           )
                         : const Icon(LucideIcons.play, size: 22),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     choosingSource
-                        ? '正在选择来源'
+                        ? '正在自动匹配来源'
                         : resumeCandidate != null
                         ? '继续观看 · ${resumeCandidate!.lastWatchEpisodeName}'
-                        : '选择来源播放',
+                        : '开始观看 · 自动选源',
                     style: const TextStyle(fontSize: 12, color: Colors.white),
                   ),
                 ],
@@ -461,6 +626,9 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                       episode: hasPlayback
                           ? video.resolveEpisode(video.selectedEpisode)
                           : null,
+                      canonicalEpisode: hasPlayback
+                          ? null
+                          : selectedCatalogEpisode,
                     ),
                   ),
                   Observer(
@@ -504,7 +672,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         ? video.roadList[selection.road]
         : null;
     final count = road == null
-        ? 0
+        ? catalogEpisodes.length
         : math.min(road.data.length, road.identifier.length);
     final start = math.max(0, selection.episode - 3);
     return ListView(
@@ -618,7 +786,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               onPressed: () => allEpisodes(context),
               style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
               child: Text(
-                hasPlayback ? '共 $count 集 · 全部 ›' : '选择来源 ›',
+                '共 $count 集 · 全部 ›',
                 style: const TextStyle(fontSize: 12),
               ),
             ),
@@ -704,10 +872,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               spacing: 8,
               children: [
                 TextButton(
-                  onPressed: () => playbackKey.currentState?.changeEpisode(
-                    selection.episode,
-                    currentRoad: selection.road,
-                  ),
+                  onPressed: () => playbackKey.currentState?.retryPlayback(),
                   child: const Text('重试'),
                 ),
                 TextButton(
@@ -716,27 +881,120 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                 ),
               ],
             ),
-        ] else
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+        ] else ...[
+          if (episodesLoading && catalogEpisodes.isEmpty)
+            const SkeletonEpisodes(),
+          if (catalogEpisodes.isNotEmpty)
+            SizedBox(
+              height: math.max(56, MediaQuery.textScalerOf(context).scale(42)),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: math.min(8, catalogEpisodes.length),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final episode = catalogEpisodes[i];
+                  return PlayerEpisodeButton(
+                    title: '第${episode.episode.toInt()}集',
+                    selected: episode.id == selectedCatalogEpisode?.id,
+                    onTap: () => playAutomatically(episode: episode),
+                  );
+                },
+              ),
+            ),
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: c.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: c.outlineVariant.withValues(alpha: .65),
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Icon(
+                      automaticSourceError == null
+                          ? LucideIcons.zap
+                          : LucideIcons.circleAlert,
+                      size: 18,
+                      color: c.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        choosingSource ? '正在匹配播放来源' : '智能选源',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 Text(
-                  '选源后，在这里查看线路与全部剧集。',
-                  style: TextStyle(fontSize: 13, color: c.onSurfaceVariant),
+                  automaticSourceError ??
+                      (choosingSource
+                          ? '正在核对作品与剧集，请稍候…'
+                          : '点击剧集即可播放，优先匹配启动更快的来源'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.5,
+                    color: c.onSurfaceVariant,
+                  ),
                 ),
-                TextButton.icon(
-                  onPressed: choosingSource
-                      ? null
-                      : () => chooseSource(context),
-                  style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                  icon: const Icon(LucideIcons.play, size: 16),
-                  label: const Text('选择来源播放'),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: choosingSource
+                          ? null
+                          : () => playAutomatically(),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(48, 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: choosingSource
+                          ? const LoadingIndicator(size: 16)
+                          : const Icon(LucideIcons.play, size: 16),
+                      label: Text(
+                        automaticSourceError == null ? '自动播放' : '重新匹配',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: choosingSource
+                          ? null
+                          : () => chooseSource(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: c.onSurfaceVariant,
+                        side: BorderSide(color: c.outline),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(LucideIcons.slidersHorizontal, size: 15),
+                      label: const Text('手动换源', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
                 ),
+                if (episodesError)
+                  TextButton(
+                    onPressed: loadEpisodeCatalog,
+                    child: const Text('剧集资料加载失败，点击重试'),
+                  ),
               ],
             ),
           ),
+        ],
         const SizedBox(height: 24),
         const Divider(height: 1),
         const SizedBox(height: 16),
@@ -745,8 +1003,8 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
-        if (relationsLoading)
-          const LinearProgressIndicator(minHeight: 2)
+        if (relationsLoading && info.relationList.isEmpty)
+          const SkeletonPosters(count: 3)
         else if (relationsError)
           TextButton(
             onPressed: loadRelations,

@@ -21,6 +21,7 @@ import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/plugin_import_parser.dart';
+import 'package:kazumi/services/source/source_policy.dart';
 
 class PluginViewPage extends StatefulWidget {
   const PluginViewPage({super.key, required this.controller});
@@ -40,6 +41,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
   bool _updating = false;
   bool _deleting = false;
   bool _catalogFailed = false;
+  String _domain = '';
 
   @override
   void initState() {
@@ -260,13 +262,20 @@ class _PluginViewPageState extends State<PluginViewPage> {
                       (p) =>
                           (p.name.toLowerCase().contains(query) ||
                               p.baseUrl.toLowerCase().contains(query)) &&
+                          (_domain.isEmpty ||
+                              (_domain == 'unknown'
+                                  ? p.profile.domains.isEmpty
+                                  : p.profile.supports(_domain))) &&
                           (!_updatesOnly ||
                               _controller.pluginUpdateStatus(p) ==
                                   PluginUpdateAvailability.updatable),
                     )
                     .toList();
                 final canReorder =
-                    query.isEmpty && !_updatesOnly && !_selecting;
+                    query.isEmpty &&
+                    !_updatesOnly &&
+                    !_selecting &&
+                    _domain.isEmpty;
                 return ReorderableListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                   buildDefaultDragHandles: false,
@@ -282,7 +291,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                     children: [
                       RulePageIntro(
                         title: '我的规则',
-                        description: '管理你的番剧来源。拖动调整搜索顺序，点按规则进行编辑。',
+                        description: '按动漫与影视管理来源；自动播放会参考近期启动速度，手动选择保持固定。',
                         icon: Icons.extension_rounded,
                         actions: [
                           FilledButton.icon(
@@ -382,6 +391,26 @@ class _PluginViewPageState extends State<PluginViewPage> {
                           ),
                         ),
                       const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          for (final entry in const {
+                            '': '全部',
+                            'anime': '动漫',
+                            'screen': '影视',
+                            'unknown': '未分类',
+                          }.entries)
+                            ChoiceChip(
+                              label: Text(
+                                '${entry.value} ${entry.key.isEmpty ? all.length : all.where((p) => entry.key == 'unknown' ? p.profile.domains.isEmpty : p.profile.supports(entry.key)).length}',
+                              ),
+                              selected: _domain == entry.key,
+                              onSelected: (_) =>
+                                  setState(() => _domain = entry.key),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                   footer: all.isEmpty
@@ -400,6 +429,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                               onPressed: () => setState(() {
                                 _search.clear();
                                 _updatesOnly = false;
+                                _domain = '';
                               }),
                               text: '显示全部规则',
                             ),
@@ -416,6 +446,10 @@ class _PluginViewPageState extends State<PluginViewPage> {
                     return RuleCard(
                       key: ValueKey(plugin.name),
                       title: plugin.name,
+                      caption: SourcePolicy.shared.summary(
+                        plugin.providerId,
+                        plugin.version,
+                      ),
                       subtitle:
                           Uri.tryParse(plugin.baseUrl)?.host ?? plugin.baseUrl,
                       selected: _selected.contains(plugin.name),
@@ -434,6 +468,24 @@ class _PluginViewPageState extends State<PluginViewPage> {
                         _selected.add(plugin.name);
                       }),
                       tags: [
+                        RuleTag(
+                          label: plugin.profile.label,
+                          background: colors.secondaryContainer,
+                          foreground: colors.onSecondaryContainer,
+                        ),
+                        RuleTag(
+                          label: plugin.profile.adapterKind == 'http'
+                              ? 'HTTP 接口'
+                              : '规则',
+                          background: colors.surfaceContainerHighest,
+                          foreground: colors.onSurfaceVariant,
+                        ),
+                        if (!plugin.enabled)
+                          RuleTag(
+                            label: '已停用',
+                            background: colors.surfaceContainerHighest,
+                            foreground: colors.onSurfaceVariant,
+                          ),
                         RuleTag(
                           label: plugin.version,
                           background: colors.surfaceContainerHighest,
@@ -508,6 +560,21 @@ class _PluginViewPageState extends State<PluginViewPage> {
     ),
     menuChildren: [
       KazumiMenuItem(
+        label: plugin.enabled ? '停用此来源' : '启用此来源',
+        onPressed: () async {
+          try {
+            await SourcePolicy.shared.configure(
+              plugin.providerId,
+              enabled: !plugin.enabled,
+            );
+            if (mounted) setState(() {});
+          } catch (_) {
+            KazumiDialog.showToast(message: '来源设置保存失败');
+          }
+        },
+      ),
+      KazumiMenuItem(label: '设置来源分类', onPressed: () => _setDomain(plugin)),
+      KazumiMenuItem(
         onPressed: () =>
             context.pushNamed('/settings/plugin/editor', arguments: plugin),
         label: '编辑规则',
@@ -544,4 +611,39 @@ class _PluginViewPageState extends State<PluginViewPage> {
       ),
     ],
   );
+
+  Future<void> _setDomain(Plugin plugin) async {
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('来源分类'),
+        children: [
+          for (final entry in const {
+            'anime': '动漫',
+            'screen': '影视',
+            'both': '动漫与影视',
+            'unknown': '未分类',
+          }.entries)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(
+                context,
+                entry.key == 'both'
+                    ? ['anime', 'screen']
+                    : entry.key == 'unknown'
+                    ? <String>[]
+                    : [entry.key],
+              ),
+              child: Text(entry.value),
+            ),
+        ],
+      ),
+    );
+    if (result == null) return;
+    try {
+      await SourcePolicy.shared.configure(plugin.providerId, domains: result);
+      if (mounted) setState(() {});
+    } catch (_) {
+      KazumiDialog.showToast(message: '来源分类保存失败');
+    }
+  }
 }

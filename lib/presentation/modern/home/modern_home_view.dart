@@ -1,14 +1,21 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../widgets/modern_page_art.dart';
+import '../widgets/modern_feature_carousel.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'home_theme.dart';
 import 'modern_home_controller.dart';
 import 'home_content_algorithm.dart';
+import '../miomedia/miomedia_home_controller.dart';
+import '../miomedia/miomedia_browse.dart';
+import '../miomedia/miomedia_category_view.dart';
+import '../miomedia/miomedia_rank_view.dart';
+import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 
 String homeTitle(BangumiItem item) =>
     item.nameCn.isEmpty ? item.name : item.nameCn;
@@ -32,8 +39,12 @@ class ModernHomeView extends StatelessWidget {
     required this.onToggleTheme,
     required this.onDetails,
     required this.onResume,
+    this.media,
+    this.onMediaDetails,
   });
   final ModernHomeController controller;
+  final MioHomeController? media;
+  final ValueChanged<MioVideo>? onMediaDetails;
   final VoidCallback onSearch, onCalendar, onHistory, onToggleTheme;
   final ValueChanged<BangumiItem> onDetails;
   final ValueChanged<History> onResume;
@@ -51,10 +62,11 @@ class ModernHomeView extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 760),
                 child: ListenableBuilder(
-                  listenable: controller,
+                  listenable: Listenable.merge([controller, ?media]),
                   builder: (context, _) {
                     final items = controller.items;
                     final recent = controller.recent;
+                    final mediaKind = mioKindForHomeFeed(controller.feed);
                     final scale =
                         MediaQuery.textScalerOf(context).scale(14) / 14;
                     // 固定导航独立于内容滚动，子分类展开仍可平滑改变内容区高度。
@@ -65,7 +77,13 @@ class ModernHomeView extends StatelessWidget {
                           child: Column(
                             children: [
                               _FeedSelector(controller: controller),
-                              _AnimeFilters(controller: controller),
+                              if (media != null && mediaKind != null)
+                                MioGenreFilters(
+                                  controller: media!,
+                                  kind: mediaKind,
+                                )
+                              else
+                                _AnimeFilters(controller: controller),
                             ],
                           ),
                         ),
@@ -73,215 +91,366 @@ class ModernHomeView extends StatelessWidget {
                           child: RefreshIndicator(
                             onRefresh: () async {
                               controller.reloadHistory();
+                              if (media != null) {
+                                media!.bootstrap(force: true);
+                                final rankId = mioRankCategory(
+                                  media!,
+                                  controller.feed,
+                                );
+                                if (rankId != null) {
+                                  media!.loadRanking(rankId, refresh: true);
+                                }
+                              }
                               await controller.refresh();
                             },
-                            child: CustomScrollView(
-                              key: const PageStorageKey('modern-home-scroll'),
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              slivers: [
-                                SliverPadding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    20,
-                                    4,
-                                    20,
-                                    0,
-                                  ),
-                                  sliver: SliverList.list(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: _SearchEntry(
-                                              onSearch: onSearch,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          FilledButton.icon(
-                                            key: const ValueKey(
-                                              'home-calendar',
-                                            ),
-                                            onPressed: onCalendar,
-                                            icon: const Icon(
-                                              LucideIcons.calendarDays,
-                                              size: 17,
-                                            ),
-                                            label: const Text(
-                                              '排期表',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: (notification) {
+                                // 只在尾部继续向下滚动时取下一页，横向栏目和刷新不触发。
+                                if (media != null &&
+                                    mediaKind != null &&
+                                    notification.depth == 0 &&
+                                    notification.metrics.axis ==
+                                        Axis.vertical &&
+                                    notification.metrics.extentAfter < 480 &&
+                                    ((notification
+                                                is ScrollUpdateNotification &&
+                                            (notification.scrollDelta ?? 0) >
+                                                0) ||
+                                        (notification
+                                                is OverscrollNotification &&
+                                            notification.overscroll > 0)) &&
+                                    !media!.failed.contains(mediaKind)) {
+                                  media!.load(mediaKind);
+                                }
+                                return false;
+                              },
+                              child: CustomScrollView(
+                                key: const PageStorageKey('modern-home-scroll'),
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                slivers: [
+                                  SliverPadding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      20,
+                                      4,
+                                      20,
+                                      0,
+                                    ),
+                                    sliver: SliverList.list(
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: _SearchEntry(
+                                                onSearch: onSearch,
                                               ),
                                             ),
-                                            style: FilledButton.styleFrom(
-                                              minimumSize: const Size(0, 44),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(14),
+                                            const SizedBox(width: 10),
+                                            FilledButton.icon(
+                                              key: const ValueKey(
+                                                'home-calendar',
                                               ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 14),
-                                      if (!controller.feed.hasContentSource)
-                                        _CategoryPending(feed: controller.feed)
-                                      else if (items.isNotEmpty &&
-                                          controller.feed ==
-                                              HomeFeed.recommended)
-                                        _RecommendationBento(
-                                          items: controller.featuredItems,
-                                          canShuffle:
-                                              items.length >
-                                              ModernHomeController
-                                                  .featuredBatchSize,
-                                          onShuffle: controller.shuffleFeatured,
-                                          onDetails: onDetails,
-                                        )
-                                      else if (items.isNotEmpty)
-                                        _Featured(
-                                          item: items.first,
-                                          onDetails: () =>
-                                              onDetails(items.first),
-                                        )
-                                      else if (controller.loading ||
-                                          controller.catalogLoading)
-                                        const _LoadingFeature()
-                                      else
-                                        _EmptyFeed(
-                                          message:
-                                              controller.error ?? '暂时没有可展示的番剧',
-                                          retry: controller.refresh,
-                                        ),
-                                      if (controller.error != null &&
-                                          items.isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 12,
-                                          ),
-                                          child: _EmptyFeed(
-                                            message: controller.error!,
-                                            retry: controller.refresh,
-                                          ),
-                                        ),
-                                      if (recent.isNotEmpty) ...[
-                                        const SizedBox(height: 18),
-                                        _SectionHeading(
-                                          title: '继续观看',
-                                          subtitle: '',
-                                          actionLabel: '全部',
-                                          onAction: onHistory,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        LayoutBuilder(
-                                          builder: (context, bounds) =>
-                                              SizedBox(
-                                                height:
-                                                    94 +
-                                                    32 *
-                                                        (scale - 1).clamp(0, 3),
-                                                child: ListView.separated(
-                                                  scrollDirection:
-                                                      Axis.horizontal,
-                                                  itemCount: recent.length,
-                                                  separatorBuilder: (_, _) =>
-                                                      const SizedBox(width: 12),
-                                                  itemBuilder: (_, index) =>
-                                                      _ContinueCard(
-                                                        history: recent[index],
-                                                        width: math.min(
-                                                          bounds.maxWidth -
-                                                              (recent.length > 1
-                                                                  ? 20
-                                                                  : 0),
-                                                          350,
-                                                        ),
-                                                        onTap: () => onResume(
-                                                          recent[index],
-                                                        ),
-                                                      ),
+                                              onPressed: onCalendar,
+                                              icon: const Icon(
+                                                LucideIcons.calendarDays,
+                                                size: 17,
+                                              ),
+                                              label: const Text(
+                                                '排期表',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
+                                              style: FilledButton.styleFrom(
+                                                minimumSize: const Size(0, 44),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                        const SizedBox(height: 14),
+                                        if (media != null &&
+                                            mediaKind != null &&
+                                            onMediaDetails != null)
+                                          MioFeaturedCard(
+                                            controller: media!,
+                                            kind: mediaKind,
+                                            onDetails: onMediaDetails!,
+                                          )
+                                        else if (!controller
+                                                .feed
+                                                .hasContentSource &&
+                                            media == null)
+                                          _CategoryPending(
+                                            feed: controller.feed,
+                                          )
+                                        else if (items.isNotEmpty &&
+                                            controller.feed ==
+                                                HomeFeed.recommended)
+                                          _RecommendationBento(
+                                            items: controller.featuredItems,
+                                            canShuffle:
+                                                items.length >
+                                                ModernHomeController
+                                                    .featuredBatchSize,
+                                            onShuffle:
+                                                controller.shuffleFeatured,
+                                            onDetails: onDetails,
+                                          )
+                                        else if (items.isNotEmpty)
+                                          ModernFeatureCarousel(
+                                            key: ValueKey(
+                                              'anime-feature-${controller.feed.name}',
+                                            ),
+                                            entries: [
+                                              for (final item in items.take(6))
+                                                ModernFeatureEntry(
+                                                  id: '${item.id}',
+                                                  title: homeTitle(item),
+                                                  subtitle: {
+                                                    ...item.metaTags,
+                                                    ...item.tags.map(
+                                                      (tag) => tag.name,
+                                                    ),
+                                                  }.take(2).join(' · '),
+                                                  cover: homeCover(item),
+                                                  imageType: 'bg',
+                                                  onTap: () => onDetails(item),
+                                                ),
+                                            ],
+                                          )
+                                        else if (controller.loading ||
+                                            (!controller
+                                                    .feed
+                                                    .isGeneralCategory &&
+                                                controller.catalogLoading))
+                                          _LoadingFeature(
+                                            bento:
+                                                controller.feed ==
+                                                HomeFeed.recommended,
+                                          )
+                                        else
+                                          _EmptyFeed(
+                                            message:
+                                                controller.error ??
+                                                '暂时没有可展示的番剧',
+                                            retry: controller.refresh,
+                                          ),
+                                        if (controller.error != null &&
+                                            items.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 12,
+                                            ),
+                                            child: _EmptyFeed(
+                                              message: controller.error!,
+                                              retry: controller.refresh,
+                                            ),
+                                          ),
+                                        if (recent.isNotEmpty) ...[
+                                          const SizedBox(height: 18),
+                                          _SectionHeading(
+                                            title: '继续观看',
+                                            subtitle: '',
+                                            actionLabel: '全部',
+                                            onAction: onHistory,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          LayoutBuilder(
+                                            builder: (context, bounds) =>
+                                                SizedBox(
+                                                  height:
+                                                      94 +
+                                                      32 *
+                                                          (scale - 1).clamp(
+                                                            0,
+                                                            3,
+                                                          ),
+                                                  child: ListView.separated(
+                                                    scrollDirection:
+                                                        Axis.horizontal,
+                                                    itemCount: recent.length,
+                                                    separatorBuilder: (_, _) =>
+                                                        const SizedBox(
+                                                          width: 12,
+                                                        ),
+                                                    itemBuilder: (_, index) =>
+                                                        _ContinueCard(
+                                                          history:
+                                                              recent[index],
+                                                          width: math.min(
+                                                            bounds.maxWidth -
+                                                                (recent.length >
+                                                                        1
+                                                                    ? 20
+                                                                    : 0),
+                                                            350,
+                                                          ),
+                                                          onTap: () => onResume(
+                                                            recent[index],
+                                                          ),
+                                                        ),
+                                                  ),
+                                                ),
+                                          ),
+                                        ],
                                       ],
+                                    ),
+                                  ),
+                                  if (media != null &&
+                                      mediaKind == null &&
+                                      onMediaDetails != null)
+                                    SliverToBoxAdapter(
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          20,
+                                          20,
+                                          20,
+                                          0,
+                                        ),
+                                        child: MioRankSection(
+                                          controller: media!,
+                                          categoryId: mioRankCategory(
+                                            media!,
+                                            controller.feed,
+                                          ),
+                                          onDetails: onMediaDetails!,
+                                        ),
+                                      ),
+                                    ),
+                                  SliverList.list(
+                                    children: [
+                                      if (controller.feed.isGeneralCategory)
+                                        for (final channel
+                                            in controller.channels.where(
+                                              (channel) =>
+                                                  media == null ||
+                                                  channel.id == 'anime',
+                                            ))
+                                          _ChannelRail(
+                                            id: channel.id,
+                                            title: channel.title,
+                                            items: channel.items,
+                                            controller: controller,
+                                            onDetails: onDetails,
+                                            onMore: () => _showChannelItems(
+                                              context,
+                                              channel,
+                                              controller,
+                                              onDetails,
+                                            ),
+                                            loading:
+                                                channel.id == 'anime' &&
+                                                controller.loading,
+                                            failed:
+                                                channel.id == 'anime' &&
+                                                controller.error != null,
+                                            emptyMessage: channel.id == 'anime'
+                                                ? '暂无动漫内容'
+                                                : '暂无${channel.title}内容',
+                                          )
+                                      else if (controller
+                                              .catalog
+                                              .hasStructuredData &&
+                                          controller.feed.hasContentSource)
+                                        for (final channel
+                                            in controller.channels)
+                                          _ChannelRail(
+                                            id: channel.id,
+                                            title: channel.title,
+                                            items: channel.items,
+                                            controller: controller,
+                                            onDetails: onDetails,
+                                            onMore: () => _showChannelItems(
+                                              context,
+                                              channel,
+                                              controller,
+                                              onDetails,
+                                            ),
+                                          ),
+                                      if (!controller.feed.isGeneralCategory &&
+                                          !controller
+                                              .catalog
+                                              .hasStructuredData) ...[
+                                        if (items.isNotEmpty)
+                                          _ChannelRail(
+                                            id: 'main',
+                                            title: switch (controller.feed) {
+                                              HomeFeed.recommended => '今日推荐',
+                                              HomeFeed.popular => '人气热播',
+                                              HomeFeed.season => '新番放送',
+                                              HomeFeed.japanese => '日漫热播',
+                                              HomeFeed.chinese => '国漫热播',
+                                              _ => '${controller.feed.label}精选',
+                                            },
+                                            items: items,
+                                            loading: controller.loading,
+                                            controller: controller,
+                                            onDetails: onDetails,
+                                            onMore: () => onBrowse(
+                                              switch (controller.feed) {
+                                                HomeFeed.chinese => '中国',
+                                                HomeFeed.japanese => '日本',
+                                                _ => '',
+                                              },
+                                            ),
+                                          ),
+                                        if (controller
+                                            .feed
+                                            .hasContentSource) ...[
+                                          _ChannelRail(
+                                            id: 'chinese',
+                                            onMore: () => onBrowse('中国'),
+                                            title: '国漫剧场',
+                                            items: controller.catalog.chinese,
+                                            controller: controller,
+                                            onDetails: onDetails,
+                                            loading: controller.catalogLoading,
+                                            failed: controller.catalog.failed
+                                                .contains('chinese'),
+                                          ),
+                                          _ChannelRail(
+                                            id: 'japanese',
+                                            onMore: () => onBrowse('日本'),
+                                            title: '日漫精选',
+                                            items: controller.catalog.japanese,
+                                            controller: controller,
+                                            onDetails: onDetails,
+                                            loading: controller.catalogLoading,
+                                            failed: controller.catalog.failed
+                                                .contains('japanese'),
+                                          ),
+                                        ],
+                                      ],
+                                      if (controller.feed.hasContentSource)
+                                        const SizedBox(height: 24),
+                                      if (media != null &&
+                                          onMediaDetails != null &&
+                                          controller.feed.isGeneralCategory)
+                                        MioHomeSections(
+                                          controller: media!,
+                                          feed: controller.feed,
+                                          onDetails: onMediaDetails!,
+                                        ),
                                     ],
                                   ),
-                                ),
-                                SliverList.list(
-                                  children: [
-                                    if (controller.catalog.hasStructuredData &&
-                                        controller.feed.hasContentSource)
-                                      for (final channel in controller.channels)
-                                        _ChannelRail(
-                                          id: channel.id,
-                                          title: channel.title,
-                                          items: channel.items,
-                                          controller: controller,
-                                          onDetails: onDetails,
-                                          onMore: () => _showChannelItems(
-                                            context,
-                                            channel,
-                                            controller,
-                                            onDetails,
-                                          ),
-                                        ),
-                                    if (!controller
-                                        .catalog
-                                        .hasStructuredData) ...[
-                                      if (items.isNotEmpty)
-                                        _ChannelRail(
-                                          id: 'main',
-                                          title: switch (controller.feed) {
-                                            HomeFeed.recommended => '今日推荐',
-                                            HomeFeed.popular => '人气热播',
-                                            HomeFeed.season => '新番放送',
-                                            HomeFeed.japanese => '日漫热播',
-                                            HomeFeed.chinese => '国漫热播',
-                                            _ => '${controller.feed.label}精选',
-                                          },
-                                          items: items,
-                                          controller: controller,
-                                          onDetails: onDetails,
-                                          onMore: () => onBrowse(
-                                            switch (controller.feed) {
-                                              HomeFeed.chinese => '中国',
-                                              HomeFeed.japanese => '日本',
-                                              _ => '',
-                                            },
-                                          ),
-                                        ),
-                                      if (controller.feed.hasContentSource) ...[
-                                        _ChannelRail(
-                                          id: 'chinese',
-                                          onMore: () => onBrowse('中国'),
-                                          title: '国漫剧场',
-                                          items: controller.catalog.chinese,
-                                          controller: controller,
-                                          onDetails: onDetails,
-                                          loading: controller.catalogLoading,
-                                          failed: controller.catalog.failed
-                                              .contains('chinese'),
-                                        ),
-                                        _ChannelRail(
-                                          id: 'japanese',
-                                          onMore: () => onBrowse('日本'),
-                                          title: '日漫精选',
-                                          items: controller.catalog.japanese,
-                                          controller: controller,
-                                          onDetails: onDetails,
-                                          loading: controller.catalogLoading,
-                                          failed: controller.catalog.failed
-                                              .contains('japanese'),
-                                        ),
-                                      ],
-                                    ],
-                                    const SizedBox(height: 24),
-                                  ],
-                                ),
-                              ],
+                                  if (media != null &&
+                                      mediaKind != null &&
+                                      onMediaDetails != null)
+                                    MioCategorySliver(
+                                      controller: media!,
+                                      kind: mediaKind,
+                                      onDetails: onMediaDetails!,
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -467,16 +636,16 @@ class _AnimeFiltersState extends State<_AnimeFilters> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.only(top: 2),
         child: LayoutBuilder(
           builder: (context, bounds) {
-            final width = 300 * scale;
+            final width = 320 * scale;
             final cellWidth = width / _feeds.length;
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SizedBox(
                 width: width,
-                height: 36 * scale,
+                height: 38 * scale,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onHorizontalDragStart: width > bounds.maxWidth
@@ -487,8 +656,10 @@ class _AnimeFiltersState extends State<_AnimeFilters> {
                   onHorizontalDragUpdate: width > bounds.maxWidth
                       ? null
                       : (details) => setState(() {
+                          // 从当前滑块位置跟随手指，避免按下不同位置时突然跳动。
                           _dragPosition =
-                              (details.localPosition.dx / cellWidth - .5)
+                              ((_dragPosition ?? position) +
+                                      details.delta.dx / cellWidth)
                                   .clamp(0, _feeds.length - 1)
                                   .toDouble();
                         }),
@@ -505,63 +676,71 @@ class _AnimeFiltersState extends State<_AnimeFilters> {
                       : () => setState(() => _dragPosition = null),
                   child: Stack(
                     children: [
-                      Positioned.fill(
-                        left: 4,
-                        right: 4,
+                      // 一块背景连续移动，文字与触控位置保持稳定。
+                      AnimatedPositioned(
+                        left: position * cellWidth + 3,
+                        top: 4 * scale,
+                        width: cellWidth - 6,
+                        height: 30 * scale,
+                        duration: _dragPosition == null
+                            ? (MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 240))
+                            : Duration.zero,
+                        curve: Curves.easeOutCubic,
                         child: IgnorePointer(
-                          child: AnimatedAlign(
-                            alignment: Alignment(
-                              position * 2 / (_feeds.length - 1) - 1,
-                              0,
-                            ),
-                            duration: _dragPosition == null
-                                ? duration
-                                : Duration.zero,
-                            curve: Curves.easeInOutCubic,
-                            child: Container(
-                              width: cellWidth - 8,
-                              height: 36 * scale,
-                              decoration: BoxDecoration(
-                                color: colors.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: colors.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(9),
                             ),
                           ),
                         ),
                       ),
-                      Row(
-                        children: [
-                          for (final feed in _feeds)
-                            Expanded(
-                              child: Semantics(
-                                selected:
-                                    _feeds.indexOf(feed) == position.round(),
-                                child: TextButton(
-                                  onPressed: () =>
-                                      widget.controller.selectFeed(feed),
-                                  style: TextButton.styleFrom(
-                                    minimumSize: Size(0, 36 * scale),
-                                    padding: EdgeInsets.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    overlayColor: Colors.transparent,
-                                  ),
-                                  child: Text(
-                                    feed == HomeFeed.anime ? '全部' : feed.label,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color:
-                                          _feeds.indexOf(feed) ==
-                                              position.round()
-                                          ? colors.primary
-                                          : colors.onSurfaceVariant,
+                      // 撑满分类栏，避免紧凑按钮缩高后文字偏离滑块中心。
+                      Positioned.fill(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final feed in _feeds)
+                              Expanded(
+                                child: Semantics(
+                                  selected:
+                                      _feeds.indexOf(feed) == position.round(),
+                                  child: TextButton(
+                                    onPressed: () =>
+                                        widget.controller.selectFeed(feed),
+                                    style: TextButton.styleFrom(
+                                      minimumSize: Size(0, 38 * scale),
+                                      padding: EdgeInsets.zero,
+                                      visualDensity: VisualDensity.standard,
+                                      alignment: Alignment.center,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      overlayColor: Colors.transparent,
+                                      splashFactory: NoSplash.splashFactory,
+                                    ),
+                                    child: Text(
+                                      feed == HomeFeed.anime
+                                          ? '全部'
+                                          : feed.label,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color:
+                                            _feeds.indexOf(feed) ==
+                                                position.round()
+                                            ? colors.primary
+                                            : colors.onSurfaceVariant,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -622,6 +801,7 @@ class _ChannelRail extends StatelessWidget {
     required this.onMore,
     this.loading = false,
     this.failed = false,
+    this.emptyMessage = '暂时没有番剧',
   });
   final String id, title;
   final List<BangumiItem> items;
@@ -629,6 +809,7 @@ class _ChannelRail extends StatelessWidget {
   final ValueChanged<BangumiItem> onDetails;
   final VoidCallback onMore;
   final bool loading, failed;
+  final String emptyMessage;
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -665,7 +846,7 @@ class _ChannelRail extends StatelessWidget {
                     onPressed: controller.refreshCatalog,
                     child: const Text('重试'),
                   )
-                else
+                else if (items.isNotEmpty)
                   TextButton(
                     key: ValueKey('home-more-$id'),
                     onPressed: onMore,
@@ -687,7 +868,12 @@ class _ChannelRail extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (items.isEmpty)
+          if (items.isEmpty && loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: SkeletonPosters(),
+            )
+          else if (items.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
@@ -697,19 +883,13 @@ class _ChannelRail extends StatelessWidget {
                   color: colors.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        failed ? '这个栏目暂时未加载，点击重试' : '暂时没有番剧',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
+                child: Text(
+                  failed ? '这个栏目暂时未加载，点击重试' : emptyMessage,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
               ),
             )
           else
@@ -802,32 +982,66 @@ Future<void> _showChannelItems(
                       (bounds.maxWidth - 40 - 12 * (columns - 1)) / columns;
                   return ListenableBuilder(
                     listenable: controller,
-                    builder: (context, _) => ScrollConfiguration(
-                      behavior: const _HomeScrollBehavior(),
-                      child: GridView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                        itemCount: channel.allItems.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columns,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 16,
-                          mainAxisExtent: width * 1.42 + 48 * scale,
+                    builder: (context, _) {
+                      final visibleItems =
+                          channel.id == 'anime' &&
+                              controller.feed.isGeneralCategory
+                          ? controller.items
+                          : channel.allItems;
+                      final pending =
+                          channel.id == 'anime' &&
+                          controller.feed.isGeneralCategory &&
+                          controller.loading;
+                      return ScrollConfiguration(
+                        behavior: const _HomeScrollBehavior(),
+                        child: GridView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                          itemCount:
+                              visibleItems.length + (pending ? columns : 0),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 16,
+                                mainAxisExtent: width * 1.42 + 48 * scale,
+                              ),
+                          itemBuilder: (context, index) =>
+                              index >= visibleItems.length
+                              ? const ContentSkeleton(
+                                  child: SkeletonPosterCard(),
+                                )
+                              : _PosterCard(
+                                  item: visibleItems[index],
+                                  controller: controller,
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    onDetails(visibleItems[index]);
+                                  },
+                                ),
                         ),
-                        itemBuilder: (context, index) => _PosterCard(
-                          item: channel.allItems[index],
-                          controller: controller,
-                          onTap: () {
-                            Navigator.of(sheetContext).pop();
-                            onDetails(channel.allItems[index]);
-                          },
-                        ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
               ),
             ),
+            if (channel.id == 'anime' && controller.feed.isGeneralCategory)
+              ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) => TextButton(
+                  onPressed: controller.hasMore && !controller.loading
+                      ? controller.loadMore
+                      : null,
+                  child: Text(
+                    controller.loading
+                        ? ''
+                        : controller.hasMore
+                        ? '加载更多'
+                        : '已显示当前全部内容',
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -851,7 +1065,7 @@ class _SearchEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     container: true,
-    label: '搜索番剧、角色或关键词',
+    label: '搜索动漫、影视或关键词',
     button: true,
     onTap: onSearch,
     child: ExcludeSemantics(
@@ -877,7 +1091,7 @@ class _SearchEntry extends StatelessWidget {
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
-                    '搜索番剧、角色或关键词',
+                    '搜索动漫、影视或关键词',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -911,10 +1125,12 @@ class _RecommendationBento extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, bounds) {
       final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-      final rowHeight =
-          ((bounds.maxWidth - 10) / 2 * .75).clamp(112.0, 142.0) +
-          48 * (scale - 1).clamp(0, 3);
-      final rows = (items.length + 1) ~/ 2;
+      // 窄屏或大字体下改为单列，标题和评分不挤在窄缝里。
+      final columns = bounds.maxWidth >= 320 && scale <= 1.3 ? 2 : 1;
+      final rowHeight = columns == 1
+          ? 140.0 + 64 * (scale - 1).clamp(0, 3)
+          : ((bounds.maxWidth - 10) / 2 * .75).clamp(124.0, 152.0);
+      final rows = (items.length + columns - 1) ~/ columns;
       return Column(
         children: [
           SizedBox(
@@ -933,14 +1149,15 @@ class _RecommendationBento extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          for (var column = 0; column < 2; column++) ...[
+                          for (var column = 0; column < columns; column++) ...[
                             if (column > 0) const SizedBox(width: 10),
                             Expanded(
-                              child: row * 2 + column < items.length
+                              child: row * columns + column < items.length
                                   ? _BentoCard(
-                                      item: items[row * 2 + column],
-                                      onTap: () =>
-                                          onDetails(items[row * 2 + column]),
+                                      item: items[row * columns + column],
+                                      onTap: () => onDetails(
+                                        items[row * columns + column],
+                                      ),
                                     )
                                   : const SizedBox.shrink(),
                             ),
@@ -1015,7 +1232,7 @@ class _BentoCardState extends State<_BentoCard> {
               ? widget.item.ratingScore.toStringAsFixed(1)
               : '暂无评分',
           semanticsLabel: widget.item.ratingScore > 0
-              ? '评分 ' + widget.item.ratingScore.toStringAsFixed(1)
+              ? '评分 ${widget.item.ratingScore.toStringAsFixed(1)}'
               : '暂无评分',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -1036,7 +1253,7 @@ class _BentoCardState extends State<_BentoCard> {
     final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return Semantics(
       button: true,
-      label: '查看推荐 ' + homeTitle(widget.item),
+      label: '查看推荐 ${homeTitle(widget.item)}',
       child: Material(
         color: colors.surfaceContainerLow,
         shape: RoundedRectangleBorder(
@@ -1054,207 +1271,83 @@ class _BentoCardState extends State<_BentoCard> {
               builder: (context, bounds) {
                 // 横向推荐卡用竖版缩略图，标题不再覆盖封面，也不将海报裁成横幅。
                 final coverWidth = math.min(
-                  bounds.maxWidth * .43,
+                  bounds.maxWidth * .40,
                   bounds.maxHeight * .68,
                 );
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                return Stack(
                   children: [
-                    SizedBox(
-                      width: coverWidth,
-                      child: _cover(coverWidth, bounds.maxHeight),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 12,
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: SvgPicture.asset(
+                          'assets/images/modern-recommendation-lines.svg',
+                          fit: BoxFit.cover,
+                          excludeFromSemantics: true,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              homeTitle(widget.item),
-                              maxLines: scale > 1.3 ? 2 : 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colors.onSurface,
-                                fontSize: 12,
-                                height: 1.4,
-                                fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            width: coverWidth - 8,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(9),
+                              child: _cover(
+                                coverWidth - 8,
+                                bounds.maxHeight - 16,
                               ),
                             ),
-                            _rating(),
-                          ],
-                        ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    homeTitle(widget.item),
+                                    maxLines: scale > 1.3 ? 2 : 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: colors.onSurface,
+                                      fontSize: 12,
+                                      height: 1.4,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _rating(),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '查看作品 ›',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: colors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 );
               },
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Featured extends StatelessWidget {
-  const _Featured({required this.item, required this.onDetails});
-  final BangumiItem item;
-  final VoidCallback onDetails;
-  @override
-  Widget build(BuildContext context) {
-    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    final metadata = {
-      ...item.metaTags,
-      ...item.tags.map((tag) => tag.name),
-    }.take(2).join(' · ');
-    return Material(
-      key: const ValueKey('home-featured'),
-      color: const Color(0xff222e50),
-      borderRadius: BorderRadius.circular(22),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onDetails,
-        child: SizedBox(
-          height: 176 + 110 * (scale - 1).clamp(0, 3),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: SvgPicture.asset(
-                    'assets/images/modern-home-screen.svg',
-                    fit: BoxFit.cover,
-                    excludeFromSemantics: true,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(18),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final coverWidth = math.min(
-                      constraints.maxWidth * .34,
-                      116.0,
-                    );
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Row(
-                                    children: [
-                                      Icon(
-                                        LucideIcons.sparkles,
-                                        size: 13,
-                                        color: Color(0xffc1cdff),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        '精选推荐',
-                                        style: TextStyle(
-                                          color: Color(0xffc1cdff),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    homeTitle(item),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    metadata.isNotEmpty
-                                        ? metadata
-                                        : item.airDate.isNotEmpty
-                                        ? item.airDate
-                                        : '开启一段新故事',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xffb7c3df),
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              ShadButton(
-                                key: const ValueKey('home-featured-details'),
-                                height: 34,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                backgroundColor: const Color(0xfff1f4ff),
-                                foregroundColor: const Color(0xff283760),
-                                hoverBackgroundColor: Colors.white,
-                                onPressed: onDetails,
-                                trailing: const Icon(
-                                  LucideIcons.arrowRight,
-                                  size: 14,
-                                ),
-                                child: const Text(
-                                  '查看详情',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 18),
-                        Transform.rotate(
-                          angle: .035,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: const Color(0xff536080),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x50000000),
-                                  blurRadius: 18,
-                                  offset: Offset(0, 9),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(3),
-                              child: NetworkImgLayer(
-                                src: homeCover(item),
-                                width: coverWidth,
-                                height: coverWidth * 1.45,
-                                fit: BoxFit.cover,
-                                type: 'bg',
-                                borderRadius: BorderRadius.circular(9),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -1622,27 +1715,13 @@ class _EmptyFeed extends StatelessWidget {
 }
 
 class _LoadingFeature extends StatelessWidget {
-  const _LoadingFeature();
+  const _LoadingFeature({this.bento = false});
+  final bool bento;
   @override
-  Widget build(BuildContext context) => Container(
-    height: 176,
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(22),
-    ),
-    child: const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          SizedBox(height: 16),
-          Text('正在寻找好故事…', style: TextStyle(fontSize: 12)),
-        ],
-      ),
-    ),
+  Widget build(BuildContext context) => SkeletonFeature(
+    bento: bento,
+    height:
+        206 +
+        115 * (MediaQuery.textScalerOf(context).scale(14) / 14 - 1).clamp(0, 3),
   );
 }

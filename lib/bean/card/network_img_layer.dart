@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/image_extension.dart';
@@ -75,8 +77,12 @@ class NetworkImgLayer extends StatelessWidget {
         memCacheWidth: memCacheWidth,
         memCacheHeight: memCacheHeight,
         fit: fit,
-        fadeOutDuration: fadeOutDuration ?? const Duration(milliseconds: 120),
-        fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 120),
+        fadeOutDuration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : fadeOutDuration ?? const Duration(milliseconds: 120),
+        fadeInDuration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : fadeInDuration ?? const Duration(milliseconds: 180),
         filterQuality: filterQuality,
         color: color,
         colorBlendMode: colorBlendMode,
@@ -84,7 +90,15 @@ class NetworkImgLayer extends StatelessWidget {
           KazumiLogger().w("NetworkImage: network image load error", error: e);
         },
         errorWidget: (context, url, error) => _placeholder(context),
-        placeholder: (context, url) => _placeholder(context),
+        // 仅请求等待期间使用骨架；失败和空地址继续显示静态回退。
+        placeholder: (context, url) => ContentSkeleton(
+          key: const ValueKey('content-skeleton-image'),
+          child: Bone(
+            width: width,
+            height: height,
+            borderRadius: _borderRadius,
+          ),
+        ),
       ),
     );
   }

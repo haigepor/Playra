@@ -4,6 +4,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/modules/collect/collect_type.dart';
 import 'package:kazumi/modules/history/history_module.dart';
+import 'package:kazumi/pages/menu/route_visibility.dart';
 import 'package:kazumi/repositories/collect_crud_repository.dart';
 import 'package:kazumi/repositories/collect_repository.dart';
 import 'package:kazumi/repositories/history_repository.dart';
@@ -24,6 +25,7 @@ class ModernCalendarPage extends StatefulWidget {
 class _ModernCalendarPageState extends State<ModernCalendarPage>
     with WidgetsBindingObserver, KazumiDialogOwner {
   late final ModernCalendarController controller;
+  bool _visible = true;
   @override
   void initState() {
     super.initState();
@@ -67,10 +69,17 @@ class _ModernCalendarPageState extends State<ModernCalendarPage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed && _visible) {
       controller.updateToday();
       unawaited(controller.refresh(force: false));
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _visible = !RouteVisibility.isCoveredOf(context);
+    controller.setVisible(_visible);
   }
 
   Future<void> _resume(History history) async {

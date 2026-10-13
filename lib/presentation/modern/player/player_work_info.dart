@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kazumi/bean/card/character_card.dart';
@@ -24,7 +26,15 @@ class PlayerCover extends StatelessWidget {
       : CachedNetworkImage(
           imageUrl: platformResourceUrl(url),
           fit: BoxFit.cover,
-          placeholder: (_, _) => placeholder,
+          placeholder: (context, _) => LayoutBuilder(
+            builder: (context, bounds) => ContentSkeleton(
+              child: Bone(
+                width: bounds.maxWidth,
+                height: bounds.maxHeight,
+                uniRadius: 0,
+              ),
+            ),
+          ),
           errorWidget: (_, _, _) => placeholder,
         );
 }
@@ -213,7 +223,12 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
                       );
                     }
                     if (snapshot.connectionState != ConnectionState.done) {
-                      return const Center(child: CircularProgressIndicator());
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: index == 2
+                            ? const SkeletonPosters(count: 3)
+                            : const SkeletonInfoList(),
+                      );
                     }
                     final count = switch (index) {
                       1 => widget.controller.characterList.length,

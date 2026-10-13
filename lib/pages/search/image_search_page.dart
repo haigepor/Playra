@@ -510,12 +510,16 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
               filled: true,
               fillColor: colors.surfaceContainerLow,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(widget.modern ? 12 : 16),
               ),
               suffixIcon: IconButton(
                 onPressed: busy ? null : _pasteUrl,
                 tooltip: '粘贴图片链接',
-                icon: const Icon(Icons.content_paste_rounded),
+                icon: Icon(
+                    widget.modern
+                        ? LucideIcons.clipboardPaste
+                        : Icons.content_paste_rounded,
+                    size: widget.modern ? 20 : null),
               ),
             ),
           ),
@@ -588,7 +592,11 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                 TextButton.icon(
                   onPressed: busy ? null : _pickImage,
                   label: const Text('更换截图'),
-                  icon: const Icon(Icons.swap_horiz_rounded, size: 20),
+                  icon: Icon(
+                      widget.modern
+                          ? LucideIcons.refreshCw
+                          : Icons.swap_horiz_rounded,
+                      size: 20),
                 ),
               ],
             )

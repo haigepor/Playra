@@ -309,7 +309,7 @@ void main() {
       await _mount(tester, _controller(style: 'modern'), preview: true);
       expect(find.byTooltip('Kazumi'), findsNothing);
       expect(find.byKey(const ValueKey('home-calendar')), findsOneWidget);
-      expect(find.text('搜索番剧、角色或关键词'), findsOneWidget);
+      expect(find.text('搜索动漫、影视或关键词'), findsOneWidget);
       final boundary = tester.renderObject<RenderRepaintBoundary>(
         find.byKey(const ValueKey('preview-boundary')),
       );

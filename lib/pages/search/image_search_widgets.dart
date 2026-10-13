@@ -105,7 +105,12 @@ class _ScreenshotTip extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final type = Theme.of(context).textTheme;
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(Icons.aspect_ratio_rounded, size: 24, color: colors.primary),
+      Icon(
+          ModernSecondaryScope.isActiveOf(context)
+              ? LucideIcons.scanLine
+              : Icons.aspect_ratio_rounded,
+          size: ModernSecondaryScope.isActiveOf(context) ? 20 : 24,
+          color: colors.primary),
       const SizedBox(width: 12),
       Expanded(
           child:
@@ -163,13 +168,15 @@ class _ImageSearchResults extends StatelessWidget {
     }
     final colors = Theme.of(context).colorScheme;
     final type = Theme.of(context).textTheme;
+    final modern = ModernSecondaryScope.isActiveOf(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Semantics(
           header: true,
           liveRegion: true,
           child: Text('找到 ${results.length} 个相似片段',
               style:
-                  type.headlineSmall?.copyWith(fontWeight: FontWeight.w700))),
+                  (modern ? type.titleMedium : type.headlineSmall)
+                      ?.copyWith(fontWeight: FontWeight.w700))),
       const SizedBox(height: 6),
       Text('按画面相似度排序，先对照截图再确认。',
           style: type.bodyMedium?.copyWith(color: colors.onSurfaceVariant)),
@@ -177,11 +184,11 @@ class _ImageSearchResults extends StatelessWidget {
         const SizedBox(height: 12),
         Text(error, style: type.bodyMedium?.copyWith(color: colors.error)),
       ],
-      const SizedBox(height: 20),
+      SizedBox(height: modern ? 16 : 20),
       _BestMatch(
           result: results.first, onSelect: onSelect, onPreview: onPreview),
       if (results.length > 1) ...[
-        const SizedBox(height: 28),
+        SizedBox(height: modern ? 20 : 28),
         Text('其他相似片段',
             style: type.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
@@ -236,16 +243,20 @@ class _BestMatch extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final type = Theme.of(context).textTheme;
     final similarity = result.similarity;
+    final modern = ModernSecondaryScope.isActiveOf(context);
     final lowSimilarity =
         similarity == null || !similarity.isFinite || similarity < .87;
     final video = _parseHttpUrl(result.video ?? '');
     final details = Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(modern ? 16 : 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Wrap(spacing: 8, runSpacing: 8, children: [
           _Metadata(
-              icon: Icons.movie_outlined, label: _episode(result.episode)),
-          _Metadata(icon: Icons.schedule_rounded, label: _timeRange(result)),
+              icon: modern ? LucideIcons.film : Icons.movie_outlined,
+              label: _episode(result.episode)),
+          _Metadata(
+              icon: modern ? LucideIcons.clock : Icons.schedule_rounded,
+              label: _timeRange(result)),
         ]),
         if (lowSimilarity) ...[
           const SizedBox(height: 12),
@@ -256,8 +267,14 @@ class _BestMatch extends StatelessWidget {
         Wrap(spacing: 8, runSpacing: 8, children: [
           FilledButton.icon(
             onPressed: () => onSelect(_title(result)),
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-            icon: const Icon(Icons.search_rounded, size: 20),
+            style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                shape: modern
+                    ? RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12))
+                    : null),
+            icon: Icon(modern ? LucideIcons.search : Icons.search_rounded,
+                size: 20),
             label: const Text('搜索这部番'),
           ),
           if (video != null)
@@ -265,10 +282,19 @@ class _BestMatch extends StatelessWidget {
               onPressed: () => onPreview(video),
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.onSurface,
-                side: BorderSide(color: colors.onSurface.withValues(alpha: .5)),
+                side: BorderSide(
+                    color: modern
+                        ? colors.outlineVariant
+                        : colors.onSurface.withValues(alpha: .5)),
                 minimumSize: const Size(0, 48),
+                shape: modern
+                    ? RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12))
+                    : null,
               ),
-              icon: const Icon(Icons.play_arrow_rounded, size: 20),
+              icon: Icon(
+                  modern ? LucideIcons.play : Icons.play_arrow_rounded,
+                  size: 20),
               label: const Text('预览片段'),
             ),
         ]),
@@ -282,15 +308,15 @@ class _BestMatch extends StatelessWidget {
       ),
     );
     return Material(
-      color: colors.surface,
+      color: modern ? colors.surfaceContainerLow : colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(ModernSecondaryScope.isActiveOf(context) ? 16 : 24),
-        side: BorderSide(color: colors.outlineVariant),
+        side: modern ? BorderSide.none : BorderSide(color: colors.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(modern ? 16 : 20),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Wrap(
@@ -300,10 +326,13 @@ class _BestMatch extends StatelessWidget {
                 children: [
                   Text('相似度最高',
                       style:
-                          type.labelLarge?.copyWith(color: colors.onSurface)),
+                          (modern ? type.bodySmall : type.labelLarge)?.copyWith(
+                              color: modern
+                                  ? colors.onSurfaceVariant
+                                  : colors.onSurface)),
                   Text('${_similarity(result)} 相似',
                       style: type.titleMedium?.copyWith(
-                          color: colors.onSurface,
+                          color: modern ? colors.primary : colors.onSurface,
                           fontWeight: FontWeight.w700)),
                 ]),
             const SizedBox(height: 8),
@@ -317,7 +346,8 @@ class _BestMatch extends StatelessWidget {
             return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(
                   child: Padding(
-                      padding: const EdgeInsets.only(left: 12, bottom: 12),
+                      padding: EdgeInsets.only(
+                          left: modern ? 16 : 12, bottom: modern ? 16 : 12),
                       child: frame)),
               Expanded(child: details),
             ]);
@@ -326,7 +356,7 @@ class _BestMatch extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsets.symmetric(horizontal: modern ? 16 : 12),
                     child: frame),
                 details,
               ]);
@@ -350,11 +380,14 @@ class _OtherMatch extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final type = Theme.of(context).textTheme;
+    final modern = ModernSecondaryScope.isActiveOf(context);
     return Material(
-      color: colors.surface,
-      borderRadius: BorderRadius.vertical(
-          top: Radius.circular(first ? 20 : 8),
-          bottom: Radius.circular(last ? 20 : 8)),
+      color: modern ? colors.surfaceContainerLow : colors.surface,
+      borderRadius: modern
+          ? BorderRadius.circular(12)
+          : BorderRadius.vertical(
+              top: Radius.circular(first ? 20 : 8),
+              bottom: Radius.circular(last ? 20 : 8)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => onSelect(_title(result)),
@@ -394,7 +427,10 @@ class _OtherMatch extends StatelessWidget {
                                     ?.copyWith(color: colors.onSurfaceVariant)),
                           ])),
                       const SizedBox(width: 8),
-                      Icon(Icons.arrow_outward_rounded,
+                      Icon(
+                          modern
+                              ? LucideIcons.chevronRight
+                              : Icons.arrow_outward_rounded,
                           size: 20, color: colors.onSurfaceVariant),
                     ])),
           ),
@@ -411,19 +447,26 @@ class _Metadata extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final modern = ModernSecondaryScope.isActiveOf(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+          horizontal: modern ? 0 : 10, vertical: modern ? 4 : 6),
       child: Text.rich(
           TextSpan(children: [
             WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
-                child: Icon(icon, size: 16, color: colors.onSurface)),
+                child: Icon(icon,
+                    size: 16,
+                    color: modern
+                        ? colors.onSurfaceVariant
+                        : colors.onSurface)),
             TextSpan(text: '  $label'),
           ]),
           style: Theme.of(context)
               .textTheme
               .labelLarge
-              ?.copyWith(color: colors.onSurface)),
+              ?.copyWith(
+                  color: modern ? colors.onSurfaceVariant : colors.onSurface)),
     );
   }
 }
@@ -436,8 +479,12 @@ class _TraceFrame extends StatelessWidget {
     final source = result.image;
     final colors = Theme.of(context).colorScheme;
     final placeholder = Center(
-        child: Icon(Icons.movie_outlined,
-            size: 40, color: colors.onSurfaceVariant));
+        child: Icon(
+            ModernSecondaryScope.isActiveOf(context)
+                ? LucideIcons.film
+                : Icons.movie_outlined,
+            size: ModernSecondaryScope.isActiveOf(context) ? 28 : 40,
+            color: colors.onSurfaceVariant));
     return AspectRatio(
         aspectRatio: 16 / 9,
         child: ColoredBox(

@@ -9,6 +9,8 @@ import 'package:kazumi/pages/history/history_controller.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/presentation/interface_page_host.dart';
 import 'package:kazumi/presentation/modern/pages/modern_player_detail_page.dart';
+import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
+import 'package:kazumi/presentation/modern/miomedia/miomedia_detail_page.dart';
 
 final infoModule = createModule(
   path: '/info',
@@ -21,6 +23,9 @@ final infoModule = createModule(
         ..add<PlayerController>(PlayerController.new),
       child: (context, state) {
         final bangumiItem = state.arguments;
+        if (bangumiItem is MioVideo) {
+          return MioDetailPage(item: bangumiItem);
+        }
         if (bangumiItem is! BangumiItem) {
           return const RouteErrorPage(message: '番组详情参数无效，请返回后重新打开。');
         }

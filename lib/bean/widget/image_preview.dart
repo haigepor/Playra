@@ -181,6 +181,7 @@ class _ImageViewerState extends State<ImageViewer> {
   Widget _buildNavButton({
     required IconData icon,
     required VoidCallback? onPressed,
+    String? tooltip,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -190,6 +191,10 @@ class _ImageViewerState extends State<ImageViewer> {
       ),
       child: IconButton(
         onPressed: onPressed,
+        tooltip: tooltip,
+        constraints: widget.modern
+            ? const BoxConstraints(minWidth: 48, minHeight: 48)
+            : null,
         icon: Icon(
           icon,
           color: onPressed != null ? Colors.white : Colors.white38,
@@ -218,6 +223,9 @@ class _ImageViewerState extends State<ImageViewer> {
               child: IconButton(
                 key: const ValueKey('image-preview-close'),
                 tooltip: '关闭图片预览',
+                constraints: widget.modern
+                    ? const BoxConstraints(minWidth: 48, minHeight: 48)
+                    : null,
                 onPressed: _closePreview,
                 icon: Icon(
                   widget.modern ? LucideIcons.x : Icons.close,
@@ -256,6 +264,7 @@ class _ImageViewerState extends State<ImageViewer> {
               bottom: 0,
               child: Center(
                 child: _buildNavButton(
+                  tooltip: widget.modern ? '上一张图片' : null,
                   icon: widget.modern
                       ? LucideIcons.chevronLeft
                       : Icons.chevron_left,
@@ -269,6 +278,7 @@ class _ImageViewerState extends State<ImageViewer> {
               bottom: 0,
               child: Center(
                 child: _buildNavButton(
+                  tooltip: widget.modern ? '下一张图片' : null,
                   icon: widget.modern
                       ? LucideIcons.chevronRight
                       : Icons.chevron_right,

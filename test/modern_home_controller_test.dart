@@ -37,6 +37,7 @@ void main() {
       );
       addTearDown(controller.dispose);
       await controller.refresh();
+      await controller.refreshCatalog();
       fail = true;
       await controller.refreshCatalog();
       expect(controller.catalog.chinese.single.id, 2);
@@ -60,6 +61,7 @@ void main() {
       );
       addTearDown(controller.dispose);
       await controller.refresh();
+      await controller.refreshCatalog();
       for (var i = 1; i <= 5; i++) {
         controller.ensureSchedule(i);
         controller.ensureSchedule(i);

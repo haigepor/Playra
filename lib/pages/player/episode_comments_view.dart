@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/bean/card/user_comments_card.dart';
 import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
@@ -68,7 +69,12 @@ class EpisodeCommentsView extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(gutter + 4, 16, gutter, 12),
               sliver: SliverToBoxAdapter(child: _buildToolbar(context)),
             ),
-            if (!isLoading && hasError && comments.isEmpty)
+            if (isLoading && comments.isEmpty)
+              SliverPadding(
+                padding: EdgeInsets.symmetric(horizontal: gutter),
+                sliver: const SliverToBoxAdapter(child: SkeletonComments()),
+              )
+            else if (!isLoading && hasError && comments.isEmpty)
               SliverToBoxAdapter(
                 child: GeneralErrorWidget(
                   icon: Icons.cloud_off_rounded,
