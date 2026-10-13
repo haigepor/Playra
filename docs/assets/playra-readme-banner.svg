@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="300" viewBox="0 0 1120 300" role="img" aria-labelledby="title description">
+  <title id="title">Playra</title>
+  <desc id="description">紧凑深色影音应用，提供番剧与影视发现、日历、追番和播放体验。</desc>
+  <defs>
+    <linearGradient id="back" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#11141c"/>
+      <stop offset="1" stop-color="#1b2031"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#c3ccff"/>
+      <stop offset="1" stop-color="#8498f4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1120" height="300" rx="24" fill="url(#back)"/>
+  <g fill="none" stroke="#a7b7ff" stroke-width="1" opacity=".09">
+    <circle cx="950" cy="160" r="205"/>
+    <circle cx="950" cy="160" r="165"/>
+    <circle cx="950" cy="160" r="125"/>
+  </g>
+  <g font-family="Inter,Segoe UI,Microsoft YaHei,PingFang SC,sans-serif">
+    <text x="56" y="56" fill="#a5afc5" font-size="14" letter-spacing="2">开源影音应用</text>
+    <rect x="56" y="80" width="64" height="64" rx="18" fill="url(#accent)"/>
+    <path d="M80 96v32l26-16z" fill="#182142"/>
+    <text x="142" y="132" fill="#edf0f8" font-size="62" font-weight="700" letter-spacing="-2">Playra</text>
+    <text x="56" y="184" fill="#edf0f8" font-size="23" font-weight="500">发现新的故事，接着看下去。</text>
+    <text x="56" y="237" fill="#a5afc5" font-size="16">番剧与影视</text>
+    <circle cx="154" cy="231" r="2" fill="#a7b7ff"/>
+    <text x="171" y="237" fill="#a5afc5" font-size="16">发现</text>
+    <circle cx="220" cy="231" r="2" fill="#a7b7ff"/>
+    <text x="236" y="237" fill="#a5afc5" font-size="16">日历</text>
+    <circle cx="286" cy="231" r="2" fill="#a7b7ff"/>
+    <text x="302" y="237" fill="#a5afc5" font-size="16">追番</text>
+    <circle cx="352" cy="231" r="2" fill="#a7b7ff"/>
+    <text x="368" y="237" fill="#a5afc5" font-size="16">播放</text>
+  </g>
+  <g transform="translate(715 44)">
+    <rect x="26" y="23" width="300" height="183" rx="18" fill="#1b202c" stroke="#30384a"/>
+    <path d="M43 44h266v125H43z" fill="#202638"/>
+    <path d="m43 140 73-54 51 32 54-45 88 67v29H43z" fill="#303b5b"/>
+    <path d="m43 152 75-29 46 21 66-31 79 41v15H43z" fill="#27324a"/>
+    <circle cx="176" cy="105" r="26" fill="#a7b7ff"/>
+    <path d="m169 94 18 11-18 11z" fill="#182142"/>
+    <path d="M44 187h244" stroke="#30384a" stroke-width="3" stroke-linecap="round"/>
+    <path d="M44 187h104" stroke="#a7b7ff" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="148" cy="187" r="4" fill="#a7b7ff"/>
+    <rect x="0" y="150" width="98" height="66" rx="12" fill="#1b202c" stroke="#495375"/>
+    <g fill="none" stroke="#a7b7ff" stroke-width="2" stroke-linecap="round">
+      <rect x="19" y="165" width="60" height="37" rx="5"/>
+      <path d="M19 176h60m-43-16v9m26-9v9m-26 17h1m12 0h1m12 0h1"/>
+    </g>
+    <circle cx="309" cy="41" r="25" fill="#1b202c" stroke="#495375"/>
+    <path d="m299 41 7 7 13-14" fill="none" stroke="#a7b7ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
