@@ -17,9 +17,15 @@ import '../settings/modern_back_button.dart';
 
 /// 来源作品有独立身份；不创建 Bangumi 收藏、历史或弹幕上下文。
 class MioDetailPage extends StatefulWidget {
-  const MioDetailPage({super.key, required this.item, this.service});
+  const MioDetailPage({
+    super.key,
+    required this.item,
+    this.service,
+    this.autoPlay = false,
+  });
   final MioVideo item;
   final MioMediaService? service;
+  final bool autoPlay;
   @override
   State<MioDetailPage> createState() => _MioDetailPageState();
 }
@@ -44,6 +50,7 @@ class _MioDetailPageState extends State<MioDetailPage> {
   final _activitySubscriptions = <StreamSubscription<dynamic>>[];
   Future<void> _mediaTail = Future.value();
   bool _disposed = false;
+  bool _autoStarted = false;
 
   @override
   void initState() {
@@ -65,8 +72,18 @@ class _MioDetailPageState extends State<MioDetailPage> {
         return;
       }
       setState(() => video = result);
-      if (result.lines.isNotEmpty)
+      if (result.lines.isNotEmpty) {
         await selectLine(_playback.ranked(result.lines).first);
+        if (widget.autoPlay &&
+            !_autoStarted &&
+            mounted &&
+            !cancel.isCancelled &&
+            generation == _detailGeneration &&
+            episodes.isNotEmpty) {
+          _autoStarted = true;
+          unawaited(play(episodes.first));
+        }
+      }
     } catch (_) {
       if (mounted && generation == _detailGeneration && !cancel.isCancelled) {
         setState(() => detailError = '作品资料加载失败，请重试');
@@ -223,7 +240,8 @@ class _MioDetailPageState extends State<MioDetailPage> {
         playingNumber = episode.number;
       });
       final player = await _mediaSession.open(
-        media['url'] as String, headers,
+        media['url'] as String,
+        headers,
         canInstall: current,
         onError: (message) {
           if (!current()) return;
@@ -581,9 +599,13 @@ class _MioDetailPageState extends State<MioDetailPage> {
                             ? WebPlayerSurface(
                                 controller: _videoController!,
                                 onNext: () {
-                                  final index = episodes.indexWhere((episode) =>
-                                      episode.code == playingCode && episode.number == playingNumber);
-                                  if (index >= 0 && index + 1 < episodes.length) {
+                                  final index = episodes.indexWhere(
+                                    (episode) =>
+                                        episode.code == playingCode &&
+                                        episode.number == playingNumber,
+                                  );
+                                  if (index >= 0 &&
+                                      index + 1 < episodes.length) {
                                     unawaited(play(episodes[index + 1]));
                                   }
                                 },

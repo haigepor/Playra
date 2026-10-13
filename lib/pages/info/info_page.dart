@@ -23,16 +23,19 @@ import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/utils/device.dart';
+import 'package:kazumi/plugins/plugins.dart';
 
 class InfoPage extends StatefulWidget {
   const InfoPage({
     super.key,
     required this.inputBangumiItem,
     required this.infoController,
+    this.sourceRules,
   });
 
   final BangumiItem inputBangumiItem;
   final InfoController infoController;
+  final List<Plugin>? sourceRules;
 
   @override
   State<InfoPage> createState() => _InfoPageState();
@@ -474,7 +477,10 @@ class _InfoPageState extends State<InfoPage>
             context: context,
             maxHeightFactor: 0.88,
             builder: (context) {
-              return SourceSheet(infoController: infoController);
+              return SourceSheet(
+                infoController: infoController,
+                rules: widget.sourceRules,
+              );
             },
           );
         },

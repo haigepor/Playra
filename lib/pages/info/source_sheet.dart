@@ -42,6 +42,7 @@ class SourceSheet extends StatefulWidget {
     this.onSelected,
     this.emptyIllustration,
     this.episodeNumber,
+    this.rules,
   });
 
   final InfoController infoController;
@@ -50,6 +51,7 @@ class SourceSheet extends StatefulWidget {
   final ValueChanged<OnlineVideoPlaybackArgs>? onSelected;
   final Widget? emptyIllustration;
   final int? episodeNumber;
+  final List<Plugin>? rules;
 
   @override
   State<SourceSheet> createState() => _SourceSheetState();
@@ -58,6 +60,7 @@ class SourceSheet extends StatefulWidget {
 class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
   final CollectController _collectController = inject<CollectController>();
   final PluginsController _pluginsController = inject<PluginsController>();
+  List<Plugin> get _rules => widget.rules ?? _pluginsController.pluginList;
   final Map<String, String> _sourceKeywords = {};
 
   late final String _keyword;
@@ -72,6 +75,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
     _searchService = PluginSearchService(
       infoController: widget.infoController,
       pluginsController: _pluginsController,
+      plugins: widget.rules,
     );
     _captchaFlow = _SourceCaptchaFlow(
       onVerified: _showVerifiedResult,
@@ -90,7 +94,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
   String _keywordFor(String name) => _sourceKeywords[name] ?? _keyword;
 
   Plugin _pluginFor(String name) =>
-      _pluginsController.pluginList.firstWhere((plugin) => plugin.name == name);
+      _rules.firstWhere((plugin) => plugin.name == name);
 
   void _querySource(String keyword, String pluginName) {
     final trimmed = keyword.trim();
@@ -107,7 +111,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
 
   void _refreshAll() {
     setState(() => _sourceKeywords.clear());
-    for (final plugin in _pluginsController.pluginList) {
+    for (final plugin in _rules) {
       SourceCandidates.shared.invalidate(
         widget.infoController.bangumiItem,
         plugin,
@@ -202,7 +206,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
         .map((e) => e.key)
         .toSet();
     final candidates = SourceCandidates.shared
-        .cached(work, _pluginsController.pluginList)
+        .cached(work, _rules)
         .where(
           (c) =>
               c.matched &&
@@ -270,7 +274,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
       // Snapshot observable values here; lazy list builders are not tracked.
       final groupsByName = {
         for (final plugin in SourceCandidates.shared.eligible(
-          _pluginsController.pluginList,
+          _rules,
           widget.infoController.bangumiItem,
         ))
           plugin.name: _SourceSearchGroup(
@@ -330,20 +334,15 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
                     );
                 return score != 0
                     ? score
-                    : _pluginsController.pluginList
+                    : _rules
                           .indexWhere((p) => p.name == a.name)
                           .compareTo(
-                            _pluginsController.pluginList.indexWhere(
-                              (p) => p.name == b.name,
-                            ),
+                            _rules.indexWhere((p) => p.name == b.name),
                           );
               }),
         onAutomatic:
             SourceCandidates.shared
-                .cached(
-                  widget.infoController.bangumiItem,
-                  _pluginsController.pluginList,
-                )
+                .cached(widget.infoController.bangumiItem, _rules)
                 .any(
                   (c) =>
                       c.matched &&
@@ -358,7 +357,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
           initialKeyword: _keyword,
           sourceName: '全部来源',
           onSubmit: (keyword) {
-            for (final p in _pluginsController.pluginList) {
+            for (final p in _rules) {
               SourceCandidates.shared.invalidate(
                 widget.infoController.bangumiItem,
                 p,

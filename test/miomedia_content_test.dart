@@ -238,6 +238,59 @@ void main() {
     },
   );
 
+  testWidgets(
+    'search entry loads detail and episodes then requests playback without a tap',
+    (tester) async {
+      final calls = <String>[];
+      final raw = {
+        'id': '123',
+        'title': '自动准备',
+        'player': [
+          {'playerCode': 'source_auto', 'playerName': '线路'},
+        ],
+      };
+      final service = MioMediaService(
+        request: (operation, payload, cancel) async {
+          calls.add(operation);
+          return {
+            'data': switch (operation) {
+              'detail' => {'video': raw},
+              'episodes' => {
+                'episodes': [
+                  {
+                    'episodeNum': 1,
+                    'displayName': '第1集',
+                    'code': 'source_auto',
+                  },
+                ],
+              },
+              'play' => {
+                'status': 'ad_required',
+                'ad': {'adRequired': true},
+              },
+              _ => {},
+            },
+          };
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MioDetailPage(
+            item: MioVideo.fromJson(raw),
+            service: service,
+            autoPlay: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(calls, containsAllInOrder(['detail', 'episodes', 'play']));
+      expect(calls.where((c) => c == 'play'), hasLength(1));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      service.dispose();
+    },
+  );
+
   testWidgets('all episodes sort and retain nonconsecutive real numbers', (
     tester,
   ) async {

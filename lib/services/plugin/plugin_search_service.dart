@@ -13,10 +13,13 @@ class PluginSearchService {
   PluginSearchService({
     required this.infoController,
     required this.pluginsController,
+    this.plugins,
   });
 
   final InfoController infoController;
   final PluginsController pluginsController;
+  final Iterable<Plugin>? plugins;
+  Iterable<Plugin> get _plugins => plugins ?? pluginsController.pluginList;
   final RuleCancelToken _cancelToken = RuleCancelToken();
 
   /// Per-plugin sessions so a replacement query (alias/manual search)
@@ -29,7 +32,7 @@ class PluginSearchService {
   int _directorySequence = 0;
 
   Future<void> querySource(String keyword, String pluginName) async {
-    for (final plugin in pluginsController.pluginList) {
+    for (final plugin in _plugins) {
       if (plugin.name == pluginName) {
         infoController.pluginSearchResponseList.removeWhere(
           (response) => response.pluginName == pluginName,
@@ -47,7 +50,7 @@ class PluginSearchService {
   /// into results; callers should fall back to [querySource].
   bool applyHarvestedSearchResult(String pluginName, String html) {
     if (_isCancelled) return false;
-    for (final plugin in pluginsController.pluginList) {
+    for (final plugin in _plugins) {
       if (plugin.name != pluginName) continue;
       final result = plugin.parseHarvestedSearch(html);
       if (result == null) return false;
@@ -78,7 +81,7 @@ class PluginSearchService {
     infoController.pluginSearchStatus.clear();
 
     final plugins = SourceCandidates.shared.eligible(
-      pluginsController.pluginList,
+      _plugins,
       infoController.bangumiItem,
     );
     final queuedTokens = <String, RuleCancelToken>{};
@@ -87,21 +90,11 @@ class PluginSearchService {
       infoController.pluginSearchStatus[plugin.name] =
           PluginSearchStatus.pending;
     }
-    var next = 0;
-    Future<void> worker() async {
-      while (!_isCancelled && batch.isActive && next < plugins.length) {
-        final plugin = plugins[next++];
-        await _queryPlugin(
-          plugin,
-          keyword,
-          queuedToken: queuedTokens[plugin.name],
-        );
-      }
-    }
-
-    await Future.wait(
-      List.generate(plugins.length.clamp(0, 4), (_) => worker()),
-    );
+    await Future.wait([
+      for (final plugin in plugins)
+        if (!_isCancelled && batch.isActive)
+          _queryPlugin(plugin, keyword, queuedToken: queuedTokens[plugin.name]),
+    ]);
   }
 
   Future<void> _queryPlugin(

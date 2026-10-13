@@ -36,6 +36,36 @@ ContentHit hit(
 
 void main() {
   test(
+    'default starts all eighteen selected sources in parallel before any returns',
+    () async {
+      var started = 0;
+      final releases = List.generate(18, (_) => Completer<ContentSearchPage>());
+      final session = ContentSearchSession(
+        List.generate(
+          18,
+          (i) => FixtureProvider('$i', {ContentGroup.anime}, (_, _) {
+            started++;
+            return releases[i].future;
+          }),
+        ),
+      );
+      addTearDown(session.dispose);
+      final pending = session.submit(const ContentQuery('作品'));
+      await Future<void>.delayed(Duration.zero);
+      expect(started, 18);
+      expect(
+        session.statuses.values.every(
+          (s) => s == ContentProviderStatus.searching,
+        ),
+        isTrue,
+      );
+      for (final release in releases) {
+        release.complete(const ContentSearchPage([], hasMore: false));
+      }
+      await pending;
+    },
+  );
+  test(
     'region matching keeps coproductions without treating substrings as country codes',
     () {
       expect(contentRegions('中国/美国'), {'CN', 'US'});

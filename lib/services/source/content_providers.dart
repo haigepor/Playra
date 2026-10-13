@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
+import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'content_search.dart';
 import 'miomedia/miomedia_service.dart';
@@ -157,6 +158,9 @@ class RuleContentProvider extends ContentSearchProvider {
 class MioContentProvider extends ContentSearchProvider {
   MioContentProvider(this.service);
   final MioMediaService service;
+  final _entries = <String, MioVideo>{};
+  MioVideo? entry(ContentHit hit) =>
+      hit.providerId == id ? _entries[hit.contentId] : null;
   @override
   String get id => 'miomedia';
   @override
@@ -199,6 +203,7 @@ class MioContentProvider extends ContentSearchProvider {
           region: video.area,
         ),
       );
+      _entries[video.id] = video;
     }
     return ContentSearchPage(items, hasMore: result.hasMore);
   }
@@ -280,6 +285,9 @@ class MioContentProvider extends ContentSearchProvider {
 }
 
 class BangumiContentProvider extends ContentSearchProvider {
+  final _entries = <String, BangumiItem>{};
+  BangumiItem? entry(ContentHit hit) =>
+      hit.providerId == id ? _entries[hit.contentId] : null;
   @override
   String get id => 'bangumi-metadata';
   @override
@@ -300,6 +308,9 @@ class BangumiContentProvider extends ContentSearchProvider {
     if (cancel.isCancelled) throw const SourceException('CANCELLED', '搜索已取消');
     if (result == null) {
       throw const SourceException('SOURCE_ERROR', 'Bangumi 资料查询失败');
+    }
+    for (final item in result.items) {
+      _entries['${item.id}'] = item;
     }
     return ContentSearchPage([
       for (final item in result.items)

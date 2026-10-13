@@ -98,6 +98,18 @@ void main() {
       );
       expect(page.items.map((h) => h.contentId), ['9007199254740993']);
       expect(page.items.single.group, ContentGroup.series);
+      expect(provider.entry(page.items.single)?.id, '9007199254740993');
+      expect(
+        provider.entry(
+          const ContentHit(
+            providerId: 'other',
+            contentId: '9007199254740993',
+            title: '错来源',
+            group: ContentGroup.series,
+          ),
+        ),
+        isNull,
+      );
     },
   );
 }

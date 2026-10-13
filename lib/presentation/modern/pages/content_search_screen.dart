@@ -8,7 +8,13 @@ import 'package:kazumi/services/source/content_providers.dart';
 import 'package:kazumi/services/source/content_search.dart';
 import '../secondary/secondary_theme.dart';
 import '../settings/modern_back_button.dart';
-import 'content_work_page.dart';
+import 'package:kazumi/request/apis/bangumi_api.dart';
+import 'package:kazumi/modules/bangumi/bangumi_item.dart';
+import 'package:kazumi/pages/info/source_search_entry.dart';
+import 'package:kazumi/services/source/content_search_playback.dart';
+import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
+import 'package:kazumi/services/plugin/rule_engine_models.dart'
+    show RuleCancelToken;
 
 class ContentSearchScreen extends StatefulWidget {
   const ContentSearchScreen({
@@ -28,6 +34,10 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
   late ContentSearchSession session;
   late final Future<void> ready;
   late final TextEditingController input;
+  final inputFocus = FocusNode();
+  String? openingWork;
+  int navigationGeneration = 0;
+  RuleCancelToken? openingCancel;
   ContentGroup? group;
   String region = '';
   bool submitted = false;
@@ -65,7 +75,12 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     if (!mounted) return;
     FocusManager.instance.primaryFocus?.unfocus();
     if (input.text.trim().isEmpty) return;
-    setState(() => submitted = true);
+    setState(() {
+      submitted = true;
+      openingWork = null;
+      navigationGeneration++;
+      openingCancel?.cancel('query changed');
+    });
     await session.submit(
       ContentQuery(input.text, group: group, region: region),
     );
@@ -75,6 +90,8 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
   void dispose() {
     session.dispose();
     input.dispose();
+    inputFocus.dispose();
+    openingCancel?.cancel('disposed');
     super.dispose();
   }
 
@@ -146,7 +163,6 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                           child: _regionFilter(context),
                         ),
                       ),
-                    if (submitted) _progress(context),
                     Expanded(
                       child: !submitted
                           ? const Center(
@@ -157,106 +173,48 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                                 ),
                               ),
                             )
-                          : session.works.isEmpty
-                          ? _empty()
-                          : ListView.builder(
+                          : CustomScrollView(
                               key: const ValueKey('content-search-results'),
-                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                              itemCount: session.works.length + 1,
-                              itemBuilder: (context, index) {
-                                if (index == session.works.length) {
-                                  return session.hasMore
-                                      ? Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: ShadButton.outline(
-                                            onPressed: session.searching
-                                                ? null
-                                                : session.loadMore,
-                                            child: const Text('加载更多'),
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              slivers: [
+                                SliverToBoxAdapter(child: _progress(context)),
+                                if (session.works.isEmpty)
+                                  SliverFillRemaining(
+                                    hasScrollBody: false,
+                                    child: _empty(),
+                                  )
+                                else ...[
+                                  SliverPadding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      4,
+                                      16,
+                                      12,
+                                    ),
+                                    sliver: SliverList.builder(
+                                      itemCount: session.works.length,
+                                      itemBuilder: (context, index) =>
+                                          _resultTile(
+                                            context,
+                                            session.works[index],
                                           ),
-                                        )
-                                      : const SizedBox.shrink();
-                                }
-                                final work = session.works[index];
-                                final sources = work.hits
-                                    .where(
-                                      (h) => session
-                                          .provider(h.providerId)
-                                          .canPlay,
-                                    )
-                                    .map((h) => h.providerId)
-                                    .toSet()
-                                    .length;
-                                return Card(
-                                  key: ValueKey(work.id),
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerLow,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.all(12),
-                                    leading: work.cover.isEmpty
-                                        ? const SizedBox(
-                                            width: 48,
-                                            height: 64,
-                                            child: Icon(LucideIcons.film),
-                                          )
-                                        : NetworkImgLayer(
-                                            src: work.cover,
-                                            width: 48,
-                                            height: 64,
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                    title: Text(
-                                      work.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                    subtitle: Text(
-                                      [
-                                        work.primary.group?.label ?? '待分类',
-                                        if (work.primary.year != null)
-                                          '${work.primary.year}',
-                                        sources == 0
-                                            ? '资料条目 · 继续查找来源'
-                                            : '$sources 个候选来源',
-                                      ].join(' · '),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
-                                    trailing: const Icon(
-                                      LucideIcons.chevronRight,
-                                      size: 18,
-                                    ),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => ContentWorkPage(
-                                          work: work,
-                                          session: session,
+                                  if (session.hasMore)
+                                    SliverToBoxAdapter(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: ShadButton.outline(
+                                          onPressed: session.searching
+                                              ? null
+                                              : session.loadMore,
+                                          child: const Text('加载更多'),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                );
-                              },
+                                ],
+                              ],
                             ),
                     ),
                   ],
@@ -271,46 +229,195 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
 
   Widget _searchField(BuildContext context) {
     final c = Theme.of(context).colorScheme;
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: input,
-      builder: (context, value, _) => SearchBar(
-        key: const ValueKey('content-search-input'),
-        controller: input,
+    // 编辑器与焦点不随每个按键重建；仅清空按钮监听输入，保留 IME composing/selection。
+    return TextField(
+      key: const ValueKey('content-search-input'),
+      controller: input,
+      focusNode: inputFocus,
+      cursorColor: c.primary,
+      autocorrect: false,
+      enableSuggestions: false,
+      smartDashesType: SmartDashesType.disabled,
+      smartQuotesType: SmartQuotesType.disabled,
+      textInputAction: TextInputAction.search,
+      style: Theme.of(context).textTheme.bodyMedium,
+      onSubmitted: (_) => _search(),
+      decoration: InputDecoration(
         hintText: '搜索作品名称',
-        textInputAction: TextInputAction.search,
-        constraints: const BoxConstraints(minHeight: 48),
-        elevation: const WidgetStatePropertyAll(0),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: c.outline),
-          ),
+        fillColor: c.surfaceContainerLow,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 13,
         ),
-        backgroundColor: WidgetStatePropertyAll(c.surfaceContainerLow),
-        textStyle: WidgetStatePropertyAll(
-          Theme.of(context).textTheme.bodyMedium,
+        prefixIcon: Icon(
+          LucideIcons.search,
+          size: 20,
+          color: c.onSurfaceVariant,
         ),
-        hintStyle: WidgetStatePropertyAll(
-          Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: c.onSurfaceVariant),
-        ),
-        padding: const WidgetStatePropertyAll(
-          EdgeInsets.symmetric(horizontal: 12),
-        ),
-        leading: Icon(LucideIcons.search, size: 20, color: c.onSurfaceVariant),
-        trailing: [
-          if (value.text.isNotEmpty)
-            IconButton(
-              tooltip: '清空输入',
-              onPressed: input.clear,
-              icon: const Icon(LucideIcons.x, size: 16),
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: input,
+              builder: (_, value, _) => Visibility(
+                visible: value.text.isNotEmpty,
+                maintainSize: true,
+                maintainState: true,
+                maintainAnimation: true,
+                child: IconButton(
+                  tooltip: '清空输入',
+                  onPressed: () {
+                    input.clear();
+                    inputFocus.requestFocus();
+                  },
+                  icon: const Icon(LucideIcons.x, size: 16),
+                ),
+              ),
             ),
-          TextButton(onPressed: _search, child: const Text('搜索')),
-        ],
-        onSubmitted: (_) => _search(),
+            TextButton(onPressed: _search, child: const Text('搜索')),
+            const SizedBox(width: 4),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _resultTile(BuildContext context, ContentWork work) {
+    final c = Theme.of(context).colorScheme;
+    final sources = work.hits
+        .where((h) => session.provider(h.providerId).canPlay)
+        .map((h) => h.providerId)
+        .toSet()
+        .length;
+    return Card(
+      key: ValueKey(work.id),
+      margin: const EdgeInsets.only(bottom: 10),
+      color: c.surfaceContainerLow,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        leading: work.cover.isEmpty
+            ? const SizedBox(
+                width: 48,
+                height: 64,
+                child: Icon(LucideIcons.film),
+              )
+            : NetworkImgLayer(
+                src: work.cover,
+                width: 48,
+                height: 64,
+                borderRadius: BorderRadius.circular(6),
+              ),
+        title: Text(
+          work.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          [
+            work.primary.group?.label ?? '待分类',
+            if (work.primary.year != null) '${work.primary.year}',
+            sources == 0 ? '作品资料' : '$sources 个候选来源',
+          ].join(' · '),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: c.onSurfaceVariant),
+        ),
+        trailing: openingWork == work.id
+            ? const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(LucideIcons.chevronRight, size: 18),
+        onTap: openingWork == null ? () => _openWork(work) : null,
+      ),
+    );
+  }
+
+  Future<void> _openWork(ContentWork work) async {
+    final generation = ++navigationGeneration;
+    openingCancel?.cancel('replaced');
+    final cancel = openingCancel = RuleCancelToken();
+    bool current() =>
+        mounted &&
+        generation == navigationGeneration &&
+        session.works.any((item) => identical(item, work));
+    inputFocus.unfocus();
+    setState(() => openingWork = work.id);
+    try {
+      Object? entry;
+      for (final hit in work.hits) {
+        final provider = session.provider(hit.providerId);
+        if (provider is BangumiContentProvider) entry = provider.entry(hit);
+        if (provider is MioContentProvider) entry = provider.entry(hit);
+        if (entry != null) break;
+      }
+      if (entry == null && work.primary.group == ContentGroup.anime) {
+        // 规则只有标题/链接时自动匹配唯一真实身份，不创建假 ID 或确认弹窗。
+        final result = await BangumiApi.bangumiSearch(
+          work.title,
+          limit: 20,
+        ).timeout(const Duration(seconds: 20));
+        if (!mounted || !current()) return;
+        entry = uniqueAnimeMetadata(work.primary, result?.items ?? []);
+      }
+      if (!mounted || !current()) return;
+      if (entry == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('未找到对应作品资料，请尝试更完整的名称')));
+        return;
+      }
+      Object destination = entry;
+      if (entry is BangumiItem) {
+        final candidate = await prepareSearchPlayback(
+          entry,
+          work,
+          session,
+          cancel,
+        );
+        if (!mounted || !current()) return;
+        if (candidate == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('来源目录预加载失败，请重试'),
+              action: SnackBarAction(
+                label: '重试',
+                onPressed: () => _openWork(work),
+              ),
+            ),
+          );
+          return;
+        }
+        cancel.cancel('ready');
+        destination = SourceSearchEntry(
+          item: entry,
+          playbackArgs: candidate.args(entry),
+          rules: session.providers.whereType<RuleContentProvider>().map(
+            (p) => p.plugin,
+          ),
+        );
+      } else if (entry is MioVideo) {
+        destination = MioSearchEntry(entry);
+      }
+      if (!mounted || !current()) return;
+      await context.pushNamed('/info/', arguments: destination);
+    } catch (_) {
+      if (mounted && current()) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('作品入口加载失败，请重试')));
+      }
+    } finally {
+      cancel.cancel('navigation completed');
+      if (mounted && generation == navigationGeneration) {
+        setState(() => openingWork = null);
+      }
+    }
   }
 
   static const _regions = {

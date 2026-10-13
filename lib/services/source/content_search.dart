@@ -187,18 +187,16 @@ enum ContentProviderStatus {
 class ContentSearchSession extends ChangeNotifier {
   ContentSearchSession(
     Iterable<ContentSearchProvider> providers, {
-    this.concurrency = 4,
+    this.concurrency,
     this.timeout = const Duration(seconds: 20),
     this.batchTimeout = const Duration(seconds: 35),
-    this.perOriginConcurrency = 2,
+    this.perOriginConcurrency,
     this.ownsProviders = true,
   }) : providers = List.unmodifiable(providers) {
-    if (concurrency < 1 ||
-        concurrency > 8 ||
+    if (concurrency != null && concurrency! < 1 ||
         timeout <= Duration.zero ||
         batchTimeout <= Duration.zero ||
-        perOriginConcurrency < 1 ||
-        perOriginConcurrency > 8) {
+        perOriginConcurrency != null && perOriginConcurrency! < 1) {
       throw ArgumentError('Invalid search budget');
     }
     if (this.providers.map((p) => p.id).toSet().length !=
@@ -207,10 +205,12 @@ class ContentSearchSession extends ChangeNotifier {
     }
   }
   final List<ContentSearchProvider> providers;
-  final int concurrency;
+
+  /// 默认同时发起全部选中来源；显式限制仅供受限调用方使用。
+  final int? concurrency;
   final Duration timeout;
   final Duration batchTimeout;
-  final int perOriginConcurrency;
+  final int? perOriginConcurrency;
   final bool ownsProviders;
   final _works = <ContentWork>[];
   final statuses = <String, ContentProviderStatus>{};
@@ -317,7 +317,9 @@ class ContentSearchSession extends ChangeNotifier {
     Future<void> worker() async {
       while (current() && queue.isNotEmpty) {
         final index = queue.indexWhere(
-          (p) => (activeOrigins[p.origin] ?? 0) < perOriginConcurrency,
+          (p) =>
+              perOriginConcurrency == null ||
+              (activeOrigins[p.origin] ?? 0) < perOriginConcurrency!,
         );
         if (index < 0) {
           await Future.any([released.future, root.whenCancel]);
@@ -380,7 +382,10 @@ class ContentSearchSession extends ChangeNotifier {
     }
 
     await Future.wait(
-      List.generate(selected.length.clamp(0, concurrency), (_) => worker()),
+      List.generate(
+        selected.length.clamp(0, concurrency ?? selected.length),
+        (_) => worker(),
+      ),
     );
     deadline.cancel();
     if (current()) {

@@ -21,6 +21,82 @@ class ScreenProvider extends ContentSearchProvider {
 }
 
 void main() {
+  testWidgets('search progress scrolls away with results', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ContentSearchScreen(
+          initialKeyword: '作品',
+          providers: [
+            ScreenProvider(
+              'cards',
+              Future.value(
+                ContentSearchPage(
+                  List.generate(
+                    24,
+                    (i) => ContentHit(
+                      providerId: 'cards',
+                      contentId: '$i',
+                      title: '作品$i',
+                      group: ContentGroup.anime,
+                    ),
+                  ),
+                  hasMore: false,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final progress = find.byKey(const ValueKey('content-search-progress'));
+    expect(progress.hitTestable(), findsOneWidget);
+    await tester.drag(
+      find.byKey(const ValueKey('content-search-results')),
+      const Offset(0, -550),
+    );
+    await tester.pumpAndSettle();
+    expect(progress.hitTestable(), findsNothing);
+  });
+  testWidgets(
+    'IME composition, cursor edits and clear preserve a single input value',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: ContentSearchScreen(providers: [])),
+      );
+      final field = find.byType(TextField).first;
+      await tester.tap(field);
+      await tester.pump();
+      for (final value in ['n', 'ni', 'nihao']) {
+        tester.testTextInput.updateEditingValue(
+          TextEditingValue(
+            text: value,
+            selection: TextSelection.collapsed(offset: value.length),
+            composing: TextRange(start: 0, end: value.length),
+          ),
+        );
+        await tester.pump();
+        expect(
+          tester.widget<TextField>(field).controller!.value.composing,
+          TextRange(start: 0, end: value.length),
+        );
+      }
+      tester.testTextInput.updateEditingValue(
+        const TextEditingValue(
+          text: '你好',
+          selection: TextSelection.collapsed(offset: 2),
+        ),
+      );
+      await tester.pump();
+      expect(tester.widget<TextField>(field).controller!.text, '你好');
+      await tester.tap(find.byTooltip('清空输入'));
+      await tester.pump();
+      expect(tester.widget<TextField>(field).controller!.text, '');
+      await tester.enterText(field, 'tr');
+      await tester.pump();
+      expect(tester.widget<TextField>(field).controller!.text, 'tr');
+    },
+  );
   testWidgets('series search remains usable with a keyboard at 320px', (
     tester,
   ) async {
