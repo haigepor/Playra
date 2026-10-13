@@ -10,6 +10,7 @@ String? mioRankCategory(
   HomeFeed feed,
 ) => switch (feed) {
   HomeFeed.recommended || HomeFeed.popular => '0',
+  HomeFeed.screen => null,
   HomeFeed.movies => controller.categoryIds[MioKind.movie],
   HomeFeed.television => controller.categoryIds[MioKind.series],
   HomeFeed.variety => controller.categoryIds[MioKind.variety],

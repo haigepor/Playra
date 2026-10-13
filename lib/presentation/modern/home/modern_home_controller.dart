@@ -11,8 +11,9 @@ enum HomeFeed {
   recommended('推荐'),
   popular('热门'),
   anime('动漫'),
+  screen('影视'),
   movies('电影'),
-  television('电视剧'),
+  television('剧集'),
   variety('综艺'),
   comicDrama('漫剧'),
   animeMovies('动漫电影'),
@@ -23,15 +24,7 @@ enum HomeFeed {
   const HomeFeed(this.label);
   final String label;
 
-  static const primaryCategories = [
-    recommended,
-    popular,
-    anime,
-    movies,
-    television,
-    variety,
-    comicDrama,
-  ];
+  static const primaryCategories = [anime, screen, comicDrama, television];
 
   bool get isGeneralCategory => this == recommended || this == popular;
 
@@ -43,6 +36,7 @@ enum HomeFeed {
       this == animeMovies;
 
   bool get hasContentSource =>
+      this != screen &&
       this != movies &&
       this != television &&
       this != variety &&

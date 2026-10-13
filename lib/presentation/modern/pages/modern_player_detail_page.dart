@@ -28,6 +28,7 @@ import 'package:kazumi/pages/info/rating_review_dialog.dart';
 import 'package:kazumi/pages/info/source_sheet.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
+import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/pages/video/playback_identity.dart';
 import 'package:kazumi/pages/video/playback_scaffold.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
@@ -50,6 +51,7 @@ class ModernPlayerDetailPage extends StatefulWidget {
     required this.historyController,
     required this.downloadController,
     this.args,
+    this.sourceRules,
   });
   final BangumiItem item;
   final InfoController infoController;
@@ -58,6 +60,7 @@ class ModernPlayerDetailPage extends StatefulWidget {
   final HistoryController historyController;
   final DownloadController downloadController;
   final VideoPlaybackArgs? args;
+  final List<Plugin>? sourceRules;
   @override
   State<ModernPlayerDetailPage> createState() => _ModernPlayerDetailPageState();
 }
@@ -159,30 +162,6 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     unawaited(loadInfo());
     unawaited(loadRelations());
     unawaited(loadEpisodeCatalog());
-    // 在线路由只提供来源上下文；身份不匹配时先确认目标，不能猜历史索引。
-    if (widget.args case final OnlineVideoPlaybackArgs args) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
-        final resume = verifiedResume(args, widget.historyController.histories);
-        // 显式在线来源入口已有上下文，直接从已核实的历史或该来源首集开始。
-        final selection =
-            resume?.selection ??
-            const VideoEpisodeSelection(episode: 1, road: 0);
-        if (!mounted || args.roads.isEmpty || args.roads.first.data.isEmpty) {
-          return;
-        }
-        await playbackKey.currentState?.startSource(
-          args,
-          selection,
-          onReady: playbackReady,
-          offset:
-              resume != null &&
-                  GStorage.getSetting(SettingsKeys.playResume) == true
-              ? resume.offset
-              : 0,
-        );
-      });
-    }
   }
 
   @override
@@ -256,7 +235,8 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
       final choice = await SourceCandidates.shared
           .selectEpisode(
             item,
-            inject<PluginsController>().pluginList.toList(),
+            widget.sourceRules ??
+                inject<PluginsController>().pluginList.toList(),
             targetNumber,
             cancel,
           )
@@ -402,6 +382,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         context: themedContext,
         maxHeightFactor: .9,
         builder: (sheetContext) => SourceSheet(
+          rules: widget.sourceRules,
           infoController: info,
           episodeNumber: oldNumber,
           emptyIllustration: SvgPicture.asset(
@@ -552,7 +533,8 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     child: Builder(
       builder: (context) => PlaybackScaffold(
         key: playbackKey,
-        args: widget.args is OfflineVideoPlaybackArgs ? widget.args : null,
+        // 由播放器挂载后自行初始化，避免主题本地化延迟挂载时丢失父级回调。
+        args: widget.args,
         verifyHistoryIdentity: true,
         videoPageController: video,
         playerController: widget.playerController,

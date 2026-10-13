@@ -11,6 +11,8 @@ import 'package:kazumi/presentation/interface_page_host.dart';
 import 'package:kazumi/presentation/modern/pages/modern_player_detail_page.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 import 'package:kazumi/presentation/modern/miomedia/miomedia_detail_page.dart';
+import 'source_search_entry.dart';
+import 'package:kazumi/pages/video/video_page.dart';
 
 final infoModule = createModule(
   path: '/info',
@@ -22,7 +24,11 @@ final infoModule = createModule(
         ..add<VideoPageController>(VideoPageController.new)
         ..add<PlayerController>(PlayerController.new),
       child: (context, state) {
-        final bangumiItem = state.arguments;
+        final entry = state.arguments;
+        if (entry is MioSearchEntry) {
+          return MioDetailPage(item: entry.item, autoPlay: true);
+        }
+        final bangumiItem = entry is SourceSearchEntry ? entry.item : entry;
         if (bangumiItem is MioVideo) {
           return MioDetailPage(item: bangumiItem);
         }
@@ -30,17 +36,29 @@ final infoModule = createModule(
           return const RouteErrorPage(message: '番组详情参数无效，请返回后重新打开。');
         }
         return InterfacePageHost(
-          legacy: (_) => InfoPage(
-            inputBangumiItem: bangumiItem,
-            infoController: context.read<InfoController>(),
-          ),
+          legacy: (_) =>
+              entry is SourceSearchEntry && entry.playbackArgs != null
+              ? VideoPage(
+                  args: entry.playbackArgs!,
+                  playerController: context.read<PlayerController>(),
+                  videoPageController: context.read<VideoPageController>(),
+                  historyController: inject<HistoryController>(),
+                  downloadController: inject<DownloadController>(),
+                )
+              : InfoPage(
+                  inputBangumiItem: bangumiItem,
+                  infoController: context.read<InfoController>(),
+                  sourceRules: entry is SourceSearchEntry ? entry.rules : null,
+                ),
           modern: (_) => ModernPlayerDetailPage(
+            args: entry is SourceSearchEntry ? entry.playbackArgs : null,
             item: bangumiItem,
             infoController: context.read<InfoController>(),
             videoController: context.read<VideoPageController>(),
             playerController: context.read<PlayerController>(),
             historyController: inject<HistoryController>(),
             downloadController: inject<DownloadController>(),
+            sourceRules: entry is SourceSearchEntry ? entry.rules : null,
           ),
         );
       },

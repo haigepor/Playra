@@ -43,6 +43,7 @@ class SourcePolicy {
         ? SourceProfile.fromJson({
             'sourceConfig': {
               'domains': override,
+              'contentGroups': declared.contentGroups,
               if (declared.adapterKind == 'http') 'resolveApi': {},
             },
           })

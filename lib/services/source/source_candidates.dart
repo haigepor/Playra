@@ -150,6 +150,7 @@ class SourceCandidates {
     List<SearchItem> results, {
     RuleCancelToken? cancelToken,
     bool allowUnmatched = false,
+    void Function(PlaybackCandidate)? onPrepared,
   }) async {
     final candidates = <PlaybackCandidate>[];
     Object? firstError;
@@ -211,6 +212,7 @@ class SourceCandidates {
           matched: matched,
         ),
       );
+      onPrepared?.call(candidates.last);
     }
     // 只有确认无剧集才隐藏；目录请求失败必须保留重试入口。
     if (candidates.isEmpty && firstError != null) throw firstError;
