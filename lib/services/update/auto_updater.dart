@@ -1,4 +1,6 @@
+import 'package:kazumi/app_brand.dart';
 import 'dart:convert';
+import 'package:kazumi/request/core/network_exception.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -138,7 +140,12 @@ class AutoUpdater {
         throw Exception('无效的响应数据');
       }
 
-      final remoteVersion = data['tag_name'] as String;
+      // 官方旧 tag 和预发布版本不会参与 Playra 更新。
+      final remoteVersion = AppBrand.releaseVersion(data['tag_name'] as String);
+      if (remoteVersion == null ||
+          data['prerelease'] == true ||
+          data['draft'] == true)
+        return null;
       final currentVersion = ApiEndpoints.version;
 
       if (needUpdate(currentVersion, remoteVersion)) {
@@ -164,7 +171,14 @@ class AutoUpdater {
   }
 
   Future<Map<String, dynamic>> _latestRelease() async {
-    final raw = await _downloadClient.getPlain(ApiEndpoints.latestAppMirror);
+    String raw;
+    try {
+      raw = await _downloadClient.getPlain(ApiEndpoints.latestApp);
+    } on NetworkException catch (error) {
+      // 尚无自有发布版本时 GitHub 返回 404，属于正常的无更新状态。
+      if (error.statusCode == 404) return {'tag_name': ''};
+      rethrow;
+    }
     final data = json.decode(raw);
     if (data is! Map) {
       throw Exception('Invalid update response');
@@ -768,6 +782,6 @@ class AutoUpdater {
     } else if (Platform.isAndroid) {
       extension = '.apk';
     }
-    return 'Kazumi-$version$extension';
+    return 'Playra-$version$extension';
   }
 }

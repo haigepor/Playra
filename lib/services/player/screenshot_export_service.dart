@@ -49,7 +49,7 @@ class ScreenshotExportService {
       return String.fromCharCodes(safe.runes.take(24));
     }
 
-    return 'Kazumi_${clean(item.title)}_${clean(item.episode)}_'
+    return 'Playra_${clean(item.title)}_${clean(item.episode)}_'
         '${item.timeLabel.replaceAll(':', '-')}_${item.id}.png';
   }
 }

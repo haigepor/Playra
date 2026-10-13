@@ -2,7 +2,10 @@ param(
   [switch]$Release,
   [string]$Device,
   [string]$AndroidSdk = $env:ANDROID_HOME,
-  [string]$JavaHome = $env:JAVA_HOME
+  [string]$JavaHome = $env:JAVA_HOME,
+  [string]$DartDefineFromFile,
+  [string]$RuntimeUrl,
+  [switch]$RuntimeAllowHttp
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -45,6 +48,7 @@ foreach ($name in 'ANDROID_HOME', 'ANDROID_SDK_ROOT', 'JAVA_HOME', 'Path', 'NO_P
   $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
 Push-Location -LiteralPath $projectRoot
+$generatedDefines = $null
 try {
   $env:ANDROID_HOME = [IO.Path]::GetFullPath($AndroidSdk)
   $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
@@ -60,11 +64,44 @@ try {
     $env:GRADLE_OPTS = (@($savedEnvironment['GRADLE_OPTS'], '-Dorg.gradle.project.kotlin.incremental=false') |
       Where-Object { $_ }) -join ' '
   }
-  if ($Device) { & $flutter run -d $Device }
-  elseif ($Release) { & $flutter build apk --release }
-  else { & $flutter build apk --debug }
+  $defineArguments = @()
+  if ($RuntimeUrl) {
+    $runtimeUri = $null
+    if (-not [Uri]::TryCreate($RuntimeUrl, [UriKind]::Absolute, [ref]$runtimeUri) -or
+        $runtimeUri.Scheme -notin @('https', 'http') -or $runtimeUri.UserInfo -or
+        $runtimeUri.Query -or $runtimeUri.Fragment -or
+        ($runtimeUri.Scheme -eq 'http' -and -not $RuntimeAllowHttp)) {
+      throw '运行地址须为 HTTPS 基址；开发 HTTP 需要 -RuntimeAllowHttp，地址不能含凭据或查询参数'
+    }
+    $defineArguments += "--dart-define=PLAYRA_SOURCE_RUNTIME_URL=$RuntimeUrl"
+  }
+  if ($RuntimeAllowHttp) {
+    $defineArguments += '--dart-define=PLAYRA_SOURCE_RUNTIME_ALLOW_HTTP=true'
+  }
+  if ($DartDefineFromFile) {
+    $definePath = (Resolve-Path -LiteralPath $DartDefineFromFile).Path
+    $defineArguments += "--dart-define-from-file=$definePath"
+  } else {
+    # 与 CI 保持一致；使用临时文件传入，避免密钥出现在终端与进程参数中。
+    $defines = @{}
+    foreach ($defineName in 'KAZUMI_APPID', 'KAZUMI_KEY', 'DANDANAPI_APPID', 'DANDANAPI_KEY') {
+      $defineValue = [Environment]::GetEnvironmentVariable($defineName, 'Process')
+      if ($defineValue) { $defines[$defineName] = $defineValue }
+    }
+    if ($defines.Count -gt 0) {
+      $generatedDefines = Join-Path $projectRoot ('.dart_tool/android-defines-' + [Guid]::NewGuid().ToString('N') + '.json')
+      [IO.File]::WriteAllText($generatedDefines, ($defines | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
+      $defineArguments += "--dart-define-from-file=$generatedDefines"
+    }
+  }
+  if ($Device) { & $flutter run -d $Device @defineArguments }
+  elseif ($Release) { & $flutter build apk --release @defineArguments }
+  else { & $flutter build apk --debug @defineArguments }
   if ($LASTEXITCODE -ne 0) { throw 'Android build or run failed' }
 } finally {
+  if ($generatedDefines -and (Test-Path -LiteralPath $generatedDefines)) {
+    Remove-Item -LiteralPath $generatedDefines -Force
+  }
   Pop-Location
   foreach ($name in $savedEnvironment.Keys) {
     if ($null -eq $savedEnvironment[$name]) {

@@ -50,7 +50,7 @@ class _DisclaimerStepState extends State<DisclaimerStep> {
       leading: const OnboardingStepIcon(icon: Icons.waving_hand_rounded),
       title: ModernSecondaryScope.isActiveOf(context)
           ? '欢迎来到 Playra'
-          : '欢迎来到 Kazumi',
+          : '欢迎来到 Playra',
       child: TonalCard(
         padding: const EdgeInsets.all(24),
         child: _statementsText == null

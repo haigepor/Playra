@@ -152,6 +152,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 enabled: !useDynamicColor,
                 onPressed: (_) async {
                   KazumiDialog.show(
+                    context: context,
                     builder: (context) {
                       return AlertDialog(
                         title: Text('配色方案'),

@@ -1,5 +1,5 @@
 {
-  "name": "kazumi-web-backend",
+  "name": "playra-web-backend",
   "version": "1.0.0",
   "private": true,
   "scripts": { "start": "node server.cjs", "test": "node --test *.test.cjs" },

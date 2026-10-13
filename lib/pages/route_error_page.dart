@@ -32,7 +32,7 @@ class RouteErrorPage extends StatelessWidget {
 
   Widget _legacy(BuildContext context) {
     return SettingsDetailScaffold(
-      title: const Text('Kazumi'),
+      title: const Text('Playra'),
       body: GeneralErrorWidget(
         title: '无法打开页面',
         errMsg: message,

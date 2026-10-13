@@ -78,10 +78,25 @@ class _InitPageState extends State<InitPage> {
     if (!mounted) {
       return;
     }
-    // First launch: no installed rules yet, hand over to the onboarding flow.
-    // OnboardingPage takes care of navigating to the default page and
-    // triggering the auto update check afterwards.
-    if (pluginsController.pluginList.isEmpty) {
+    // 旧用户按已有规则迁移；新设备先记录未完成，避免安装默认规则后跳过剩余步骤。
+    var onboardingCompleted = GStorage.getSetting(
+      SettingsKeys.onboardingCompleted,
+    );
+    if (onboardingCompleted == null) {
+      onboardingCompleted = pluginsController.pluginList.isNotEmpty;
+      try {
+        await GStorage.putSetting(
+          SettingsKeys.onboardingCompleted,
+          onboardingCompleted,
+        );
+      } catch (error, stackTrace) {
+        KazumiLogger().e('引导状态初始化失败', error: error, stackTrace: stackTrace);
+        if (mounted) context.navigate('/error');
+        return;
+      }
+      if (!mounted) return;
+    }
+    if (!onboardingCompleted) {
       context.navigate('/onboarding');
       return;
     }
@@ -239,7 +254,7 @@ class _InitPageState extends State<InitPage> {
             child: AlertDialog(
               title: const Text('X11环境检测'),
               content: const Text(
-                '检测到您当前运行在X11环境下，Kazumi在X11环境下可能出现性能问题或界面异常，建议切换到Wayland以获得更好的体验。您是否希望在X11下继续使用Kazumi？',
+                '检测到您当前运行在X11环境下，Playra在X11环境下可能出现性能问题或界面异常，建议切换到Wayland以获得更好的体验。您是否希望在X11下继续使用Playra？',
               ),
               actions: [
                 TextButton(
@@ -277,7 +292,7 @@ class _InitPageState extends State<InitPage> {
       clickMaskDismiss: false,
       builder: (context) => AlertDialog(
         title: const Text('创建桌面快捷方式'),
-        content: const Text('是否在桌面创建 Kazumi 的快捷方式？'),
+        content: const Text('是否在桌面创建 Playra 的快捷方式？'),
         actions: [
           TextButton(
             onPressed: () => KazumiDialog.dismiss(popWith: false),

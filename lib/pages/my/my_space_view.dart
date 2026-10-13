@@ -115,7 +115,7 @@ class _WideSpaceLayout extends StatelessWidget {
             second: _ToolTile(
               icon: Icons.cleaning_services_rounded,
               title: '存储管理',
-              caption: '缓存与日志',
+              caption: '图片缓存',
               color: colors.surfaceContainer,
               foreground: colors.onSurface,
               onTap: () => onOpen(MyDestination.storage),
@@ -136,7 +136,7 @@ class _WideSpaceLayout extends StatelessWidget {
                 children: [
                   Icon(Icons.info_outline_rounded, size: 20),
                   SizedBox(width: 8),
-                  Flexible(child: Text('关于 Kazumi')),
+                  Flexible(child: Text('关于 Playra')),
                 ],
               ),
             ),
@@ -211,7 +211,7 @@ class _CompactSpaceLayout extends StatelessWidget {
             _entry(
                 '存储管理', Icons.cleaning_services_rounded, MyDestination.storage),
             _entry(
-                '关于 Kazumi', Icons.info_outline_rounded, MyDestination.about),
+                '关于 Playra', Icons.info_outline_rounded, MyDestination.about),
           ],
         ),
       ],

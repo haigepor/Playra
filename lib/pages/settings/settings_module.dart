@@ -1,3 +1,4 @@
+import 'package:kazumi/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/about/about_module.dart';
@@ -60,7 +61,6 @@ final settingsModule = createModule(
             '/storage',
             child: (context, state) => const StorageSettingsPage(),
           )
-          ..route('/storage/logs', child: (context, state) => const LogsPage())
           ..route(
             '/theme',
             child: (context, state) => const ThemeSettingsPage(),
@@ -101,6 +101,9 @@ final settingsModule = createModule(
             '/download-settings',
             child: (context, state) => const DownloadSettingsPage(),
           );
+        if (AppBuildPolicy.developerTools) {
+          sub.route('/storage/logs', child: (_, _) => const LogsPage());
+        }
       },
     );
     c
@@ -109,9 +112,9 @@ final settingsModule = createModule(
         '/about/license',
         child: (context, state) => const SettingsAppearanceHost(
           child: LicensePage(
-            applicationName: 'Kazumi',
+            applicationName: AppBrand.name,
             applicationVersion: ApiEndpoints.version,
-            applicationLegalese: 'Kazumi · GNU General Public License v3.0',
+            applicationLegalese: 'Playra · GNU General Public License v3.0',
           ),
         ),
       )

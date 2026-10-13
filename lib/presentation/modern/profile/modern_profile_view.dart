@@ -1,3 +1,4 @@
+import 'package:kazumi/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
@@ -12,12 +13,14 @@ class ModernProfileView extends StatelessWidget {
     required this.version,
     required this.onOpen,
     required this.onDiscover,
+    this.showDeveloperTools = AppBuildPolicy.developerTools,
   });
   final WatchStats stats;
   final ProfileSyncState sync;
   final String version;
   final ValueChanged<String> onOpen;
   final VoidCallback onDiscover;
+  final bool showDeveloperTools;
 
   @override
   Widget build(BuildContext context) {
@@ -123,16 +126,17 @@ class ModernProfileView extends StatelessWidget {
                         ]),
                         _group(context, '应用', [
                           (LucideIcons.info, '关于应用', '/settings/about/', ''),
-                          (
-                            LucideIcons.flaskConical,
-                            '组件实验室',
-                            '/ui/components',
-                            '',
-                          ),
+                          if (showDeveloperTools)
+                            (
+                              LucideIcons.flaskConical,
+                              '组件实验室',
+                              '/ui/components',
+                              '',
+                            ),
                         ]),
                         const SizedBox(height: 24),
                         Text(
-                          'Playra · $version',
+                          '${AppBrand.name} · $version',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,

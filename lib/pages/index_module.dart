@@ -1,3 +1,4 @@
+import 'package:kazumi/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/widget/error_widget.dart';
@@ -107,7 +108,7 @@ final indexModule = createModule(
         '/error',
         child: (context, state) => InterfacePageHost(
           legacy: (_) => Scaffold(
-            appBar: AppBar(title: const Text('Kazumi')),
+            appBar: AppBar(title: const Text(AppBrand.name)),
             body: const GeneralErrorWidget(
               title: '初始化失败',
               errMsg: '请重新启动应用后再试。',
@@ -126,13 +127,6 @@ final indexModule = createModule(
         ),
       )
       ..module(tabModule)
-      ..route(
-        '/ui/components',
-        child: (context, state) =>
-            inject<InterfaceStyleController>().supportsModern
-            ? ShadcnGallery(onExit: () => context.pop())
-            : const RouteErrorPage(message: '组件实验室当前仅向安卓新版界面开放。'),
-      )
       ..module(videoModule)
       ..route(
         ImageViewer.routePath,
@@ -160,5 +154,14 @@ final indexModule = createModule(
       ..module(infoModule)
       ..module(settingsModule)
       ..module(searchModule);
+    if (AppBuildPolicy.developerTools) {
+      c.route(
+        '/ui/components',
+        child: (context, state) =>
+            inject<InterfaceStyleController>().supportsModern
+            ? ShadcnGallery(onExit: () => context.pop())
+            : const RouteErrorPage(message: '组件实验室当前仅向新版界面开放。'),
+      );
+    }
   },
 );

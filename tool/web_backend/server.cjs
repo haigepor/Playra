@@ -7,6 +7,7 @@ const { pipeline } = require('node:stream/promises');
 const { validateTarget, resolveStaticPath } = require('./security.cjs');
 const { parseVideo } = require('./parser.cjs');
 const { captcha } = require('./captcha.cjs');
+const { createRuntimeBridge } = require('./runtime.cjs');
 
 // 开发预览可复用同一代理，正式 Web 默认仍服务 build/web。
 const root = process.env.KAZUMI_WEB_ROOT
@@ -14,6 +15,10 @@ const root = process.env.KAZUMI_WEB_ROOT
   : path.resolve(__dirname, '../../build/web');
 const port = Number(process.env.KAZUMI_WEB_PORT || 8930);
 const sourceApiPort = Number(process.env.KAZUMI_SOURCE_API_PORT || 8940);
+const runtimeBridge = createRuntimeBridge({
+  port: process.env.PLAYRA_SOURCE_RUNTIME_PORT
+    ? Number(process.env.PLAYRA_SOURCE_RUNTIME_PORT) : undefined,
+});
 const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript',
   '.json': 'application/json', '.wasm': 'application/wasm', '.css': 'text/css',
@@ -177,6 +182,9 @@ const server = http.createServer(async (req, res) => {
   try {
     verifyOrigin(req);
     const url = new URL(req.url, `http://${req.headers.host}`);
+    if (url.pathname.startsWith('/api/runtime/')) {
+      await runtimeBridge(req, res, url); return;
+    }
     if (url.pathname.startsWith('/api/v1/')) {
       // 固定本机业务服务，保持 Web 同源；不允许客户端指定转发目标。
       const headers = { ...req.headers, host: `127.0.0.1:${sourceApiPort}` };

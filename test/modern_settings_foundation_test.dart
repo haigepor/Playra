@@ -391,7 +391,7 @@ void main() {
       '同步设置',
       '网络设置',
       '更新设置',
-      '存储与日志',
+      '存储管理',
       '关于',
     ]) {
       expect(find.text(label), findsOneWidget);

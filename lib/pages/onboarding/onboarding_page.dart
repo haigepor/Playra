@@ -10,9 +10,7 @@ import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/pages/onboarding/steps/disclaimer_step.dart';
 import 'package:kazumi/pages/onboarding/steps/mirror_settings_step.dart';
-import 'package:kazumi/pages/onboarding/steps/plugin_shop_step.dart';
 import 'package:kazumi/pages/onboarding/steps/update_source_step.dart';
-import 'package:kazumi/plugins/plugins.dart' show pluginNameKey;
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
@@ -38,8 +36,7 @@ class OnboardingPage extends StatefulWidget {
 enum _OnboardingStep {
   welcome('使用约定'),
   updates('更新来源'),
-  mirrors('访问加速'),
-  rules('添加规则');
+  mirrors('访问加速');
 
   const _OnboardingStep(this.label);
 
@@ -52,14 +49,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _OnboardingStep.welcome,
     if (Platform.isAndroid) _OnboardingStep.updates,
     _OnboardingStep.mirrors,
-    _OnboardingStep.rules,
   ];
   int _currentIndex = 0;
   bool _agreed = false;
   bool _installingBundled = false;
   bool _busy = false;
   late bool _useGithubUpdate;
-  late Set<String> _initialPluginNames;
 
   PluginsController get _pluginsController => widget.pluginsController;
   bool get _isLastStep => _currentIndex == _steps.length - 1;
@@ -86,7 +81,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       },
     ),
     _OnboardingStep.mirrors => const MirrorSettingsStep(),
-    _OnboardingStep.rules => PluginShopStep(controller: _pluginsController),
   };
 
   String get _primaryLabel => !_agreed
@@ -140,9 +134,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       return false;
     }
     if (!mounted) return false;
-    _initialPluginNames = _pluginsController.pluginList
-        .map((plugin) => pluginNameKey(plugin.name))
-        .toSet();
     setState(() {
       _agreed = true;
       _installingBundled = false;
@@ -151,16 +142,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _finish() async {
-    // Updating a bundled rule must not count as installing an extra source.
-    final hasExtraRules = _pluginsController.pluginList.any(
-      (plugin) => !_initialPluginNames.contains(pluginNameKey(plugin.name)),
-    );
-    if (!hasExtraRules) {
-      final confirmed = await KazumiDialog.show<bool>(
-        context: context,
-        builder: (_) => const _SkipRulesDialog(),
-      );
-      if (confirmed != true) return;
+    try {
+      await GStorage.putSetting(SettingsKeys.onboardingCompleted, true);
+    } catch (error, stackTrace) {
+      KazumiLogger().e('引导完成状态保存失败', error: error, stackTrace: stackTrace);
+      if (mounted) {
+        KazumiDialog.showToast(context: context, message: '设置保存失败，请重试');
+      }
+      return;
     }
     if (!mounted) return;
     final myController = widget.myController;
@@ -315,32 +304,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
     ),
-  );
-}
-
-class _SkipRulesDialog extends StatelessWidget {
-  const _SkipRulesDialog();
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    scrollable: true,
-    constraints: const BoxConstraints(maxWidth: 560),
-    icon: const Icon(Icons.warning_amber_rounded),
-    title: const Text('暂不添加规则？'),
-    content: const Text(
-      '你还没有安装额外规则。仅使用内置规则可能导致部分番剧无法搜索或播放，影响观看体验。\n\n确定仍要继续吗？',
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(true),
-        child: const Text('仍然继续'),
-      ),
-      FilledButton(
-        autofocus: true,
-        onPressed: () => Navigator.of(context).pop(false),
-        child: const Text('返回安装'),
-      ),
-    ],
   );
 }
 

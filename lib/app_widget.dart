@@ -292,14 +292,14 @@ class _AppWidgetState extends State<AppWidget>
     }
 
     if (!Platform.isLinux) {
-      await trayManager.setToolTip('Kazumi');
+      await trayManager.setToolTip('Playra');
     }
 
     Menu trayMenu = Menu(
       items: [
         MenuItem(key: 'show_window', label: '显示窗口'),
         MenuItem.separator(),
-        MenuItem(key: 'exit', label: '退出 Kazumi'),
+        MenuItem(key: 'exit', label: '退出 Playra'),
       ],
     );
     await trayManager.setContextMenu(trayMenu);
@@ -349,7 +349,7 @@ class _AppWidgetState extends State<AppWidget>
                   },
                 )
               : null,
-          title: "Kazumi",
+          title: "Playra",
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           supportedLocales: const [
             Locale.fromSubtags(

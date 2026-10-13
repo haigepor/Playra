@@ -18,7 +18,7 @@ class UpdateSourceStep extends StatelessWidget {
           shape: OnboardingIconShape.cookie,
         ),
         title: '以你的方式更新',
-        subtitle: '选择适合你的更新来源，让 Kazumi 保持最新。',
+        subtitle: '选择更新方式，让 Playra 保持最新。',
         child: RadioGroup<bool>(
           groupValue: useGithubUpdate,
           onChanged: (value) {
@@ -38,12 +38,12 @@ class UpdateSourceStep extends StatelessWidget {
               const SizedBox(height: 12),
               _OptionCard(
                 icon: Icons.storefront_rounded,
-                title: 'F-Droid',
-                description: '由 F-Droid 商店管理更新，应用内不再自动检查。',
+                title: '手动更新',
+                description: '关闭启动时的检查，需要时可手动获取 Playra 新版本。',
                 value: false,
                 selected: !useGithubUpdate,
               ),
-              const OnboardingHint(text: '之后也可以在 关于 → 自动检查更新 中修改。'),
+              const OnboardingHint(text: '之后也可以在 设置 → 更新设置 中修改。'),
             ],
           ),
         ),

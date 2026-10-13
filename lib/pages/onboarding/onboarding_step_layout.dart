@@ -33,15 +33,15 @@ class OnboardingStepLayout extends StatelessWidget {
     final theme = Theme.of(context);
     if (ModernSecondaryScope.isActiveOf(context)) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 20),
+        padding: EdgeInsets.only(bottom: compact ? 16 : 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SecondaryArtwork(
+            SecondaryArtwork(
               asset: 'modern-onboarding-decoration',
-              width: 132,
+              width: compact ? 96 : 132,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: compact ? 8 : 12),
             Semantics(
               header: true,
               child: Text(

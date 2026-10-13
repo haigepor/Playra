@@ -1,3 +1,4 @@
+import 'package:kazumi/app_brand.dart';
 import 'package:flutter/services.dart' show appBuildName;
 
 class ApiEndpoints {
@@ -8,10 +9,10 @@ class ApiEndpoints {
   static const int apiLevel = 8;
 
   /// 项目主页
-  static const String projectUrl = "https://kazumi.app/";
+  static const String projectUrl = AppBrand.repositoryUrl;
 
   /// Github 项目主页
-  static const String sourceUrl = "https://github.com/Predidit/Kazumi";
+  static const String sourceUrl = AppBrand.repositoryUrl;
 
   /// 图标作者
   static const String iconUrl = "https://www.pixiv.net/users/66219277";
@@ -26,14 +27,14 @@ class ApiEndpoints {
 
   /// 在线升级
   static const String latestApp =
-      'https://api.github.com/repos/Predidit/Kazumi/releases/latest';
+      AppBrand.latestReleaseApi;
 
   /// Bangumi 镜像测试后端
   static const String bangumiMirrorDomain = 'https://api.kazumi.fyi';
 
-  /// Kazumi 镜像后端应用更新
+  /// 兼容旧调用者，应用更新仅来自 Playra 发布源
   static const String latestAppMirror =
-      '$bangumiMirrorDomain/kazumi/v1/app/latest';
+      AppBrand.latestReleaseApi;
 
   /// 弹弹官网
   static const String dandanIndex = 'https://www.dandanplay.com/';

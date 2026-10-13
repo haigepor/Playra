@@ -1,0 +1,275 @@
+path,change_group,rollback
+.github/workflows/pr.yaml,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+.github/workflows/release.yaml,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+.gitignore,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+android/app/build.gradle,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+android/app/src/main/AndroidManifest.xml,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+android/app/src/main/kotlin/com/example/kazumi/MainActivity.kt,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+android/app/src/main/kotlin/com/example/kazumi/SourceRuntimeBridge.kt,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+android/settings.gradle,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/images/modern-about-orbit.svg,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/images/modern-feature-orbit.svg,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/images/modern-recommendation-lines.svg,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/linux/io.github.Predidit.Kazumi.desktop,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/7sefun.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/aafun.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/AGE.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/akianime.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/baimao.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/dalvdm.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/DM84.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/ezdmw.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/giriGiriLove.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/mgnacg.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/moonci.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/mutefun.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/MXdm.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/sorani.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/xfdmneo.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+assets/plugins/xfdmnext.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/design/miomedia-category-page.zh.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/design/modern-secondary-polish.zh.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/design/source-api-python-integration-review.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/design/source-classification-playback-policy.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/handoff-modern-secondary-polish.zh.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/miomedia-content-playback.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/miomedia-endpoint-inventory.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/miomedia-endpoint-inventory.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/miomedia-playback-analysis-handoff.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/miomedia-sdk-integration.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/miomedia-seven-day-ranking-handoff.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/release/build-inputs.zh.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/release/changed-files.csv,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/release/official-tags.csv,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/release/tag-policy.zh.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/source-algorithm-runtime.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/upstream/Kazumi-README.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/android-default-rules-apk.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/android-embedded-python.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/android-identity-fix-20261013.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/android-modern-home-channels-widget.png,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/android-real-device-20261013.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/android-sdk-network-followup-20261013.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/classified-playback-sources.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/home-progressive-categories.zh.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/interface-playback-audit.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/miomedia-playback-token.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/miomedia-player-style.zh.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/miomedia-sdk-speed.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/miomedia-sdk.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/miomedia-seven-day-ranking.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/modern-network-playback.zh.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/modern-secondary-pages.zh.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/modern-ui-polish-20261013.zh.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/official-anime-rules-audit.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/playra-release-20261013.zh.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+docs/verification/source-algorithm-runtime.zh.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+ios/Runner/Info.plist,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/app_brand.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/app_widget.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/bean/card/network_img_layer.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/bean/dialog/exit_confirmation_dialog.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/bean/widget/content_skeleton.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/bean/widget/image_preview.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/main.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/about/about_module.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/about/about_page.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/about/credits_page.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/about/product_information_page.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/download/download_controller.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/download/download_page.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/index_module.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/info/character_info_view.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/info/info_module.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/info/source_alias_dialog.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/info/source_sheet.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/info/source_sheet_view.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/init_page.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/my/my_space_view.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/onboarding/onboarding_page.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/onboarding/onboarding_step_layout.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/onboarding/steps/disclaimer_step.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/onboarding/steps/update_source_step.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/player/controller/player_playback_controller.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/player/episode_comments_view.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/player/player_controller.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/plugin_editor/plugin_editor_page.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/plugin_editor/plugin_view_page.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/route_error_page.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/search/image_search_page.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/search/image_search_widgets.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/search/modern_search_widgets.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/search/search_page.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/settings/interface_settings.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/settings/settings_module.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/settings/settings_page.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/settings/storage_settings.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/settings/theme_settings_page.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/video/playback_scaffold.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/video/video_controller.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/pages/video/video_playback_args.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/plugins/plugins.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/plugins/plugins_controller.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/calendar/modern_calendar_controller.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/calendar/modern_calendar_view.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/home/home_catalog.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/home/home_theme.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/home/modern_home_controller.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/home/modern_home_view.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/miomedia/miomedia_browse.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/miomedia/miomedia_category_view.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/miomedia/miomedia_detail_page.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/miomedia/miomedia_home_controller.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/miomedia/miomedia_playing_mark.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/miomedia/miomedia_rank_view.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/pages/calendar_page.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/pages/discover_page.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/pages/modern_player_detail_page.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/player/player_discussion.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/player/player_episodes.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/player/player_work_info.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/profile/modern_profile_view.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/presentation/modern/widgets/modern_feature_carousel.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/request/apis/bangumi_api.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/request/clients/bangumi_client.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/request/config/api_endpoints.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/request/core/bangumi_request_policy.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/request/core/bangumi_transport_native.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/request/core/bangumi_transport_web.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/download/download_directory_service.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/logging/logger.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/player/audio_controller.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/player/screenshot_export_service.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/plugin/plugin_search_service.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/plugin/rule_engine.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/plugin/rule_engine_runtime_flutter.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/miomedia/miomedia_playback_coordinator.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/miomedia/miomedia_service.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/runtime/embedded_runtime.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/runtime/runtime_endpoint.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/runtime/runtime_endpoint_web.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/runtime/source_runtime.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_candidates.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_http_client.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_http_server.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_models.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_playback_service.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_policy.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_profile.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_resolve_config.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/source/source_service.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/storage/settings_keys.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/update/auto_updater.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/video_source/video_source_resolver_pool.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+lib/services/video_source/video_source_service.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+linux/CMakeLists.txt,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+linux/my_application.cc,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+macos/Runner/Configs/AppInfo.xcconfig,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/classify-and-schedule-playback-sources/.openspec.yaml,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/classify-and-schedule-playback-sources/design.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/classify-and-schedule-playback-sources/proposal.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/classify-and-schedule-playback-sources/specs/classified-playback-sources/spec.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/classify-and-schedule-playback-sources/tasks.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/embed-android-python-sdk/.openspec.yaml,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/embed-android-python-sdk/design.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/embed-android-python-sdk/proposal.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/embed-android-python-sdk/specs/android-embedded-sdk/spec.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/embed-android-python-sdk/tasks.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-content/.openspec.yaml,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-content/design.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-content/proposal.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-content/specs/miomedia-content-ui/spec.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-content/tasks.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-sdk/.openspec.yaml,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-sdk/design.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-sdk/proposal.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-sdk/specs/miomedia-sdk-adapter/spec.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-miomedia-sdk/tasks.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-seven-day-ranking/.openspec.yaml,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-seven-day-ranking/design.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-seven-day-ranking/proposal.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-seven-day-ranking/specs/episode-card-layout/spec.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-seven-day-ranking/specs/seven-day-ranking/spec.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/integrate-seven-day-ranking/tasks.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/prepare-playra-release/.openspec.yaml,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/prepare-playra-release/design.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/prepare-playra-release/proposal.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/prepare-playra-release/specs/release-branding/spec.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/prepare-playra-release/specs/release-repository-policy/spec.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/prepare-playra-release/tasks.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/scaffold-source-algorithm-runtime/.openspec.yaml,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/scaffold-source-algorithm-runtime/design.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/scaffold-source-algorithm-runtime/proposal.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/scaffold-source-algorithm-runtime/specs/source-algorithm-runtime/spec.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/scaffold-source-algorithm-runtime/tasks.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/stabilize-miomedia-web-android-playback/.openspec.yaml,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/stabilize-miomedia-web-android-playback/design.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/stabilize-miomedia-web-android-playback/proposal.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/stabilize-miomedia-web-android-playback/specs/miomedia-playback-recovery/spec.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/stabilize-miomedia-web-android-playback/tasks.md,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/unified-content-skeletons/.openspec.yaml,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/unified-content-skeletons/design.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/unified-content-skeletons/proposal.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/unified-content-skeletons/specs/content-skeletons/spec.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+openspec/changes/unified-content-skeletons/tasks.md,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+pubspec.yaml,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+README.md,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/content_skeleton_test.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/embedded_runtime_test.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/interface_navigation_test.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/miomedia_category_test.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/miomedia_content_test.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/miomedia_display_test.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/miomedia_home_failure_test.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/miomedia_playback_coordinator_test.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/miomedia_player_style_test.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/miomedia_playing_mark_test.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/miomedia_rank_test.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/modern_home_controller_test.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/modern_home_view_test.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/modern_settings_foundation_test.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/modern_ui_motion_test.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/playra_release_test.dart,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+test/source_runtime_test.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/anime_live_audit.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/build-android.ps1,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/miomedia_runtime_integration.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/miomedia_sdk_input.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_api.dart,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/adapters.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/android_bridge.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/endpoint_inventory.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/example-rule.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/integration_fixture.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/miomedia_adapter.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/miomedia_content_check.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/miomedia_full_audit.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/miomedia_identity.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/miomedia_live_check.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/miomedia_playback_check.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/miomedia_rank_check.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/miomedia_sdk_benchmark.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/server.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/test_android_bridge.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/test_hot_rank.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/test_miomedia.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/test_miomedia_content.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/test_sdk_http.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/test_server.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/vendor/__init__.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime/vendor/sdk-manifest.json,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/source_runtime_integration.dart,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/start-home-preview.ps1,页面与交互体验,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/start-web.ps1,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/test_miomedia_sdk_input.py,内容接入与播放运行时,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/web_backend/package-lock.json,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/web_backend/package.json,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/web_backend/runtime.cjs,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/web_backend/runtime.test.cjs,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+tool/web_backend/server.cjs,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+web/index.html,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+web/manifest.json,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+windows/CMakeLists.txt,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+windows/runner/flutter_window.cpp,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+windows/runner/main.cpp,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/
+windows/runner/Runner.rc,Playra 品牌与发布配置,git revert <对应提交>；原始文件备份位于忽略目录 .dart_tool/release-branding-20261013/

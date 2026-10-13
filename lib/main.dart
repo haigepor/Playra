@@ -50,6 +50,12 @@ void main() async {
     await Hive.initFlutter(hivePath);
     await initializePlatformFiles();
     await GStorage.init();
+    if (Platform.isAndroid &&
+        !GStorage.getSetting(SettingsKeys.androidModernDefaultApplied)) {
+      // 覆盖安装也默认进入新版；先保存页面选择，成功后再记录迁移完成。
+      await GStorage.putSetting(SettingsKeys.androidUiStyle, 'modern');
+      await GStorage.putSetting(SettingsKeys.androidModernDefaultApplied, true);
+    }
   } catch (e) {
     debugPrint('Storage initialization failed: $e');
 
@@ -98,7 +104,7 @@ void main() async {
           ? TitleBarStyle.hidden
           : TitleBarStyle.normal,
       windowButtonVisibility: showWindowButton,
-      title: 'Kazumi',
+      title: 'Playra',
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       // window_manager controls desktop visibility to avoid startup flicker.

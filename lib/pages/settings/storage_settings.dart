@@ -1,3 +1,4 @@
+import 'package:kazumi/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -7,7 +8,11 @@ import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:kazumi/services/storage/image_cache_service.dart';
 
 class StorageSettingsPage extends StatefulWidget {
-  const StorageSettingsPage({super.key});
+  const StorageSettingsPage({
+    super.key,
+    this.showDeveloperTools = AppBuildPolicy.developerTools,
+  });
+  final bool showDeveloperTools;
 
   @override
   State<StorageSettingsPage> createState() => _StorageSettingsPageState();
@@ -67,48 +72,49 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
 
   @override
   Widget build(BuildContext context) => SettingsDetailScaffold(
-        title: const Text('存储与日志'),
-        body: FutureBuilder<int>(
-          future: _cacheSize,
-          builder: (context, snapshot) => SettingsList(
-            sections: [
-              SettingsSection(
-                title: const Text('缓存'),
-                tiles: [
-                  SettingsTile(
-                    leading: Icons.image_outlined,
-                    title: const Text('清除图片缓存'),
-                    description: Text(_cacheDescription(snapshot)),
-                    enabled: snapshot.connectionState == ConnectionState.done &&
-                        !_clearing,
-                    onPressed: (_) => _confirmClear(),
-                    trailing:
-                        snapshot.connectionState == ConnectionState.done &&
-                                snapshot.hasError &&
-                                !_clearing
-                            ? IconButton(
-                                tooltip: '重新统计',
-                                onPressed: _refreshSize,
-                                icon: const Icon(Icons.refresh_rounded),
-                              )
-                            : const Icon(Icons.cleaning_services_rounded),
-                  ),
-                ],
-              ),
-              SettingsSection(
-                title: const Text('诊断'),
-                tiles: [
-                  SettingsTile(
-                    leading: Icons.receipt_long_rounded,
-                    title: const Text('错误日志'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onPressed: (_) =>
-                        context.pushNamed('/settings/storage/logs'),
-                  ),
-                ],
+    title: const Text('存储管理'),
+    body: FutureBuilder<int>(
+      future: _cacheSize,
+      builder: (context, snapshot) => SettingsList(
+        sections: [
+          SettingsSection(
+            title: const Text('缓存'),
+            tiles: [
+              SettingsTile(
+                leading: Icons.image_outlined,
+                title: const Text('清除图片缓存'),
+                description: Text(_cacheDescription(snapshot)),
+                enabled:
+                    snapshot.connectionState == ConnectionState.done &&
+                    !_clearing,
+                onPressed: (_) => _confirmClear(),
+                trailing:
+                    snapshot.connectionState == ConnectionState.done &&
+                        snapshot.hasError &&
+                        !_clearing
+                    ? IconButton(
+                        tooltip: '重新统计',
+                        onPressed: _refreshSize,
+                        icon: const Icon(Icons.refresh_rounded),
+                      )
+                    : const Icon(Icons.cleaning_services_rounded),
               ),
             ],
           ),
-        ),
-      );
+          if (widget.showDeveloperTools)
+            SettingsSection(
+              title: const Text('诊断'),
+              tiles: [
+                SettingsTile(
+                  leading: Icons.receipt_long_rounded,
+                  title: const Text('错误日志'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onPressed: (_) => context.pushNamed('/settings/storage/logs'),
+                ),
+              ],
+            ),
+        ],
+      ),
+    ),
+  );
 }

@@ -58,3 +58,12 @@ android/build/reports/problems/
 **/macos/Pods/
 **/ios/Podfile.lock
 **/macos/Podfile.lock
+.vscode/private-folder-alias.json
+
+# Private SDK input includes configuration and sensitive self-test vectors.
+/tool/source_runtime/vendor/miomedia/
+.env
+.env.*
+!.env.example
+**/*device-state*.json
+**/*device-identity*.json

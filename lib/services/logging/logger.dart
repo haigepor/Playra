@@ -1,3 +1,4 @@
+import 'package:kazumi/app_brand.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:kazumi/services/platform/platform_io.dart';
@@ -112,8 +113,10 @@ class KazumiLogOutput extends LogOutput {
 
   @override
   void output(OutputEvent event) {
-    for (var line in event.lines) {
-      print(line);
+    if (AppBuildPolicy.developerTools) {
+      for (var line in event.lines) {
+        print(line);
+      }
     }
 
     // Write to file if: warning/error/fatal OR forceLog is enabled

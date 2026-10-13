@@ -110,14 +110,14 @@ const List<_SettingsGroup> _settingsGroups = [
         path: '/settings/update',
       ),
       _SettingsCategory(
-        label: '存储与日志',
-        description: '图片缓存与错误日志',
+        label: '存储管理',
+        description: '图片缓存与空间管理',
         icon: Icons.storage_rounded,
         path: '/settings/storage',
       ),
       _SettingsCategory(
         label: '关于',
-        description: '版本与开源信息',
+        description: '版本、帮助与隐私说明',
         icon: Icons.info_outline_rounded,
         path: '/settings/about',
       ),
