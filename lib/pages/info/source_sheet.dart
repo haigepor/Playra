@@ -259,11 +259,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
     initialKeyword: _keywordFor(pluginName),
     sourceName: pluginName,
     onSubmit: (keyword) {
-      final item = widget.infoController.bangumiItem;
-      if (!item.alias.contains(keyword)) {
-        item.alias.add(keyword);
-        _collectController.updateLocalCollect(item);
-      }
+      // 自定义检索词不是作品别名，不能污染后续自动匹配的证据。
       _querySource(keyword, pluginName);
     },
   );
@@ -342,7 +338,20 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
                             ),
                           );
               }),
-        onAutomatic: firstResultSource == null ? null : _selectAutomatic,
+        onAutomatic:
+            SourceCandidates.shared
+                .cached(
+                  widget.infoController.bangumiItem,
+                  _pluginsController.pluginList,
+                )
+                .any(
+                  (c) =>
+                      c.matched &&
+                      (widget.episodeNumber == null ||
+                          c.matchEpisode(widget.episodeNumber!) != null),
+                )
+            ? _selectAutomatic
+            : null,
         onRefresh: _refreshAll,
         onSearchAll: () => _showCustomKeywordDialog(
           context: context,

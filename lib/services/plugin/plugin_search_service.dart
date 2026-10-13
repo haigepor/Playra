@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:kazumi/modules/search/plugin_search_module.dart';
 import 'package:kazumi/pages/info/info_controller.dart';
 import 'package:kazumi/plugins/plugins.dart';
@@ -6,6 +7,7 @@ import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart';
 import 'package:kazumi/utils/async_session.dart';
 import 'package:kazumi/services/source/source_candidates.dart';
+import 'package:kazumi/services/source/source_models.dart';
 
 class PluginSearchService {
   PluginSearchService({
@@ -23,6 +25,8 @@ class PluginSearchService {
   final AsyncSessionOwner _batchSessions = AsyncSessionOwner();
   final Map<String, RuleCancelToken> _queryTokens = {};
   bool _isCancelled = false;
+  final _directoryTails = [Future<void>.value(), Future<void>.value()];
+  int _directorySequence = 0;
 
   Future<void> querySource(String keyword, String pluginName) async {
     for (final plugin in pluginsController.pluginList) {
@@ -54,7 +58,8 @@ class PluginSearchService {
       final token = _beginQuery(pluginName);
       infoController.pluginSearchStatus[pluginName] =
           PluginSearchStatus.pending;
-      _publishPrepared(plugin, result, session, cancelToken: token);
+      _publishSearch(plugin, result);
+      _queuePreparation(plugin, result, session, token);
       return true;
     }
     return false;
@@ -121,21 +126,76 @@ class PluginSearchService {
         cancelToken: token,
       );
       if (_isCancelled || session.isStale) return;
-      await _publishPrepared(
+      final allowUnmatched =
+          keyword !=
+          (infoController.bangumiItem.nameCn.isEmpty
+              ? infoController.bangumiItem.name
+              : infoController.bangumiItem.nameCn);
+      final unique = <String, SearchItem>{};
+      for (final item in result.data) {
+        if (allowUnmatched ||
+            SourceCandidates.shared.matches(
+              infoController.bangumiItem,
+              item.name,
+            )) {
+          unique[item.src] = item;
+        }
+      }
+      final visible = PluginSearchResponse(
+        pluginName: plugin.name,
+        data: unique.values.toList(),
+      );
+      _publishSearch(plugin, visible);
+      _queuePreparation(
         plugin,
-        result,
+        visible,
         session,
-        cancelToken: token,
-        allowUnmatched:
-            keyword !=
-            (infoController.bangumiItem.nameCn.isEmpty
-                ? infoController.bangumiItem.name
-                : infoController.bangumiItem.nameCn),
+        token,
+        allowUnmatched: allowUnmatched,
       );
     } catch (error) {
       if (_isCancelled || session.isStale) return;
       _handleSearchError(plugin, error);
     }
+  }
+
+  void _publishSearch(Plugin plugin, PluginSearchResponse result) {
+    infoController.pluginSearchResponseList.removeWhere(
+      (r) => r.pluginName == plugin.name,
+    );
+    infoController.pluginSearchStatus[plugin.name] = result.data.isEmpty
+        ? PluginSearchStatus.noResult
+        : PluginSearchStatus.success;
+    infoController.pluginSearchResponseList.add(result);
+    if (result.data.isNotEmpty) {
+      pluginsController.validityTracker.markSearchValid(plugin.name);
+    }
+  }
+
+  /// 搜索槽位只等待命中；目录有独立的两路队列，旧会话排队任务直接跳过。
+  void _queuePreparation(
+    Plugin plugin,
+    PluginSearchResponse result,
+    AsyncSession session,
+    RuleCancelToken token, {
+    bool allowUnmatched = false,
+  }) {
+    final slot = _directorySequence++ % _directoryTails.length;
+    _directoryTails[slot] = _directoryTails[slot].then((_) async {
+      if (_isCancelled ||
+          session.isStale ||
+          token.isCancelled ||
+          result.data.isEmpty) {
+        return;
+      }
+      await _publishPrepared(
+        plugin,
+        result,
+        session,
+        cancelToken: token,
+        allowUnmatched: allowUnmatched,
+      );
+    });
   }
 
   Future<void> _publishPrepared(
@@ -146,29 +206,26 @@ class PluginSearchService {
     bool allowUnmatched = false,
   }) async {
     try {
-      final candidates = await SourceCandidates.shared.prepare(
-        infoController.bangumiItem,
-        plugin,
-        result.data,
-        cancelToken: cancelToken,
-        allowUnmatched: allowUnmatched,
-      );
-      if (_isCancelled || session.isStale) return;
-      infoController.pluginSearchResponseList.removeWhere(
-        (r) => r.pluginName == plugin.name,
-      );
-      infoController.pluginSearchStatus[plugin.name] = candidates.isEmpty
-          ? PluginSearchStatus.noResult
-          : PluginSearchStatus.success;
-      if (candidates.isNotEmpty) {
-        pluginsController.validityTracker.markSearchValid(plugin.name);
-      }
-      infoController.pluginSearchResponseList.add(
-        PluginSearchResponse(
-          pluginName: plugin.name,
-          data: candidates.map((c) => c.item).toList(),
+      await Future.any([
+        SourceCandidates.shared.prepare(
+          infoController.bangumiItem,
+          plugin,
+          result.data,
+          cancelToken: cancelToken,
+          allowUnmatched: allowUnmatched,
+          onPrepared: (_) {
+            if (!_isCancelled && session.isActive && !cancelToken.isCancelled) {
+              // 原位刷新使自动选源按钮观察到逐个准备好的候选，不等整家目录完成。
+              _publishSearch(plugin, result);
+            }
+          },
         ),
-      );
+        cancelToken.whenCancel.then(
+          (_) => throw const SourceException('CANCELLED', '目录验证已取消'),
+        ),
+      ]);
+      if (_isCancelled || session.isStale) return;
+      _publishSearch(plugin, result);
     } catch (error) {
       if (!_isCancelled && session.isActive) _handleSearchError(plugin, error);
     }
