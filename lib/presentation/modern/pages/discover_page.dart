@@ -18,7 +18,7 @@ import '../home/home_catalog.dart';
 import '../home/modern_home_view.dart';
 import '../home/home_theme.dart';
 import '../miomedia/miomedia_home_controller.dart';
-import '../miomedia/miomedia_browse.dart';
+import 'package:kazumi/services/source/content_search.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 
 /// 路由适配层：新版视图不直接读取全局容器或启动独立业务仓库。
@@ -56,40 +56,16 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
   }
 
   void _search(BuildContext pageContext) {
-    showModalBottomSheet<void>(
-      context: pageContext,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.auto_awesome_outlined),
-              title: const Text('动漫搜索'),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                context.pushNamed('/search/');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.movie_outlined),
-              title: const Text('影视搜索'),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => MioBrowsePage(
-                      service: mediaService,
-                      onDetails: (item) =>
-                          context.pushNamed('/info/', arguments: item),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+    context.pushNamed(
+      '/search/',
+      arguments: switch (controller.feed) {
+        HomeFeed.screen ||
+        HomeFeed.movies ||
+        HomeFeed.variety => ContentGroup.screen,
+        HomeFeed.television => ContentGroup.series,
+        HomeFeed.comicDrama => ContentGroup.comicDrama,
+        _ => controller.feed.isAnimeCategory ? ContentGroup.anime : null,
+      },
     );
   }
 

@@ -35,6 +35,34 @@ ContentHit hit(
 );
 
 void main() {
+  test(
+    'region matching keeps coproductions without treating substrings as country codes',
+    () {
+      expect(contentRegions('中国/美国'), {'CN', 'US'});
+      expect(contentRegions('RUSSIA'), isEmpty);
+      expect(contentRegions('JP'), {'JP'});
+    },
+  );
+  test(
+    'the whole batch budget releases hung providers and keeps an explicit timeout',
+    () async {
+      final session = ContentSearchSession(
+        [
+          FixtureProvider('hang', {
+            ContentGroup.anime,
+          }, (_, _) => Completer<ContentSearchPage>().future),
+        ],
+        timeout: const Duration(seconds: 10),
+        batchTimeout: const Duration(milliseconds: 25),
+      );
+      addTearDown(session.dispose);
+      await session
+          .submit(const ContentQuery('作品'))
+          .timeout(const Duration(seconds: 2));
+      expect(session.searching, isFalse);
+      expect(session.errors['hang'], 'TIMEOUT');
+    },
+  );
   test('four groups separate series, animated films and short dramas', () {
     expect(ContentGroup.values.map((e) => e.label), ['动漫', '影视', '漫剧', '剧集']);
     expect(ContentGroup.fromKind('anime'), ContentGroup.anime);
@@ -182,8 +210,9 @@ void main() {
       expect(maximum, 2);
       releases[0].completeError(StateError('failure'));
       releases[1].complete(ContentSearchPage([hit('1', '1')], hasMore: false));
-      for (var i = 2; i < 5; i++)
+      for (var i = 2; i < 5; i++) {
         releases[i].complete(ContentSearchPage([], hasMore: false));
+      }
       await pending;
       expect(session.works, hasLength(1));
       expect(session.failures, 1);

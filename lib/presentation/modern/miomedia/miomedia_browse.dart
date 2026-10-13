@@ -29,7 +29,11 @@ class MioHomeSections extends StatelessWidget {
       HomeFeed.comicDrama => MioKind.comicDrama,
       _ => null,
     };
-    final kinds = selected == null ? MioHomeController.kinds : [selected];
+    final kinds = feed == HomeFeed.screen
+        ? [MioKind.movie, MioKind.variety]
+        : selected == null
+        ? MioHomeController.kinds
+        : [selected];
     return Column(
       children: [
         for (final kind in kinds)
@@ -482,7 +486,6 @@ class _MioBrowsePageState extends State<MioBrowsePage> {
         if (!reset)
           for (final v in items) v.identity: v,
       };
-      final before = unique.length;
       for (final v in result.items) {
         if (widget.kind == null || v.kind == widget.kind) {
           unique[v.identity] = v;
@@ -493,7 +496,8 @@ class _MioBrowsePageState extends State<MioBrowsePage> {
           ..clear()
           ..addAll(unique.values);
         _page = page;
-        _more = result.hasMore && (unique.length > before || reset);
+        // 重复页不是上游结束；继续以来源分页信号判断，保留后续新作品。
+        _more = result.hasMore;
       });
     } catch (_) {
       if (mounted && !cancel.isCancelled && generation == _generation) {

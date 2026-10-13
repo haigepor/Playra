@@ -15,11 +15,11 @@ List<ContentSearchProvider> contentProviders(
   MioMediaService? mio,
   bool includeMetadata = true,
 }) => [
+  if (includeMetadata) BangumiContentProvider(),
+  MioContentProvider(mio ?? MioMediaService()),
   for (final rule in rules)
     if (rule.enabled && RuleContentProvider(rule).groups.isNotEmpty)
       RuleContentProvider(rule),
-  MioContentProvider(mio ?? MioMediaService()),
-  if (includeMetadata) BangumiContentProvider(),
 ];
 
 class RuleContentProvider extends ContentSearchProvider {
@@ -30,16 +30,22 @@ class RuleContentProvider extends ContentSearchProvider {
   @override
   String get name => plugin.name;
   @override
+  String get origin {
+    final uri = Uri.tryParse(plugin.baseUrl);
+    return uri != null &&
+            ['http', 'https'].contains(uri.scheme) &&
+            uri.host.isNotEmpty
+        ? uri.origin
+        : id;
+  }
+
+  @override
   bool get canPlay => true;
   @override
   Set<ContentGroup> get groups {
-    final declared = plugin.sourceConfig['contentGroups'];
-    if (declared is List)
-      return ContentGroup.values
-          .where((g) => declared.contains(g.name))
-          .toSet();
-    final group = ContentGroup.fromKind(plugin.type);
-    return group == null ? {} : {group};
+    return ContentGroup.values
+        .where((g) => plugin.profile.contentGroups.contains(g.name))
+        .toSet();
   }
 
   @override
@@ -159,8 +165,9 @@ class MioContentProvider extends ContentSearchProvider {
     for (final video in result.items) {
       final group = ContentGroup.fromKind(video.kind.name);
       if (group == ContentGroup.anime ||
-          query.group != null && query.group != group)
+          query.group != null && query.group != group) {
         continue;
+      }
       items.add(
         ContentHit(
           providerId: id,
@@ -206,18 +213,21 @@ class MioContentProvider extends ContentSearchProvider {
     CancelToken cancel,
   ) async {
     final number = episode.number;
-    if (number == null)
+    if (number == null) {
       throw const SourceException('INVALID_REFERENCE', '缺少来源剧集编号');
+    }
     final data = await service.play(
       hit.contentId,
       line.id,
       number,
       cancel: cancel,
     );
-    if (data['status'] == 'ad_required')
+    if (data['status'] == 'ad_required') {
       throw const SourceException('AD_REQUIRED', '来源要求广告验证，请重试或选择其他来源');
-    if (data['status'] != 'ready')
+    }
+    if (data['status'] != 'ready') {
       throw const SourceException('PLAYBACK_UNAVAILABLE', '来源暂未提供播放材料');
+    }
     final selected = data['selection'], media = data['media'];
     if (selected is! Map ||
         selected['videoId'] != hit.contentId ||
@@ -268,8 +278,9 @@ class BangumiContentProvider extends ContentSearchProvider {
       offset: (page - 1) * 20,
     );
     if (cancel.isCancelled) throw const SourceException('CANCELLED', '搜索已取消');
-    if (result == null)
+    if (result == null) {
       throw const SourceException('SOURCE_ERROR', 'Bangumi 资料查询失败');
+    }
     return ContentSearchPage([
       for (final item in result.items)
         ContentHit(

@@ -24,12 +24,13 @@ void main() {
           ContentGroup.comicDrama,
         ]),
       );
-      expect(
-        contentProviders([
-          Plugin.fromJson({'name': '关闭', 'type': 'unknown'}),
-        ], includeMetadata: false).length,
-        1,
-      );
+      final registered = contentProviders([
+        Plugin.fromJson({'name': '关闭', 'type': 'unknown'}),
+      ], includeMetadata: false);
+      expect(registered.length, 1);
+      for (final p in registered) {
+        p.dispose();
+      }
       sdk.dispose();
     },
   );

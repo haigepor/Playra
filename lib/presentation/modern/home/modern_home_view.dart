@@ -433,7 +433,9 @@ class ModernHomeView extends StatelessWidget {
                                         const SizedBox(height: 24),
                                       if (media != null &&
                                           onMediaDetails != null &&
-                                          controller.feed.isGeneralCategory)
+                                          (controller.feed.isGeneralCategory ||
+                                              controller.feed ==
+                                                  HomeFeed.screen))
                                         MioHomeSections(
                                           controller: media!,
                                           feed: controller.feed,
@@ -480,11 +482,19 @@ class _FeedSelectorState extends State<_FeedSelector>
   static const categories = HomeFeed.primaryCategories;
   late final TabController _tabs;
 
-  int get selectedIndex => categories.indexOf(
-    widget.controller.feed.isAnimeCategory
-        ? HomeFeed.anime
-        : widget.controller.feed,
-  );
+  int get selectedIndex {
+    final index = categories.indexOf(
+      widget.controller.feed.isAnimeCategory
+          ? HomeFeed.anime
+          : const [
+              HomeFeed.movies,
+              HomeFeed.variety,
+            ].contains(widget.controller.feed)
+          ? HomeFeed.screen
+          : widget.controller.feed,
+    );
+    return index < 0 ? 0 : index;
+  }
 
   @override
   void initState() {
@@ -581,6 +591,8 @@ class _AnimeFilters extends StatefulWidget {
 class _AnimeFiltersState extends State<_AnimeFilters> {
   static const _feeds = [
     HomeFeed.anime,
+    HomeFeed.recommended,
+    HomeFeed.popular,
     HomeFeed.season,
     HomeFeed.japanese,
     HomeFeed.chinese,

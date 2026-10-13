@@ -23,9 +23,31 @@ enum ContentGroup {
 }
 
 class ContentQuery {
-  const ContentQuery(this.keyword, {this.group});
+  const ContentQuery(this.keyword, {this.group, this.region = ''});
   final String keyword;
   final ContentGroup? group;
+  final String region;
+}
+
+Set<String> contentRegions(String value) {
+  final text = value.toUpperCase();
+  final tokens = text.split(RegExp(r'[/,，;；\s]+')).toSet();
+  final result = <String>{};
+  for (final entry in const {
+    'CN': ['CN', '中国', '大陆', '内地', '国产'],
+    'HK': ['HK', '香港'],
+    'TW': ['TW', '台湾'],
+    'JP': ['JP', '日本'],
+    'KR': ['KR', '韩国'],
+    'US': ['US', '美国'],
+    'GB': ['GB', '英国'],
+    'TH': ['TH', '泰国'],
+  }.entries) {
+    if (tokens.contains(entry.key) || entry.value.skip(1).any(text.contains)) {
+      result.add(entry.key);
+    }
+  }
+  return result;
 }
 
 class ContentHit {
@@ -69,6 +91,7 @@ class ContentLine {
 
 abstract class ContentSearchProvider {
   String get id;
+  String get origin => id;
   String get name;
   Set<ContentGroup> get groups;
   bool get canPlay => false;
@@ -121,8 +144,9 @@ ContentMatch matchContent(ContentHit a, ContentHit b) {
     a.title,
     ...a.aliases,
   ].map(contentTitleKey).where((v) => v.isNotEmpty).toSet();
-  if (![b.title, ...b.aliases].map(contentTitleKey).any(names.contains))
+  if (![b.title, ...b.aliases].map(contentTitleKey).any(names.contains)) {
     return ContentMatch.conflict;
+  }
   return a.group != null &&
           a.group == b.group &&
           a.year != null &&
@@ -159,8 +183,16 @@ class ContentSearchSession extends ChangeNotifier {
     Iterable<ContentSearchProvider> providers, {
     this.concurrency = 4,
     this.timeout = const Duration(seconds: 20),
+    this.batchTimeout = const Duration(seconds: 35),
+    this.perOriginConcurrency = 2,
+    this.ownsProviders = true,
   }) : providers = List.unmodifiable(providers) {
-    if (concurrency < 1 || concurrency > 8 || timeout <= Duration.zero) {
+    if (concurrency < 1 ||
+        concurrency > 8 ||
+        timeout <= Duration.zero ||
+        batchTimeout <= Duration.zero ||
+        perOriginConcurrency < 1 ||
+        perOriginConcurrency > 8) {
       throw ArgumentError('Invalid search budget');
     }
     if (this.providers.map((p) => p.id).toSet().length !=
@@ -171,6 +203,9 @@ class ContentSearchSession extends ChangeNotifier {
   final List<ContentSearchProvider> providers;
   final int concurrency;
   final Duration timeout;
+  final Duration batchTimeout;
+  final int perOriginConcurrency;
+  final bool ownsProviders;
   final _works = <ContentWork>[];
   final statuses = <String, ContentProviderStatus>{};
   final errors = <String, String>{};
@@ -210,7 +245,11 @@ class ContentSearchSession extends ChangeNotifier {
     errors.clear();
     _pages.clear();
     _more.clear();
-    _query = ContentQuery(query.keyword.trim(), group: query.group);
+    _query = ContentQuery(
+      query.keyword.trim(),
+      group: query.group,
+      region: query.region,
+    );
     if (_query!.keyword.isEmpty || _query!.keyword.length > 300) {
       searching = false;
       notifyListeners();
@@ -219,7 +258,9 @@ class ContentSearchSession extends ChangeNotifier {
     final selected = providers
         .where((p) => query.group == null || p.groups.contains(query.group))
         .toList();
-    for (final p in selected) statuses[p.id] = ContentProviderStatus.queued;
+    for (final p in selected) {
+      statuses[p.id] = ContentProviderStatus.queued;
+    }
     await _fetch(selected, generation);
   }
 
@@ -235,8 +276,9 @@ class ContentSearchSession extends ChangeNotifier {
     if (_disposed ||
         searching ||
         _query == null ||
-        !statuses.containsKey(providerId))
+        !statuses.containsKey(providerId)) {
       return;
+    }
     await _fetch([provider(providerId)], _generation);
   }
 
@@ -244,15 +286,39 @@ class ContentSearchSession extends ChangeNotifier {
     List<ContentSearchProvider> selected,
     int generation,
   ) async {
+    if (_cancel.isCancelled) _cancel = CancelToken();
     final root = _cancel;
     bool current() =>
         !_disposed && generation == _generation && !root.isCancelled;
     searching = selected.isNotEmpty;
     notifyListeners();
-    var next = 0;
+    final queue = List<ContentSearchProvider>.of(selected);
+    final activeOrigins = <String, int>{};
+    var released = Completer<void>();
+    final deadline = Timer(batchTimeout, () {
+      if (!current()) return;
+      for (final p in selected) {
+        if (statuses[p.id] == ContentProviderStatus.queued ||
+            statuses[p.id] == ContentProviderStatus.searching) {
+          statuses[p.id] = ContentProviderStatus.failed;
+          errors[p.id] = 'TIMEOUT';
+        }
+      }
+      root.cancel('batch deadline');
+      searching = false;
+      notifyListeners();
+    });
     Future<void> worker() async {
-      while (current() && next < selected.length) {
-        final p = selected[next++];
+      while (current() && queue.isNotEmpty) {
+        final index = queue.indexWhere(
+          (p) => (activeOrigins[p.origin] ?? 0) < perOriginConcurrency,
+        );
+        if (index < 0) {
+          await Future.any([released.future, root.whenCancel]);
+          continue;
+        }
+        final p = queue.removeAt(index);
+        activeOrigins[p.origin] = (activeOrigins[p.origin] ?? 0) + 1;
         final active = CancelToken();
         unawaited(root.whenCancel.then((_) => active.cancel('session ended')));
         final page = (_pages[p.id] ?? 0) + 1;
@@ -279,8 +345,11 @@ class ContentSearchSession extends ChangeNotifier {
             if (hit.providerId != p.id ||
                 hit.contentId.isEmpty ||
                 hit.title.trim().isEmpty ||
-                _query!.group != null && hit.group != _query!.group)
+                _query!.group != null && hit.group != _query!.group ||
+                _query!.region.isNotEmpty &&
+                    !contentRegions(hit.region).contains(_query!.region)) {
               continue;
+            }
             _upsert(hit);
           }
           _pages[p.id] = page;
@@ -295,6 +364,10 @@ class ContentSearchSession extends ChangeNotifier {
           statuses[p.id] = code == 'CHALLENGE_REQUIRED'
               ? ContentProviderStatus.verificationRequired
               : ContentProviderStatus.failed;
+        } finally {
+          activeOrigins[p.origin] = (activeOrigins[p.origin] ?? 1) - 1;
+          if (!released.isCompleted) released.complete();
+          released = Completer<void>();
         }
         if (current()) notifyListeners();
       }
@@ -303,6 +376,7 @@ class ContentSearchSession extends ChangeNotifier {
     await Future.wait(
       List.generate(selected.length.clamp(0, concurrency), (_) => worker()),
     );
+    deadline.cancel();
     if (current()) {
       searching = false;
       notifyListeners();
@@ -330,7 +404,11 @@ class ContentSearchSession extends ChangeNotifier {
     _disposed = true;
     _generation++;
     _cancel.cancel('disposed');
-    for (final p in providers) p.dispose();
+    if (ownsProviders) {
+      for (final p in providers) {
+        p.dispose();
+      }
+    }
     super.dispose();
   }
 }

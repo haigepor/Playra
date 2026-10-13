@@ -1,7 +1,12 @@
 /// 来源技术类型与内容领域分开，缺失声明不默认归为动漫。
 class SourceProfile {
-  const SourceProfile({required this.domains, this.adapterKind = 'rule'});
+  const SourceProfile({
+    required this.domains,
+    this.adapterKind = 'rule',
+    this.contentGroups = const [],
+  });
   final List<String> domains;
+  final List<String> contentGroups;
   final String adapterKind;
 
   factory SourceProfile.fromJson(Map<String, dynamic> rule) {
@@ -27,6 +32,21 @@ class SourceProfile {
         : <String>[];
     return SourceProfile(
       domains: domains,
+      contentGroups: options['contentGroups'] is List
+          ? (options['contentGroups'] as List)
+                .whereType<String>()
+                .where(
+                  const ['anime', 'screen', 'comicDrama', 'series'].contains,
+                )
+                .toSet()
+                .toList()
+          : switch (type) {
+              'anime' => ['anime'],
+              'movie' || 'variety' || 'documentary' => ['screen'],
+              'tv' || 'series' || 'shortDrama' => ['series'],
+              'comicDrama' => ['comicDrama'],
+              _ => [],
+            },
       adapterKind: options['resolveApi'] is Map ? 'http' : 'rule',
     );
   }
@@ -38,5 +58,6 @@ class SourceProfile {
   Map<String, dynamic> toJson() => {
     'domains': domains,
     'adapterKind': adapterKind,
+    'contentGroups': contentGroups,
   };
 }

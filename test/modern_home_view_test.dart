@@ -165,7 +165,7 @@ void main() {
     },
   );
   testWidgets(
-    'primary tabs match library and scroll without changing the feed',
+    'four content tabs preserve scrolling and anime subcategory selection',
     (tester) async {
       final controller = ModernHomeController(
         loadFeed: (feed, _) async =>
@@ -179,13 +179,20 @@ void main() {
       expect(find.byKey(const ValueKey('home-load-more')), findsNothing);
       final selector = find.byKey(const ValueKey('home-feed-selector'));
       final tabBar = tester.widget<TabBar>(selector);
+      expect(tabBar.tabs.length, 4);
+      for (final label in ['动漫', '影视', '漫剧', '剧集']) {
+        expect(
+          find.descendant(of: selector, matching: find.text(label)),
+          findsOneWidget,
+        );
+      }
       expect(tabBar.indicatorSize, TabBarIndicatorSize.label);
       final indicator = tabBar.indicator! as UnderlineTabIndicator;
       expect(indicator.borderSide.width, 3);
       expect(indicator.insets, const EdgeInsets.symmetric(horizontal: 8));
       final selectedLabel = tester.widget<Text>(
         find.descendant(
-          of: find.byKey(const ValueKey('home-feed-recommended')),
+          of: find.byKey(const ValueKey('home-feed-anime')),
           matching: find.byType(Text),
         ),
       );
@@ -198,7 +205,7 @@ void main() {
       expect(controller.feed, HomeFeed.comicDrama);
       controller.selectFeed(HomeFeed.season);
       await tester.pumpAndSettle();
-      expect(tabBar.controller!.index, 2);
+      expect(tabBar.controller!.index, 0);
       expect(
         find.byKey(const PageStorageKey('home-channel-main')),
         findsOneWidget,

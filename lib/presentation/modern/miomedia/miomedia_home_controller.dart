@@ -324,7 +324,6 @@ class MioHomeController extends ChangeNotifier {
       final previous = reset
           ? <String, MioVideo>{}
           : {for (final v in items[kind] ?? <MioVideo>[]) v.identity: v};
-      final before = previous.length;
       for (final v in result.items.where(
         (v) => v.kind == kind && v.categoryId == id,
       )) {
@@ -332,7 +331,7 @@ class MioHomeController extends ChangeNotifier {
       }
       items[kind] = previous.values.toList();
       pages[kind] = page;
-      if (result.hasMore && previous.length > before) {
+      if (result.hasMore) {
         more.add(kind);
       } else {
         more.remove(kind);

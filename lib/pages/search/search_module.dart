@@ -5,6 +5,8 @@ import 'package:kazumi/pages/search/search_controller.dart';
 import 'package:kazumi/pages/search/search_page.dart';
 import 'package:kazumi/presentation/interface_page_host.dart';
 import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
+import 'package:kazumi/presentation/modern/pages/content_search_screen.dart';
+import 'package:kazumi/services/source/content_search.dart';
 
 Widget _searchPage(BuildContext context, {String inputTag = ''}) =>
     InterfacePageHost(
@@ -31,6 +33,15 @@ final searchModule = createModule(
     c
       ..route(
         '/',
+        provide: _provideSearchController,
+        child: (context, state) => ContentSearchScreen(
+          initialGroup: state.arguments is ContentGroup
+              ? state.arguments as ContentGroup
+              : null,
+        ),
+      )
+      ..route(
+        '/metadata',
         provide: _provideSearchController,
         child: (context, state) => _searchPage(context),
       )
