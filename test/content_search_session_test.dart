@@ -41,6 +41,34 @@ void main() {
       expect(contentRegions('中国/美国'), {'CN', 'US'});
       expect(contentRegions('RUSSIA'), isEmpty);
       expect(contentRegions('JP'), {'JP'});
+      expect(contentRegions('JP US'), {'JP', 'US'});
+      expect(contentRegions('JP\tKR'), {'JP', 'KR'});
+    },
+  );
+  test(
+    'sparse same-name records stay independent until identity evidence is available',
+    () async {
+      final session = ContentSearchSession([
+        FixtureProvider(
+          'a',
+          {ContentGroup.anime},
+          (_, _) async =>
+              ContentSearchPage([hit('a', '1', year: null)], hasMore: false),
+        ),
+        FixtureProvider(
+          'b',
+          {ContentGroup.anime},
+          (_, _) async =>
+              ContentSearchPage([hit('b', '2', year: null)], hasMore: false),
+        ),
+      ]);
+      addTearDown(session.dispose);
+      await session.submit(const ContentQuery('作品'));
+      expect(session.works, hasLength(2));
+      expect(
+        matchContent(session.works.first.primary, session.works.last.primary),
+        ContentMatch.possible,
+      );
     },
   );
   test(

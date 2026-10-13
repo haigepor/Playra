@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/services/source/content_search.dart';
 import 'package:kazumi/presentation/modern/pages/content_search_screen.dart';
@@ -149,6 +150,16 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      for (final label in ['全部', '动漫', '影视', '漫剧', '剧集']) {
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.text(label),
+        );
+        expect(
+          paragraph.size.width + .5,
+          greaterThanOrEqualTo(paragraph.getMinIntrinsicWidth(double.infinity)),
+          reason: '$label must not be clipped in the 320px channel bar',
+        );
+      }
       await tester.tap(find.text('漫剧'));
       await tester.pumpAndSettle();
       expect(find.textContaining('来源尚未接入'), findsOneWidget);

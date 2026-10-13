@@ -25,13 +25,15 @@ class ContentSourceController extends ChangeNotifier {
   ContentSourceController(
     Iterable<ContentSearchProvider> providers, {
     this.concurrency = 2,
+    this.timeout = const Duration(seconds: 20),
   }) : _providers = {for (final p in providers) p.id: p} {
-    if (concurrency < 1 || concurrency > 4) {
+    if (concurrency < 1 || concurrency > 4 || timeout <= Duration.zero) {
       throw ArgumentError('Invalid directory concurrency');
     }
   }
   final Map<String, ContentSearchProvider> _providers;
   final int concurrency;
+  final Duration timeout;
   final _bindings = <String, ContentSourceBinding>{};
   final _queue = <ContentSourceBinding>[];
   final _lifetime = CancelToken();
@@ -76,7 +78,7 @@ class ContentSourceController extends ChangeNotifier {
           (_) => throw const SourceException('CANCELLED', '目录请求已取消'),
         ),
       ]).timeout(
-        const Duration(seconds: 20),
+        timeout,
         onTimeout: () {
           cancel.cancel('deadline');
           throw const SourceException('TIMEOUT', '目录请求超时');
@@ -157,7 +159,10 @@ class ContentSourceController extends ChangeNotifier {
         episodes = result;
       }
     } catch (error) {
-      if (!_disposed && !token.isCancelled) {
+      // 超时会取消底层请求，但仍须显示失败；仅主动取消或旧选择不写回。
+      if (!_disposed &&
+          identical(_selection, token) &&
+          !(error is SourceException && error.code == 'CANCELLED')) {
         episodeError = error is SourceException ? error.code : 'SOURCE_ERROR';
       }
     } finally {

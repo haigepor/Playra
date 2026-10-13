@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
 import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
@@ -21,6 +23,24 @@ List<ContentSearchProvider> contentProviders(
     if (rule.enabled && RuleContentProvider(rule).groups.isNotEmpty)
       RuleContentProvider(rule),
 ];
+
+/// 首次启动/开发预览尚未安装规则时只读内置规则，不覆盖禁用或自定义列表。
+Future<List<ContentSearchProvider>> loadContentProviders(
+  Iterable<Plugin> rules,
+) async {
+  final selected = rules.toList();
+  if (selected.isEmpty) {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    for (final path in manifest.listAssets().where(
+      (p) => p.startsWith('assets/plugins/') && p.endsWith('.json'),
+    )) {
+      selected.add(
+        Plugin.fromJson(jsonDecode(await rootBundle.loadString(path))),
+      );
+    }
+  }
+  return contentProviders(selected);
+}
 
 class RuleContentProvider extends ContentSearchProvider {
   RuleContentProvider(this.plugin);

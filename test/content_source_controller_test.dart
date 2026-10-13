@@ -26,7 +26,47 @@ class DirectoryProvider extends ContentSearchProvider {
       result.future;
 }
 
+class LazyDirectoryProvider extends DirectoryProvider {
+  LazyDirectoryProvider()
+    : super(
+        'lazy',
+        Completer<List<ContentLine>>()..complete(const [
+          ContentLine('first', '首线', [ContentEpisode('1', '第1集')]),
+          ContentLine('second', '次线', []),
+        ]),
+      );
+  @override
+  Future<List<ContentEpisode>> episodes(
+    ContentHit hit,
+    ContentLine line,
+    CancelToken c,
+  ) => Completer<List<ContentEpisode>>().future;
+}
+
 void main() {
+  test('lazy episode timeout remains an explicit retryable error', () async {
+    final controller = ContentSourceController([
+      LazyDirectoryProvider(),
+    ], timeout: const Duration(milliseconds: 20));
+    addTearDown(controller.dispose);
+    controller.add(
+      const ContentHit(
+        providerId: 'lazy',
+        contentId: '1',
+        title: '甲',
+        group: ContentGroup.anime,
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    final binding = controller.bindings.single;
+    expect(binding.status, ContentDirectoryStatus.ready);
+    await controller.select(binding, binding.lines.last);
+    expect(controller.episodeError, 'TIMEOUT');
+    expect(controller.loadingEpisodes, isFalse);
+    await controller.select(binding, binding.lines.first);
+    expect(controller.episodeError, isNull);
+    expect(controller.episodes.single.id, '1');
+  });
   test(
     'a fast directory becomes selectable without waiting for slow directories',
     () async {

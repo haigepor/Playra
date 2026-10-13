@@ -9,7 +9,8 @@ import 'package:kazumi/services/source/content_source_controller.dart';
 import 'package:kazumi/services/source/source_models.dart';
 import 'package:kazumi/services/player/source_media_player.dart';
 import 'package:kazumi/services/player/web_player_surface.dart';
-import '../home/home_theme.dart';
+import '../secondary/secondary_theme.dart';
+import '../settings/modern_back_button.dart';
 
 /// 使用来源引用直接播放；不伪造 BangumiItem、历史或账号身份。
 class ContentWorkPage extends StatefulWidget {
@@ -31,6 +32,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
   Future<void> _mediaTail = Future.value();
   bool busy = false, _closed = false, _metadataLoading = false;
   String? message;
+  final _confirmedCandidates = <String>{};
   @override
   void initState() {
     super.initState();
@@ -43,14 +45,41 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
     for (final hit in widget.work.hits) {
       sources.add(hit);
     }
-    for (final work in matchingSearch.works) {
+    for (final work in [...widget.session.works, ...matchingSearch.works]) {
       for (final hit in work.hits) {
-        if (widget.work.accepts(hit)) sources.add(hit);
+        if (widget.work.suggests(hit)) sources.add(hit);
       }
     }
   }
 
   Future<void> _select(ContentSourceBinding binding, ContentLine line) async {
+    if (_metadataLoading) return;
+    if (!widget.work.accepts(binding.hit) &&
+        !_confirmedCandidates.contains(binding.hit.key)) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('确认同名候选'),
+          content: Text(
+            '${binding.hit.title} · ${binding.hit.year ?? '年份未知'}\n'
+            '来源：${sources.provider(binding.hit).name}\n'
+            '目前证据不足以确认是同一作品，请核对目录后手动选择。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('确认选择'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || confirmed != true) return;
+      _confirmedCandidates.add(binding.hit.key);
+    }
     _play?.cancel('selection changed');
     setState(() {
       busy = false;
@@ -61,6 +90,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
   }
 
   Future<void> _playEpisode(ContentEpisode episode) async {
+    if (_metadataLoading) return;
     final binding = sources.selected, line = sources.selectedLine;
     if (binding == null || line == null) return;
     _play?.cancel('replaced');
@@ -138,6 +168,12 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
       final item = id == null ? null : await BangumiApi.getBangumiInfoByID(id);
       if (!mounted) return;
       if (item != null) {
+        // 页面仍保留在导航栈：阻止迟到解析起播，并暂停已安装的媒体。
+        _play?.cancel('open metadata');
+        await _mediaTail;
+        await media.player?.pause();
+        if (!mounted) return;
+        setState(() => busy = false);
         context.pushNamed('/info/', arguments: item);
       } else {
         setState(() => message = '资料暂时不可用，请重试');
@@ -159,10 +195,13 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
   }
 
   @override
-  Widget build(BuildContext context) => ModernHomeScope(
+  Widget build(BuildContext context) => ModernSecondaryScope(
     child: Builder(
       builder: (context) => Scaffold(
         appBar: AppBar(
+          leading: ModernBackButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
           title: Text(
             widget.work.title,
             maxLines: 1,
@@ -239,6 +278,13 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                     ),
                     for (final binding in sources.bindings)
                       Card(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
@@ -250,6 +296,10 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              if (!widget.work.accepts(binding.hit))
+                                Text(
+                                  '${binding.hit.title} · ${binding.hit.year ?? '年份未知'}',
+                                ),
                               Text(
                                 '${matchContent(widget.work.primary, binding.hit) == ContentMatch.possible ? '同名候选 · 手动选择' : '作品匹配'} · ${_status(binding)}',
                                 style: const TextStyle(fontSize: 12),
@@ -262,6 +312,25 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                                   children: [
                                     for (final line in binding.lines)
                                       ChoiceChip(
+                                        backgroundColor: Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerLow,
+                                        selectedColor: Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
+                                        side: BorderSide(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.outline,
+                                        ),
+                                        labelStyle: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                            ),
                                         label: Text(line.name),
                                         selected:
                                             identical(
@@ -317,7 +386,9 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                             ),
                         ],
                       ),
-                      if (!sources.loadingEpisodes && sources.episodes.isEmpty)
+                      if (!sources.loadingEpisodes &&
+                          sources.episodeError == null &&
+                          sources.episodes.isEmpty)
                         const Text('该线路暂未提供剧集'),
                     ],
                     for (final hit in widget.work.hits)

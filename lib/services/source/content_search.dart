@@ -127,7 +127,7 @@ String contentTitleKey(String value) => value
 
 enum ContentMatch { identity, title, possible, conflict }
 
-/// 同名可聚合展示，但证据稀疏的成员仍是候选，不能自动授予换源信任。
+/// 只有身份或片名、类型、年份证据充分才聚合，稀疏同名保留为候选。
 ContentMatch matchContent(ContentHit a, ContentHit b) {
   if (a.key == b.key) return ContentMatch.identity;
   if (a.group != null && b.group != null && a.group != b.group ||
@@ -165,7 +165,13 @@ class ContentWork {
   String get cover => _hits.values
       .map((h) => h.cover)
       .firstWhere((v) => v.isNotEmpty, orElse: () => '');
-  bool accepts(ContentHit hit) =>
+  bool accepts(ContentHit hit) => _hits.values.every(
+    (h) => switch (matchContent(h, hit)) {
+      ContentMatch.identity || ContentMatch.title => true,
+      _ => false,
+    },
+  );
+  bool suggests(ContentHit hit) =>
       _hits.values.every((h) => matchContent(h, hit) != ContentMatch.conflict);
 }
 
