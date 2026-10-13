@@ -11,6 +11,10 @@ python tool/miomedia_sdk_input.py check
 
 SDK 自检分别在模块目录运行 `python selftest.py`，在 vendor 父目录运行 `python -m miomedia.selftest`。播放模块应为 12/12。
 
+核心输入为原有 12 个文件，包括 `bf_tables.bin`。新版 `suite.py` 引用 `_native` 时，还必须包含原 SDK 的 `_native/__init__.py`，此时同步与导出共 13 个文件。同步工具会拒绝缺少这个桥的输入。`fast.dll` 等原生加速库可选；Web 服务和 Android 均可使用原 SDK 的纯 Python 回退，Android 打包不包含 Windows DLL。输入检查通过仅证明文件及语法有效，仍需运行上述两种自检。
+
+本机 D 盘开发环境、缓存位置与激活方式见 [Web/Android 开发环境](../development/web-android-environment.zh.md)。
+
 CI 使用 `python tool/miomedia_sdk_input.py export` 生成两份忽略的输入文件，分别存入仓库 Actions Secrets `MIOMEDIA_SDK_BUNDLE_1` 与 `MIOMEDIA_SDK_BUNDLE_2`，不提交文件、不粘贴内容到日志。使用两份是因为当前编码后约 61 KB，超过单份 Secret 48 KB 限制。[GitHub Secrets 文档](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
 
 发布构建工作流只接受 `playra/v*`，校验 tag 版本与 pubspec 一致。它产出 Android/Web 构建附件，不自动创建 GitHub Release。签名所需 Secrets：`PLAYRA_ANDROID_KEYSTORE`（Base64）、`PLAYRA_ANDROID_STORE_PASSWORD`、`PLAYRA_ANDROID_KEY_PASSWORD`、`PLAYRA_ANDROID_KEY_ALIAS`。缺少私有 SDK 或正式签名配置时 CI 明确失败。不得上传私有 SDK 输入附件。

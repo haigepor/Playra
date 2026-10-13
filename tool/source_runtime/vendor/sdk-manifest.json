@@ -1,9 +1,14 @@
 {
-  "sdkVersion": "playback-adtoken-ecsm-fast-20261012",
+  "sdkVersion": "original-with-optional-native-bridge-20261013",
   "files": [
     {
       "file": "__init__.py",
       "sha256": "27fed9d94d034daf905721ae11a41b5d6066063337f94291929b56ed1cceb81f",
+      "unchanged": true
+    },
+    {
+      "file": "_native/__init__.py",
+      "sha256": "15b75eb20f1be42c53b677c0389d0f60405a1d1586cf45173ba3a42d24463095",
       "unchanged": true
     },
     {
@@ -23,8 +28,8 @@
     },
     {
       "file": "config.py",
-      "sha256": "8aa2f040f799541699f8dde5589ca31e27c7381fea3a3e849ade43b2b03710a3",
-      "unchanged": false
+      "sha256": "f5f538eed35626205c1f57c1f5a67f5ca01dbd81e8493d26f5d64acd3c7da35a",
+      "unchanged": true
     },
     {
       "file": "device.py",
@@ -38,8 +43,8 @@
     },
     {
       "file": "profile.py",
-      "sha256": "810e09600fdff2b439a2f2178b5f7563ca249eb2c68b0078c9ca9a2ebf025610",
-      "unchanged": false
+      "sha256": "aead8f389ab1d0660dc89760a7b3bd4a40ccc0e1137fbbf40ae6dadc4396d1f3",
+      "unchanged": true
     },
     {
       "file": "selftest.py",
@@ -53,7 +58,7 @@
     },
     {
       "file": "suite.py",
-      "sha256": "6bbe14d21f19fb285c97ed192be5f2ee2b2b5fb581aed23354125a468d690333",
+      "sha256": "148f8ca338fc915410a1a668838dac788dc0d98f00782e6232557f24dd4c0fbd",
       "unchanged": true
     },
     {

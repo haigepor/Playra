@@ -1,5 +1,6 @@
 """Private SDK build input. Standard library only; never prints input contents."""
 import argparse
+import ast
 import base64
 import io
 import os
@@ -9,12 +10,13 @@ import zipfile
 FILES = frozenset(("__init__.py", "block.py", "client.py", "config.py",
                    "device.py", "playback.py", "profile.py", "selftest.py",
                    "signature.py", "suite.py", "transport.py", "bf_tables.bin"))
+OPTIONAL_FILES = frozenset(("_native/__init__.py",))
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / "tool/source_runtime/vendor/miomedia"
 
 
 def validate(files):
-    if set(files) != FILES:
+    if not FILES <= set(files) or set(files) - (FILES | OPTIONAL_FILES):
         raise ValueError("SDK input must contain all fixed modules and bf_tables.bin")
     if sum(map(len, files.values())) > 2_000_000:
         raise ValueError("SDK input is too large")
@@ -23,11 +25,19 @@ def validate(files):
     for name, data in files.items():
         if name.endswith(".py"):
             compile(data, name, "exec")
+    # 加速动态库可以缺省，suite 导入的 Python 桥本身必须随包提供。
+    tree = ast.parse(files["suite.py"], filename="suite.py")
+    uses_native = any(isinstance(node, (ast.Import, ast.ImportFrom)) and
+                      any(alias.name == "_native" for alias in node.names)
+                      for node in ast.walk(tree))
+    if uses_native and "_native/__init__.py" not in files:
+        raise ValueError("SDK optional accelerator bridge is missing")
     return files
 
 
 def read_directory(path):
-    return validate({name: (path / name).read_bytes() for name in FILES})
+    names = FILES | {name for name in OPTIONAL_FILES if (path / name).is_file()}
+    return validate({name: (path / name).read_bytes() for name in names})
 
 
 def decode_bundle(parts):
@@ -37,11 +47,13 @@ def decode_bundle(parts):
     with zipfile.ZipFile(io.BytesIO(raw)) as archive:
         infos = archive.infolist()
         expected = {"miomedia/" + name for name in FILES}
-        if len(infos) != len(expected) or {i.filename for i in infos} != expected:
+        allowed = expected | {"miomedia/" + name for name in OPTIONAL_FILES}
+        names = {i.filename for i in infos}
+        if len(infos) != len(names) or not expected <= names or names - allowed:
             raise ValueError("Unexpected SDK archive paths")
         if sum(i.file_size for i in infos) > 2_000_000:
             raise ValueError("SDK archive is too large")
-        return validate({name: archive.read("miomedia/" + name) for name in FILES})
+        return validate({name.removeprefix("miomedia/"): archive.read(name) for name in names})
 
 
 def install(files):
@@ -50,6 +62,7 @@ def install(files):
     for name, data in files.items():
         # Fixed destination and atomic writes; algorithm sources remain unchanged.
         temporary = DEST / (name + ".input-tmp")
+        temporary.parent.mkdir(parents=True, exist_ok=True)
         temporary.write_bytes(data)
         temporary.replace(DEST / name)
     (DEST.parent / "__init__.py").touch(exist_ok=True)
@@ -89,7 +102,7 @@ def main():
                 install(files)
             elif args.mode == "export":
                 export(files)
-        print("SDK input OK (12 files; no source contents printed)")
+        print("SDK input OK (%d files; no source contents printed)" % len(files))
     except (OSError, ValueError, SyntaxError, zipfile.BadZipFile) as error:
         # No exception text: malformed sources may embed credentials.
         parser.exit(1, "SDK input unavailable or invalid. See docs/release/build-inputs.zh.md\n")

@@ -99,10 +99,16 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
         if (!required.every { new File(sdkDir, it).isFile() }) {
             throw new GradleException("Missing private SDK input: docs/release/build-inputs.zh.md")
         }
+        // 当前 SDK 引用此 Python 桥；原生加速库可选，Android 使用纯 Python 回退。
+        if (new File(sdkDir, "suite.py").getText("UTF-8").contains("import _native") &&
+            !new File(sdkDir, "_native/__init__.py").isFile()) {
+            throw new GradleException("Missing private SDK accelerator bridge: _native/__init__.py")
+        }
     }
     from("../../tool/source_runtime") {
         include "adapters.py", "miomedia_adapter.py", "android_bridge.py"
         include "vendor/__init__.py", "vendor/miomedia/*.py"
+        include "vendor/miomedia/_native/__init__.py"
         // M6 的固定查表资源由原样 SDK 读取，不能只打包 Python 模块。
         include "vendor/miomedia/bf_tables.bin"
     }

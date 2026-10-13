@@ -2,7 +2,7 @@
 
 日期：2026-10-12。本文件记录第一阶段 SDK 封装与接口数据整理。
 
-后续已接入本次提供的自研播放模块、影视首页、搜索、资料和播放器。当前契约、10 个受限操作与运行方式见 [内容与播放接入](miomedia-content-playback.zh.md)；下文 7 个操作及 `playbackReady=false` 是第一阶段历史结果。
+后续已接入播放模块、影视首页、搜索、资料和播放器，当前源码为 11 个受限操作。当前分析见 [Web/Android 与 SDK](analysis/web-android-sdk-20261013.zh.md)，本机与其他设备的路径参照 [开发环境说明](development/web-android-environment.zh.md)。下文 7 个操作、外部 HTTP Android 方案及 `playbackReady=false` 均是第一阶段历史结果。
 
 ## 完成范围
 
@@ -15,8 +15,9 @@ Python 服务内携带 `vendor/miomedia`，SDK 算法和二进制表保持原样
 终端一：
 
 ```powershell
-Set-Location 'C:\Users\haige\Desktop\Playra'
-py -3 -B -X utf8 tool/source_runtime/server.py --port 8945
+# 从当前设备的仓库根目录执行；先准备本机环境配置。
+. ./tool/use-dev-env.ps1
+python -B -X utf8 tool/source_runtime/server.py --port 8945
 ```
 
 终端二：
@@ -41,7 +42,7 @@ final detail = await runtime.callMioMedia('detail', payload: {
 // 有自己的生命周期所有权时，离开服务后调用 runtime.dispose()。
 ```
 
-Android 仍按 `docs/source-algorithm-runtime.zh.md` 配置运行地址与开发 `adb reverse`。SDK 服务整体使用 Python 3.11+；SDK 自身兼容 Python 3.8+。本轮未重新打包或安装 Android APK。
+本阶段 Android 使用外部 HTTP；当前源码默认使用内置 Python，只有显式外部调试才配置运行地址与 `adb reverse`，见 `docs/source-algorithm-runtime.zh.md`。SDK 服务整体使用 Python 3.11+；原 SDK 声明自身兼容 Python 3.8+。本阶段记录未重新打包或安装 Android APK。
 
 ## 固定操作契约
 
