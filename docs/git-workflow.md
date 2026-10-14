@@ -11,6 +11,35 @@
 
 `main` 的默认拉取和推送都面向 `origin`。`kazumi-upstream` 拉取官方代码，推送到 Playra；不要在该分支提交定制功能，否则无法维持官方原版基线。
 
+## 2026-10-14 提交历史精简
+
+完成分支归并后，用户明确授权把本轮 23 条开发提交整理为 7 条中文主题提交。整理范围仅为 `24e04806` 之后、原 `264dbb21` 之前的这批开发历史；此前历史、共同祖先和官方分支均保持不变。原 SDK 功能提交 `5fba8b5b` 的完整文件树对应整理后的 `2f412a9d`。
+
+前 6 个主题逐一保留各原分组末端的完整文件树；第 7 个主题保留原文档归档，并补充本节及[提交映射与恢复记录](release/history-consolidation-20261014.zh.md)。应用代码、测试、依赖、工作流和构建输入没有改变。本次历史重写只针对 `main`，推送使用绑定原远程提交的 `--force-with-lease`；如果远程已变化则停止，不覆盖其他人的新提交。
+
+这次是用户确认后的专项历史整理，不改变日常优先快进推送的规则。其他设备仍指向旧历史时，应先保存未推送提交及工作区改动，再重新对齐 `origin/main`；不要普通合并旧 main，把已压缩的开发历史重新接回来。历史文档和旧构建收据中的原 SHA 保持原始含义，按映射查阅。
+
+## 2026-10-14 首次主线归并与固定分支
+
+本地和 `origin` 长期只保留 `main`、`kazumi-upstream`。日常 Playra 开发归入 `main`；如果确实需要临时隔离分支，完成合并与远程核验后删除，不再长期保留 `codex/*` 开发分支。
+
+首次归并时核对发现 `codex/content-search-20261013` 的 `ed0a36df` 已完整包含在 `codex/platform-builds-20261014` 的 `5fba8b5b` 中。`main` 的 `24e04806` 也是后者祖先，因此先以 `--ff-only` 把 22 条功能提交完整纳入主线，当时没有压缩、重建或丢弃历史，没有代码冲突。测试与构建对应的功能文件树保持一致；归档文档另作提交。随后经用户授权进行的提交精简见上一节。
+
+官方镜像从本地 `2768c230`、远程 `4960f9c0` 快进到实际抓取的官方 `025dcb5c`（官方版本 2.3.9）。这只更新 `kazumi-upstream`，不表示 Playra `main` 已升级到官方 2.3.9；新的官方功能仍需单独评估、合并和回归。两个分支不要求文件树相同。
+
+日常分支清理顺序固定为：保存本地恢复点 → 核对所有分支独有提交 → 合并到 main → 验证 → 普通快进推送 main 与官方镜像 → 读取远程确认 → 删除已合并临时分支 → 再核对分支清单。未经明确授权，禁止用强制推送、`reset --hard` 或删除尚未纳入主线的分支来“整理”。不会向 `upstream` 官方仓库推送。
+
+本次恢复点位于 `.git/codex-backups/branch-consolidation-20261014/`：
+
+- `before.bundle`：已验证的 Git 历史包，包含整理前各分支引用；备份不显示为额外分支，也不推送到远程。
+- `refs.before.txt`、`status.before.txt`、`config.before`：原分支、工作区与 Git 配置记录。
+- `worktree/`：原有未跟踪文件副本。
+- `libmpv.before.patch`：原有播放器子模块的修改快照。
+
+五份原有分析文档作为带日期的历史记录归档到[分析导航](analysis/README.md)，不能把旧设计状态当作当前功能事实。空的本地 `recipes.json` 和播放器子模块内原有状态保留本地，不作为应用代码提交、发布或重置。
+
+日后需要恢复被删的开发分支时，可先检查 `git bundle list-heads .git/codex-backups/branch-consolidation-20261014/before.bundle`，再从指定引用提取到临时恢复分支核对；不要直接覆盖主线。备份只保存在本机 `.git`，不会随正常克隆传递。
+
 ## 2026-10-10 整理依据
 
 整理前本地 `main` 跟踪 Kazumi，Playra 远程名为 `playra`。远程 Playra 骨架与本地主线没有共同祖先，也不是同一套目录布局。
@@ -92,6 +121,10 @@ git merge --no-ff kazumi-upstream
 git switch main
 git merge --ff-only codex/kazumi-update-YYYYMMDD
 git push origin main
+# 核实临时分支已经包含在 origin/main 后再清理；仅推送过才删除远程同名分支。
+git merge-base --is-ancestor codex/kazumi-update-YYYYMMDD origin/main
+git branch -d codex/kazumi-update-YYYYMMDD
+# 若曾推送：git push origin --delete codex/kazumi-update-YYYYMMDD
 ```
 
 合并尚未完成且决定放弃本次集成时，在工作区无其他新增改动的前提下可执行 `git merge --abort`。后续更新不要使用强制推送，也不要对官方同步分支直接开发。
