@@ -92,6 +92,17 @@ jobs:
       - run: flutter pub get
       - name: Build selected platform
         run: python tool/cloud_build.py build
+      - name: Show failed Windows native hook diagnostics
+        if: failure() && matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          # Flutter/MSBuild can hide the native hook error behind build_hooks.
+          Get-ChildItem -LiteralPath .dart_tool/hooks_runner -Recurse -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -in @('stderr.txt', 'native-build.log') } |
+            ForEach-Object {
+              Write-Output $_.FullName
+              Get-Content -LiteralPath $_.FullName -Encoding UTF8 -Tail 80
+            }
       - name: Package and verify artifact
         run: python tool/cloud_build.py package
       - uses: actions/upload-artifact@v4
