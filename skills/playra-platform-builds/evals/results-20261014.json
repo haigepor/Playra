@@ -1,0 +1,31 @@
+{
+  "method": "task-evidence-mapping",
+  "skill_name": "playra-platform-builds",
+  "validation_date": "2026-10-14",
+  "functional_cases": [
+    {
+      "id": 1,
+      "status": "PASS",
+      "evidence": "actual unsigned arm64 device IPA from run 38511916390; hash/version/signature verified"
+    },
+    {
+      "id": 2,
+      "status": "PASS",
+      "evidence": "all five cloud jobs successful in 38514041025; Android and five downloaded packages verified at source SHA 1591ced2; each receipt/hash/archive checked"
+    },
+    {
+      "id": 3,
+      "status": "PASS",
+      "evidence": "original clean checkout screenshot failure repaired; full 574 Flutter tests passed in remote quality"
+    }
+  ],
+  "trigger_review": {
+    "method": "manual boundary review",
+    "positive_prompts": 8,
+    "negative_prompts": 8,
+    "measured_accuracy": "not_run"
+  },
+  "source_and_installed_validation": "PASS",
+  "skill_archive_crc": "PASS",
+  "fresh_session_discovery": "not_run"
+}

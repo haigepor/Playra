@@ -318,9 +318,12 @@ void main() {
     await tester.runAsync(() async {
       final image = await boundary.toImage();
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      await File(
+      final preview = File(
         '.dart_tool/content-skeleton-before-20261012/film-skeleton-preview.png',
-      ).writeAsBytes(bytes!.buffer.asUint8List());
+      );
+      // 干净克隆没有本地预览目录，截图测试必须独立准备输出位置。
+      await preview.parent.create(recursive: true);
+      await preview.writeAsBytes(bytes!.buffer.asUint8List());
       image.dispose();
     });
     await tester.pumpWidget(const SizedBox());

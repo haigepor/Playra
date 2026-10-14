@@ -17,8 +17,8 @@ SDK 自检分别在模块目录运行 `python selftest.py`，在 vendor 父目�
 
 CI 使用 `python tool/miomedia_sdk_input.py export` 生成两份忽略的输入文件，分别存入仓库 Actions Secrets `MIOMEDIA_SDK_BUNDLE_1` 与 `MIOMEDIA_SDK_BUNDLE_2`，不提交文件、不粘贴内容到日志。使用两份是因为当前编码后约 61 KB，超过单份 Secret 48 KB 限制。[GitHub Secrets 文档](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
 
-发布构建工作流只接受 `playra/v*`，校验 tag 版本与 pubspec 一致。它产出 Android/Web 构建附件，不自动创建 GitHub Release。签名所需 Secrets：`PLAYRA_ANDROID_KEYSTORE`（Base64）、`PLAYRA_ANDROID_STORE_PASSWORD`、`PLAYRA_ANDROID_KEY_PASSWORD`、`PLAYRA_ANDROID_KEY_ALIAS`。缺少私有 SDK 或正式签名配置时 CI 明确失败。不得上传私有 SDK 输入附件。
+正式 Android/Web 构建仍接受 `playra/v*`，校验 tag 版本与 pubspec 一致。另有手动的独立 iOS/Web/macOS/Linux/Windows 构建入口，详见 [平台构建](build-platforms.zh.md)。附件不自动创建 GitHub Release。Android 签名所需 Secrets：`PLAYRA_ANDROID_KEYSTORE`（Base64）、`PLAYRA_ANDROID_STORE_PASSWORD`、`PLAYRA_ANDROID_KEY_PASSWORD`、`PLAYRA_ANDROID_KEY_ALIAS`。缺少私有 SDK 或正式签名配置时 Android CI 明确失败；独立 unsigned iOS job 不依赖这些输入。不得上传私有 SDK 输入附件。
 
 本地测试包沿用当前测试签名，可覆盖现有测试安装并保留数据；它不等同正式签名发布。正式版默认 `PLAYRA_DIAGNOSTICS=false`；如需诊断测试包，显式传入 `--dart-define=PLAYRA_DIAGNOSTICS=true`。
 
-底层 Android ID、Dart package、MethodChannel 与数据路径暂保留历史值以保证升级兼容。系统显示名、网页标题和应用文案统一为 Playra。许可与原作者署名保留于二级页面。
+底层 Android ID、Dart package、MethodChannel 与数据路径暂保留历史值以保证升级兼容。系统显示名、网页标题和应用文案统一为 Playra。应用关于页面隐藏外部源码入口；源码中的许可与原作者署名保留。

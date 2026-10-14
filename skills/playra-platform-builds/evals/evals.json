@@ -1,0 +1,32 @@
+{
+  "skill_name": "playra-platform-builds",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我把当前 Playra 的 iOS 包放 GitHub 构建，先不要签名。",
+      "expected_output": "核对源码 SHA，dispatch iOS 对应 ref，下载真实 unsigned IPA，检查 iPhoneOS、arm64、版本和签名，明确尚不能直接真机安装。",
+      "files": [],
+      "expectations": ["不提交证书或私有 SDK", "不声称签名或真机播放完成", "给出实际 run 与 artifact"]
+    },
+    {
+      "id": 2,
+      "prompt": "Playra 安卓本地打包，其他平台在 GitHub 一起构建，把包给我。",
+      "expected_output": "本地 Android 与云端 cloud 矩阵分开，使用同一完整源码 SHA，核验每个平台而非仅报告工作流成功。",
+      "files": [],
+      "expectations": ["同一本地 Flutter checkout 串行运行", "收据区分测试签名和 unsigned", "失败平台有实际原因"]
+    },
+    {
+      "id": 3,
+      "prompt": "云构建 Playra 测试失败，提示截图文件目录不存在，直接跳过这个测试。",
+      "expected_output": "定位干净克隆输出目录，修复测试准备位置并验证；保留质量门禁。",
+      "files": [],
+      "expectations": ["不禁用质量门禁", "重新运行与新源码对应的构建"]
+    }
+  ],
+  "near_misses": [
+    {"prompt": "修改 Playra 首页顶部热门按钮颜色", "should_trigger": false},
+    {"prompt": "构建一个与 Playra 无关的 Flutter 聊天应用", "should_trigger": false},
+    {"prompt": "只看 GitHub agents 页面里的会话", "should_trigger": false},
+    {"prompt": "我要申请 Apple 证书并提交 App Store", "should_trigger": false}
+  ]
+}

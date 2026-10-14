@@ -479,7 +479,12 @@ class _FeedSelector extends StatefulWidget {
 
 class _FeedSelectorState extends State<_FeedSelector>
     with SingleTickerProviderStateMixin {
-  static const categories = HomeFeed.primaryCategories;
+  // 推荐/热门是浏览入口，四大内容分类仍保持独立的分类定义。
+  static const categories = [
+    HomeFeed.recommended,
+    HomeFeed.popular,
+    ...HomeFeed.primaryCategories,
+  ];
   late final TabController _tabs;
 
   int get selectedIndex {
@@ -591,8 +596,6 @@ class _AnimeFilters extends StatefulWidget {
 class _AnimeFiltersState extends State<_AnimeFilters> {
   static const _feeds = [
     HomeFeed.anime,
-    HomeFeed.recommended,
-    HomeFeed.popular,
     HomeFeed.season,
     HomeFeed.japanese,
     HomeFeed.chinese,
