@@ -221,7 +221,8 @@ def main():
         values["flutter_version"] = flutter_version((root / "pubspec.yaml").read_text(encoding="utf-8"))
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
             for name, value in values.items():
-                output.write(name + "=" + json.dumps(value, separators=(",", ":")) + "\n")
+                encoded = value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
+                output.write(name + "=" + encoded + "\n")
     elif args.operation == "verify-ios":
         print(json.dumps(verify_ios(args.archive), indent=2))
     else:
