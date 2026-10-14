@@ -3,12 +3,116 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_playback_coordinator.dart';
+import 'package:kazumi/services/source/source_models.dart';
 
 MioEpisode episode(String code, int number, String name) => MioEpisode.fromJson(
   {'code': code, 'episodeNum': number, 'displayName': name},
 );
 
 void main() {
+  test(
+    'single movie evidence does not substitute bonus entries or multiple original chapters',
+    () async {
+      var opens = 0;
+      final service = MioMediaService(
+        request: (op, payload, cancel) async => {
+          'data': op == 'episodes'
+              ? {
+                  'episodes': [
+                    {
+                      'code': payload['code'],
+                      'episodeNum': 1,
+                      'displayName': payload['code'] == 'multiple_a'
+                          ? '正片'
+                          : 'HD中字',
+                    },
+                    if (payload['code'] == 'multiple_a')
+                      {
+                        'code': 'multiple_a',
+                        'episodeNum': 2,
+                        'displayName': '花絮',
+                      },
+                  ],
+                }
+              : {'status': 'unavailable'},
+        },
+      );
+      final session = MioPlaybackCoordinator('123', service, singleMovie: true);
+      final result = await session.play(
+        episode('multiple_a', 1, '正片'),
+        [const MioLine('multiple_a', 'A'), const MioLine('multiple_b', 'B')],
+        cancel: CancelToken(),
+        onAttempt: (_, _) {},
+        open: (_, _) async {
+          opens++;
+          return true;
+        },
+      );
+      expect(result.status, 'unavailable');
+      expect(opens, 0);
+      session.dispose();
+      service.dispose();
+    },
+  );
+  test('runtime timeout remains distinct from media loading failure', () async {
+    final service = MioMediaService(
+      request: (op, payload, cancel) async =>
+          throw const SourceException('TIMEOUT', 'timeout'),
+    );
+    final session = MioPlaybackCoordinator('123', service);
+    final result = await session.play(
+      episode('timeout', 1, '正片'),
+      [const MioLine('timeout', 'A')],
+      cancel: CancelToken(),
+      onAttempt: (_, _) {},
+      open: (_, _) async => true,
+    );
+    expect(result.errorCode, 'TIMEOUT');
+    session.dispose();
+    service.dispose();
+  });
+  test(
+    'single movie recovers across quality labels using real target numbers',
+    () async {
+      final opened = <String>[];
+      final service = MioMediaService(
+        request: (op, payload, cancel) async => {
+          'data': op == 'episodes'
+              ? {
+                  'episodes': [
+                    {
+                      'code': payload['code'],
+                      'episodeNum': payload['code'] == 'film_a' ? 1 : 71,
+                      'displayName': payload['code'] == 'film_a'
+                          ? '正片'
+                          : 'HD中字',
+                    },
+                  ],
+                }
+              : {
+                  'status': 'ready',
+                  'selection': {...payload},
+                  'media': {'url': 'https://example.test/video.m3u8'},
+                },
+        },
+      );
+      final session = MioPlaybackCoordinator('123', service, singleMovie: true);
+      final result = await session.play(
+        episode('film_a', 1, '正片'),
+        [const MioLine('film_a', '高速'), const MioLine('film_b', '备用')],
+        cancel: CancelToken(),
+        onAttempt: (_, _) {},
+        open: (ep, _) async {
+          opened.add('${ep.code}:${ep.number}');
+          return ep.code == 'film_b';
+        },
+      );
+      expect(result.status, 'ready');
+      expect(opened, ['film_a:1', 'film_b:71']);
+      session.dispose();
+      service.dispose();
+    },
+  );
   test('recovery sends at most three actual playback requests', () async {
     var attempts = 0;
     final lines = List.generate(5, (i) => MioLine('limit_$i', '$i'));

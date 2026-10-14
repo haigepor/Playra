@@ -62,6 +62,19 @@ class VideoEpisodeSelection {
   }
 }
 
+/// 播放控制界面需要的来源资料，不赋予 Bangumi 收藏/历史身份。
+class SourcePlayerContext {
+  const SourcePlayerContext({
+    required this.identity,
+    required this.title,
+    required this.sourceName,
+    this.artworkUrl,
+    this.referer = '',
+  });
+  final String identity, title, sourceName, referer;
+  final String? artworkUrl;
+}
+
 abstract class _VideoPageController with Store implements Disposable {
   _VideoPageController(
     this.historyController,
@@ -70,6 +83,40 @@ abstract class _VideoPageController with Store implements Disposable {
   );
 
   late BangumiItem bangumiItem;
+  SourcePlayerContext? sourceContext;
+  bool get hasBangumiContext => sourceContext == null;
+  String get playbackWorkTitle =>
+      sourceContext?.title ??
+      (bangumiItem.nameCn.isNotEmpty ? bangumiItem.nameCn : bangumiItem.name);
+  String? get playbackArtwork =>
+      sourceContext?.artworkUrl ??
+      (hasBangumiContext ? bangumiItem.images['large'] : null);
+  String get playbackSourceName =>
+      sourceContext?.sourceName ??
+      (isOfflineMode ? offlinePluginName : currentPlugin.name);
+  String get playbackReferer =>
+      sourceContext?.referer ?? (isOfflineMode ? '' : currentPlugin.referer);
+  String get playbackMediaId => sourceContext?.identity ?? '${bangumiItem.id}';
+
+  void bindSourcePlayer(
+    SourcePlayerContext source,
+    List<Road> roads,
+    VideoEpisodeSelection selection,
+  ) {
+    runInAction(() {
+      sourceContext = source;
+      title = source.title;
+      src = source.identity;
+      isOfflineMode = false;
+      _playbackHistoryIdentity = null;
+      roadList = ObservableList.of(roads);
+      selectedEpisode = selection;
+      playingEpisode = selection;
+      _loading = false;
+      _errorMessage = null;
+    });
+  }
+
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   @observable
@@ -172,6 +219,7 @@ abstract class _VideoPageController with Store implements Disposable {
   /// Applies the route arguments exactly once, from [VideoPage.initState].
   @action
   void applyPlaybackArgs(VideoPlaybackArgs args) {
+    sourceContext = null;
     switch (args) {
       case OnlineVideoPlaybackArgs():
         bangumiItem = args.bangumiItem;
@@ -254,7 +302,7 @@ abstract class _VideoPageController with Store implements Disposable {
   String get offlinePluginName => _offlinePluginName;
 
   PlaybackHistoryIdentity? get currentHistoryIdentity =>
-      _playbackHistoryIdentity;
+      hasBangumiContext ? _playbackHistoryIdentity : null;
 
   ({int listIndex, int roadIndex})? _findOfflineEpisodeByNumber(
     int episodeNumber, {

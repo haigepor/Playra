@@ -161,6 +161,32 @@ class MioMediaTests(unittest.TestCase):
             self.call()
         self.assertEqual(FakeClient.requests, 1)
 
+    def test_client_parse_failure_keeps_safe_reason_without_upstream_body(self):
+        with patch('miomedia_adapter.PlaybackClient') as factory:
+            factory.return_value.rotations = 0
+            factory.return_value.play.return_value = {'status': 'unavailable', 'error': 'JSON解析失败: <html>token=private</html>'}
+            result = self.call('play', {'videoId': '123', 'code': 'sb', 'episodeNum': 1})
+        self.assertEqual(result['data']['error'], 'CLIENT_PARSE_INVALID_RESPONSE')
+        self.assertNotIn('private', json.dumps(result))
+
+    def test_playback_failures_classify_without_leaking_tokens(self):
+        cases = [('解析请求失败: private', 'CLIENT_PARSE_NETWORK'),
+                 ('接口业务失败: private', 'CLIENT_PARSE_REJECTED'),
+                 ('qualities 请求失败 private', 'QUALITY_UNAVAILABLE'),
+                 ('exchange 请求失败 private', 'EXCHANGE_FAILED'),
+                 ('未取得 exchangeToken private', 'MISSING_EXCHANGE_TOKEN'),
+                 ('接口返回为空 private', 'CLIENT_PARSE_INVALID_RESPONSE'),
+                 ('source为空 private', 'EMPTY_SOURCE'),
+                 ('未知 exchange 响应形态 private', 'UNKNOWN_PLAYBACK_RESPONSE'),
+                 ('unknown private token', 'PLAYBACK_UNAVAILABLE')]
+        for reason, expected in cases:
+            with self.subTest(expected=expected), patch('miomedia_adapter.PlaybackClient') as factory:
+                factory.return_value.rotations = 0
+                factory.return_value.play.return_value = {'status': 'unavailable', 'error': reason}
+                result = self.call('play', {'videoId': '123', 'code': 'a', 'episodeNum': 1})
+                self.assertEqual(result['data']['error'], expected)
+                self.assertNotIn('private', json.dumps(result))
+
     def test_network_retry_is_bounded(self):
         FakeClient.interruptions = 1
         self.assertTrue(self.call()['data']['videos'])

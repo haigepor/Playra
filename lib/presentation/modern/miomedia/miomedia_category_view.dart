@@ -255,18 +255,36 @@ class MioCategorySliver extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                if (pool.isEmpty && !loading)
-                  SecondaryEmptyState(
-                    asset: 'modern-home-empty-feed',
-                    title: failed ? '内容暂时加载失败' : '暂无符合题材的作品',
-                    description: failed
-                        ? controller.failureMessage(kind)
-                        : '试试其他分类，或稍后回来看看',
-                  ),
               ],
             ),
           ),
         ),
+        if (pool.isEmpty && !loading)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: SecondaryEmptyState(
+                key: const ValueKey('mio-category-empty'),
+                asset: 'modern-home-empty-feed',
+                title: failed ? '内容暂时加载失败' : '暂无符合题材的作品',
+                description: failed
+                    ? controller.failureMessage(kind)
+                    : '试试其他分类，或稍后回来看看',
+                action: failed
+                    ? TextButton(
+                        onPressed: () =>
+                            controller.categoryIds.containsKey(kind)
+                            ? controller.load(
+                                kind,
+                                reset: !controller.pages.containsKey(kind),
+                              )
+                            : controller.bootstrap(force: true),
+                        child: const Text('加载失败，点击重试'),
+                      )
+                    : null,
+              ),
+            ),
+          ),
         if (pool.isEmpty && loading)
           SliverToBoxAdapter(
             child: Padding(
@@ -312,34 +330,36 @@ class MioCategorySliver extends StatelessWidget {
               ),
             ),
           ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            child: Center(
-              child: loading || (pool.isEmpty && !failed)
-                  ? const SizedBox.shrink()
-                  : failed
-                  ? TextButton(
-                      onPressed: () => controller.categoryIds.containsKey(kind)
-                          ? controller.load(
-                              kind,
-                              reset: !controller.pages.containsKey(kind),
-                            )
-                          : controller.bootstrap(force: true),
-                      child: const Text('加载失败，点击重试'),
-                    )
-                  : Text(
-                      controller.more.contains(kind)
-                          ? '继续下滑，发现更多'
-                          : '已显示当前全部内容',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        if (pool.isNotEmpty || loading)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: Center(
+                child: loading || (pool.isEmpty && !failed)
+                    ? const SizedBox.shrink()
+                    : failed
+                    ? TextButton(
+                        onPressed: () =>
+                            controller.categoryIds.containsKey(kind)
+                            ? controller.load(
+                                kind,
+                                reset: !controller.pages.containsKey(kind),
+                              )
+                            : controller.bootstrap(force: true),
+                        child: const Text('加载失败，点击重试'),
+                      )
+                    : Text(
+                        controller.more.contains(kind)
+                            ? '继续下滑，发现更多'
+                            : '已显示当前全部内容',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
-        ),
       ],
     );
   }

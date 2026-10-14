@@ -324,6 +324,38 @@ class PlayerController implements Disposable {
     playback.syncPlaybackState();
   }
 
+  /// 来源媒体只绑定播放器操作与系统音量，不建立动漫/弹幕身份。
+  Future<void> bindSourceControls(
+    String url,
+    String sourceReferer, {
+    bool Function()? canInstall,
+  }) async {
+    bool current() =>
+        !_initializations.isClosed && (canInstall?.call() ?? true);
+    if (!current()) return;
+    videoUrl = url;
+    referer = sourceReferer;
+    isLocalPlayback = false;
+    if (!kIsWeb && !isDesktop()) {
+      final volume = await FlutterVolumeController.getVolume();
+      if (!current()) return;
+      playback.volume = (volume ?? 0) * 100;
+      await FlutterVolumeController.updateShowSystemUI(false);
+      if (!current()) {
+        await FlutterVolumeController.updateShowSystemUI(true);
+        return;
+      }
+      FlutterVolumeController.removeListener();
+      FlutterVolumeController.addListener(
+        (value) {
+          if (!panel.volumeSeeking) playback.applyExternalVolume(value * 100);
+        },
+        category: AudioSessionCategory.playback,
+        emitOnStart: false,
+      );
+    }
+  }
+
   Future<void> playOrPause() async {
     await playback.playOrPause(pause: pause, play: play);
   }

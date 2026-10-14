@@ -25,6 +25,7 @@ class _Playback implements PlayerPlaybackController {
   int stops = 0, opens = 0;
   Map<String, String>? receivedHeaders;
   bool? receivedAdBlock;
+  VideoSourceFormat? receivedFormat;
   void Function()? duringOpen;
   @override
   Player? get mediaPlayer => current;
@@ -49,6 +50,7 @@ class _Playback implements PlayerPlaybackController {
     opens++;
     receivedHeaders = headers;
     receivedAdBlock = adBlockerEnabled;
+    receivedFormat = videoSourceFormat;
     duringOpen?.call();
     return current;
   }
@@ -69,13 +71,15 @@ void main() {
         logLevel: () => 2,
       );
       final opened = await player.open(
-        'https://media.example/episode.m3u8',
+        'https://media.example/playlist?id=1',
         {'Referer': 'https://source.example/'},
         canInstall: () => true,
         onError: (_) {},
+        videoSourceFormat: VideoSourceFormat.hls,
       );
       expect(opened, same(core.current));
-      expect(core.url(), 'https://media.example/episode.m3u8');
+      expect(core.url(), 'https://media.example/playlist?id=1');
+      expect(core.receivedFormat, VideoSourceFormat.hls);
       expect(core.receivedHeaders, {'Referer': 'https://source.example/'});
       expect(core.receivedAdBlock, false);
       expect(core.current.rate, 1.5);
