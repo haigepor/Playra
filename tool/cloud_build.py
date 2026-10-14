@@ -176,7 +176,14 @@ def package(root, platform):
         if platform == "macos":
             source = unique_app(root / "build/macos/Build/Products/Release")
             info = plistlib.loads((source / "Contents/Info.plist").read_bytes())
+            # Xcode target overrides can silently undo the xcconfig product name.
+            if source.name != "Playra.app" or info.get("CFBundleName") != "Playra":
+                raise ValueError("Unexpected macOS application product name")
+            if (str(info.get("CFBundleShortVersionString")) != app_version or
+                    str(info.get("CFBundleVersion")) != build_number):
+                raise ValueError("macOS application version mismatch")
             details = {"architectures": macho_arches((source / "Contents/MacOS" / info["CFBundleExecutable"]).read_bytes()[:1024]),
+                       "minimum_os": info.get("LSMinimumSystemVersion"),
                        "signing": "not-notarized"}
             archive_name = source.name
         else:
