@@ -34,18 +34,6 @@ class AboutPage extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        ContentSection.group(
-          title: '应用信息',
-          children: const [
-            AboutLinkTile.route(
-              icon: Icons.balance_rounded,
-              title: '许可与致谢',
-              subtitle: '第三方组件及原作者信息',
-              route: '/settings/about/legal',
-            ),
-          ],
-        ),
       ],
     ),
   );
@@ -126,14 +114,7 @@ class _BrandHeader extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    CheckUpdateButton(onCheckUpdate: onCheckUpdate),
-                    TextButton(
-                      onPressed: () =>
-                          openAboutLink(context, AppBrand.releasesUrl),
-                      child: const Text('版本记录'),
-                    ),
-                  ],
+                  children: [CheckUpdateButton(onCheckUpdate: onCheckUpdate)],
                 ),
               ],
             ),

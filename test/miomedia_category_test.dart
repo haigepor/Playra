@@ -23,6 +23,45 @@ MioVideo video(
 });
 
 void main() {
+  testWidgets(
+    'empty category centers artwork and text across the content viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(760, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final service = MioMediaService(request: (_, _, _) async => {'data': {}});
+      final controller = MioHomeController(service);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ModernHomeScope(
+            child: Scaffold(
+              body: CustomScrollView(
+                slivers: [
+                  MioCategorySliver(
+                    controller: controller,
+                    kind: MioKind.comicDrama,
+                    onDetails: (_) {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getCenter(find.text('暂无符合题材的作品')).dx, closeTo(380, 1));
+      final contentTop = tester.getBottomLeft(find.text('更多值得一看的漫剧')).dy + 14;
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('mio-category-empty'))).dy,
+        closeTo((contentTop + 844) / 2, 1),
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      controller.dispose();
+      service.dispose();
+    },
+  );
   test(
     'genre evidence and recommendation use metadata and preserve source order',
     () {

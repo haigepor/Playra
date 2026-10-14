@@ -29,7 +29,7 @@ class UpdateSourceStep extends StatelessWidget {
             children: [
               _OptionCard(
                 icon: Icons.rocket_launch_rounded,
-                title: 'GitHub',
+                title: '自动检查',
                 description: '在应用内检查并获取新版本，适合大多数用户。',
                 value: true,
                 selected: useGithubUpdate,

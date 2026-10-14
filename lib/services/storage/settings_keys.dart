@@ -290,12 +290,13 @@ class SettingsKeys {
     '/tab/popular/',
     group: SettingGroup.interface,
   );
+  // Android/iOS 共用页面偏好，保留旧持久化键以兼容同步和覆盖安装。
   static const androidUiStyle = SettingKey<String>(
     'androidUiStyle',
     'modern',
     group: SettingGroup.interface,
   );
-  // 一次性迁移旧设备的页面选择；完成后仍允许用户主动切回旧版。
+  // 两个移动平台分别在本机首次升级时迁移；完成后仍尊重主动选择。
   static const androidModernDefaultApplied = SettingKey<bool>(
     'androidModernDefaultApplied',
     false,

@@ -6,6 +6,7 @@ import 'package:kazumi/pages/player/controller/player_playback_controller.dart';
 import 'package:kazumi/services/platform/resource_url.dart';
 import 'package:kazumi/services/shaders/shader_asset_service.dart';
 import 'package:kazumi/services/storage/storage.dart';
+import 'package:kazumi/services/video_source/video_source_format.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
@@ -48,6 +49,7 @@ class SourceMediaPlayer {
     Map<String, String> headers, {
     required bool Function() canInstall,
     required void Function(String) onError,
+    VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
   }) async {
     bool current() => !_closed && canInstall();
     if (!current()) return null;
@@ -83,6 +85,7 @@ class SourceMediaPlayer {
       headers,
       false,
       canInstall: current,
+      videoSourceFormat: videoSourceFormat,
     );
     if (candidate == null) return null;
     if (!current()) {

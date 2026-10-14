@@ -2,18 +2,25 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'miomedia_service.dart';
+import '../source_models.dart';
 
 class MioPlaybackOutcome {
-  const MioPlaybackOutcome(this.status, {this.episode});
+  const MioPlaybackOutcome(this.status, {this.episode, this.errorCode});
   final String status;
   final MioEpisode? episode;
+  final String? errorCode;
 }
 
 /// 仅编排来源调用；凭证和身份策略仍由 SDK 负责。
 class MioPlaybackCoordinator {
-  MioPlaybackCoordinator(this.videoId, this.service);
+  MioPlaybackCoordinator(
+    this.videoId,
+    this.service, {
+    this.singleMovie = false,
+  });
   final String videoId;
   final MioMediaService service;
+  final bool singleMovie;
   final _cache = <String, ({DateTime at, List<MioEpisode> items})>{};
   final _pending = <String, Future<List<MioEpisode>>>{};
   final _lifetime = CancelToken();
@@ -87,7 +94,13 @@ class MioPlaybackCoordinator {
     }
   }
 
-  static MioEpisode? match(MioEpisode original, List<MioEpisode> candidates) {
+  static MioEpisode? match(
+    MioEpisode original,
+    List<MioEpisode> candidates, {
+    bool singleMovie = false,
+  }) {
+    // 同作品的单集电影用清晰度/版本作为集名；必须由电影元数据和双侧单条目录共同确认。
+    if (singleMovie && candidates.length == 1) return candidates.single;
     // 特辑/日期名只能唯一完整匹配，普通集名才允许规范化数字。
     final exact = candidates
         .where((e) => e.label.trim() == original.label.trim())
@@ -123,7 +136,18 @@ class MioPlaybackCoordinator {
       manual,
       ...ranked(lines).where((e) => e.code != manual.code),
     ];
+    var verifiedMovie = false;
+    if (singleMovie) {
+      try {
+        final original = await episodes(manual);
+        verifiedMovie =
+            original.length == 1 && original.single.number == requested.number;
+      } catch (_) {
+        /* 无目录证据时保留严格匹配。 */
+      }
+    }
     var attempts = 0;
+    var failureCode = 'PLAYBACK_UNAVAILABLE';
     for (final line in candidates) {
       if (cancelled()) return const MioPlaybackOutcome('cancelled');
       if (attempts == 3) break;
@@ -131,7 +155,11 @@ class MioPlaybackCoordinator {
       final clock = Stopwatch()..start();
       try {
         if (line.code != requested.code) {
-          episode = match(requested, await episodes(line));
+          episode = match(
+            requested,
+            await episodes(line),
+            singleMovie: verifiedMovie,
+          );
           if (cancelled()) return const MioPlaybackOutcome('cancelled');
           if (episode == null) continue;
         }
@@ -149,6 +177,19 @@ class MioPlaybackCoordinator {
           return const MioPlaybackOutcome('ad_required');
         }
         if (result['status'] != 'ready') {
+          failureCode =
+              const {
+                'CLIENT_PARSE_INVALID_RESPONSE',
+                'CLIENT_PARSE_NETWORK',
+                'CLIENT_PARSE_REJECTED',
+                'QUALITY_UNAVAILABLE',
+                'EXCHANGE_FAILED',
+                'EMPTY_SOURCE',
+                'MISSING_EXCHANGE_TOKEN',
+                'UNKNOWN_PLAYBACK_RESPONSE',
+              }.contains(result['error'])
+              ? result['error'] as String
+              : 'PLAYBACK_UNAVAILABLE';
           _record(line, 30000);
           continue;
         }
@@ -178,12 +219,18 @@ class MioPlaybackCoordinator {
           return MioPlaybackOutcome('ready', episode: episode);
         }
         _record(line, 30000);
-      } catch (_) {
+        failureCode = 'MEDIA_LOAD_FAILED';
+      } catch (error) {
         if (cancelled()) return const MioPlaybackOutcome('cancelled');
+        failureCode = error is SourceException
+            ? error.code
+            : error is TimeoutException
+            ? 'TIMEOUT'
+            : 'SOURCE_ERROR';
         _record(line, 30000);
       }
     }
-    return const MioPlaybackOutcome('unavailable');
+    return MioPlaybackOutcome('unavailable', errorCode: failureCode);
   }
 
   void dispose() {

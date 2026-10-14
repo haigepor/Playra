@@ -339,6 +339,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   }
 
   Widget _buildDanmakuToggleButton(BuildContext context) {
+    if (!videoPageController.hasBangumiContext) return const SizedBox.shrink();
     return Observer(
       builder: (context) {
         final danmakuLoading = playerController.danmaku.danmakuLoading;
@@ -633,18 +634,20 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     tooltip: '弹幕设置',
   );
 
-  Widget get _desktopDanmakuControls => LayoutBuilder(
-    builder: (context, constraints) => Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildDanmakuToggleButton(context),
-          _danmakuSettingsButton,
-          if (constraints.maxWidth > 600) _danmakuTextField,
-        ],
-      ),
-    ),
-  );
+  Widget get _desktopDanmakuControls => !videoPageController.hasBangumiContext
+      ? const SizedBox.shrink()
+      : LayoutBuilder(
+          builder: (context, constraints) => Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildDanmakuToggleButton(context),
+                _danmakuSettingsButton,
+                if (constraints.maxWidth > 600) _danmakuTextField,
+              ],
+            ),
+          ),
+        );
 
   Widget get _syncPlayMenuItem =>
       KazumiMenuItem(onPressed: widget.showSyncPlayPanel, label: '一起看');
@@ -655,7 +658,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   Widget get _wideControls => Row(
     children: [
       if (_desktop) Expanded(child: _desktopDanmakuControls),
-      if (!_desktop) ...[
+      if (!_desktop && videoPageController.hasBangumiContext) ...[
         IconButton(
           color: Colors.white,
           icon: playerController.danmaku.danmakuOn
@@ -670,6 +673,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         ] else
           const Spacer(),
       ],
+      if (!_desktop && !videoPageController.hasBangumiContext) const Spacer(),
       _menuButton(
         child: const Text('超分辨率', style: TextStyle(color: Colors.white)),
         items: _superResolutionItems,
@@ -862,10 +866,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   ),
                 ),
               if (compact) _buildDanmakuToggleButton(context),
-              PlayerPanelHoldCollectButton(
-                acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
-                bangumiItem: videoPageController.bangumiItem,
-              ),
+              if (videoPageController.hasBangumiContext)
+                PlayerPanelHoldCollectButton(
+                  acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
+                  bangumiItem: videoPageController.bangumiItem,
+                ),
               PlayerPanelHoldMenuAnchor(
                 acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
                 onVisibilityChanged: widget.onMenuVisibilityChanged,
@@ -890,13 +895,16 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       menuChildren: _superResolutionItems,
                       child: const Text('超分辨率'),
                     ),
-                    _syncPlayMenuItem,
+                    if (videoPageController.hasBangumiContext)
+                      _syncPlayMenuItem,
                   ],
-                  KazumiMenuItem(
-                    onPressed: widget.showDanmakuSwitch,
-                    label: '弹幕切换',
-                  ),
-                  if (compact) _danmakuSettingsMenuItem,
+                  if (videoPageController.hasBangumiContext)
+                    KazumiMenuItem(
+                      onPressed: widget.showDanmakuSwitch,
+                      label: '弹幕切换',
+                    ),
+                  if (compact && videoPageController.hasBangumiContext)
+                    _danmakuSettingsMenuItem,
                   KazumiMenuItem(
                     onPressed: widget.showVideoInfo,
                     label: '视频详情',
@@ -914,7 +922,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       RemotePlay()
                           .castVideo(
                             playerController.videoUrl,
-                            videoPageController.currentPlugin.referer,
+                            videoPageController.playbackReferer,
                           )
                           .whenComplete(() {
                             if (mounted && needRestart) {
@@ -970,7 +978,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       ),
                     ),
                   ),
-                  if (!compact) _syncPlayMenuItem,
+                  if (!compact && videoPageController.hasBangumiContext)
+                    _syncPlayMenuItem,
                 ],
               ),
             ],

@@ -141,7 +141,9 @@ Future<_Fixture> _mount(
       navigatorObservers: [rootRouteObserver],
       provide: (scoped) => scoped.addChangeNotifier<InterfaceStyleController>(
         () => InterfaceStyleController(
-          supportsModern: true,
+          supportsModern: platform == TargetPlatform.iOS
+              ? InterfaceStyleController.supportsPlatform(platform, web: false)
+              : true,
           savedStyle: modern ? 'modern' : 'legacy',
           writeStyle: (_) async {},
         ),
@@ -165,6 +167,24 @@ Future<_Fixture> _mount(
 }
 
 void main() {
+  testWidgets('iOS 新页面四标签与设置返回保留状态', (tester) async {
+    final fixture = await _mount(tester, platform: TargetPlatform.iOS);
+    expect(find.byKey(const ValueKey('modern-navigation')), findsOneWidget);
+    for (final label in ['日历', '追番', '我的', '发现']) {
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('计数-0:0'));
+    await tester.tap(find.text('打开设置'));
+    await tester.pumpAndSettle();
+    expect(fixture.visibility[0], false);
+    await tester.tap(find.text('返回设置'));
+    await tester.pumpAndSettle();
+    expect(find.text('计数-0:1'), findsOneWidget);
+    expect(fixture.created.where((index) => index == 0), hasLength(1));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('移动端横移、URL 同步且跨页不加载中间页', (tester) async {
     final fixture = await _mount(tester);
     await tester.tap(find.text('我的'));

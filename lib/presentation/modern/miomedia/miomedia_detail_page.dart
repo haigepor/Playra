@@ -2,6 +2,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/pages/player/player_controller.dart';
+import 'package:kazumi/pages/player/player_item.dart';
+import 'package:kazumi/pages/video/video_controller.dart';
+import 'package:kazumi/pages/video/video_system_bars.dart';
+import 'package:kazumi/modules/roads/road_module.dart';
+import 'package:kazumi/services/video_source/video_source_format.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:media_kit/media_kit.dart';
@@ -33,7 +41,11 @@ class MioDetailPage extends StatefulWidget {
 class _MioDetailPageState extends State<MioDetailPage> {
   late MioVideo video = widget.item;
   late final service = widget.service ?? MioMediaService();
-  late final _playback = MioPlaybackCoordinator(widget.item.id, service);
+  late final _playback = MioPlaybackCoordinator(
+    widget.item.id,
+    service,
+    singleMovie: widget.item.kind == MioKind.movie,
+  );
   MioLine? line;
   List<MioEpisode> episodes = [];
   CancelToken? _detailCancel, _episodesCancel, _playCancel;
@@ -45,7 +57,13 @@ class _MioDetailPageState extends State<MioDetailPage> {
   MioEpisode? _requestedEpisode;
   Player? _player;
   VideoController? _videoController;
-  final _mediaSession = SourceMediaPlayer();
+  PlayerController? _nativePlayer;
+  VideoPageController? _nativeView;
+  final _nativeSurfaceKey = GlobalKey();
+  final _keyboardFocus = FocusNode();
+  late final _mediaSession = SourceMediaPlayer(
+    createNative: (url, debug) => _nativePlayer!.playback,
+  );
   final _activity = ValueNotifier(false);
   final _activitySubscriptions = <StreamSubscription<dynamic>>[];
   Future<void> _mediaTail = Future.value();
@@ -172,7 +190,13 @@ class _MioDetailPageState extends State<MioDetailPage> {
           'ad_required' => '来源平台仍要求广告校验，请重试或切换线路。',
           'identity_mismatch' => '播放资源与所选剧集不匹配',
           'invalid_media' => '播放资源地址无效',
-          _ => '暂时无法取得播放资源，可重试或切换线路。',
+          _ => switch (result.errorCode) {
+            'CLIENT_PARSE_INVALID_RESPONSE' => '该线路解析接口返回了无效数据，请重试或切换线路。',
+            'CLIENT_PARSE_NETWORK' || 'TIMEOUT' => '解析请求超时或网络异常，请重试或切换线路。',
+            'MEDIA_LOAD_FAILED' => '已取得视频地址，但媒体加载失败，请重试或切换线路。',
+            'CLIENT_PARSE_REJECTED' => '来源解析接口未提供可播放资源，请切换线路。',
+            _ => '暂时无法取得播放资源，可重试或切换线路。',
+          },
         },
       );
     } catch (_) {
@@ -239,9 +263,47 @@ class _MioDetailPageState extends State<MioDetailPage> {
         playingCode = episode.code;
         playingNumber = episode.number;
       });
+      if (!kIsWeb) {
+        if (!mounted) return false;
+        _nativePlayer ??= context.read<PlayerController>();
+        _nativeView ??= context.read<VideoPageController>();
+        _nativeView!.fullscreen.attach(ModalRoute.of(context)!);
+        await _nativePlayer!.bindSourceControls(
+          media['url'] as String,
+          headers['Referer'] ?? headers['referer'] ?? '',
+          canInstall: current,
+        );
+        if (!current()) return false;
+        final index = episodes.indexWhere(
+          (e) => e.code == episode.code && e.number == episode.number,
+        );
+        if (index < 0) return false;
+        _nativeView!.bindSourcePlayer(
+          SourcePlayerContext(
+            identity: 'miomedia:${video.id}',
+            title: video.title,
+            sourceName: line!.label,
+            artworkUrl: video.poster.isNotEmpty ? video.poster : video.cover,
+            referer: headers['Referer'] ?? headers['referer'] ?? '',
+          ),
+          [
+            Road(
+              name: line!.label,
+              data: episodes
+                  .map((e) => 'miomedia:${video.id}:${e.code}:${e.number}')
+                  .toList(),
+              identifier: episodes.map((e) => e.label).toList(),
+            ),
+          ],
+          VideoEpisodeSelection(episode: index + 1, road: 0),
+        );
+      }
       final player = await _mediaSession.open(
         media['url'] as String,
         headers,
+        videoSourceFormat: media['format'] == 'm3u8' || media['format'] == 'hls'
+            ? VideoSourceFormat.hls
+            : VideoSourceFormat.auto,
         canInstall: current,
         onError: (message) {
           if (!current()) return;
@@ -566,6 +628,7 @@ class _MioDetailPageState extends State<MioDetailPage> {
       unawaited(subscription.cancel());
     }
     _activity.dispose();
+    _keyboardFocus.dispose();
     unawaited(_mediaTail.then((_) => _mediaSession.dispose()));
     if (widget.service == null) service.dispose();
     super.dispose();
@@ -574,7 +637,48 @@ class _MioDetailPageState extends State<MioDetailPage> {
   @override
   Widget build(BuildContext context) => ModernHomeScope(
     // 页面操作必须拿到深色 Theme 下的上下文，弹层才能捕获相同主题。
-    child: Builder(builder: _buildPage),
+    child: Builder(
+      builder: (context) {
+        if (_nativeView == null) return _buildPage(context);
+        return Observer(
+          builder: (_) {
+            final fullscreen = _nativeView?.isFullscreen == true;
+            final pip = _nativeView?.isPip == true;
+            if (_nativePlayer != null &&
+                _videoController != null &&
+                (fullscreen || pip)) {
+              return VideoSystemBars(
+                fullscreen: fullscreen,
+                isPip: pip,
+                child: Scaffold(body: _nativePlayerSurface(fillsWindow: true)),
+              );
+            }
+            return _buildPage(context);
+          },
+        );
+      },
+    ),
+  );
+
+  Widget _nativePlayerSurface({required bool fillsWindow}) => PlayerItem(
+    key: _nativeSurfaceKey,
+    playerController: _nativePlayer!,
+    videoPageController: _nativeView!,
+    fillsWindow: fillsWindow,
+    keyboardFocus: _keyboardFocus,
+    changeEpisode: (index, {int currentRoad = 0, int offset = 0}) async {
+      if (index > 0 && index <= episodes.length) {
+        await play(episodes[index - 1]);
+      }
+    },
+    onBackPressed: () {
+      if (_nativeView!.isFullscreen) {
+        unawaited(_nativeView!.fullscreen.setFullscreen(false));
+      } else {
+        Navigator.of(context).maybePop();
+      }
+    },
+    pauseForTimedShutdown: () => unawaited(_nativePlayer!.pause()),
   );
 
   Widget _buildPage(BuildContext context) => Scaffold(
@@ -610,7 +714,7 @@ class _MioDetailPageState extends State<MioDetailPage> {
                                   }
                                 },
                               )
-                            : Video(controller: _videoController!)
+                            : _nativePlayerSurface(fillsWindow: false)
                       else
                         LayoutBuilder(
                           builder: (context, size) => Stack(
@@ -668,17 +772,18 @@ class _MioDetailPageState extends State<MioDetailPage> {
                             icon: const Icon(Icons.replay_rounded, size: 28),
                           ),
                         ),
-                      Positioned(
-                        left: 8,
-                        top: 4,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(12),
+                      if (kIsWeb || _videoController == null)
+                        Positioned(
+                          left: 8,
+                          top: 4,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const ModernBackButton(),
                           ),
-                          child: const ModernBackButton(),
                         ),
-                      ),
                     ],
                   ),
                 ),

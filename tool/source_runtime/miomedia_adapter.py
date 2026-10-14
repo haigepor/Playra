@@ -367,7 +367,20 @@ class MioMediaSdk:
                 'landscapePlacementId', 'portraitPlacementId') if k in ad}}
         if status != 'ready':
             # SDK 错误可能带上游响应片段，统一成稳定公开错误码。
-            return {**diagnostics, 'status': 'unavailable', 'error': 'PLAYBACK_UNAVAILABLE'}
+            reason = str(result.get('error', ''))
+            codes = (
+                ('JSON解析失败', 'CLIENT_PARSE_INVALID_RESPONSE'),
+                ('解析请求失败', 'CLIENT_PARSE_NETWORK'),
+                ('接口返回为空', 'CLIENT_PARSE_INVALID_RESPONSE'),
+                ('接口业务失败', 'CLIENT_PARSE_REJECTED'),
+                ('qualities 请求失败', 'QUALITY_UNAVAILABLE'),
+                ('未取得 exchangeToken', 'MISSING_EXCHANGE_TOKEN'),
+                ('exchange 请求失败', 'EXCHANGE_FAILED'),
+                ('source为空', 'EMPTY_SOURCE'),
+                ('未知 exchange 响应形态', 'UNKNOWN_PLAYBACK_RESPONSE'),
+            )
+            code = next((code for prefix, code in codes if reason.startswith(prefix)), 'PLAYBACK_UNAVAILABLE')
+            return {**diagnostics, 'status': 'unavailable', 'error': code}
         media = result.get('media')
         if not isinstance(media, dict):
             raise RuntimeFailure('PARSE_ERROR', 502)

@@ -583,6 +583,7 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void handleDanmaku() {
+    if (!videoPageController.hasBangumiContext) return;
     playerController.danmaku.canvasController.clear();
     if (playerController.danmaku.danmakuOn) {
       playerController.danmaku.setDanmakuEnabled(false);
@@ -601,6 +602,7 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   Future<void> _syncHistoryWithWebDav() async {
+    if (!videoPageController.hasBangumiContext) return;
     if (webDavEnable && webDavEnableHistory) {
       try {
         var webDav = WebDav();
@@ -619,7 +621,7 @@ class _PlayerItemState extends State<PlayerItem>
         onSkipToNext: () => handlePreNextEpisode('next'),
         onSkipToPrevious: () => handlePreNextEpisode('prev'),
         onSeek: (position) => playerController.seek(position),
-        artworkUrl: videoPageController.bangumiItem.images['large'],
+        artworkUrl: videoPageController.playbackArtwork,
       );
       _syncAudioServiceState();
     } catch (e) {
@@ -647,18 +649,14 @@ class _PlayerItemState extends State<PlayerItem>
 
       final canSkipToPrevious = currentEpisode > 1;
       final canSkipToNext = currentEpisode < currentRoadData.data.length;
-      final bangumiTitle = videoPageController.bangumiItem.nameCn.isNotEmpty
-          ? videoPageController.bangumiItem.nameCn
-          : videoPageController.bangumiItem.name;
+      final bangumiTitle = videoPageController.playbackWorkTitle;
 
       unawaited(
         _audioController.updateSession(
           mediaId:
-              '${videoPageController.bangumiItem.id}_${currentRoad}_$currentEpisode',
+              '${videoPageController.playbackMediaId}_${currentRoad}_$currentEpisode',
           title: bangumiTitle,
-          album: videoPageController.isOfflineMode
-              ? videoPageController.offlinePluginName
-              : videoPageController.currentPlugin.name,
+          album: videoPageController.playbackSourceName,
           artist: episodeRef.displayTitle,
           duration: playerController.playback.duration,
           playing: playerController.playback.playing,
@@ -1271,11 +1269,14 @@ class _PlayerItemState extends State<PlayerItem>
           );
         }
       }
-      playerController.setSyncPlayCurrentPosition();
+      if (videoPageController.hasBangumiContext) {
+        playerController.setSyncPlayCurrentPosition();
+      }
     });
   }
 
   void showDanmakuSwitch() {
+    if (!videoPageController.hasBangumiContext) return;
     unawaited(
       showDanmakuSourceSheet(
         context,
@@ -1292,6 +1293,7 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void showSyncPlayPanel() {
+    if (!videoPageController.hasBangumiContext) return;
     if (kIsWeb) {
       KazumiDialog.showToast(
         message: '一起看需要原生 TCP/STARTTLS，请使用 Windows 或 Android 客户端',
@@ -1373,7 +1375,8 @@ class _PlayerItemState extends State<PlayerItem>
     webDavEnable = GStorage.getSetting(SettingsKeys.webDavEnable);
     webDavEnableHistory = GStorage.getSetting(SettingsKeys.webDavEnableHistory);
     playerController.danmaku.setDanmakuEnabled(
-      GStorage.getSetting(SettingsKeys.danmakuEnabledByDefault),
+      videoPageController.hasBangumiContext &&
+          GStorage.getSetting(SettingsKeys.danmakuEnabledByDefault),
     );
     _border = GStorage.getSetting(SettingsKeys.danmakuBorder);
     _opacity = GStorage.getSetting(SettingsKeys.danmakuOpacity);
@@ -1460,20 +1463,30 @@ class _PlayerItemState extends State<PlayerItem>
                   });
                 },
                 option: DanmakuOption(
-                  hideTop: _hideTop, hideScroll: _hideScroll, hideBottom: _hideBottom,
-                  area: _danmakuArea, opacity: _opacity, fontSize: _fontSize,
-                  duration: _danmakuDuration, lineHeight: _danmakuLineHeight,
+                  hideTop: _hideTop,
+                  hideScroll: _hideScroll,
+                  hideBottom: _hideBottom,
+                  area: _danmakuArea,
+                  opacity: _opacity,
+                  fontSize: _fontSize,
+                  duration: _danmakuDuration,
+                  lineHeight: _danmakuLineHeight,
                   strokeWidth: _border ? _danmakuBorderSize : 0,
-                  fontWeight: _danmakuFontWeight, massiveMode: _massiveMode,
-                  fontFamily: _danmakuUseSystemFont ? null : customAppFontFamily,
+                  fontWeight: _danmakuFontWeight,
+                  massiveMode: _massiveMode,
+                  fontFamily: _danmakuUseSystemFont
+                      ? null
+                      : customAppFontFamily,
                 ),
               ),
             ),
           ),
           Positioned(
-            left: 8, top: 4,
+            left: 8,
+            top: 4,
             child: IconButton(
-              tooltip: '返回', onPressed: widget.onBackPressed,
+              tooltip: '返回',
+              onPressed: widget.onBackPressed,
               icon: const Icon(Icons.arrow_back, color: Colors.white),
             ),
           ),
