@@ -14,21 +14,24 @@ class RouteErrorPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 已适配的设置子树沿用现有错误呈现，避免扩大本轮样式范围。
-    if (ModernSettingsScope.isActiveOf(context)) return _legacy(context);
+    if (ModernSettingsScope.isActiveOf(context)) {
+      return SettingsDetailScaffold(
+        title: const Text('Playra'),
+        body: _failure(context),
+      );
+    }
     return InterfacePageHost(
       legacy: _legacy,
-      modern: (_) => ModernSecondaryScope(
-        child: Scaffold(
-          body: SecondaryFailureView(
-            title: '无法打开页面',
-            message: message,
-            action: () => context.navigate('/tab/popular/'),
-          ),
-        ),
-      ),
+      modern: (_) =>
+          ModernSecondaryScope(child: Scaffold(body: _failure(context))),
     );
   }
+
+  Widget _failure(BuildContext context) => SecondaryFailureView(
+    title: '无法打开页面',
+    message: message,
+    action: () => context.navigate('/tab/popular/'),
+  );
 
   Widget _legacy(BuildContext context) {
     return SettingsDetailScaffold(

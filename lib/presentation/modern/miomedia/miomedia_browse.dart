@@ -78,7 +78,7 @@ class MioHomeSections extends StatelessWidget {
                           context,
                         ).colorScheme.onSurfaceVariant,
                         padding: const EdgeInsets.only(left: 8),
-                        minimumSize: const Size(0, 40),
+                        minimumSize: const Size(48, 48),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
@@ -525,7 +525,7 @@ class _MioBrowsePageState extends State<MioBrowsePage> {
         leading: const ModernBackButton(),
         title: Text(
           widget.kind?.label ?? '影视搜索',
-          style: const TextStyle(fontSize: 18),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(

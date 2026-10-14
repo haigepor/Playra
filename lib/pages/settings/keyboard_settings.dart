@@ -15,11 +15,21 @@ class _ShortcutGroup {
 }
 
 const List<_ShortcutGroup> _shortcutGroups = [
-  _ShortcutGroup(
-      '播放控制', ['playorpause', 'forward', 'rewind', 'skip', 'next', 'prev']),
+  _ShortcutGroup('播放控制', [
+    'playorpause',
+    'forward',
+    'rewind',
+    'skip',
+    'next',
+    'prev',
+  ]),
   _ShortcutGroup('音量', ['volumeup', 'volumedown', 'togglemute']),
-  _ShortcutGroup(
-      '画面与弹幕', ['fullscreen', 'exitfullscreen', 'screenshot', 'toggledanmaku']),
+  _ShortcutGroup('画面与弹幕', [
+    'fullscreen',
+    'exitfullscreen',
+    'screenshot',
+    'toggledanmaku',
+  ]),
   _ShortcutGroup('倍速', ['speed1', 'speed2', 'speed3', 'speedup', 'speeddown']),
 ];
 
@@ -53,8 +63,9 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
         'shortcut_$key',
         defaultValue: defaultShortcuts[key]!.toList(),
       );
-      final keys =
-          stored.where((value) => value.isNotEmpty && value != '...').toList();
+      final keys = stored
+          .where((value) => value.isNotEmpty && value != '...')
+          .toList();
       var changed = keys.length != stored.length;
       if (keys.isEmpty) {
         keys.addAll(defaultShortcuts[key]!);
@@ -194,8 +205,9 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
         groups.add(_ShortcutGroup(group.title, funcs));
       }
     }
-    final leftovers =
-        shortcuts.keys.where((func) => !covered.contains(func)).toList();
+    final leftovers = shortcuts.keys
+        .where((func) => !covered.contains(func))
+        .toList();
     if (leftovers.isNotEmpty) {
       groups.add(_ShortcutGroup('其他', leftovers));
     }
@@ -244,7 +256,7 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
-                      '点按按键标签，再按下新按键完成修改',
+                      '适用于电脑或外接键盘。点按标签，再按下新按键完成修改',
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -267,17 +279,15 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
   }
 
   Widget _buildGroupCard(_ShortcutGroup group) => Padding(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: ContentSection(
-          title: group.title,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final func in group.functions) _buildShortcutRow(func),
-            ],
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 24),
+    child: ContentSection(
+      title: group.title,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [for (final func in group.functions) _buildShortcutRow(func)],
+      ),
+    ),
+  );
 
   Widget _buildShortcutRow(String func) {
     final textTheme = Theme.of(context).textTheme;
@@ -315,8 +325,9 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
       label: listening ? '按任意键' : keyAliases[keys[i]] ?? keys[i],
       listening: listening,
       onTap: () => onKeyCapTap(func, i),
-      onDelete:
-          realCount >= 2 && !listening ? () => onRemoveKey(func, i) : null,
+      onDelete: realCount >= 2 && !listening
+          ? () => onRemoveKey(func, i)
+          : null,
     );
   }
 }
@@ -366,10 +377,17 @@ class _KeyCap extends StatelessWidget {
                 GestureDetector(
                   onTap: onDelete,
                   behavior: HitTestBehavior.opaque,
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 14,
-                    color: colorScheme.onSurfaceVariant,
+                  child: Semantics(
+                    label: '删除按键 $label',
+                    button: true,
+                    child: SizedBox.square(
+                      dimension: 32,
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -403,12 +421,14 @@ class _AddKeyButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           customBorder: shape,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Icon(
-              Icons.add_rounded,
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
+          child: SizedBox.square(
+            dimension: 48,
+            child: Center(
+              child: Icon(
+                Icons.add_rounded,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ),

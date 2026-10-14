@@ -67,18 +67,17 @@ class _MioRankSectionState extends State<MioRankSection> {
   Widget build(BuildContext context) {
     final controller = widget.controller;
     final id = widget.categoryId;
+    // 无榜单能力是正常栏目状态，不占据首屏，也不显示无效重试入口。
+    if (id == null) return const SizedBox.shrink();
     final rank = controller.rankings[id];
-    final loading = id == null
-        ? controller.discovering
-        : controller.rankLoading.contains(id) ||
-              (!controller.rankings.containsKey(id) &&
-                  !controller.rankFailed.contains(id));
+    final loading =
+        controller.rankLoading.contains(id) ||
+        (!controller.rankings.containsKey(id) &&
+            !controller.rankFailed.contains(id));
     final failed = controller.rankFailed.contains(id);
     final colors = Theme.of(context).colorScheme;
     if (rank == null && loading) return const SkeletonPosters();
-    final retry = id == null
-        ? null
-        : () => controller.loadRanking(id, refresh: true);
+    void retry() => controller.loadRanking(id, refresh: true);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -134,14 +133,13 @@ class _MioRankSectionState extends State<MioRankSection> {
                     ),
                   ),
                 ),
-                if (retry != null)
-                  TextButton(
-                    onPressed: loading ? null : retry,
-                    child: Text(
-                      failed ? '重试' : '刷新',
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                TextButton(
+                  onPressed: loading ? null : retry,
+                  child: Text(
+                    failed ? '重试' : '刷新',
+                    style: const TextStyle(fontSize: 12),
                   ),
+                ),
               ],
             ),
           ),

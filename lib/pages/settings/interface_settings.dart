@@ -28,8 +28,8 @@ class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
   ).clamp(0, _exitBehaviorTitles.length - 1);
 
   static const Map<String, String> defaultPageMap = {
-    '/tab/popular/': '推荐',
-    '/tab/timeline/': '时间表',
+    '/tab/popular/': '发现',
+    '/tab/timeline/': '日历',
     '/tab/collect/': '追番',
     '/tab/my/': '我的',
   };
@@ -84,7 +84,7 @@ class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
                 description: const Text('设置应用开启时的默认页面'),
                 value: defaultPage,
                 options: defaultPageMap,
-                fallbackLabel: '推荐',
+                fallbackLabel: '发现',
                 onChanged: updateDefaultPage,
               ),
             ],

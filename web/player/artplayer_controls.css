@@ -1,0 +1,42 @@
+/* 使用播放器自身宽度，避免桌面浏览器的小窗和手机竖屏裁掉全屏按钮。 */
+.playra-artplayer {
+  container-name: playra-video;
+  container-type: inline-size;
+}
+
+.playra-artplayer .art-control:focus-visible {
+  outline: 2px solid var(--art-theme);
+  outline-offset: -3px;
+  border-radius: 8px;
+}
+
+.playra-artplayer.art-video-player .art-settings {
+  max-height: calc(100% - 56px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@container playra-video (max-width: 560px) {
+  .playra-artplayer .art-control-playra-next,
+  .playra-artplayer .art-control-playra-danmaku,
+  .playra-artplayer .art-control-volume,
+  .playra-artplayer .art-control-screenshot,
+  .playra-artplayer .art-control-pip,
+  .playra-artplayer .art-control-fullscreenWeb {
+    display: none !important;
+  }
+
+  .playra-artplayer .art-controls-left {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .playra-artplayer .art-controls-right {
+    flex-shrink: 0;
+  }
+
+  .playra-artplayer .art-control-time {
+    min-width: 0;
+    font-size: 12px;
+  }
+}

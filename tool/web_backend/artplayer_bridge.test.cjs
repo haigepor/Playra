@@ -8,6 +8,9 @@ function fixture() {
     volume: 0.37, muted: true, playbackRate: 1.75, readyState: 4,
     controls: false, style: {}, className: 'original-video',
     pauseCalls: 0, loadCalls: 0,
+    listeners: {},
+    addEventListener(event, fn) { this.listeners[event] = fn; },
+    removeEventListener(event, fn) { if (this.listeners[event] === fn) delete this.listeners[event]; },
     pause() { this.pauseCalls++; }, load() { this.loadCalls++; },
   };
   class FakeArtplayer {
@@ -82,4 +85,54 @@ test('missing assets leave working browser controls and clean up safely', () => 
   mounted.destroy();
   assert.equal(video.controls, false);
   assert.equal(video.src, 'blob:owned-by-media-kit');
+});
+
+test('compact toolbar keeps secondary actions in settings without remounting media', () => {
+  const { video, container, bridge, FakeArtplayer } = fixture();
+  let next = 0;
+  const mounted = bridge.mount(container, video, { onNext: () => next++ });
+  const art = FakeArtplayer.instances[0];
+  const more = art.options.settings.find(s => s.name === 'playra-more');
+  more.onSelect(more.selector.find(s => s.value === 'next'));
+  assert.equal(next, 1);
+  assert.equal(video.loadCalls, 0);
+  assert.equal(FakeArtplayer.instances.length, 1);
+  mounted.destroy();
+});
+
+test('play control exposes the current action and releases keyboard/media listeners', () => {
+  const { video, container, bridge, FakeArtplayer } = fixture();
+  const attributes = {};
+  const handlers = {};
+  let clicks = 0;
+  const playControl = {
+    setAttribute(name, value) { attributes[name] = value; },
+    querySelectorAll() { return []; },
+    addEventListener(name, fn) { handlers[name] = fn; },
+    removeEventListener(name, fn) { if (handlers[name] === fn) delete handlers[name]; },
+    click() { clicks++; },
+  };
+  class AccessibleArtplayer extends FakeArtplayer {
+    constructor(options) {
+      super(options);
+      this.template = { $player: {
+        classList: { add() {} },
+        querySelector() { return playControl; },
+        querySelectorAll() { return [playControl]; },
+      } };
+    }
+  }
+  video.paused = true;
+  const mounted = createBridge(AccessibleArtplayer).mount(container, video);
+  assert.equal(attributes['aria-label'], '播放');
+  assert.equal(attributes.role, 'button');
+  assert.equal(playControl.tabIndex, 0);
+  video.paused = false;
+  video.listeners.play();
+  assert.equal(attributes['aria-label'], '暂停');
+  handlers.keydown({ key: 'Enter', preventDefault() {}, stopPropagation() {} });
+  assert.equal(clicks, 1);
+  mounted.destroy();
+  assert.deepEqual(video.listeners, {});
+  assert.deepEqual(handlers, {});
 });

@@ -501,7 +501,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.search,
             autocorrect: false,
-            enableSuggestions: false,
+            enableSuggestions: true,
             onSubmitted: (_) => _search(),
             onTapOutside: (_) => _urlFocus.unfocus(),
             decoration: InputDecoration(

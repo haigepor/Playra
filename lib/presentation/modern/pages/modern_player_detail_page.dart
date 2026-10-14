@@ -549,20 +549,32 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ShadButton(
-                    onPressed: choosingSource ? null : () => resume(context),
-                    width: 52,
-                    height: 52,
-                    padding: EdgeInsets.zero,
-                    decoration: ShadDecoration(
-                      border: ShadBorder(radius: BorderRadius.circular(26)),
+                  Semantics(
+                    container: true,
+                    label: choosingSource
+                        ? '正在自动匹配来源'
+                        : resumeCandidate != null
+                        ? '继续观看'
+                        : '开始观看，自动选择来源',
+                    button: true,
+                    enabled: !choosingSource,
+                    excludeSemantics: true,
+                    onTap: choosingSource ? null : () => resume(context),
+                    child: ShadButton(
+                      onPressed: choosingSource ? null : () => resume(context),
+                      width: 52,
+                      height: 52,
+                      padding: EdgeInsets.zero,
+                      decoration: ShadDecoration(
+                        border: ShadBorder(radius: BorderRadius.circular(26)),
+                      ),
+                      child: choosingSource
+                          ? const LoadingIndicator(
+                              size: 26,
+                              color: Color(0xff182142),
+                            )
+                          : const Icon(LucideIcons.play, size: 22),
                     ),
-                    child: choosingSource
-                        ? const LoadingIndicator(
-                            size: 26,
-                            color: Color(0xff182142),
-                          )
-                        : const Icon(LucideIcons.play, size: 22),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -587,6 +599,19 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               ),
             ),
             Positioned(top: 0, right: 4, child: actionsMenu(context)),
+            if (MediaQuery.sizeOf(context).width >
+                MediaQuery.sizeOf(context).height)
+              Positioned(
+                right: 4,
+                bottom: 4,
+                child: IconButton(
+                  key: const ValueKey('modern-player-open-details'),
+                  tooltip: '详情与选集',
+                  color: Colors.white,
+                  onPressed: () => playbackKey.currentState?.toggleDetails(),
+                  icon: const Icon(Icons.view_sidebar_outlined, size: 22),
+                ),
+              ),
           ],
         ),
         contentBuilder: (context, _) => Column(

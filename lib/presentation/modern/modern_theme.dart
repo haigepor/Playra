@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// 新版样式独立维护，继承用户的深浅色、动态取色和字体设置。
+/// 新版采用局部品牌色板，沿用用户字体与系统辅助功能设置。
 ThemeData modernTheme(ThemeData base) => base.copyWith(
   appBarTheme: base.appBarTheme.copyWith(
     centerTitle: false,
-    toolbarHeight: 72,
+    toolbarHeight: 56,
     titleTextStyle: base.textTheme.headlineSmall?.copyWith(
       fontWeight: FontWeight.w700,
     ),

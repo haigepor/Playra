@@ -220,6 +220,10 @@ class _MioDetailPageState extends State<MioDetailPage> {
         (state.width ?? 0) > 0 &&
         (state.height ?? 0) > 0;
     if (_activity.value != active) _activity.value = active;
+    // 首帧超时或瞬时媒体错误后仍可能恢复；当前媒体真正播放时撤掉过期的重试遮罩。
+    if (active && !playingLoading && playMessage != null) {
+      setState(() => playMessage = null);
+    }
   }
 
   Future<bool?> _openMedia(
@@ -317,9 +321,15 @@ class _MioDetailPageState extends State<MioDetailPage> {
         _videoController = _mediaSession.controller;
       });
       _activitySubscriptions.addAll([
-        player.stream.playing.listen((_) => _updateActivity()),
-        player.stream.buffering.listen((_) => _updateActivity()),
-        player.stream.position.listen((_) => _updateActivity()),
+        player.stream.playing.listen((_) {
+          if (current()) _updateActivity();
+        }),
+        player.stream.buffering.listen((_) {
+          if (current()) _updateActivity();
+        }),
+        player.stream.position.listen((_) {
+          if (current()) _updateActivity();
+        }),
       ]);
       final url = _mediaSession.mediaUrl;
       final clock = Stopwatch()..start();
@@ -702,17 +712,19 @@ class _MioDetailPageState extends State<MioDetailPage> {
                         kIsWeb
                             ? WebPlayerSurface(
                                 controller: _videoController!,
-                                onNext: () {
-                                  final index = episodes.indexWhere(
-                                    (episode) =>
-                                        episode.code == playingCode &&
-                                        episode.number == playingNumber,
-                                  );
-                                  if (index >= 0 &&
-                                      index + 1 < episodes.length) {
-                                    unawaited(play(episodes[index + 1]));
-                                  }
-                                },
+                                onNext: episodes.length < 2
+                                    ? null
+                                    : () {
+                                        final index = episodes.indexWhere(
+                                          (episode) =>
+                                              episode.code == playingCode &&
+                                              episode.number == playingNumber,
+                                        );
+                                        if (index >= 0 &&
+                                            index + 1 < episodes.length) {
+                                          unawaited(play(episodes[index + 1]));
+                                        }
+                                      },
                               )
                             : _nativePlayerSurface(fillsWindow: false)
                       else

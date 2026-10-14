@@ -13,6 +13,7 @@ import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
+import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 class ThemeSettingsPage extends StatefulWidget {
   const ThemeSettingsPage({super.key});
@@ -132,6 +133,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final modern = ModernSettingsScope.isActiveOf(context);
     return SettingsDetailScaffold(
       title: const Text('外观设置'),
       body: SettingsList(
@@ -139,84 +141,99 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
           SettingsSection(
             title: Text('外观'),
             tiles: [
-              SettingsDropdownTile<String>(
-                leading: Icons.dark_mode_rounded,
-                title: const Text('深色模式'),
-                value: defaultThemeMode,
-                fallbackLabel: '跟随系统',
-                options: const {'system': '跟随系统', 'light': '浅色', 'dark': '深色'},
-                onChanged: updateTheme,
-              ),
-              SettingsTile(
-                leading: Icons.palette_rounded,
-                enabled: !useDynamicColor,
-                onPressed: (_) async {
-                  KazumiDialog.show(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: Text('配色方案'),
-                        content: StatefulBuilder(
-                          builder:
-                              (BuildContext context, StateSetter setState) {
-                                final List<Map<String, dynamic>> colorThemes =
-                                    colorThemeTypes;
-                                return Wrap(
-                                  alignment: WrapAlignment.center,
-                                  spacing: 8,
-                                  runSpacing: isDesktop() ? 8 : 0,
-                                  children: [
-                                    ...colorThemes.map((e) {
-                                      final index = colorThemes.indexOf(e);
-                                      return GestureDetector(
-                                        onTap: () {
-                                          index == 0
-                                              ? resetTheme()
-                                              : setTheme(e['color']);
-                                          KazumiDialog.dismiss();
-                                        },
-                                        child: Column(
-                                          children: [
-                                            PaletteCard(
-                                              color: e['color'],
-                                              selected:
-                                                  (e['color'].value
-                                                          .toRadixString(16) ==
-                                                      defaultThemeColor ||
-                                                  (defaultThemeColor ==
-                                                          'default' &&
-                                                      index == 0)),
-                                            ),
-                                            Text(e['label']),
-                                          ],
-                                        ),
-                                      );
-                                    }),
-                                  ],
-                                );
-                              },
-                        ),
-                      );
-                    },
-                  );
-                },
-                title: Text('配色方案'),
-              ),
-              SettingsTile.switchTile(
-                leading: Icons.colorize_rounded,
-                enabled: !Platform.isIOS,
-                onToggle: (value) async {
-                  useDynamicColor = value ?? !useDynamicColor;
-                  await GStorage.putSetting(
-                    SettingsKeys.useDynamicColor,
-                    useDynamicColor,
-                  );
-                  themeProvider.setDynamic(useDynamicColor);
-                  setState(() {});
-                },
-                title: Text('动态配色'),
-                initialValue: useDynamicColor,
-              ),
+              if (modern)
+                const SettingsTile(
+                  leading: Icons.palette_rounded,
+                  title: Text('新版配色'),
+                  description: Text('新版使用深色背景与淡紫色强调，字体跟随下方设置。'),
+                ),
+              // 新版固定品牌色；旧版仍保留已保存的主题、动态取色和 OLED 偏好。
+              if (!modern) ...[
+                SettingsDropdownTile<String>(
+                  leading: Icons.dark_mode_rounded,
+                  title: const Text('深色模式'),
+                  value: defaultThemeMode,
+                  fallbackLabel: '跟随系统',
+                  options: const {
+                    'system': '跟随系统',
+                    'light': '浅色',
+                    'dark': '深色',
+                  },
+                  onChanged: updateTheme,
+                ),
+                SettingsTile(
+                  leading: Icons.palette_rounded,
+                  enabled: !useDynamicColor,
+                  onPressed: (_) async {
+                    KazumiDialog.show(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text('配色方案'),
+                          content: StatefulBuilder(
+                            builder:
+                                (BuildContext context, StateSetter setState) {
+                                  final List<Map<String, dynamic>> colorThemes =
+                                      colorThemeTypes;
+                                  return Wrap(
+                                    alignment: WrapAlignment.center,
+                                    spacing: 8,
+                                    runSpacing: isDesktop() ? 8 : 0,
+                                    children: [
+                                      ...colorThemes.map((e) {
+                                        final index = colorThemes.indexOf(e);
+                                        return GestureDetector(
+                                          onTap: () {
+                                            index == 0
+                                                ? resetTheme()
+                                                : setTheme(e['color']);
+                                            KazumiDialog.dismiss();
+                                          },
+                                          child: Column(
+                                            children: [
+                                              PaletteCard(
+                                                color: e['color'],
+                                                selected:
+                                                    (e['color'].value
+                                                            .toRadixString(
+                                                              16,
+                                                            ) ==
+                                                        defaultThemeColor ||
+                                                    (defaultThemeColor ==
+                                                            'default' &&
+                                                        index == 0)),
+                                              ),
+                                              Text(e['label']),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                    ],
+                                  );
+                                },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  title: Text('配色方案'),
+                ),
+                SettingsTile.switchTile(
+                  leading: Icons.colorize_rounded,
+                  enabled: !Platform.isIOS,
+                  onToggle: (value) async {
+                    useDynamicColor = value ?? !useDynamicColor;
+                    await GStorage.putSetting(
+                      SettingsKeys.useDynamicColor,
+                      useDynamicColor,
+                    );
+                    themeProvider.setDynamic(useDynamicColor);
+                    setState(() {});
+                  },
+                  title: Text('动态配色'),
+                  initialValue: useDynamicColor,
+                ),
+              ],
               SettingsTile.switchTile(
                 leading: Icons.font_download_rounded,
                 onToggle: (value) async {
@@ -240,28 +257,29 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 initialValue: useSystemFont,
               ),
             ],
-            bottomInfo: Text('动态配色仅支持安卓12及以上和桌面平台'),
+            bottomInfo: modern ? null : Text('动态配色仅支持安卓12及以上和桌面平台'),
           ),
-          SettingsSection(
-            title: Text('显示'),
-            tiles: [
-              SettingsTile.switchTile(
-                leading: Icons.contrast_rounded,
-                onToggle: (value) async {
-                  oledEnhance = value ?? !oledEnhance;
-                  await GStorage.putSetting(
-                    SettingsKeys.oledEnhance,
-                    oledEnhance,
-                  );
-                  updateOledEnhance();
-                  setState(() {});
-                },
-                title: Text('OLED优化'),
-                description: Text('深色模式下使用纯黑背景'),
-                initialValue: oledEnhance,
-              ),
-            ],
-          ),
+          if (!modern)
+            SettingsSection(
+              title: Text('显示'),
+              tiles: [
+                SettingsTile.switchTile(
+                  leading: Icons.contrast_rounded,
+                  onToggle: (value) async {
+                    oledEnhance = value ?? !oledEnhance;
+                    await GStorage.putSetting(
+                      SettingsKeys.oledEnhance,
+                      oledEnhance,
+                    );
+                    updateOledEnhance();
+                    setState(() {});
+                  },
+                  title: Text('OLED优化'),
+                  description: Text('深色模式下使用纯黑背景'),
+                  initialValue: oledEnhance,
+                ),
+              ],
+            ),
           if (isDesktop())
             SettingsSection(
               title: Text('窗口'),

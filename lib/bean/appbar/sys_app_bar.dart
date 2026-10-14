@@ -63,7 +63,7 @@ class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: title!,
               )
             : null,
-        centerTitle: Platform.isIOS,
+        centerTitle: modern ? false : Platform.isIOS,
         actions: appBarActions.map((action) {
           return EmbeddedNativeControlArea(
             requireOffset: needTopOffset,

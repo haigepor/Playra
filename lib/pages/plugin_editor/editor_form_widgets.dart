@@ -29,7 +29,7 @@ class EditorTextField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           autocorrect: false,
-          enableSuggestions: false,
+          enableSuggestions: true,
           style: maxLines > 1
               ? theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')
               : null,

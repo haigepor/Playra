@@ -1,6 +1,7 @@
 import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/interface_style.dart';
 import 'package:kazumi/services/platform/platform_paths.dart';
 
 import 'package:kazumi/bean/widget/error_widget.dart';
@@ -15,7 +16,7 @@ class StorageErrorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 存储失败时控制器尚未创建，直接使用局部主题，不能读取 GStorage。
-    return Platform.isAndroid
+    return InterfaceStyleController.supportsPlatform(Theme.of(context).platform)
         ? ModernSecondaryScope(child: Builder(builder: _page))
         : _page(context);
   }

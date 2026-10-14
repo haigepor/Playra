@@ -323,7 +323,7 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
               focusNode: _inputFocus,
               enabled: !_submitting,
               autocorrect: false,
-              enableSuggestions: false,
+              enableSuggestions: true,
               textInputAction: TextInputAction.done,
               onChanged: (_) {
                 if (_inputError != null) setState(() => _inputError = null);

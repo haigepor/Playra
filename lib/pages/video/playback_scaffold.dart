@@ -324,6 +324,9 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
 
   void _toggleSidePanel() => _sidePanelKey.currentState?.toggle();
 
+  /// 未起播的横屏封面仍需能访问详情和选集，不依赖 PlayerItem 控制栏。
+  void toggleDetails() => _toggleSidePanel();
+
   void _closeSidePanel() => _sidePanelKey.currentState?.close();
 
   // Only desktop PiP participates in local navigation.

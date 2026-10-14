@@ -158,7 +158,13 @@ class NetworkImgLayer extends StatelessWidget {
         borderRadius: _borderRadius,
       ),
       child: type == 'bg'
-          ? const SizedBox()
+          ? Center(
+              child: Icon(
+                Icons.image_not_supported_outlined,
+                size: 22,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            )
           : Center(
               child: Image.asset(
                 type == 'avatar'

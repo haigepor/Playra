@@ -184,6 +184,10 @@ class ModernHomeView extends StatelessWidget {
                                             kind: mediaKind,
                                             onDetails: onMediaDetails!,
                                           )
+                                        // 影视聚合栏目由电影/综艺接口呈现，不借用动漫推荐的空状态和重试。
+                                        else if (media != null &&
+                                            controller.feed == HomeFeed.screen)
+                                          const SizedBox.shrink()
                                         else if (!controller
                                                 .feed
                                                 .hasContentSource &&
@@ -306,6 +310,11 @@ class ModernHomeView extends StatelessWidget {
                                   ),
                                   if (media != null &&
                                       mediaKind == null &&
+                                      mioRankCategory(
+                                            media!,
+                                            controller.feed,
+                                          ) !=
+                                          null &&
                                       onMediaDetails != null)
                                     SliverToBoxAdapter(
                                       child: Padding(
@@ -868,7 +877,7 @@ class _ChannelRail extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: colors.onSurfaceVariant,
                       padding: const EdgeInsets.only(left: 8),
-                      minimumSize: const Size(0, 40),
+                      minimumSize: const Size(48, 48),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1094,28 +1103,31 @@ class _SearchEntry extends StatelessWidget {
           key: const ValueKey('home-search'),
           onTap: onSearch,
           borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-            child: Row(
-              children: [
-                Icon(
-                  LucideIcons.search,
-                  size: 19,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    '搜索动漫、影视或关键词',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.search,
+                    size: 19,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      '搜索动漫、影视或关键词',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1346,7 +1358,7 @@ class _BentoCardState extends State<_BentoCard> {
                                       Text(
                                         '查看作品 ›',
                                         style: TextStyle(
-                                          fontSize: 10,
+                                          fontSize: 12,
                                           color: colors.primary,
                                         ),
                                       ),

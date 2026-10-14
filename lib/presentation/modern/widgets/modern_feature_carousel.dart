@@ -164,14 +164,14 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
             ),
             child: LayoutBuilder(
               builder: (context, bounds) {
-                // 海报和指示器共用右栏尺寸，字号放大时仍保持对齐。
+                // 视觉指示线与命中区分开；六项在小屏也保留独立的可点击宽度。
                 final coverWidth = math.min(
                   math.min((bounds.maxWidth - 36) * .34, 116.0),
                   (bounds.maxHeight - 66) / 1.42,
                 );
                 final trackWidth = math.min(
-                  coverWidth + 22,
-                  widget.entries.length * 22.0,
+                  bounds.maxWidth - 36,
+                  widget.entries.length * 26.0,
                 );
                 final step = trackWidth / widget.entries.length;
                 final indicatorBottom =
@@ -203,7 +203,10 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
                     ),
                     if (widget.entries.length > 1)
                       Positioned(
-                        right: 18 + (coverWidth + 6 - trackWidth) / 2,
+                        right: math.max(
+                          12,
+                          18 + (coverWidth + 6 - trackWidth) / 2,
+                        ),
                         width: trackWidth,
                         bottom: indicatorBottom - 4,
                         height: 40,

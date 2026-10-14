@@ -36,6 +36,9 @@ ThemeData modernHomeTheme(ThemeData base, {bool forceDark = false}) {
   final brightness = forceDark ? Brightness.dark : base.brightness;
   final zinc = modernHomeColors(brightness);
   return base.copyWith(
+    // Web 即使运行在桌面系统的小窗，也保留移动页面的操作命中尺寸。
+    visualDensity: VisualDensity.standard,
+    materialTapTargetSize: MaterialTapTargetSize.padded,
     brightness: brightness,
     scaffoldBackgroundColor: zinc.background,
     colorScheme: base.colorScheme.copyWith(
@@ -79,6 +82,9 @@ ThemeData modernHomeTheme(ThemeData base, {bool forceDark = false}) {
       modalBackgroundColor: zinc.card,
       surfaceTintColor: Colors.transparent,
       dragHandleColor: zinc.mutedForeground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -102,7 +108,7 @@ ThemeData modernHomeTheme(ThemeData base, {bool forceDark = false}) {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: zinc.primary,
-        minimumSize: const Size(48, 40),
+        minimumSize: const Size(48, 48),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         overlayColor: zinc.primary.withValues(alpha: .08),

@@ -127,7 +127,7 @@ class _MaterialSheetSurfaceState extends State<_MaterialSheetSurface>
     final surface = Material(
       color: background,
       elevation: 0,
-      shape: _materialSheetShape,
+      shape: theme.bottomSheetTheme.shape ?? _materialSheetShape,
       clipBehavior: Clip.antiAlias,
       child: Theme(
         data: theme.copyWith(

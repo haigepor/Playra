@@ -47,11 +47,13 @@ class SecondaryEmptyState extends StatelessWidget {
     required this.title,
     this.description,
     this.asset = 'modern-search-empty',
+    this.artwork,
     this.action,
   });
   final String title;
   final String? description;
   final String asset;
+  final Widget? artwork;
   final Widget? action;
   @override
   Widget build(BuildContext context) => Padding(
@@ -59,12 +61,19 @@ class SecondaryEmptyState extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SecondaryArtwork(asset: asset),
+        artwork ?? SecondaryArtwork(asset: asset),
         const SizedBox(height: 12),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleMedium,
+        Semantics(
+          header: true,
+          liveRegion: true,
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         if (description != null) ...[
           const SizedBox(height: 8),
