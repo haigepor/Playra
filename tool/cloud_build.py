@@ -18,7 +18,7 @@ TARGETS = {
     "web": "ubuntu-latest",
     "macos": "macos-15",
     "linux": "ubuntu-24.04",
-    "windows": "windows-2022",
+    "windows": "windows-2025",
 }
 
 
@@ -246,7 +246,10 @@ def main():
         if platform == "web":
             command.append("--no-wasm-dry-run")
         command.extend(runtime_define(os.environ.get("PLAYRA_SOURCE_RUNTIME_URL", "")))
-        subprocess.run(command, check=True)
+        # Do not echo command arguments: a runtime endpoint may be a private input.
+        result = subprocess.run(command)
+        if result.returncode:
+            raise SystemExit(f"Flutter {platform} build failed (exit {result.returncode}); see build logs")
 
 
 if __name__ == "__main__":

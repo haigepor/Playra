@@ -90,6 +90,16 @@ jobs:
           flutter-version: ${{ needs.plan.outputs.flutter_version }}
           cache: true
       - run: flutter pub get
+      - name: Validate Windows archive support
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          # media-kit uses tar for its pinned 7z bundle; old runners lack LZMA.
+          $archiveVersion = (& tar --version | Out-String).Trim()
+          Write-Output $archiveVersion
+          if ($LASTEXITCODE -ne 0 -or $archiveVersion -notmatch 'liblzma') {
+            throw 'The Windows runner must provide tar with LZMA support'
+          }
       - name: Build selected platform
         run: python tool/cloud_build.py build
       - name: Show failed Windows native hook diagnostics
