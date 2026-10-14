@@ -28,6 +28,16 @@
 
 19 项定向测试通过：输入通道属性、中文 composing、缓冲实时更新、连续 seek 的旧百分比清理、换源/销毁、未知进度、既有原生影视适配和样式。579 项全量 Flutter 测试通过，五个改动 Dart 文件 analyze 无问题。编码与 diff 范围按最终交付复核。
 
-新增受控限速视频和原生验证入口位于忽略的 .dart_tool，仅作验证，不进入交付 APK。模拟器输入类型及原生事件/画面证据追加在本节；小米专有键盘外观不以 AOSP 模拟器替代真机验收。
+新增受控限速视频和原生验证入口位于忽略的 .dart_tool，仅作验证，不进入交付 APK。小米专有键盘外观不以 AOSP 模拟器替代真机验收。
+
+实际验证结果：
+
+- emulator-5554 覆盖安装正式入口的 Release 包后，当前 EditorInfo inputType 两处均为 **0x1**，密码 variation 已清除；真实输入 tr 仍为 tr。
+- 原生 media_kit/mpv 播放自建限速 MJPEG AVI。日志上报 buffering=true、percentage 0→5→20…→100、buffering=false；实际画面捕获“缓冲 20%”。播放中跳至未缓存的 45 秒，实际画面捕获“缓冲 25%”，不是按全片时长估算出的数字。
+- 原生验证使用同一共享 HUD 和真实播放器事件；截图分别位于本机 .dart_tool/native-buffer-active.png、native-seek-buffer-active.png。临时服务器与 ADB reverse 已停止/移除，模拟器已恢复正常应用。
+- 正式 APK 为 `build/releases/Playra-2.3.8-20308-43cee1c0-ime-buffer.apk`，2.3.8/20308，102610879 字节，SHA256 `40f17dad15d6422a341eef3a7bda12b76aeaf401ca4fe3d36bdfb68ff71b5d7c`。CRC、内置 SDK、ABI 与 v2 测试签名均通过；没有交付验证入口。
+- Web 正式入口构建通过，9006 预览 JS hash 与本轮构建一致。Playwright 实测 input type=text，逐字 tr→tr你好、清空均通过，console error=0；中文 IME composing 另由组件测试覆盖。
+
+修改清单：ContentSearchScreen 仅调整普通输入属性；PlayerItem 将旧加载层接入新增共享 HUD；两份测试覆盖输入通道及事件生命周期；本文记录证据和限制。未改变拖动目标、暂停/恢复顺序或缓存配置。代码修复提交为 `10f60e39`（搜索）和 `43cee1c0`（缓冲）；后续仅追加验证文档。
 
 回退：revert 本轮搜索与缓冲两个修复提交；不恢复或删除此前用户文件，不改全局手机键盘设置。
