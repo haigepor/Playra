@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../runtime/source_runtime.dart';
 import '../source_models.dart' show SourceException;
+import '../sdk_playback_models.dart';
 
 enum MioKind {
   anime('动漫'),
@@ -100,7 +101,7 @@ String mioImage(Object? value) {
       : '';
 }
 
-class MioVideo {
+class MioVideo extends SdkVideo {
   MioVideo.fromJson(Map<String, dynamic> raw)
     : id = _text(raw['id']),
       title = _text(raw['title']),
@@ -125,17 +126,10 @@ class MioVideo {
       throw const FormatException('Invalid source video');
     }
   }
-  final String id,
-      title,
-      categoryId,
-      categoryName,
-      types,
-      tags,
-      cover,
-      poster,
-      description,
-      year,
-      area;
+  final String categoryId, types, tags;
+  @override
+  final String id, title, categoryName, cover, poster, description, year, area;
+  @override
   final double score;
   final int episodeCount;
   final bool recommended;
@@ -146,9 +140,13 @@ class MioVideo {
       .map((value) => value.trim())
       .where((value) => value.isNotEmpty && value.length <= 16)
       .toSet();
+  @override
   final List<MioLine> lines;
   MioKind get kind => mioKind(categoryName, types);
+  @override
+  bool get singleMovie => kind == MioKind.movie;
   String get identity => 'miomedia:$id';
+  @override
   String get subtitle => [
     year,
     area,
@@ -156,29 +154,24 @@ class MioVideo {
   ].where((s) => s.isNotEmpty && s != '0').join(' · ');
 }
 
-class MioLine {
-  const MioLine(this.code, this.name);
-  final String code, name;
-  String get label => name.isEmpty ? code : name;
+class MioLine extends SdkLine {
+  const MioLine(super.code, super.name);
 }
 
-class MioEpisode {
+class MioEpisode extends SdkEpisode {
   MioEpisode.fromJson(Map<String, dynamic> raw)
-    : number = _integer(raw['episodeNum']),
-      name = _text(raw['displayName']).isNotEmpty
-          ? _text(raw['displayName'])
-          : _text(raw['episodeName']),
-      code = _text(raw['code']),
-      vip = raw['isVip'] == 1 || raw['isVip'] == true {
+    : super(
+        number: _integer(raw['episodeNum']),
+        name: _text(raw['displayName']).isNotEmpty
+            ? _text(raw['displayName'])
+            : _text(raw['episodeName']),
+        code: _text(raw['code']),
+        vip: raw['isVip'] == 1 || raw['isVip'] == true,
+      ) {
     if (number < 1 || !_lineCode(code)) {
       throw const FormatException('Invalid episode');
     }
   }
-  final int number;
-  final String name, code;
-  final bool vip;
-  String get label =>
-      name.isEmpty ? '第${number.toString().padLeft(2, '0')}集' : name;
 }
 
 class MioPage {
@@ -377,12 +370,36 @@ class MioMediaService {
     String id,
     String code,
     int episode, {
+    String? quality,
     CancelToken? cancel,
   }) => call('play', {
     'videoId': id,
     'code': code,
     'episodeNum': episode,
+    'quality': ?quality,
     'caps': [],
   }, cancel: cancel);
+
+  Future<List<SdkQuality>> qualities(
+    String id,
+    String code,
+    int episode, {
+    CancelToken? cancel,
+  }) async {
+    final data = await call('qualities', {
+      'videoId': id,
+      'code': code,
+      'episodeNum': episode,
+      'caps': [],
+    }, cancel: cancel);
+    // 只取画质元数据；exchangeToken 等短时材料不进入公共页面状态。
+    return [
+      for (final raw
+          in data['qualities'] is List ? data['qualities'] as List : const [])
+        if (raw is Map && SdkQuality.fromJson(raw) != null)
+          SdkQuality.fromJson(raw)!,
+    ];
+  }
+
   void dispose() => _runtime?.dispose();
 }

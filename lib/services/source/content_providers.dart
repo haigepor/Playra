@@ -7,6 +7,8 @@ import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'content_search.dart';
 import 'miomedia/miomedia_service.dart';
+import 'miomedia/miomedia_playback_provider.dart';
+import 'sdk_playback_provider.dart';
 import 'source_service.dart';
 import 'source_models.dart';
 import 'source_playback_service.dart';
@@ -164,7 +166,10 @@ class MioContentProvider extends ContentSearchProvider {
   @override
   String get id => 'miomedia';
   @override
-  String get name => 'MioMedia';
+  String get name => 'miomedia';
+  late final _sdkPlayback = MioSdkPlaybackProvider(service);
+  @override
+  SdkPlaybackProvider get sdkPlayback => _sdkPlayback;
   // 保留 SDK 已有内容；后续专属来源通过登记加入，不复制 SDK。
   @override
   Set<ContentGroup> get groups => {

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'source_models.dart';
 import 'source_resolve_config.dart';
+import 'sdk_playback_provider.dart';
 
 /// 展示频道与旧 anime/screen 来源领域分开，地区不参与频道划分。
 enum ContentGroup {
@@ -90,6 +91,7 @@ class ContentLine {
 }
 
 abstract class ContentSearchProvider {
+  SdkPlaybackProvider? get sdkPlayback => null;
   String get id;
   String get origin => id;
   String get name;

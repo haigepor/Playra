@@ -140,6 +140,7 @@ git fetch upstream main --no-tags --no-recurse-submodules
 
 | 主题 | 入口 |
 | --- | --- |
+| 新 SDK / 接口接入 | [统一接入规范](docs/development/source-sdk-onboarding.zh.md) · [接入验收模板](docs/development/templates/source-sdk-checklist.zh.md) · [本轮 SDK 实施记录](docs/analysis/sdk-provider-lines-quality-implementation-20261014.zh.md) |
 | 构建与发布 | [私有 SDK、正式签名与 CI 输入](docs/release/build-inputs.zh.md) · [版本引用策略](docs/release/tag-policy.zh.md) |
 | 多设备开发 | [路径分工、D 盘环境与新设备恢复](docs/development/web-android-environment.zh.md) · [Web/Android 与 SDK 分析](docs/analysis/web-android-sdk-20261013.zh.md) |
 | 内容与播放 | [MioMedia 内容/播放接入](docs/miomedia-content-playback.zh.md) · [七天榜单记录](docs/verification/miomedia-seven-day-ranking.zh.md) |

@@ -12,6 +12,8 @@ import 'package:kazumi/presentation/modern/pages/modern_player_detail_page.dart'
 import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 import 'package:kazumi/presentation/modern/miomedia/miomedia_detail_page.dart';
 import 'source_search_entry.dart';
+import 'package:kazumi/services/source/sdk_playback_entry.dart';
+import 'package:kazumi/presentation/modern/pages/sdk_player_detail_page.dart';
 import 'package:kazumi/pages/video/video_page.dart';
 
 final infoModule = createModule(
@@ -25,12 +27,13 @@ final infoModule = createModule(
         ..add<PlayerController>(PlayerController.new),
       child: (context, state) {
         final entry = state.arguments;
+        if (entry is SdkPlaybackEntry) return SdkDetailPage(entry: entry);
         if (entry is MioSearchEntry) {
           return MioDetailPage(item: entry.item, autoPlay: true);
         }
         final bangumiItem = entry is SourceSearchEntry ? entry.item : entry;
         if (bangumiItem is MioVideo) {
-          return MioDetailPage(item: bangumiItem);
+          return MioDetailPage(item: bangumiItem, autoPlay: true);
         }
         if (bangumiItem is! BangumiItem) {
           return const RouteErrorPage(message: '番组详情参数无效，请返回后重新打开。');

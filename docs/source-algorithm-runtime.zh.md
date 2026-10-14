@@ -1,5 +1,7 @@
 # Web / Android 来源算法运行骨架
 
+> 新来源的完整接入流程见[内容 SDK 与接口接入规范](development/source-sdk-onboarding.zh.md)。本文说明传输与算法运行层；通用 SDK 播放页已建立，但 `sdk` 路由和 Android 内置 SDK 分发当前仍为 Mio 专用，新增 SDK 必须显式补齐各平台传输。
+
 更新：2026-10-13。所有命令从当前设备的仓库根目录执行；工具位置与多设备迁移统一参照 [开发环境与路径说明](development/web-android-environment.zh.md)。
 
 ## 当前边界

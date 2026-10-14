@@ -1,0 +1,1722 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/pages/player/player_controller.dart';
+import 'package:kazumi/pages/player/player_item.dart';
+import 'package:kazumi/pages/video/video_controller.dart';
+import 'package:kazumi/pages/video/video_system_bars.dart';
+import 'package:kazumi/modules/roads/road_module.dart';
+import 'package:kazumi/services/video_source/video_source_format.dart';
+import 'package:kazumi/bean/widget/content_skeleton.dart';
+import 'package:kazumi/bean/widget/loading_indicator.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+import 'package:kazumi/bean/card/network_img_layer.dart';
+import 'package:kazumi/services/player/source_media_player.dart';
+import 'package:kazumi/services/player/web_player_surface.dart';
+import 'package:kazumi/services/source/sdk_playback_models.dart';
+import 'package:kazumi/services/source/sdk_playback_provider.dart';
+import 'package:kazumi/services/source/sdk_playback_entry.dart';
+import 'package:kazumi/services/source/sdk_playback_coordinator.dart';
+import '../miomedia/miomedia_playing_mark.dart';
+import '../home/home_theme.dart';
+import '../settings/modern_back_button.dart';
+import '../player/sdk_source_widgets.dart';
+
+/// 来源作品有独立身份；不创建 Bangumi 收藏、历史或弹幕上下文。
+class SdkDetailPage extends StatefulWidget {
+  const SdkDetailPage({super.key, required this.entry});
+  final SdkPlaybackEntry entry;
+  @override
+  State<SdkDetailPage> createState() => _SdkDetailPageState();
+}
+
+class _SdkDetailPageState extends State<SdkDetailPage> {
+  late SdkSourceBinding source = widget.entry.sources.first;
+  late SdkVideo video =
+      source.seed ??
+      SdkVideoData(
+        id: source.contentId,
+        title: widget.entry.title,
+        cover: widget.entry.cover,
+      );
+  SdkPlaybackProvider get service => source.provider;
+  SdkPlaybackCoordinator? _coordinator;
+  SdkPlaybackCoordinator get _playback =>
+      _coordinator ??= SdkPlaybackCoordinator(
+        source.contentId,
+        service,
+        singleMovie: video.singleMovie,
+        onChanged: _metadataChanged,
+      );
+  bool automatic = true;
+  SdkQuality? selectedQuality;
+  String? resumeNotice;
+  int _selectionGeneration = 0;
+  String? decodedResolution;
+  VoidCallback? _refreshLineSheet;
+
+  void _metadataChanged() {
+    if (!mounted || _disposed) return;
+    setState(() {});
+    _refreshLineSheet?.call();
+  }
+
+  SdkLine? line;
+  List<SdkEpisode> episodes = [];
+  CancelToken? _detailCancel, _episodesCancel, _playCancel;
+  int _detailGeneration = 0, _episodesGeneration = 0, _playGeneration = 0;
+  bool detailLoading = false, episodesLoading = false, playingLoading = false;
+  String? detailError, episodesError, playMessage;
+  String? playingCode;
+  int? playingNumber;
+  SdkEpisode? _requestedEpisode;
+  Player? _player;
+  VideoController? _videoController;
+  PlayerController? _nativePlayer;
+  VideoPageController? _nativeView;
+  final _nativeSurfaceKey = GlobalKey();
+  final _keyboardFocus = FocusNode();
+  late final _mediaSession = SourceMediaPlayer(
+    createNative: (url, debug) => _nativePlayer!.playback,
+  );
+  final _activity = ValueNotifier(false);
+  final _activitySubscriptions = <StreamSubscription<dynamic>>[];
+  Future<void> _mediaTail = Future.value();
+  bool _disposed = false;
+  bool _autoStarted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(loadDetail());
+  }
+
+  Future<void> loadDetail({bool forceAutoPlay = false}) async {
+    _detailCancel?.cancel();
+    final cancel = _detailCancel = CancelToken();
+    final generation = ++_detailGeneration;
+    final selection = _selectionGeneration;
+    bool current() =>
+        mounted &&
+        generation == _detailGeneration &&
+        !cancel.isCancelled &&
+        selection == _selectionGeneration;
+    setState(() {
+      detailLoading = true;
+      detailError = null;
+    });
+    try {
+      final result = await service.detail(source.contentId, cancel: cancel);
+      if (!current()) {
+        return;
+      }
+      _coordinator?.dispose();
+      _coordinator = null;
+      setState(() => video = result);
+      if (result.lines.isNotEmpty) {
+        // 首次目录直接并发探测，首条慢线路不阻塞其他线路进入候选。
+        final initial = await _playback.prepare(null, result.lines, cancel);
+        if (!current()) return;
+        final available = initial
+            .where((item) => item.episode != null)
+            .firstOrNull;
+        if (available != null) await _loadLine(available.line);
+        if ((widget.entry.autoPlay || forceAutoPlay) &&
+            !_autoStarted &&
+            current() &&
+            episodes.isNotEmpty) {
+          _autoStarted = true;
+          unawaited(play(episodes.first));
+        }
+      }
+    } catch (_) {
+      if (mounted && generation == _detailGeneration && !cancel.isCancelled) {
+        setState(() => detailError = '作品资料加载失败，请重试');
+      }
+    } finally {
+      if (mounted && generation == _detailGeneration) {
+        setState(() => detailLoading = false);
+      }
+    }
+  }
+
+  Future<bool> _loadLine(SdkLine selected) async {
+    // 切线路作废尚未完成的播放请求，不把旧线路解析结果装到新选择上。
+    _playCancel?.cancel();
+    _playGeneration++;
+    _episodesCancel?.cancel();
+    final cancel = _episodesCancel = CancelToken();
+    final generation = ++_episodesGeneration;
+    setState(() {
+      line = selected;
+      episodes = [];
+      episodesLoading = true;
+      episodesError = null;
+      playingLoading = false;
+      playMessage = null;
+    });
+    try {
+      // 底层读取属于页面会话；快速换线只取消本次 UI 展示，不丢共享缓存。
+      final result = await _playback.episodes(selected);
+      if (!mounted || generation != _episodesGeneration || cancel.isCancelled) {
+        return false;
+      }
+      setState(() => episodes = result);
+      return true;
+    } catch (_) {
+      if (mounted && generation == _episodesGeneration && !cancel.isCancelled) {
+        setState(() => episodesError = '剧集加载失败，请重试');
+      }
+      return false;
+    } finally {
+      if (mounted && generation == _episodesGeneration) {
+        setState(() => episodesLoading = false);
+      }
+    }
+  }
+
+  Future<void> selectLine(SdkLine selected) async {
+    final selection = ++_selectionGeneration;
+    _detailCancel?.cancel('manual selection');
+    final previous = _requestedEpisode;
+    final previousSingle = episodes.length == 1;
+    final position = _player?.state.position ?? Duration.zero;
+    final duration = _player?.state.duration ?? Duration.zero;
+    setState(() {
+      automatic = false;
+      detailLoading = false;
+    });
+    if (!await _loadLine(selected) ||
+        !mounted ||
+        selection != _selectionGeneration)
+      return;
+    final target = previous == null
+        ? episodes.firstOrNull
+        : SdkPlaybackCoordinator.match(
+            previous,
+            episodes,
+            singleMovie: video.singleMovie && previousSingle,
+          );
+    if (target == null) {
+      setState(
+        () => playMessage = episodes.isEmpty
+            ? '该线路暂无剧集，可选择其他线路'
+            : '该线路没有对应当前集，请选择其他线路',
+      );
+      return;
+    }
+    await play(
+      target,
+      manual: true,
+      resumeAt: position,
+      resumeDuration: duration,
+    );
+  }
+
+  Future<void> switchSource(SdkSourceBinding selected) async {
+    _selectionGeneration++;
+    _playCancel?.cancel();
+    _playGeneration++;
+    _detailCancel?.cancel();
+    _episodesCancel?.cancel();
+    _coordinator?.dispose();
+    _coordinator = null;
+    setState(() {
+      source = selected;
+      video =
+          selected.seed ??
+          SdkVideoData(
+            id: selected.contentId,
+            title: widget.entry.title,
+            cover: widget.entry.cover,
+          );
+      line = null;
+      episodes = [];
+      _requestedEpisode = null;
+      selectedQuality = null;
+      decodedResolution = null;
+      automatic = true;
+      _autoStarted = false;
+    });
+    await loadDetail(forceAutoPlay: true);
+  }
+
+  Future<void> play(
+    SdkEpisode episode, {
+    bool? manual,
+    Duration resumeAt = Duration.zero,
+    Duration resumeDuration = Duration.zero,
+  }) async {
+    _selectionGeneration++;
+    _playCancel?.cancel();
+    final cancel = _playCancel = CancelToken();
+    final generation = ++_playGeneration;
+    setState(() {
+      _requestedEpisode = episode;
+      playingLoading = true;
+      playMessage = null;
+      resumeNotice = null;
+    });
+    try {
+      // 目录/解析仍在准备时保留旧媒体；只有新地址就绪后才交给播放器切换。
+      if (!mounted || generation != _playGeneration || cancel.isCancelled) {
+        return;
+      }
+      var attempt = 0;
+      final result = await _playback.playAutomatic(
+        episode,
+        video.lines,
+        cancel: cancel,
+        manual: manual ?? !automatic,
+        onAttempt: (selected, target, quality) async {
+          final items = selected.code == line?.code
+              ? episodes
+              : await _playback.episodes(selected);
+          if (!mounted || generation != _playGeneration || cancel.isCancelled)
+            return;
+          setState(() {
+            line = selected;
+            episodes = items;
+            _requestedEpisode = target;
+            selectedQuality = quality;
+            decodedResolution = null;
+            playMessage = attempt++ == 0 ? null : '正在尝试${selected.label}…';
+          });
+        },
+        open: (target, media, attemptCancel) => _openMedia(
+          target,
+          media,
+          generation,
+          attemptCancel,
+          resumeAt: resumeAt,
+          resumeDuration: resumeDuration,
+        ),
+      );
+      if (!mounted || generation != _playGeneration || cancel.isCancelled) {
+        return;
+      }
+      setState(
+        () => playMessage = switch (result.status) {
+          'ready' => null,
+          'interaction_required' => '点击播放器继续播放',
+          'ad_required' => '来源平台仍要求广告校验，请重试或切换线路。',
+          'identity_mismatch' => '播放资源与所选剧集不匹配',
+          'invalid_media' => '播放资源地址无效',
+          _ => switch (result.errorCode) {
+            'CLIENT_PARSE_INVALID_RESPONSE' => '该线路解析接口返回了无效数据，请重试或切换线路。',
+            'CLIENT_PARSE_NETWORK' || 'TIMEOUT' => '解析请求超时或网络异常，请重试或切换线路。',
+            'MEDIA_LOAD_FAILED' => '已取得视频地址，但媒体加载失败，请重试或切换线路。',
+            'CLIENT_PARSE_REJECTED' => '来源解析接口未提供可播放资源，请切换线路。',
+            'ATTEMPT_BUDGET_EXHAUSTED' =>
+              result.untried > 0
+                  ? '自动尝试已超时，仍有 ${result.untried} 个候选未试，可手动选择线路。'
+                  : '解析或加载已超时，可重试当前线路或手动切换。',
+            _ => '暂时无法取得播放资源，可重试或切换线路。',
+          },
+        },
+      );
+    } catch (_) {
+      if (mounted && generation == _playGeneration && !cancel.isCancelled) {
+        setState(() => playMessage = '播放请求失败，请重试');
+      }
+    } finally {
+      if (mounted && generation == _playGeneration) {
+        setState(() => playingLoading = false);
+      }
+    }
+  }
+
+  void _updateActivity() {
+    if (_disposed || _player == null) return;
+    final state = _player!.state;
+    final active =
+        state.playing &&
+        !state.buffering &&
+        state.position > Duration.zero &&
+        (state.width ?? 0) > 0 &&
+        (state.height ?? 0) > 0;
+    if (_activity.value != active) _activity.value = active;
+    // 首帧超时或瞬时媒体错误后仍可能恢复；当前媒体真正播放时撤掉过期的重试遮罩。
+    if (active && !playingLoading && playMessage != null) {
+      setState(() => playMessage = null);
+    }
+  }
+
+  Future<bool?> _openMedia(
+    SdkEpisode episode,
+    Map media,
+    int generation,
+    CancelToken cancel, {
+    Duration resumeAt = Duration.zero,
+    Duration resumeDuration = Duration.zero,
+  }) async {
+    // stop/open 串行，旧操作未退出前不向同一个播放器装入另一份媒体。
+    final previous = _mediaTail;
+    final done = Completer<void>();
+    _mediaTail = done.future;
+    bool current() =>
+        !_disposed &&
+        mounted &&
+        generation == _playGeneration &&
+        !cancel.isCancelled;
+    try {
+      await previous;
+      if (!current()) return false;
+      for (final subscription in _activitySubscriptions) {
+        await subscription.cancel();
+      }
+      _activitySubscriptions.clear();
+      if (!current()) return false;
+      setState(() {
+        _player = null;
+        _videoController = null;
+      });
+      _activity.value = false;
+      if (!current()) return false;
+      var error = '', started = false;
+      final headers = <String, String>{};
+      if (media['headers'] is Map) {
+        for (final entry in (media['headers'] as Map).entries) {
+          if (entry.key is String && entry.value is String)
+            headers[entry.key as String] = entry.value as String;
+        }
+      }
+      setState(() {
+        playingCode = episode.code;
+        playingNumber = episode.number;
+      });
+      if (!kIsWeb) {
+        if (!mounted) return false;
+        _nativePlayer ??= context.read<PlayerController>();
+        _nativeView ??= context.read<VideoPageController>();
+        _nativeView!.fullscreen.attach(ModalRoute.of(context)!);
+        await _nativePlayer!.bindSourceControls(
+          media['url'] as String,
+          headers['Referer'] ?? headers['referer'] ?? '',
+          canInstall: current,
+        );
+        if (!current()) return false;
+        final index = episodes.indexWhere(
+          (e) => e.code == episode.code && e.number == episode.number,
+        );
+        if (index < 0) return false;
+        _nativeView!.bindSourcePlayer(
+          SourcePlayerContext(
+            identity: '${service.id}:${video.id}',
+            title: video.title,
+            sourceName: line!.label,
+            artworkUrl: video.poster.isNotEmpty ? video.poster : video.cover,
+            referer: headers['Referer'] ?? headers['referer'] ?? '',
+          ),
+          [
+            Road(
+              name: line!.label,
+              data: episodes
+                  .map((e) => '${service.id}:${video.id}:${e.code}:${e.number}')
+                  .toList(),
+              identifier: episodes.map((e) => e.label).toList(),
+            ),
+          ],
+          VideoEpisodeSelection(episode: index + 1, road: 0),
+        );
+      }
+      final player = await _mediaSession.open(
+        media['url'] as String,
+        headers,
+        videoSourceFormat: media['format'] == 'm3u8' || media['format'] == 'hls'
+            ? VideoSourceFormat.hls
+            : VideoSourceFormat.auto,
+        canInstall: current,
+        onError: (message) {
+          if (!current()) return;
+          error = message;
+          if (started) setState(() => playMessage = '媒体加载失败，请检查网络或切换线路');
+        },
+      );
+      if (player == null || !current()) return false;
+      setState(() {
+        _player = player;
+        _videoController = _mediaSession.controller;
+      });
+      _activitySubscriptions.addAll([
+        player.stream.playing.listen((_) {
+          if (current()) _updateActivity();
+        }),
+        player.stream.buffering.listen((_) {
+          if (current()) _updateActivity();
+        }),
+        player.stream.position.listen((_) {
+          if (current()) _updateActivity();
+        }),
+      ]);
+      final url = _mediaSession.mediaUrl;
+      final clock = Stopwatch()..start();
+      while (current() && clock.elapsed < const Duration(seconds: 25)) {
+        final state = player.state;
+        final selected = state.playlist.medias.any((m) => m.uri == url);
+        final hasVideo =
+            selected && (state.width ?? 0) > 0 && (state.height ?? 0) > 0;
+        if (hasVideo && state.position > const Duration(milliseconds: 200)) {
+          started = true;
+          if (resumeAt > Duration.zero && state.duration > Duration.zero) {
+            final difference = (state.duration - resumeDuration).inSeconds
+                .abs();
+            final tolerance = resumeDuration.inSeconds * .02 + 2;
+            if (resumeDuration > Duration.zero &&
+                difference <= tolerance &&
+                resumeAt < state.duration) {
+              await player.seek(resumeAt);
+              if (!current()) return false;
+            } else {
+              setState(() => resumeNotice = '线路版本时长不同，已从头播放');
+            }
+          }
+          if (current()) {
+            setState(() {
+              final width = SdkQuality.resolution(state.width);
+              final height = SdkQuality.resolution(state.height);
+              if (width != null && height != null) {
+                // 宽银幕电影可能裁掉黑边，不能把 1920×800 简写成低清的“800p”。
+                decodedResolution = '$width×$height';
+              }
+            });
+          }
+          _updateActivity();
+          return true;
+        }
+        if (error.isNotEmpty && clock.elapsed > const Duration(seconds: 2))
+          return false;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      if (!current()) return false;
+      // 媒体已就绪却暂停时，保留用户点击继续的路径，不把暂停误判为来源失败。
+      final state = player.state;
+      if (error.isEmpty &&
+          !state.playing &&
+          (state.width ?? 0) > 0 &&
+          state.duration > Duration.zero)
+        return null;
+      return false;
+    } finally {
+      // 预算取消只停止本次打开的媒体，避免迟到起播或干扰新选择。
+      try {
+        if (cancel.isCancelled && mounted && generation == _playGeneration) {
+          await _mediaSession.player?.pause();
+        }
+      } finally {
+        done.complete();
+      }
+    }
+  }
+
+  Widget _sourceControls(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '播放源',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            for (final binding in widget.entry.sources)
+              ChoiceChip(
+                label: Text(binding.provider.name),
+                showCheckmark: false,
+                avatar: const SdkSourceGlyph(size: 18),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 9,
+                ),
+                side: BorderSide(
+                  color: binding.provider.id == service.id
+                      ? colors.primary.withValues(alpha: .4)
+                      : colors.outline,
+                ),
+                selected: binding.provider.id == service.id,
+                onSelected: (_) {
+                  if (binding.provider.id != service.id) {
+                    unawaited(switchSource(binding));
+                  } else if (!playingLoading && episodes.isNotEmpty) {
+                    setState(() => automatic = true);
+                    unawaited(play(_requestedEpisode ?? episodes.first));
+                  }
+                },
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Material(
+          color: colors.surfaceContainerLow,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: colors.outline),
+          ),
+          child: InkWell(
+            key: const ValueKey('sdk-line-selector'),
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => showLines(context),
+            child: Stack(
+              children: [
+                const Positioned(
+                  right: 16,
+                  top: -12,
+                  child: SdkSourceDecoration(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: .10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: SdkSourceGlyph(automatic: automatic),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '播放线路',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            AnimatedSwitcher(
+                              duration: sdkMotion(context),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              child: Text(
+                                '${automatic ? "自动 · " : ""}${line?.label ?? "正在获取线路"}',
+                                key: ValueKey('${automatic}:${line?.code}'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            if (selectedQuality != null ||
+                                decodedResolution != null)
+                              Text(
+                                decodedResolution != null
+                                    ? '$decodedResolution · 实际分辨率'
+                                    : '${selectedQuality!.label}${selectedQuality!.height == null ? "" : " · 来源声明"}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${video.lines.length} 条',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (video.lines.isEmpty && !detailLoading)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text('该作品暂无播放线路'),
+          ),
+        if (resumeNotice != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              resumeNotice!,
+              style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> showLines(BuildContext pageContext) async {
+    final colors = Theme.of(pageContext).colorScheme;
+    try {
+      await showModalBottomSheet<void>(
+        context: pageContext,
+        backgroundColor: colors.surface,
+        isScrollControlled: true,
+        showDragHandle: true,
+        useSafeArea: true,
+        constraints: const BoxConstraints(maxWidth: 640),
+        sheetAnimationStyle: MediaQuery.disableAnimationsOf(pageContext)
+            ? AnimationStyle.noAnimation
+            : const AnimationStyle(
+                duration: Duration(milliseconds: 260),
+                reverseDuration: Duration(milliseconds: 200),
+              ),
+        clipBehavior: Clip.antiAlias,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (context, update) {
+            _refreshLineSheet = () {
+              if (context.mounted) update(() {});
+            };
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * .76,
+                child: Column(
+                  children: [
+                    Stack(
+                      children: [
+                        const Positioned(
+                          right: 44,
+                          top: -14,
+                          child: SdkSourceDecoration(),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 20, right: 8),
+                          child: Row(
+                            children: [
+                              const SdkSourceGlyph(automatic: true, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${service.name} · 播放线路',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: colors.onSurface,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      '共 ${video.lines.length} 条线路 · 随时切换',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: '关闭线路选择',
+                                color: colors.onSurfaceVariant,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: colors.surfaceContainerLow,
+                                ),
+                                onPressed: () =>
+                                    Navigator.of(sheetContext).pop(),
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: video.lines.length + 1,
+                        itemBuilder: (_, index) {
+                          if (index == 0)
+                            return SdkLineOption(
+                              title: '自动（最高画质）',
+                              subtitle: '按已知画质优先，失败时尝试其他线路',
+                              automatic: true,
+                              selected: automatic,
+                              onTap: () {
+                                Navigator.of(sheetContext).pop();
+                                setState(() => automatic = true);
+                                final target =
+                                    _requestedEpisode ?? episodes.firstOrNull;
+                                if (target != null)
+                                  unawaited(
+                                    play(
+                                      target,
+                                      resumeAt:
+                                          _player?.state.position ??
+                                          Duration.zero,
+                                      resumeDuration:
+                                          _player?.state.duration ??
+                                          Duration.zero,
+                                    ),
+                                  );
+                              },
+                            );
+                          final candidate = video.lines[index - 1];
+                          final metadata = _playback.candidates
+                              .where((item) => item.line.code == candidate.code)
+                              .firstOrNull;
+                          return SdkLineOption(
+                            title: candidate.label,
+                            subtitle: metadata?.bestQuality?.height != null
+                                ? '${metadata!.summary} · 来源声明'
+                                : metadata?.summary ?? '画质待确认',
+                            current: line?.code == candidate.code,
+                            selected:
+                                !automatic && line?.code == candidate.code,
+                            onTap: () {
+                              Navigator.of(sheetContext).pop();
+                              unawaited(selectLine(candidate));
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    } finally {
+      _refreshLineSheet = null;
+    }
+  }
+
+  void showDescription(BuildContext pageContext) {
+    final colors = Theme.of(pageContext).colorScheme;
+    showModalBottomSheet<void>(
+      context: pageContext,
+      backgroundColor: colors.surface,
+      barrierColor: Colors.black.withValues(alpha: .65),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * .75,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        video.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: '关闭简介',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  video.subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  video.description.isEmpty ? '暂无简介' : video.description,
+                  style: const TextStyle(fontSize: 14, height: 1.65),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<SdkEpisode> get inlineEpisodes {
+    final current = episodes.indexWhere(
+      (e) => e.code == playingCode && e.number == playingNumber,
+    );
+    final start = current > 3 ? current - 3 : 0;
+    return episodes.skip(start).take(12).toList();
+  }
+
+  Widget episodeButton(
+    SdkEpisode episode, {
+    _EpisodeCardSize size = _EpisodeCardSize.compact,
+  }) => _SdkEpisodeButton(
+    episode: episode,
+    size: size,
+    selected: playingCode == episode.code && playingNumber == episode.number,
+    activity: _activity,
+    onPressed: () => play(episode),
+  );
+
+  void showEpisodes(BuildContext pageContext) {
+    final colors = Theme.of(pageContext).colorScheme;
+    // 弹层只调整显示顺序；点击始终传回真实线路与剧集编号。
+    final ascending = List<SdkEpisode>.of(episodes);
+    var descending = false;
+    final currentIndex = ascending.indexWhere(
+      (e) => e.code == playingCode && e.number == playingNumber,
+    );
+    var segment = currentIndex < 0 ? 0 : currentIndex ~/ 50;
+    showModalBottomSheet<void>(
+      context: pageContext,
+      backgroundColor: colors.surface,
+      barrierColor: Colors.black.withValues(alpha: .65),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, update) {
+          final ordered = descending ? ascending.reversed.toList() : ascending;
+          final groups = (ordered.length / 50).ceil();
+          final visible = ordered.skip(segment * 50).take(50).toList();
+          final textScale = MediaQuery.textScalerOf(context);
+          final columns =
+              (MediaQuery.sizeOf(context).width / (82 * textScale.scale(1)))
+                  .floor()
+                  .clamp(2, 6);
+          final tileHeight = 48 + (textScale.scale(12) - 12).clamp(0, 24);
+          final width = MediaQuery.sizeOf(context).width - 32;
+          final tileWidth = (width - 8 * (columns - 1)) / columns;
+          final rows = _episodeRows(
+            context,
+            visible,
+            width,
+            tileWidth,
+            columns,
+          );
+          final hasWide = rows.any(
+            (row) => row.size != _EpisodeCardSize.compact,
+          );
+          // 单集作品采用紧凑弹层；长篇保留较高弹层与独立网格滚动。
+          final contentHeight =
+              (190 +
+                      rows.fold<double>(
+                        0,
+                        (height, row) =>
+                            height + _episodeHeight(context, row.size) + 8,
+                      ) +
+                      (groups > 1 ? 48 : 0))
+                  .clamp(0, MediaQuery.sizeOf(context).height * .8)
+                  .toDouble();
+          return ModernHomeScope(
+            child: SafeArea(
+              child: SizedBox(
+                height: contentHeight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '全部选集',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => update(() {
+                              descending = !descending;
+                              segment = 0;
+                            }),
+                            child: Text(descending ? '降序' : '升序'),
+                          ),
+                          if (playingCode == line?.code &&
+                              playingNumber != null)
+                            IconButton(
+                              tooltip: '定位当前集',
+                              onPressed: () => update(() {
+                                final index = ordered.indexWhere(
+                                  (e) => e.number == playingNumber,
+                                );
+                                if (index >= 0) segment = index ~/ 50;
+                              }),
+                              icon: Icon(
+                                Icons.my_location,
+                                size: 20,
+                                color: colors.primary,
+                              ),
+                            ),
+                          IconButton(
+                            tooltip: '关闭选集',
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '${line?.label ?? ''} · 共 ${ascending.length} 集',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      if (groups > 1)
+                        _SdkEpisodeSegments(
+                          labels: [
+                            for (var i = 0; i < groups; i++)
+                              '${ordered[i * 50].number}–${ordered[((i + 1) * 50).clamp(1, ordered.length) - 1].number}',
+                          ],
+                          selected: segment,
+                          onChanged: (index) => update(() => segment = index),
+                        ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: hasWide
+                            ? ListView.separated(
+                                key: ValueKey(
+                                  'mio-episode-rows-$segment-$descending',
+                                ),
+                                itemCount: rows.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  final row = rows[index];
+                                  Widget button(SdkEpisode episode) =>
+                                      _SdkEpisodeButton(
+                                        episode: episode,
+                                        activity: _activity,
+                                        size: row.size,
+                                        selected:
+                                            episode.code == playingCode &&
+                                            episode.number == playingNumber,
+                                        onPressed: () {
+                                          Navigator.of(sheetContext).pop();
+                                          unawaited(play(episode));
+                                        },
+                                      );
+                                  return _episodeRow(row, button);
+                                },
+                              )
+                            : GridView.builder(
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: columns,
+                                      mainAxisExtent: tileHeight.toDouble(),
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                    ),
+                                itemCount: visible.length,
+                                itemBuilder: (context, index) {
+                                  final episode = visible[index];
+                                  return _SdkEpisodeButton(
+                                    episode: episode,
+                                    activity: _activity,
+                                    selected:
+                                        episode.code == playingCode &&
+                                        episode.number == playingNumber,
+                                    onPressed: () {
+                                      Navigator.of(sheetContext).pop();
+                                      unawaited(play(episode));
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _detailGeneration++;
+    _episodesGeneration++;
+    _playGeneration++;
+    _detailCancel?.cancel();
+    _episodesCancel?.cancel();
+    _playCancel?.cancel();
+    _coordinator?.dispose();
+    for (final subscription in _activitySubscriptions) {
+      unawaited(subscription.cancel());
+    }
+    _activity.dispose();
+    _keyboardFocus.dispose();
+    unawaited(_mediaTail.then((_) => _mediaSession.dispose()));
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ModernHomeScope(
+    // 页面操作必须拿到深色 Theme 下的上下文，弹层才能捕获相同主题。
+    child: Builder(
+      builder: (context) {
+        if (_nativeView == null) return _buildPage(context);
+        return Observer(
+          builder: (_) {
+            final fullscreen = _nativeView?.isFullscreen == true;
+            final pip = _nativeView?.isPip == true;
+            if (_nativePlayer != null &&
+                _videoController != null &&
+                (fullscreen || pip)) {
+              return VideoSystemBars(
+                fullscreen: fullscreen,
+                isPip: pip,
+                child: Scaffold(body: _nativePlayerSurface(fillsWindow: true)),
+              );
+            }
+            return _buildPage(context);
+          },
+        );
+      },
+    ),
+  );
+
+  Widget _nativePlayerSurface({required bool fillsWindow}) => PlayerItem(
+    key: _nativeSurfaceKey,
+    playerController: _nativePlayer!,
+    videoPageController: _nativeView!,
+    fillsWindow: fillsWindow,
+    keyboardFocus: _keyboardFocus,
+    changeEpisode: (index, {int currentRoad = 0, int offset = 0}) async {
+      if (!detailLoading &&
+          !episodesLoading &&
+          index > 0 &&
+          index <= episodes.length) {
+        await play(episodes[index - 1]);
+      }
+    },
+    onBackPressed: () {
+      if (_nativeView!.isFullscreen) {
+        unawaited(_nativeView!.fullscreen.setFullscreen(false));
+      } else {
+        Navigator.of(context).maybePop();
+      }
+    },
+    pauseForTimedShutdown: () => unawaited(_nativePlayer!.pause()),
+  );
+
+  Widget _buildPage(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            children: [
+              ConstrainedBox(
+                // 横屏时给资料/选集保留可滚动空间，避免播放器挤出视口。
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * .65,
+                ),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (_videoController != null)
+                        kIsWeb
+                            ? WebPlayerSurface(
+                                controller: _videoController!,
+                                onNext: episodes.length < 2
+                                    ? null
+                                    : () {
+                                        final index = episodes.indexWhere(
+                                          (episode) =>
+                                              episode.code == playingCode &&
+                                              episode.number == playingNumber,
+                                        );
+                                        if (index >= 0 &&
+                                            index + 1 < episodes.length) {
+                                          unawaited(play(episodes[index + 1]));
+                                        }
+                                      },
+                              )
+                            : _nativePlayerSurface(fillsWindow: false)
+                      else
+                        LayoutBuilder(
+                          builder: (context, size) => Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              if (video.poster.isNotEmpty ||
+                                  video.cover.isNotEmpty)
+                                NetworkImgLayer(
+                                  src: video.poster.isNotEmpty
+                                      ? video.poster
+                                      : video.cover,
+                                  width: size.maxWidth,
+                                  height: size.maxHeight,
+                                ),
+                              const ColoredBox(color: Color(0x66000000)),
+                              Center(
+                                child: IconButton.filled(
+                                  tooltip: '播放所选线路第一集',
+                                  onPressed: episodes.isEmpty || playingLoading
+                                      ? null
+                                      : () => play(episodes.first),
+                                  icon: const Icon(Icons.play_arrow, size: 34),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (playingLoading)
+                        const Center(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Color(0xcc11141c),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(16),
+                              ),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.all(14),
+                              child: LoadingIndicator(
+                                size: 38,
+                                semanticsLabel: '正在解析并加载视频',
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_videoController != null &&
+                          playMessage != null &&
+                          !playingLoading &&
+                          _requestedEpisode != null &&
+                          _requestedEpisode!.code == line?.code)
+                        Center(
+                          child: IconButton.filled(
+                            tooltip: '重试当前集',
+                            onPressed: () => play(_requestedEpisode!),
+                            icon: const Icon(Icons.replay_rounded, size: 28),
+                          ),
+                        ),
+                      if (kIsWeb || _videoController == null)
+                        Positioned(
+                          left: 8,
+                          top: 4,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const ModernBackButton(),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: loadDetail,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              video.title,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => showDescription(context),
+                            child: const Text('简介 ›'),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        video.subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (detailError != null)
+                        Row(
+                          children: [
+                            Expanded(child: Text(detailError!)),
+                            TextButton(
+                              onPressed: loadDetail,
+                              child: const Text('重试'),
+                            ),
+                          ],
+                        ),
+                      if (playMessage != null)
+                        _MioPlaybackNotice(
+                          message: playMessage!,
+                          onRetry:
+                              playingLoading ||
+                                  _requestedEpisode == null ||
+                                  _requestedEpisode!.code != line?.code
+                              ? null
+                              : () => play(_requestedEpisode!),
+                        ),
+                      const SizedBox(height: 8),
+                      _sourceControls(context),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              '选集',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: episodes.isEmpty
+                                ? null
+                                : () => showEpisodes(context),
+                            child: Text(
+                              '全部 ${episodes.length}集 ›',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (episodesLoading && episodes.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: SkeletonEpisodes(),
+                        ),
+                      if (episodesError != null)
+                        Row(
+                          children: [
+                            Expanded(child: Text(episodesError!)),
+                            TextButton(
+                              onPressed: line == null
+                                  ? null
+                                  : () => selectLine(line!),
+                              child: const Text('重试'),
+                            ),
+                          ],
+                        ),
+                      const SizedBox(height: 4),
+                      LayoutBuilder(
+                        builder: (context, bounds) {
+                          final columns =
+                              ((bounds.maxWidth + 8) /
+                                      (104 *
+                                          (MediaQuery.textScalerOf(
+                                                context,
+                                              ).scale(12) /
+                                              12)))
+                                  .floor()
+                                  .clamp(2, 6);
+                          final tileWidth =
+                              (bounds.maxWidth - 8 * (columns - 1)) / columns;
+                          final rows = _episodeRows(
+                            context,
+                            inlineEpisodes,
+                            bounds.maxWidth,
+                            tileWidth,
+                            columns,
+                          );
+                          return Column(
+                            children: [
+                              for (var i = 0; i < rows.length; i++) ...[
+                                if (i > 0) const SizedBox(height: 8),
+                                _episodeRow(
+                                  rows[i],
+                                  (episode) => episodeButton(
+                                    episode,
+                                    size: rows[i].size,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        },
+                      ),
+                      if (!episodesLoading &&
+                          episodes.isEmpty &&
+                          episodesError == null &&
+                          line != null)
+                        const Text('该线路暂无剧集'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+String _episodeLabel(SdkEpisode episode) =>
+    '${episode.vip ? 'VIP · ' : ''}${episode.label}';
+
+enum _EpisodeCardSize { compact, half, full }
+
+_EpisodeCardSize _episodeSize(
+  BuildContext context,
+  SdkEpisode episode,
+  double width,
+  double tileWidth,
+) {
+  final painter = TextPainter(
+    text: TextSpan(
+      text: _episodeLabel(episode),
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12),
+    ),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  // 预留两侧间距与播放标记，选中后也不截断或跳动布局。
+  final textWidth = painter.width;
+  painter.dispose();
+  // 日期/特辑类名称超过八字时至少用半行卡片，避免在宽屏里又挤回小格子。
+  if (episode.label.runes.length <= 8 && textWidth <= tileWidth - 40) {
+    return _EpisodeCardSize.compact;
+  }
+  if (textWidth <= (width - 8) / 2 - 40) return _EpisodeCardSize.half;
+  return _EpisodeCardSize.full;
+}
+
+double _episodeHeight(BuildContext context, _EpisodeCardSize size) =>
+    size == _EpisodeCardSize.full
+    ? (MediaQuery.textScalerOf(context).scale(12) * 2.8 + 20).clamp(
+        64,
+        double.infinity,
+      )
+    : size == _EpisodeCardSize.half
+    ? 56
+    : 48 + (MediaQuery.textScalerOf(context).scale(12) - 12).clamp(0, 24);
+
+class _EpisodeRow {
+  const _EpisodeRow(this.size, this.columns, this.episodes);
+  final _EpisodeCardSize size;
+  final int columns;
+  final List<SdkEpisode> episodes;
+}
+
+Widget _episodeRow(_EpisodeRow row, Widget Function(SdkEpisode) button) => Row(
+  children: [
+    for (var i = 0; i < row.columns; i++) ...[
+      if (i > 0) const SizedBox(width: 8),
+      Expanded(
+        child: i < row.episodes.length
+            ? button(row.episodes[i])
+            : const SizedBox(),
+      ),
+    ],
+  ],
+);
+
+List<_EpisodeRow> _episodeRows(
+  BuildContext context,
+  List<SdkEpisode> episodes,
+  double width,
+  double tileWidth,
+  int columns,
+) {
+  final rows = <_EpisodeRow>[];
+  var current = <SdkEpisode>[];
+  var size = _EpisodeCardSize.compact;
+  int count(_EpisodeCardSize size) => switch (size) {
+    _EpisodeCardSize.compact => columns,
+    _EpisodeCardSize.half => 2,
+    _EpisodeCardSize.full => 1,
+  };
+  void flush() {
+    if (current.isNotEmpty) {
+      rows.add(_EpisodeRow(size, count(size), current));
+      current = [];
+    }
+  }
+
+  for (final episode in episodes) {
+    final next = _episodeSize(context, episode, width, tileWidth);
+    if (next != size) flush();
+    size = next;
+    current.add(episode);
+    if (current.length == count(size)) flush();
+  }
+  flush();
+  return rows;
+}
+
+class _SdkEpisodeSegments extends StatefulWidget {
+  const _SdkEpisodeSegments({
+    required this.labels,
+    required this.selected,
+    required this.onChanged,
+  });
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onChanged;
+  @override
+  State<_SdkEpisodeSegments> createState() => _SdkEpisodeSegmentsState();
+}
+
+class _SdkEpisodeSegmentsState extends State<_SdkEpisodeSegments>
+    with TickerProviderStateMixin {
+  TabController? _tabs;
+  bool? _reduceMotion;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (_reduceMotion == reduceMotion) return;
+    _reduceMotion = reduceMotion;
+    _tabs?.dispose();
+    _tabs = TabController(
+      length: widget.labels.length,
+      initialIndex: widget.selected,
+      vsync: this,
+      animationDuration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 240),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _SdkEpisodeSegments oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_tabs!.index != widget.selected) {
+      _tabs!.animateTo(
+        widget.selected,
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabs?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return SizedBox(
+      height: 48,
+      child: TabBar(
+        key: const ValueKey('mio-episode-segments'),
+        controller: _tabs,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicatorPadding: const EdgeInsets.symmetric(
+          horizontal: 3,
+          vertical: 6,
+        ),
+        indicator: BoxDecoration(
+          color: colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: colors.primary.withValues(alpha: .35)),
+        ),
+        automaticIndicatorColorAdjustment: false,
+        dividerColor: Colors.transparent,
+        labelPadding: EdgeInsets.zero,
+        labelColor: colors.primary,
+        unselectedLabelColor: colors.onSurfaceVariant,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+        splashFactory: NoSplash.splashFactory,
+        onTap: widget.onChanged,
+        tabs: [
+          for (final label in widget.labels)
+            Tab(
+              height: 48,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 88),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Center(child: Text(label)),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 页面内与弹层共用剧集样式；长名称单独占一行，最多显示两行。
+class _SdkEpisodeButton extends StatelessWidget {
+  const _SdkEpisodeButton({
+    required this.episode,
+    required this.selected,
+    required this.onPressed,
+    this.activity,
+    this.size = _EpisodeCardSize.compact,
+  });
+  final SdkEpisode episode;
+  final bool selected;
+  final VoidCallback onPressed;
+  final ValueListenable<bool>? activity;
+  final _EpisodeCardSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final expanded = size == _EpisodeCardSize.full;
+    final wide = size != _EpisodeCardSize.compact;
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        minimumSize: Size(0, _episodeHeight(context, size)),
+        visualDensity: VisualDensity.standard,
+        padding: EdgeInsets.symmetric(
+          horizontal: wide ? 12 : 8,
+          vertical: expanded ? 10 : 0,
+        ),
+        foregroundColor: selected ? colors.primary : colors.onSurface,
+        backgroundColor: selected
+            ? colors.surfaceContainerHighest
+            : colors.surfaceContainerLow,
+        side: BorderSide(
+          color: selected ? colors.primary : colors.outlineVariant,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Row(
+        mainAxisAlignment: wide
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.center,
+        children: [
+          if (selected) ...[
+            if (activity == null)
+              MioPlayingMark(active: false, color: colors.primary)
+            else
+              ValueListenableBuilder<bool>(
+                valueListenable: activity!,
+                builder: (_, active, _) =>
+                    MioPlayingMark(active: active, color: colors.primary),
+              ),
+            const SizedBox(width: 4),
+          ],
+          Flexible(
+            child: Text(
+              '${episode.vip ? 'VIP · ' : ''}${episode.label}',
+              maxLines: expanded ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MioPlaybackNotice extends StatelessWidget {
+  const _MioPlaybackNotice({required this.message, this.onRetry});
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      key: const ValueKey('miomedia-playback-notice'),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 18, color: colors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: colors.onSurface,
+              ),
+            ),
+          ),
+          if (onRetry != null)
+            TextButton(
+              onPressed: onRetry,
+              child: const Text('重试', style: TextStyle(fontSize: 12)),
+            ),
+        ],
+      ),
+    );
+  }
+}

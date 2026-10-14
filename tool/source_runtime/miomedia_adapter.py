@@ -21,6 +21,8 @@ from adapters import RuntimeContext, RuntimeFailure
 from vendor.miomedia import Client, PlaybackClient, STRATEGY_TOKEN
 from vendor.miomedia import config
 from vendor.miomedia.playback import PARSE_API, PARSE_USER_AGENT
+from vendor.miomedia.playback import normalize_urls
+from miomedia_quality import rank_qualities, select_parse_variant
 
 OPERATIONS = {
     'recommend': '/home/recommend', 'banners': '/banner/list',
@@ -327,6 +329,7 @@ class MioMediaSdk:
     def _play(self, payload, context):
         sdk = self
         underlying = self._client(context)
+        parsed_quality = {}
         class PlaybackSession:
             def request(self, path, body):
                 if path not in ('/resolve/qualities', '/resolve/exchange', '/resolve/episodes',
@@ -342,9 +345,15 @@ class MioMediaSdk:
                     if body != expected:
                         raise RuntimeFailure('INVALID_ARGUMENT', 400)
                 data = sdk._execute(underlying, context, path, body, allow_ad=True)
+                if path == '/resolve/qualities':
+                    data = rank_qualities(data)
                 return 200, {'code': 4031 if data.get('adRequired') is True else 200, 'success': True, 'data': data}
             def http_get(self, url):
-                return sdk._parse_get(url, context)
+                body, height = select_parse_variant(
+                    sdk._parse_get(url, context), payload.get('quality'), normalize_urls)
+                if height is not None:
+                    parsed_quality.update(height=height, evidence='parser')
+                return body
         # 应用复用持久设备态，显式 TOKEN；AUTO/ROTATE 留给独立诊断客户端。
         playback = PlaybackClient(PlaybackSession(), strategy=STRATEGY_TOKEN)
         with self._lock:
@@ -399,6 +408,8 @@ class MioMediaSdk:
         return {**diagnostics, 'status': 'ready', 'media': {
             'url': media['url'], 'format': str(media.get('format', 'unknown')),
             'name': str(media.get('name', '')),
+            **({'quality': '%dp' % parsed_quality['height'],
+                'qualityEvidence': 'parser'} if parsed_quality else {}),
             'headers': {k: v for k, v in headers.items() if k.lower() in ('user-agent', 'referer', 'origin', 'accept')},
         }, 'selection': {k: payload[k] for k in ('videoId', 'code', 'episodeNum')}}
 

@@ -12,7 +12,7 @@ import 'package:kazumi/request/apis/bangumi_api.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/info/source_search_entry.dart';
 import 'package:kazumi/services/source/content_search_playback.dart';
-import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
+import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
 
@@ -351,11 +351,24 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     inputFocus.unfocus();
     setState(() => openingWork = work.id);
     try {
+      if (work.primary.group != ContentGroup.anime) {
+        final sdkEntry = SdkPlaybackEntry.fromWork(work, session.providers);
+        if (sdkEntry != null) {
+          if (!current()) return;
+          await context.pushNamed('/info/', arguments: sdkEntry);
+          return;
+        }
+        if (current()) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('没有可确认的 SDK 作品来源，请尝试更完整的名称或年份')),
+          );
+        }
+        return;
+      }
       Object? entry;
       for (final hit in work.hits) {
         final provider = session.provider(hit.providerId);
         if (provider is BangumiContentProvider) entry = provider.entry(hit);
-        if (provider is MioContentProvider) entry = provider.entry(hit);
         if (entry != null) break;
       }
       if (entry == null && work.primary.group == ContentGroup.anime) {
@@ -403,8 +416,6 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
             (p) => p.plugin,
           ),
         );
-      } else if (entry is MioVideo) {
-        destination = MioSearchEntry(entry);
       }
       if (!mounted || !current()) return;
       await context.pushNamed('/info/', arguments: destination);

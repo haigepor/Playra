@@ -1,5 +1,7 @@
 # MioMedia SDK 封装接入
 
+> 新 SDK / 新接口接入统一从[内容 SDK 与接口接入规范](development/source-sdk-onboarding.zh.md)开始；2026-10-14 的播放源分层、自动选线和共享页面实现见[实施记录](analysis/sdk-provider-lines-quality-implementation-20261014.zh.md)。以下第一阶段记录保留为历史，不作为新增 SDK 的公共播放契约。
+
 日期：2026-10-12。本文件记录第一阶段 SDK 封装与接口数据整理。
 
 后续已接入播放模块、影视首页、搜索、资料和播放器，当前源码为 11 个受限操作。当前分析见 [Web/Android 与 SDK](analysis/web-android-sdk-20261013.zh.md)，本机与其他设备的路径参照 [开发环境说明](development/web-android-environment.zh.md)。下文 7 个操作、外部 HTTP Android 方案及 `playbackReady=false` 均是第一阶段历史结果。

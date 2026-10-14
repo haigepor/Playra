@@ -106,7 +106,7 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
         }
     }
     from("../../tool/source_runtime") {
-        include "adapters.py", "miomedia_adapter.py", "android_bridge.py"
+        include "adapters.py", "miomedia_adapter.py", "miomedia_quality.py", "android_bridge.py"
         include "vendor/__init__.py", "vendor/miomedia/*.py"
         include "vendor/miomedia/_native/__init__.py"
         // M6 的固定查表资源由原样 SDK 读取，不能只打包 Python 模块。
