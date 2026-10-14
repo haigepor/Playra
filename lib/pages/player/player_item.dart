@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:kazumi/services/platform/browser_display.dart';
 import 'package:kazumi/pages/player/player_item_panel.dart';
+import 'package:kazumi/pages/player/player_buffering_overlay.dart';
 import 'package:kazumi/pages/player/player_keyboard_shortcuts.dart';
 import 'package:kazumi/pages/player/controller/player_super_resolution.dart';
 import 'package:kazumi/pages/player/player_panel_hold.dart';
@@ -1545,12 +1546,13 @@ class _PlayerItemState extends State<PlayerItem>
                           playerController: playerController,
                         ),
                       ),
-                      (playerController.playback.isBuffering ||
-                              videoPageController.loading)
-                          ? const Positioned.fill(
-                              child: Center(child: CircularProgressIndicator()),
-                            )
-                          : Container(),
+                      Positioned.fill(
+                        child: PlayerBufferingOverlay(
+                          player: playerController.playback.mediaPlayer,
+                          buffering: playerController.playback.isBuffering,
+                          resolving: videoPageController.loading,
+                        ),
+                      ),
                       GestureDetector(
                         onTapDown: (details) {
                           _lastTapPointerKind = details.kind;

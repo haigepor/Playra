@@ -236,7 +236,9 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
       focusNode: inputFocus,
       cursorColor: c.primary,
       autocorrect: false,
-      enableSuggestions: false,
+      keyboardType: TextInputType.text,
+      // Android 的禁用建议会附带 visible-password 标记，触发部分手机的安全键盘。
+      enableSuggestions: true,
       smartDashesType: SmartDashesType.disabled,
       smartQuotesType: SmartQuotesType.disabled,
       textInputAction: TextInputAction.search,

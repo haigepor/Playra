@@ -21,6 +21,21 @@ class ScreenProvider extends ContentSearchProvider {
 }
 
 void main() {
+  testWidgets('Android search requests ordinary text, never a password variant', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: ContentSearchScreen(providers: [])),
+    );
+    await tester.tap(find.byKey(const ValueKey('content-search-input')));
+    await tester.pump();
+    final configuration = tester.testTextInput.setClientArgs!;
+    expect(configuration['obscureText'], isFalse);
+    expect(configuration['inputType']['name'], 'TextInputType.text');
+    // Android 将禁用建议映射为 visible-password，搜索输入不能使用该标记。
+    expect(configuration['enableSuggestions'], isTrue);
+    expect(configuration['inputAction'], 'TextInputAction.search');
+  });
   testWidgets('search progress scrolls away with results', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
