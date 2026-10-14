@@ -1,16 +1,107 @@
-name: Playra Android and Web build
+name: Playra platform build
 on:
   push:
     tags: ['playra/v*']
   workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Cloud target (Android normally builds locally)'
+        type: choice
+        required: true
+        default: ios
+        options: [ios, web, macos, linux, windows, cloud, android]
 permissions:
   contents: read
 concurrency:
   group: playra-build-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  build:
+  plan:
     if: github.repository == 'haigepor/Playra'
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+      cloud: ${{ steps.targets.outputs.cloud }}
+      android: ${{ steps.targets.outputs.android }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: targets
+        name: Select independent build targets
+        env:
+          PLAYRA_BUILD_TARGET: ${{ inputs.platform }}
+          PLAYRA_BUILD_EVENT: ${{ github.event_name }}
+        run: python3 tool/cloud_build.py plan
+  quality:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2.16.0
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+      - run: python -m unittest discover -s tool -p test_miomedia_sdk_input.py
+      - run: python -m unittest discover -s tool -p test_cloud_build.py
+      - run: node --test tool/web_backend/runtime.test.cjs
+  cloud:
+    needs: [plan, quality]
+    if: needs.plan.outputs.cloud == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    env:
+      PLAYRA_BUILD_PLATFORM: ${{ matrix.platform }}
+      PLAYRA_SOURCE_RUNTIME_URL: ${{ secrets.PLAYRA_SOURCE_RUNTIME_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Select Apple toolchain
+        if: runner.os == 'macOS'
+        run: |
+          test -d /Applications/Xcode_26.2.app
+          echo 'DEVELOPER_DIR=/Applications/Xcode_26.2.app/Contents/Developer' >> "$GITHUB_ENV"
+          /Applications/Xcode_26.2.app/Contents/Developer/usr/bin/xcodebuild -version
+          pod --version
+      - name: Install Linux desktop dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev
+      - uses: subosito/flutter-action@v2.16.0
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: flutter pub get
+      - name: Build selected platform
+        run: python tool/cloud_build.py build
+      - name: Package and verify artifact
+        run: python tool/cloud_build.py package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Playra-${{ matrix.platform }}-${{ github.sha }}
+          path: build/playra-artifacts/
+          if-no-files-found: error
+          retention-days: 14
+  build:
+    needs: [plan, quality]
+    if: needs.plan.outputs.android == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -65,8 +156,6 @@ jobs:
           PY
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
       - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos
-      - run: flutter test
       - run: python -m unittest discover -s tool -p test_miomedia_sdk_input.py
       - run: python -m unittest discover -p 'test_*.py'
         working-directory: tool/source_runtime
