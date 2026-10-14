@@ -3,7 +3,7 @@ import plistlib
 import struct
 import unittest
 import zipfile
-from cloud_build import plan, runtime_define, verify_ios, macho_arches
+from cloud_build import plan, runtime_define, verify_ios, macho_arches, flutter_version
 
 
 def ipa(*, version="2.3.8", signed=False, simulator=False, unsafe=False, executable=None,
@@ -26,6 +26,11 @@ def ipa(*, version="2.3.8", signed=False, simulator=False, unsafe=False, executa
 
 
 class CloudBuildTests(unittest.TestCase):
+    def test_sdk_pin_is_read_without_platform_yaml_tools(self):
+        self.assertEqual(flutter_version("environment:\n  flutter: 3.47.6\n"), "3.47.6")
+        with self.assertRaises(ValueError):
+            flutter_version("environment:\n  flutter: stable\n")
+
     def test_cloud_does_not_require_android_signing_and_targets_are_isolated(self):
         targets = plan("cloud")
         self.assertFalse(targets["android"])

@@ -44,6 +44,14 @@ def version(root):
     return match.groups()
 
 
+def flutter_version(text):
+    # Parse only the literal environment pin; do not depend on runner-provided yq.
+    match = re.search(r"^  flutter: (\d+\.\d+\.\d+)\s*$", text, re.M)
+    if not match:
+        raise ValueError("Expected a pinned Flutter SDK version")
+    return match.group(1)
+
+
 def runtime_define(value):
     if not value:
         return []
@@ -210,6 +218,7 @@ def main():
     root = Path.cwd()
     if args.operation == "plan":
         values = plan(os.environ.get("PLAYRA_BUILD_TARGET", ""), os.environ.get("PLAYRA_BUILD_EVENT", "workflow_dispatch"))
+        values["flutter_version"] = flutter_version((root / "pubspec.yaml").read_text(encoding="utf-8"))
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
             for name, value in values.items():
                 output.write(name + "=" + json.dumps(value, separators=(",", ":")) + "\n")
