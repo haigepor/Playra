@@ -1,0 +1,18 @@
+[
+  {"query":"帮我把 Playra 最新代码构建成未签名 iOS 包","should_trigger":true},
+  {"query":"Playra 安卓本地打包，其它平台走 GitHub，给我实际产物","should_trigger":true},
+  {"query":"Playra 的 Actions 编译失败，帮我看构建日志修好","should_trigger":true},
+  {"query":"检查刚下载的 Playra IPA 是设备包还是模拟器包","should_trigger":true},
+  {"query":"把 haigepor/Playra 当前分支做成 Windows 和 Linux 安装包","should_trigger":true},
+  {"query":"帮我跑一下 Playra 云打包，先不发布","should_trigger":true},
+  {"query":"playra 的 ios 包还没签，先给我弄出来看看","should_trigger":true},
+  {"query":"帮我核对 Playra 构建附件的 SHA 和源码版本","should_trigger":true},
+  {"query":"修一下 Playra 首页热门 tab 的颜色","should_trigger":false},
+  {"query":"分析 Playra 影视接口为什么解析失败","should_trigger":false},
+  {"query":"只查看 GitHub agents 的会话状态","should_trigger":false},
+  {"query":"给我申请 Apple 证书并发布 App Store","should_trigger":false},
+  {"query":"打包另一个 Flutter 聊天应用","should_trigger":false},
+  {"query":"检查 React 网站的 GitHub 部署工作流","should_trigger":false},
+  {"query":"帮我优化一个新的 Codex Skill 触发描述","should_trigger":false},
+  {"query":"Playra 搜索要并发并去重，先分析架构","should_trigger":false}
+]
