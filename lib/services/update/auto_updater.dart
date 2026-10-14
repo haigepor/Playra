@@ -223,7 +223,8 @@ class AutoUpdater {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(updateInfo.description),
+                // 发布正文可能包含仓库链接，只展示应用内更新说明。
+                const Text('新版已准备好，可继续使用当前版本或立即更新。'),
                 if (updateInfo.publishedAt.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -335,16 +336,6 @@ class AutoUpdater {
                 style: TextStyle(color: Theme.of(context).colorScheme.outline),
               ),
             ),
-            if (updateInfo.releaseNotes.isNotEmpty)
-              TextButton(
-                onPressed: () {
-                  launchUrl(
-                    Uri.parse(updateInfo.releaseNotes),
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
-                child: const Text('查看详情'),
-              ),
             TextButton(
               onPressed: () {
                 KazumiDialog.dismiss();
@@ -355,7 +346,7 @@ class AutoUpdater {
                   );
                 }
               },
-              child: const Text('立即更新'),
+              child: Text(Platform.isIOS || Platform.isLinux ? '更新方式' : '立即更新'),
             ),
           ],
         );
@@ -392,11 +383,8 @@ class AutoUpdater {
       if (selectedType == InstallationType.ios ||
           selectedType == InstallationType.linuxDeb ||
           selectedType == InstallationType.linuxTar) {
-        String releaseUrl = updateInfo.releaseNotes;
-        if (releaseUrl.isEmpty) {
-          releaseUrl = ApiEndpoints.latestApp;
-        }
-        launchUrl(Uri.parse(releaseUrl), mode: LaunchMode.externalApplication);
+        // 没有应用内安装流程的平台，不再把用户带到源码仓库网页。
+        KazumiDialog.showToast(message: '请通过安装 Playra 时使用的渠道获取新版本');
         return;
       }
 

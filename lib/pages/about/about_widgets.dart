@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/split_list_row.dart';
@@ -9,15 +8,6 @@ import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 void _showMessage(BuildContext context, String message) {
   KazumiDialog.showToast(context: context, message: message);
-}
-
-Future<void> openAboutLink(BuildContext context, String url) async {
-  try {
-    if (await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
-      return;
-    }
-  } catch (_) {}
-  if (context.mounted) _showMessage(context, '无法打开链接，请稍后重试');
 }
 
 class AboutContent extends StatelessWidget {
@@ -46,86 +36,68 @@ class AboutContent extends StatelessWidget {
 }
 
 class AboutLinkTile extends StatelessWidget {
-  const AboutLinkTile({
-    super.key,
-    required this.icon,
-    required this.title,
-    required String url,
-    this.subtitle,
-  }) : _url = url,
-       _route = null;
-
   const AboutLinkTile.route({
     super.key,
     required this.icon,
     required this.title,
     required String route,
     this.subtitle,
-  }) : _route = route,
-       _url = null;
+  }) : _route = route;
 
   final IconData icon;
   final String title;
   final String? subtitle;
-  final String? _url;
-  final String? _route;
+  final String _route;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final modern = ModernSettingsScope.isActiveOf(context);
-    return Semantics(
-      link: _url != null,
-      child: InkWell(
-        onTap: () => _url != null
-            ? openAboutLink(context, _url)
-            : context.pushNamed(_route!),
-        onHighlightChanged: SplitListRow.pressReporterOf(context),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: modern ? 14 : 16,
-            vertical: modern ? 12 : 16,
-          ),
-          child: Row(
-            children: [
-              StateIconBadge(
-                icon: icon,
-                size: 36,
-                iconSize: 20,
-                backgroundColor: colors.secondaryContainer,
-                foregroundColor: colors.onSecondaryContainer,
-              ),
-              SizedBox(width: modern ? 12 : 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: theme.textTheme.titleMedium),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle!,
-                        style:
-                            (modern
-                                    ? theme.textTheme.bodySmall
-                                    : theme.textTheme.bodyMedium)
-                                ?.copyWith(color: colors.onSurfaceVariant),
-                      ),
-                    ],
+    return InkWell(
+      onTap: () => context.pushNamed(_route),
+      onHighlightChanged: SplitListRow.pressReporterOf(context),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: modern ? 14 : 16,
+          vertical: modern ? 12 : 16,
+        ),
+        child: Row(
+          children: [
+            StateIconBadge(
+              icon: icon,
+              size: 36,
+              iconSize: 20,
+              backgroundColor: colors.secondaryContainer,
+              foregroundColor: colors.onSecondaryContainer,
+            ),
+            SizedBox(width: modern ? 12 : 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: theme.textTheme.titleMedium),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle!,
+                      style:
+                          (modern
+                                  ? theme.textTheme.bodySmall
+                                  : theme.textTheme.bodyMedium)
+                              ?.copyWith(color: colors.onSurfaceVariant),
+                    ),
                   ],
-                ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Icon(
-                _url == null
-                    ? Icons.chevron_right_rounded
-                    : Icons.open_in_new_rounded,
-                size: modern ? 16 : 20,
-                color: colors.onSurfaceVariant,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: modern ? 16 : 20,
+              color: colors.onSurfaceVariant,
+            ),
+          ],
         ),
       ),
     );

@@ -1,8 +1,25 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/presentation/interface_style.dart';
 
 void main() {
+  test(
+    'native iOS and Android plus every Web host use the shared new pages',
+    () {
+      for (final platform in TargetPlatform.values) {
+        expect(
+          InterfaceStyleController.supportsPlatform(platform, web: false),
+          platform == TargetPlatform.android || platform == TargetPlatform.iOS,
+        );
+        expect(
+          InterfaceStyleController.supportsPlatform(platform, web: true),
+          true,
+        );
+      }
+    },
+  );
+
   test('defaults and unknown stored styles keep the legacy interface', () {
     for (final value in ['legacy', '', 'future-style']) {
       final controller = InterfaceStyleController(

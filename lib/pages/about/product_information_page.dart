@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:kazumi/app_brand.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
-import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/pages/about/about_widgets.dart';
 
-enum ProductInformation { help, privacy, legal }
+enum ProductInformation { help, privacy }
 
 class ProductInformationPage extends StatelessWidget {
   const ProductInformationPage({super.key, required this.information});
@@ -35,15 +33,6 @@ class ProductInformationPage extends StatelessWidget {
           ),
         ],
       ),
-      ProductInformation.legal => (
-        '许可与致谢',
-        <(String, String)>[
-          (
-            '应用许可',
-            'Playra 基于 Kazumi 开源项目持续开发，沿用 GNU GPL v3.0 许可。原作者版权与第三方组件许可保留。',
-          ),
-        ],
-      ),
     };
     return SettingsDetailScaffold(
       title: Text(title),
@@ -68,27 +57,6 @@ class ProductInformationPage extends StatelessWidget {
               ),
             ),
           ],
-          if (information == ProductInformation.legal)
-            ContentSection.group(
-              title: '更多信息',
-              children: const [
-                AboutLinkTile.route(
-                  icon: Icons.favorite_outline_rounded,
-                  title: '致谢',
-                  route: '/settings/about/credits',
-                ),
-                AboutLinkTile.route(
-                  icon: Icons.description_outlined,
-                  title: '第三方许可证',
-                  route: '/settings/about/license',
-                ),
-                AboutLinkTile(
-                  icon: Icons.balance_rounded,
-                  title: 'GNU GPL v3.0',
-                  url: '${AppBrand.repositoryUrl}/blob/main/LICENSE',
-                ),
-              ],
-            ),
         ],
       ),
     );

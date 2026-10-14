@@ -14,6 +14,12 @@ enum InterfaceStyle {
 
 /// 只保存页面版本；收藏、历史、规则和下载仍由原有根模块管理。
 class InterfaceStyleController extends ChangeNotifier {
+  /// 新页面共享移动端布局；Web 不按浏览器所在的桌面系统回退。
+  static bool supportsPlatform(TargetPlatform platform, {bool web = kIsWeb}) =>
+      web ||
+      platform == TargetPlatform.android ||
+      platform == TargetPlatform.iOS;
+
   InterfaceStyleController({
     required this.supportsModern,
     required String savedStyle,

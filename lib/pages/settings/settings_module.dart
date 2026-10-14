@@ -1,5 +1,4 @@
 import 'package:kazumi/app_brand.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/about/about_module.dart';
 import 'package:kazumi/pages/download/download_page_module.dart';
@@ -24,7 +23,8 @@ import 'package:kazumi/pages/settings/sync/webdav_server_page.dart';
 import 'package:kazumi/pages/settings/sync/webdav_sync_page.dart';
 import 'package:kazumi/pages/settings/theme_settings_page.dart';
 import 'package:kazumi/pages/settings/update_settings.dart';
-import 'package:kazumi/request/config/api_endpoints.dart';
+import 'package:kazumi/pages/about/about_page.dart';
+import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/services/sync/danmaku_shield_sync_service.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
@@ -107,15 +107,11 @@ final settingsModule = createModule(
       },
     );
     c
-      // Root route: the license browser must cover the settings shell.
+      // 保留旧书签地址，内容统一回到无外链的产品关于页。
       ..route(
         '/about/license',
-        child: (context, state) => const SettingsAppearanceHost(
-          child: LicensePage(
-            applicationName: AppBrand.name,
-            applicationVersion: ApiEndpoints.version,
-            applicationLegalese: 'Playra · GNU General Public License v3.0',
-          ),
+        child: (context, state) => SettingsAppearanceHost(
+          child: AboutPage(onCheckUpdate: inject<MyController>().checkUpdate),
         ),
       )
       ..module(historyModule)

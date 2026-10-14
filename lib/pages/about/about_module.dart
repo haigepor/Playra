@@ -1,7 +1,6 @@
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/about/about_page.dart';
 import 'package:kazumi/pages/about/product_information_page.dart';
-import 'package:kazumi/pages/about/credits_page.dart';
 import 'package:kazumi/pages/my/my_controller.dart';
 
 final aboutModule = createModule(
@@ -26,9 +25,14 @@ final aboutModule = createModule(
       )
       ..route(
         '/legal',
+        // 兼容旧深链，统一展示产品信息，不重新暴露已隐藏的外链页面。
         child: (_, _) =>
-            const ProductInformationPage(information: ProductInformation.legal),
+            AboutPage(onCheckUpdate: inject<MyController>().checkUpdate),
       )
-      ..route('/credits', child: (context, state) => const CreditsPage());
+      ..route(
+        '/credits',
+        child: (_, _) =>
+            AboutPage(onCheckUpdate: inject<MyController>().checkUpdate),
+      );
   },
 );

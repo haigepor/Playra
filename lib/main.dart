@@ -1,6 +1,7 @@
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:kazumi/services/platform/platform_setup.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:kazumi/app_module.dart';
 import 'package:kazumi/app_widget.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -50,7 +51,7 @@ void main() async {
     await Hive.initFlutter(hivePath);
     await initializePlatformFiles();
     await GStorage.init();
-    if (Platform.isAndroid &&
+    if ((Platform.isAndroid || Platform.isIOS) &&
         !GStorage.getSetting(SettingsKeys.androidModernDefaultApplied)) {
       // 覆盖安装也默认进入新版；先保存页面选择，成功后再记录迁移完成。
       await GStorage.putSetting(SettingsKeys.androidUiStyle, 'modern');
@@ -127,7 +128,9 @@ void main() async {
         scoped.addChangeNotifier<ThemeProvider>(ThemeProvider.new);
         scoped.addChangeNotifier<InterfaceStyleController>(
           () => InterfaceStyleController(
-            supportsModern: Platform.isAndroid,
+            supportsModern: InterfaceStyleController.supportsPlatform(
+              defaultTargetPlatform,
+            ),
             savedStyle: GStorage.getSetting(SettingsKeys.androidUiStyle),
             writeStyle: (value) =>
                 GStorage.putSetting(SettingsKeys.androidUiStyle, value),
