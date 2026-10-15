@@ -1192,23 +1192,10 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         ),
         const SizedBox(height: 18),
         sourceControls(context),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                '选集',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-            TextButton(
-              onPressed: () => allEpisodes(context),
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-              child: Text(
-                '共 $count 集 · 全部 ›',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ),
-          ],
+        PlayerEpisodesHeader(
+          count: count,
+          sourceVerified: road != null,
+          onShowAll: () => allEpisodes(context),
         ),
         if (hasPlayback) ...[
           SizedBox(

@@ -137,6 +137,58 @@ class PlayerEpisodeButton extends StatelessWidget {
   }
 }
 
+/// 资料集数与线路收录集数含义不同，不能在匹配前承诺目录条目均可播放。
+class PlayerEpisodesHeader extends StatelessWidget {
+  const PlayerEpisodesHeader({
+    super.key,
+    required this.count,
+    required this.sourceVerified,
+    required this.onShowAll,
+  });
+
+  final int count;
+  final bool sourceVerified;
+  final VoidCallback onShowAll;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              sourceVerified ? '选集' : '资料目录',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Flexible(
+            child: TextButton(
+              onPressed: onShowAll,
+              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+              child: Text(
+                sourceVerified ? '当前线路 $count 集 · 全部 ›' : '目录 $count 集 ›',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+      if (!sourceVerified)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            '实际可播放集数以匹配来源为准',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+    ],
+  );
+}
+
 /// 未选源时展示资料目录，返回真实分集对象，自动匹配只使用正片集号。
 class PlayerCatalogEpisodesSheet extends StatefulWidget {
   const PlayerCatalogEpisodesSheet({
@@ -169,13 +221,13 @@ class _PlayerCatalogEpisodesSheetState
     if (descending) visible.sort((a, b) => b.episode.compareTo(a.episode));
     return Column(
       children: [
-        const PlayerSheetHeader(title: '全部剧集'),
+        const PlayerSheetHeader(title: '资料目录'),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
               const Expanded(
-                child: Text('点击剧集，自动匹配播放来源', style: TextStyle(fontSize: 12)),
+                child: Text('实际可播放集数以匹配来源为准', style: TextStyle(fontSize: 12)),
               ),
               TextButton.icon(
                 onPressed: () => setState(() => descending = !descending),
