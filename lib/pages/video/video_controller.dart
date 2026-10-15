@@ -481,6 +481,7 @@ abstract class _VideoPageController with Store implements Disposable {
   @action
   void _finishLoading() {
     _loading = false;
+    _errorMessage = null;
   }
 
   @action
@@ -945,6 +946,9 @@ abstract class _VideoPageController with Store implements Disposable {
     final attemptVersion = ++_attemptVersion;
     _firstFrameTimer?.cancel();
     final attemptedPlugin = currentPlugin;
+    var firstFrameTimedOut = false;
+    bool currentAttempt() =>
+        session.isActive && attemptVersion == _attemptVersion;
     void markActiveRoute() {
       if (session.isStale || attemptVersion != _attemptVersion) return;
       activeProviderId = currentPlugin.providerId;
@@ -1022,9 +1026,27 @@ abstract class _VideoPageController with Store implements Disposable {
             : bangumiItem.name,
       );
 
+      var progressRestored = false;
+      Future<void> restoreMatchingProgress() async {
+        if (progressRestored || !currentAttempt()) return;
+        progressRestored = true;
+        if (expectedDuration == null || source.offset <= 0) return;
+        final duration = playerController.playback.playerDuration;
+        final difference = (duration - expectedDuration).inSeconds.abs();
+        final tolerance = (expectedDuration.inSeconds * .1).clamp(5, 30);
+        if (expectedDuration > Duration.zero &&
+            duration > Duration.zero &&
+            difference <= tolerance &&
+            source.offset < duration.inSeconds) {
+          await playerController.seek(Duration(seconds: source.offset));
+        }
+      }
+
       _mediaFailure = null;
       playerController.playback.onMediaError = (message) {
         if (session.isStale || attemptVersion != _attemptVersion) return;
+        // 真正的媒体错误不能被后续首帧回调当成“超时恢复”清除。
+        firstFrameTimedOut = false;
         _mediaFailure = message;
         if (!_loading) {
           SourcePolicy.shared.record(
@@ -1062,7 +1084,8 @@ abstract class _VideoPageController with Store implements Disposable {
         var waited = Duration.zero;
         var hasPlayed = false;
         final resolveMs = measured.elapsedMilliseconds;
-        final frameLimit = Duration(seconds: kIsWeb ? 25 : 15);
+        // 与 SDK 影视页一致；尾置索引 MP4 需要额外 Range 请求，不能在 15 秒误判。
+        const frameLimit = Duration(seconds: 25);
         if (firstFrame != null) {
           final timer = Timer.periodic(const Duration(milliseconds: 200), (
             timer,
@@ -1090,6 +1113,7 @@ abstract class _VideoPageController with Store implements Disposable {
             }
             if (waited >= frameLimit) {
               timer.cancel();
+              firstFrameTimedOut = true;
               _mediaFailure = '首帧等待超时';
               if (!_loading) {
                 SourcePolicy.shared.record(
@@ -1105,13 +1129,29 @@ abstract class _VideoPageController with Store implements Disposable {
           _firstFrameTimer = timer;
           unawaited(
             firstFrame
-                .then<void>((_) {
+                .then<void>((_) async {
                   rendered = true;
                   timer.cancel();
-                  if (session.isActive &&
-                      attemptVersion == _attemptVersion &&
-                      _mediaFailure == null) {
-                    markActiveRoute();
+                  if (currentAttempt() &&
+                      (_mediaFailure == null || firstFrameTimedOut)) {
+                    // 超时不是播放器终止：仅当前媒体迟到出画时撤掉过期错误。
+                    // 新选集/新线路已更换 attempt 或 session，旧帧没有恢复权限。
+                    // 主等待仍在运行时交给下方统一完成，避免同时恢复进度/加载弹幕。
+                    final recovered = firstFrameTimedOut && !_loading;
+                    firstFrameTimedOut = false;
+                    _mediaFailure = null;
+                    if (recovered) {
+                      await restoreMatchingProgress();
+                      if (!currentAttempt() || _mediaFailure != null) return;
+                      _lastFailureCode = '';
+                      markActiveRoute();
+                      _finishLoading();
+                      unawaited(
+                        _loadPlaybackDanmaku(playerController, params, session),
+                      );
+                    } else {
+                      markActiveRoute();
+                    }
                     SourcePolicy.shared.record(
                       attemptedPlugin.providerId,
                       attemptedPlugin.version,
@@ -1151,17 +1191,10 @@ abstract class _VideoPageController with Store implements Disposable {
         }
       }
       if (session.isActive && initialized) {
-        if (expectedDuration != null && source.offset > 0) {
-          final duration = playerController.playback.playerDuration;
-          final difference = (duration - expectedDuration).inSeconds.abs();
-          final tolerance = (expectedDuration.inSeconds * .1).clamp(5, 30);
-          if (expectedDuration > Duration.zero &&
-              duration > Duration.zero &&
-              difference <= tolerance &&
-              source.offset < duration.inSeconds) {
-            await playerController.seek(Duration(seconds: source.offset));
-            if (session.isStale) return false;
-          }
+        await restoreMatchingProgress();
+        if (!currentAttempt()) return false;
+        if (_mediaFailure != null) {
+          throw const SourceException('MEDIA_ERROR', '恢复播放进度时媒体加载失败');
         }
         _finishLoading();
         playingEpisode = VideoEpisodeSelection(
@@ -1186,7 +1219,15 @@ abstract class _VideoPageController with Store implements Disposable {
       if (session.isStale) {
         return false;
       }
-      _failLoading('视频解析失败：${e.toString()}');
+      if (e is SourceException && e.code == 'MEDIA_ERROR') {
+        _failLoading(
+          firstFrameTimedOut ? '视频首帧等待超时，请重试或换源' : '已取得视频地址，但媒体加载失败，请重试或换源',
+        );
+      } else if (e is SourceException && e.code == 'TIMEOUT') {
+        _failLoading('视频加载超时，请重试或换源');
+      } else {
+        _failLoading('视频解析失败：${e.toString()}');
+      }
       _lastFailureCode = e is SourceException ? e.code : 'SOURCE_ERROR';
     }
     _firstFrameTimer?.cancel();
