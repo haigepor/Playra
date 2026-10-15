@@ -17,11 +17,13 @@
 | [全页面样式审查](all-pages-style-audit-20261014.zh.md) | 主题 token、小屏、播放器与二级页面 | 问题快照，修复结果见下表 |
 | [Mio 线路数量核对](miomedia-lines-audit-20261014.zh.md) | 样本中的线路种类和空目录 | 来源采样，不能当作全站固定线路白名单 |
 | [SDK 分层与最高画质方案](sdk-provider-lines-quality-plan-20261014.zh.md) | SDK 播放源、动态线路、画质证据与扩展 | 已实施方案的设计依据，结果见实施记录 |
+| [动漫/影视播放源统一分析](anime-playback-sdk-source-alignment-20261015.zh.md) | 动漫顶层AniFive分组、站点线路、自动与手动状态统一 | 用户已确认分组方向；实施方案，尚未应用新分组代码 |
 
 ## 实施与核验记录
 
 | 主题 | 记录 |
 |---|---|
+| 两套 SDK 当前架构、DM84 解析到媒体链路、双端验收 | [AniFive / MioMedia 与 DM84 修复](two-sdk-architecture-and-dm84-playback-20261015.zh.md) |
 | 搜索、来源聚合与平台入口 | [搜索实施](../verification/content-search-implementation-20261013.zh.md) · [搜索后续优化](../verification/search-followup-20261013.zh.md) |
 | 页面细节修复 | [样式修复](all-pages-style-fixes-20261014.zh.md) |
 | SDK 统一播放与接入文档 | [SDK 实施记录](sdk-provider-lines-quality-implementation-20261014.zh.md) |

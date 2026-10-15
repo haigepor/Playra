@@ -19,7 +19,7 @@
   <a href="#文档导航">项目文档</a>
 </p>
 
-**Playra 是我们自己的影音应用主线**，基于 [Kazumi](https://github.com/Predidit/Kazumi) 开源项目，使用 Flutter 构建番剧与影视发现、日历、追番、榜单和播放体验，并接入 MioMedia 内容与播放 SDK。
+**Playra 是我们自己的影音应用主线**，基于 [Kazumi](https://github.com/Predidit/Kazumi) 开源项目，使用 Flutter 构建番剧与影视发现、日历、追番、榜单和播放体验，并接入 MioMedia 与 AniFive 四源 SDK。
 
 `main` 保存 Playra 的功能、界面与发布改动；`kazumi-upstream` 保存官方原版，便于持续跟进上游。下载、运行和更新本项目时，请使用 **Playra main** 及本仓库的发布入口。
 
@@ -58,7 +58,7 @@ Bangumi 番剧与 MioMedia 影视保持各自的作品身份和业务能力。�
 | Android | Android SDK、JDK 17；应用内 Python 由 Chaquopy 打包 |
 | Web | Node.js；当前 CI 使用 Node.js 22，依赖见 [Web 后端](tool/web_backend/package.json) |
 
-MioMedia SDK 属于私有构建输入，公开仓库不包含完整模块和数据资源。开发该功能前，需要准备授权 SDK；操作、完整性要求和 CI 输入见[构建输入说明](docs/release/build-inputs.zh.md)。
+MioMedia 与 AniFive SDK 属于私有构建输入，公开仓库不包含完整模块和数据资源。构建前需要分别准备输入；操作、完整性要求和当前 CI 缺口见[构建输入说明](docs/release/build-inputs.zh.md)。后续新增来源统一遵循[SDK 接入规范](docs/development/source-sdk-onboarding.zh.md)，并填写[接入验收模板](docs/development/templates/source-sdk-checklist.zh.md)。
 
 以下为 Windows / PowerShell 示例；SDK 路径请替换为自己的实际目录：
 
@@ -66,6 +66,7 @@ MioMedia SDK 属于私有构建输入，公开仓库不包含完整模块和数�
 git clone --branch main https://github.com/haigepor/Playra.git
 cd Playra
 python tool/miomedia_sdk_input.py sync --sdk-directory "C:/path/to/sdk/python/miomedia"
+python -B -X utf8 tool/source_runtime/import_anifive.py "C:/path/to/sdk/python/anifive"
 flutter pub get
 ```
 
@@ -83,19 +84,13 @@ Android 默认在应用内调用 Python SDK，日常使用无需启动电脑服�
 
 ### Web
 
-先在一个终端启动内容服务：
+准备好两套 SDK 后，构建并启动 Web：
 
 ```powershell
-python -X utf8 tool/source_runtime/server.py --port 8945
+.\tool\start-web.ps1 -Port 8931 -RuntimePort 8945 -BangumiEchPort 8946 -Build
 ```
 
-再在另一个终端构建并启动 Web：
-
-```powershell
-.\tool\start-web.ps1 -Port 8931 -RuntimePort 8945 -Build
-```
-
-浏览器地址为 `http://127.0.0.1:8931`。脚本准备 Web 后端依赖并启用同源内容桥接。查看新版移动界面可改用：
+浏览器地址为 `http://127.0.0.1:8931`。脚本检查并启动 Python 算法服务、Bangumi ECH 服务与 Node 同源网关；日志位于 `.dart_tool/web-service/`。已运行的旧服务不会自动重启，修改代码后须确认服务版本。查看新版移动界面可改用：
 
 ```powershell
 .\tool\start-home-preview.ps1 -Port 8933 -RuntimePort 8945 -Build

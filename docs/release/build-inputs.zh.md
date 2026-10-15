@@ -1,6 +1,24 @@
 # Playra 构建输入
 
-Android 包通过 Chaquopy 内置 Python 内容 SDK，不依赖电脑上的 Python 服务。Web 仍需要配置内容服务。
+更新：2026-10-15。新增来源的交付要求见[统一 SDK 接入规范](../development/source-sdk-onboarding.zh.md)。Android 包通过 Chaquopy 内置 Python 内容 SDK，不依赖电脑上的 Python 服务。Web 需要算法服务及同源网关。
+
+当前构建要求 **MioMedia、AniFive 两套私有输入**；运行适配器是 `miomedia` 与 `anifive-a/b/c/d`，不是五套独立 SDK。两套 vendor 目录均被忽略；干净克隆必须分别恢复。下文 Mio 的 CI 导出功能不能替代 AniFive 输入。
+
+## AniFive 四源输入
+
+```powershell
+python -B -X utf8 tool/source_runtime/import_anifive.py "C:/path/to/sdk/python/anifive"
+```
+
+参数必须指向 SDK 的 Python 包目录，不是仓库根目录。导入到 `tool/source_runtime/vendor/anifive/`，生成可提交的 `vendor/anifive-manifest.json`，记录原始及导入后文件 SHA256。原 SDK 目录不修改，项目副本通过导入器应用请求级传输注入、截断处理、证书校验及导入兼容补丁。
+
+必需模块包括 `__init__.py/client.py/transport.py/profile.py/source_a.py/source_b.py/source_c.py/source_d.py/selector.py/codec.py/config.py/clarity.py`。Android 的 `stageEmbeddedPython` 校验这些文件并打包 `vendor/anifive/*.py`、`anifive_adapter.py`、`anifive_transport.py`、`dispatch.py` 等运行依赖。缺输入会明确使 Android 构建失败。
+
+当前导入收据的上游标识为 `dc13fdb`，导入器尚未自动验证输入仓库提交；维护者必须核对实际 SDK 版本及收据摘要。新版 SDK 不应在未核对补丁适用性的情况下直接覆盖现有输入。
+
+**CI 尚未完成 AniFive 输入恢复。** 当前 `.github/workflows/release.yaml` 只调用 Mio `import-env`，没有 AniFive 导入步骤。新增 CI 输入须单独设计存储/恢复/完整性校验，完成干净环境构建后才可标记发布就绪；不要创建尚不存在的 Secret 名称作为既有要求，也不要把 vendor 包上传成公开构建附件。
+
+## MioMedia 输入与既有 CI
 
 SDK 原始模块含内部配置和自检向量，整个 `tool/source_runtime/vendor/miomedia/` 作为私有构建输入忽略，密码算法不作修改。干净克隆后先准备 SDK：
 

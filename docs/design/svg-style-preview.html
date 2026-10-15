@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Playra · SVG 设计预览</title>
+  <style>
+    :root { color-scheme: light; --bg:#f4f4f8; --surface:#fff; --ink:#282c40; --muted:#686e83; --line:#e4e5ed; --stage:#fafaff; --accent:#6677cc; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.7 system-ui,"Microsoft YaHei",sans-serif; }
+    body[data-theme="dark"] { color-scheme:dark; --bg:#11141c; --surface:#1b202c; --ink:#edf0f8; --muted:#a5afc5; --line:#30384a; --stage:#151a25; --accent:#a7b7ff; }
+    button,a { -webkit-tap-highlight-color:transparent; }
+    a { color:var(--accent); text-underline-offset:4px; }
+    button { font:inherit; cursor:pointer; }
+    button:focus-visible,a:focus-visible { outline:3px solid #8d9beb; outline-offset:4px; }
+    .top { background:#11141c; color:#edf0f8; }
+    .top-inner,main { max-width:1184px; margin:auto; padding:0 32px; }
+    .top-inner { min-height:74px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    .brand { font-weight:800; letter-spacing:.16em; font-size:17px; }
+    .edition { color:#a5afc5; font-size:12px; }
+    .top a { color:#c9d3ff; font-size:13px; }
+    .intro { display:grid; grid-template-columns:1.15fr 1fr; align-items:center; gap:36px; padding:52px 0 42px; }
+    .eyebrow { font-size:12px; font-weight:700; letter-spacing:.12em; color:var(--accent); margin:0 0 10px; }
+    h1 { font-size:clamp(28px,3.1vw,42px); line-height:1.3; letter-spacing:-.04em; margin:0 0 17px; }
+    .intro p:not(.eyebrow) { color:var(--muted); max-width:520px; margin:0; }
+    .hero-board { min-height:220px; border:1px solid var(--line); border-radius:24px; background:var(--surface); display:grid; grid-template-columns:1fr 1.3fr; align-items:center; overflow:hidden; }
+    .hero-ref { display:flex; flex-direction:column; align-items:center; gap:18px; padding:24px 8px 24px 24px; }
+    .hero-ref img { width:112px; height:112px; }
+    .hero-ref span,.hero-cal span { font-size:12px; color:var(--muted); }
+    .hero-cal { display:flex; flex-direction:column; align-items:center; gap:18px; padding:24px 20px 24px 0; overflow:hidden; }
+    .hero-cal img { width:248px; height:132px; object-fit:contain; margin-left:-120px; }
+    .principles { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; }
+    .principles span { border:1px solid var(--line); padding:3px 11px; border-radius:7px; font-size:12px; color:var(--muted); }
+    .toolbar { padding:16px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; justify-content:space-between; gap:14px; align-items:center; margin-bottom:28px; }
+    .segmented { display:flex; flex-wrap:wrap; gap:4px; }
+    .segmented button { color:var(--muted); background:transparent; border:0; min-height:40px; padding:7px 13px; border-radius:8px; font-size:13px; }
+    .segmented button[aria-pressed="true"] { background:var(--surface); color:var(--ink); box-shadow:0 0 0 1px var(--line); font-weight:650; }
+    .theme { display:flex; align-items:center; gap:4px; }
+    .theme button { min-height:40px; }
+    .section-head { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin:28px 0 16px; }
+    h2 { font-size:20px; line-height:1.4; margin:0; }
+    .section-head p { margin:0; font-size:12px; color:var(--muted); }
+    .gallery { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+    .tile { min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+    .stage { background:var(--stage); height:170px; display:flex; align-items:center; justify-content:center; position:relative; }
+    .stage>img { max-width:200px; width:70%; height:132px; object-fit:contain; }
+    .stage.icon>img { width:64px; height:64px; }
+    .sizes { position:absolute; right:14px; bottom:11px; display:flex; align-items:center; gap:10px; opacity:.8; }
+    .sizes img { width:24px; height:24px; }
+    .sizes small { color:var(--muted); font-size:10px; }
+    .badge { position:absolute; left:14px; top:12px; font-size:10px; font-weight:650; color:var(--accent); }
+    .tile-body { padding:15px 18px 17px; }
+    .tile-title { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    h3 { font-size:15px; margin:0; }
+    .tile-title a { font-size:11px; white-space:nowrap; }
+    .tile p { margin:5px 0 0; font-size:12px; line-height:1.65; color:var(--muted); min-height:40px; }
+    .use { display:block; margin-top:9px; color:var(--muted); font-size:11px; }
+    .context { background:#11141c; color:#edf0f8; padding:26px; border-radius:16px; display:grid; grid-template-columns:1fr 1fr; gap:24px; margin:30px 0; }
+    .context small { font-size:11px; color:#a5afc5; }
+    .sample-heading { display:flex; align-items:center; gap:9px; margin:14px 0; font-size:18px; font-weight:700; }
+    .sample-heading img { width:24px; height:24px; }
+    .old-bar { width:3px; height:17px; border-radius:3px; background:#a7b7ff; }
+    .sample-copy { margin:0; font-size:12px; color:#a5afc5; }
+    .headers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .header-demo { position:relative; overflow:hidden; border-radius:16px; background:#11141c; color:#edf0f8; min-height:156px; padding:24px; }
+    .header-demo img { position:absolute; right:0; top:0; width:248px; height:132px; opacity:.11; pointer-events:none; }
+    .header-demo h3 { position:relative; font-size:24px; margin-top:6px; }
+    .header-demo p { position:relative; max-width:60%; color:#a5afc5; font-size:12px; margin:5px 0; }
+    .header-demo a { position:relative; display:inline-block; margin-top:12px; color:#a7b7ff; font-size:11px; }
+    .art-control { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin:14px 0 0; }
+    .art-control input { accent-color:#8999ed; width:18px; height:18px; }
+    .headers.full .header-demo img { opacity:1; }
+    .sources { margin:42px 0; border-top:1px solid var(--line); padding-top:28px; }
+    .source-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; margin-top:20px; }
+    .source-grid h3 { font-size:14px; }
+    .source-grid p { font-size:12px; color:var(--muted); margin:8px 0 0; }
+    .note { font-size:12px; color:var(--muted); margin:20px 0 0; }
+    footer { padding:24px 0 36px; color:var(--muted); border-top:1px solid var(--line); font-size:12px; }
+    [hidden] { display:none!important; }
+    @media(max-width:760px) { .top-inner,main { padding-left:20px;padding-right:20px; } .intro { gap:24px;padding:32px 0;grid-template-columns:1fr; } .hero-board { min-height:200px; } .gallery { grid-template-columns:repeat(2,minmax(0,1fr));gap:12px; } .source-grid { grid-template-columns:1fr;gap:20px; } .context { padding:20px;gap:20px; } .headers { grid-template-columns:1fr; } .section-head { align-items:start;flex-direction:column;gap:5px; } .edition { display:none; } }
+    @media(max-width:430px) { .top-inner,main { padding-left:16px;padding-right:16px; } .top-inner { gap:10px; } .brand { font-size:14px; } .top a { font-size:11px; } .gallery { grid-template-columns:1fr; } .stage { height:164px; } .context { grid-template-columns:1fr; } .context>div+div { border-top:1px solid #30384a;padding-top:14px; } .hero-ref { padding-left:16px; } .hero-ref img { width:88px;height:88px; } .hero-cal img { width:218px; margin-left:-100px; } .hero-ref span,.hero-cal span { font-size:11px; } .segmented button { padding:7px 10px; } }
+  </style>
+</head>
+<body data-theme="light">
+  <header class="top"><div class="top-inner"><div><span class="brand">PLAYRA</span> <span class="edition"> / SVG STUDY · 2026.10</span></div><a href="/#/tab/popular/">查看应用 ↗</a></div></header>
+  <main>
+    <p class="note"><a href="./ui-refinement-preview.html">查看本轮更新：生成式背景、播放来源栏、前三名 SVG 徽章 ↗</a></p>
+    <section class="intro">
+      <div><p class="eyebrow">ROUND FORMS / SOFT LAVENDER</p><h1>让每个页面，<br>有自己的小图形。</h1><p>沿用你选中的风格：粗圆轮廓、浅紫块面与清楚的形状。为发现、放送、追番和空状态建立一套统一的 SVG。</p><div class="principles"><span>圆润粗线</span><span>浅紫填充</span><span>实心播放</span><span>适量四角星</span></div></div>
+      <div class="hero-board"><div class="hero-ref"><img src="../../assets/images/modern-section-curated.svg" alt="选定的播放卡与四角星风格"><span>你选中的视觉基准</span></div><div class="hero-cal"><img src="../../assets/images/modern-calendar-decoration.svg" alt="同风格重新设计的日历"><span>延伸到放送日历</span></div></div>
+    </section>
+    <div class="toolbar"><div class="segmented" role="group" aria-label="筛选 SVG"><button type="button" data-filter="all" aria-pressed="true">全部 16</button><button type="button" data-filter="extra" aria-pressed="false">本次扩展 6</button><button type="button" data-filter="section" aria-pressed="false">栏目 3</button><button type="button" data-filter="empty" aria-pressed="false">空状态 9</button><button type="button" data-filter="header" aria-pressed="false">页头 4</button></div><div class="segmented theme" role="group" aria-label="预览背景"><button type="button" data-theme="light" aria-pressed="true">浅色背景</button><button type="button" data-theme="dark" aria-pressed="false">深色背景</button></div></div>
+    <section id="catalog"><div class="section-head"><h2 id="catalog-title">栏目与空状态</h2><p>点击 SVG 下载可编辑的矢量文件；图案均为本项目绘制。</p></div><div class="gallery" id="gallery"></div></section>
+    <section class="context" id="context" aria-label="热播榜标题对比"><div><small>原栏目标题</small><div class="sample-heading"><i class="old-bar"></i>七天热播榜</div><p class="sample-copy">各栏目都使用同一条竖线，辨识度较弱。</p></div><div><small>新的热播榜标记 · 24px</small><div class="sample-heading"><img src="../../assets/images/modern-section-ranking.svg" alt="">七天热播榜</div><p class="sample-copy">暖金火焰内嵌播放形状，与普通推荐的浅紫图标区分。</p></div></section>
+    <section id="header-section"><div class="section-head"><h2>页头装饰，给内容留出空间</h2><p>默认展示低透明效果；品牌图形靠右，文字仍是主角。</p></div><div class="headers" id="headers"></div><label class="art-control"><input type="checkbox" id="full-art">查看素材完整颜色</label><p class="note">此处用于观察构图。应用的页头还会统一着色，实际效果以 Flutter 页面为准。</p></section>
+    <section class="sources"><h2>这套风格的参考依据</h2><div class="source-grid"><div><h3><a href="https://github.com/phosphor-icons/core" target="_blank" rel="noopener noreferrer">Phosphor · Duotone ↗</a></h3><p>参考它的前景轮廓与背景块面分层。这里进一步加入你选中的浅紫色、圆润比例与影音形状。</p></div><div><h3><a href="https://fluent2.microsoft.design/iconography/" target="_blank" rel="noopener noreferrer">Fluent 2 · 清晰识别 ↗</a></h3><p>借鉴小尺寸下减少细节、用适当视觉重量保持可辨认的原则。双色装饰属于 Playra 的设计选择。</p></div><div><h3><a href="https://developers.google.com/fonts/docs/material_symbols" target="_blank" rel="noopener noreferrer">Material Symbols · 尺寸与字重 ↗</a></h3><p>参考填充、笔画与视觉尺寸协同调整。24px 栏目符号单独绘制，不把复杂空态直接缩成小图标。</p></div></div><p class="note">空状态仍需清楚的说明和下一步，不能只放插画。参照 <a href="https://www.carbondesignsystem.com/building-blocks/core/patterns/empty-states" target="_blank" rel="noopener noreferrer">Carbon 空状态规范</a>。功能按钮、播放器控制条、密集设置表单继续保持简洁。</p></section>
+    <footer>16 件 SVG · 3 个新空态作为待接入素材，其余沿用现有位置或已接入栏目标题。此页为设计预览，深浅背景切换不修改应用主题。</footer>
+  </main>
+  <script>
+    const base = '../../assets/images/';
+    const items = [
+      ['modern-section-ranking','七天热播榜','section','暖金火焰与播放负形，强化热度语义。','已接入 · 24 × 24',false],
+      ['modern-section-curated','精选推荐','section','播放卡、浅色块面与大四角星，整套图形的基准。','已接入 · 24 × 24',false],
+      ['modern-section-resume','继续观看','section','回转轮廓与播放三角，表达回到上次观看。','已接入 · 24 × 24',false],
+      ['modern-library-empty','等待收藏的片夹','empty','片卡与书签，适合追番列表还没有内容时出现。','新增素材 · 待接入追番空状态',true],
+      ['modern-image-search-empty','截图识别','empty','取景框、放大镜与星形，表达从画面寻找作品。','重绘 · 沿用搜图页面',true],
+      ['modern-download-empty','离线收纳盒','empty','媒体卡与向下箭头，表达离线保存的用途。','新增素材 · 待接入下载空状态',true],
+      ['modern-calendar-empty','安静的放送日','empty','圆润日历与播放形状，不使用虚构日期。','新增素材 · 待接入当日无放送状态',true],
+      ['modern-player-empty-source','等待选择的片盘','empty','两张媒体卡，保持来源为空时的中性表达。','重绘 · 沿用来源弹层',true],
+      ['modern-player-empty-discussion','等待交流的气泡','empty','圆润气泡和三点，语义独立，不叠加播放或星形。','重绘 · 沿用讨论空状态',true],
+      ['modern-profile-empty','你的观影票根','empty','票根与播放形状，呼应个人观看记录。','重绘 · 沿用我的页面',false],
+      ['modern-search-empty','寻找下一部作品','empty','海报与放大镜，区分未搜索和已加载内容的区域。','重绘 · 沿用搜索空状态',false],
+      ['modern-home-empty-feed','等待发现的影片','empty','留白的播放卡与大四角星，呼应精选栏目。','重绘 · 沿用推荐空状态',false]
+    ];
+    const headers = [
+      ['modern-discover-decoration','发现','寻找下一部喜欢的作品'],
+      ['modern-calendar-decoration','放送日历','这一周，有哪些值得期待'],
+      ['modern-library-decoration','我的追番','把想看的故事收进片夹'],
+      ['modern-profile-decoration','我的','留下自己的观影足迹']
+    ];
+    const gallery = document.getElementById('gallery');
+    for (const [name,title,kind,description,status,extra] of items) {
+      const card = document.createElement('article');
+      card.className='tile'; card.dataset.kind=kind; card.dataset.extra=String(extra);
+      card.innerHTML=`<div class="stage ${kind==='section'?'icon':''}">${extra?'<span class="badge">本次扩展</span>':''}<img src="${base+name}.svg" alt="${title}">${kind==='section'?`<div class="sizes"><small>实际 24px</small><img src="${base+name}.svg" alt=""></div>`:''}</div><div class="tile-body"><div class="tile-title"><h3>${title}</h3><a href="${base+name}.svg" download="${name}.svg" aria-label="下载${title} SVG">SVG ↓</a></div><p>${description}</p><span class="use">${status}</span></div>`;
+      gallery.append(card);
+    }
+    for (const [name,title,description] of headers) {
+      const card=document.createElement('article'); card.className='header-demo';
+      card.innerHTML=`<img src="${base+name}.svg" alt=""><h3>${title}</h3><p>${description}</p><a href="${base+name}.svg" download="${name}.svg" aria-label="下载${title}页头 SVG">下载 SVG ↓</a>`;
+      document.getElementById('headers').append(card);
+    }
+    document.querySelectorAll('button[data-filter]').forEach(button=>button.addEventListener('click',()=>{
+      const filter=button.dataset.filter;
+      document.querySelectorAll('button[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+      gallery.querySelectorAll('.tile').forEach(card=>card.hidden=!(filter==='all'||card.dataset.kind===filter||(filter==='extra'&&card.dataset.extra==='true')));
+      document.getElementById('catalog').hidden=filter==='header';
+      document.getElementById('context').hidden=filter!=='all'&&filter!=='section';
+      document.getElementById('header-section').hidden=filter!=='all'&&filter!=='header';
+      document.getElementById('catalog-title').textContent=({extra:'值得补齐的六个场景',section:'小尺寸也要清楚',empty:'每个空状态，都有自己的语义'})[filter]||'栏目与空状态';
+    }));
+    document.querySelectorAll('button[data-theme]').forEach(button=>button.addEventListener('click',()=>{
+      document.body.dataset.theme=button.dataset.theme;
+      document.querySelectorAll('button[data-theme]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+    }));
+    document.getElementById('full-art').addEventListener('change',event=>document.getElementById('headers').classList.toggle('full',event.target.checked));
+  </script>
+</body>
+</html>
