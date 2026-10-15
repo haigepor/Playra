@@ -45,8 +45,8 @@ class ApiRequestConfig {
     Map<String, dynamic>? query,
     this.bodyType = ApiBodyType.none,
     this.body,
-  })  : headers = headers ?? <String, dynamic>{},
-        query = query ?? <String, dynamic>{};
+  }) : headers = headers ?? <String, dynamic>{},
+       query = query ?? <String, dynamic>{};
 
   factory ApiRequestConfig.fromJson(Map<String, dynamic> json) {
     return ApiRequestConfig(
@@ -60,13 +60,13 @@ class ApiRequestConfig {
   }
 
   Map<String, dynamic> toJson() => {
-        'method': method.toUpperCase(),
-        'url': url,
-        if (headers.isNotEmpty) 'headers': headers,
-        if (query.isNotEmpty) 'query': query,
-        if (bodyType != ApiBodyType.none) 'bodyType': bodyType,
-        if (bodyType != ApiBodyType.none && body != null) 'body': body,
-      };
+    'method': method.toUpperCase(),
+    'url': url,
+    if (headers.isNotEmpty) 'headers': headers,
+    if (query.isNotEmpty) 'query': query,
+    if (bodyType != ApiBodyType.none) 'bodyType': bodyType,
+    if (bodyType != ApiBodyType.none && body != null) 'body': body,
+  };
 }
 
 class ApiSearchConfig {
@@ -74,12 +74,14 @@ class ApiSearchConfig {
   String listPath;
   String namePath;
   String sourcePath;
+  String coverPath;
 
   ApiSearchConfig({
     ApiRequestConfig? request,
     this.listPath = r'$.data[*]',
     this.namePath = r'$.name',
     this.sourcePath = r'$.url',
+    this.coverPath = '',
   }) : request = request ?? ApiRequestConfig();
 
   factory ApiSearchConfig.fromJson(Map<String, dynamic> json) {
@@ -88,15 +90,17 @@ class ApiSearchConfig {
       listPath: json['listPath'] as String? ?? r'$.data[*]',
       namePath: json['namePath'] as String? ?? r'$.name',
       sourcePath: json['sourcePath'] as String? ?? r'$.url',
+      coverPath: json['coverPath'] as String? ?? '',
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'request': request.toJson(),
-        'listPath': listPath,
-        'namePath': namePath,
-        'sourcePath': sourcePath,
-      };
+    'request': request.toJson(),
+    'listPath': listPath,
+    'namePath': namePath,
+    'sourcePath': sourcePath,
+    if (coverPath.isNotEmpty) 'coverPath': coverPath,
+  };
 }
 
 class ApiEpisodePageConfig {
@@ -106,10 +110,8 @@ class ApiEpisodePageConfig {
   /// Query parameters rendered with response and episode index variables.
   Map<String, dynamic> query;
 
-  ApiEpisodePageConfig({
-    this.url = '',
-    Map<String, dynamic>? query,
-  }) : query = query ?? <String, dynamic>{};
+  ApiEpisodePageConfig({this.url = '', Map<String, dynamic>? query})
+    : query = query ?? <String, dynamic>{};
 
   factory ApiEpisodePageConfig.fromJson(Map<String, dynamic> json) {
     return ApiEpisodePageConfig(
@@ -118,10 +120,7 @@ class ApiEpisodePageConfig {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'url': url,
-        'query': query,
-      };
+  Map<String, dynamic> toJson() => {'url': url, 'query': query};
 }
 
 class ApiChapterConfig {
@@ -131,6 +130,7 @@ class ApiChapterConfig {
   // Nested JSON response mapping.
   String roadsPath;
   String roadNamePath;
+  String roadIdPath;
   String episodesPath;
   String episodeNamePath;
 
@@ -157,6 +157,7 @@ class ApiChapterConfig {
     this.format = ApiChapterFormat.nested,
     this.roadsPath = r'$.data.roads[*]',
     this.roadNamePath = r'$.name',
+    this.roadIdPath = '',
     this.episodesPath = r'$.episodes[*]',
     this.episodeNamePath = r'$.name',
     this.episodeUrlPath = r'$.url',
@@ -167,8 +168,8 @@ class ApiChapterConfig {
     this.fieldSeparator = r'$',
     Map<String, String>? variables,
     this.episodePage,
-  })  : request = request ?? ApiRequestConfig(),
-        variables = variables ?? <String, String>{};
+  }) : request = request ?? ApiRequestConfig(),
+       variables = variables ?? <String, String>{};
 
   factory ApiChapterConfig.fromJson(Map<String, dynamic> json) {
     final rawVariables = _asStringMap(json['variables']);
@@ -177,6 +178,7 @@ class ApiChapterConfig {
       format: ApiChapterFormat.normalize(json['format']),
       roadsPath: json['roadsPath'] as String? ?? r'$.data.roads[*]',
       roadNamePath: json['roadNamePath'] as String? ?? r'$.name',
+      roadIdPath: json['roadIdPath'] as String? ?? '',
       episodesPath: json['episodesPath'] as String? ?? r'$.episodes[*]',
       episodeNamePath: json['episodeNamePath'] as String? ?? r'$.name',
       episodeUrlPath: json['episodeUrlPath'] as String? ?? r'$.url',
@@ -200,6 +202,7 @@ class ApiChapterConfig {
   bool get _hasNestedConfig =>
       roadsPath != r'$.data.roads[*]' ||
       roadNamePath != r'$.name' ||
+      roadIdPath.isNotEmpty ||
       episodesPath != r'$.episodes[*]' ||
       episodeNamePath != r'$.name' ||
       episodeUrlPath != r'$.url';
@@ -210,25 +213,26 @@ class ApiChapterConfig {
   /// Serializes the active [format]'s fields, plus the inactive format's
   /// fields when they carry non-default configuration.
   Map<String, dynamic> toJson() => {
-        'request': request.toJson(),
-        'format': format,
-        if (format == ApiChapterFormat.nested || _hasNestedConfig) ...{
-          'roadsPath': roadsPath,
-          'roadNamePath': roadNamePath,
-          'episodesPath': episodesPath,
-          'episodeNamePath': episodeNamePath,
-          'episodeUrlPath': episodeUrlPath,
-        },
-        if (format == ApiChapterFormat.delimited || _hasDelimitedConfig) ...{
-          'roadNamesPath': roadNamesPath,
-          'roadEpisodesPath': roadEpisodesPath,
-          'roadSeparator': roadSeparator,
-          'episodeSeparator': episodeSeparator,
-          'fieldSeparator': fieldSeparator,
-        },
-        if (variables.isNotEmpty) 'variables': variables,
-        if (episodePage != null) 'episodePage': episodePage!.toJson(),
-      };
+    'request': request.toJson(),
+    'format': format,
+    if (format == ApiChapterFormat.nested || _hasNestedConfig) ...{
+      'roadsPath': roadsPath,
+      'roadNamePath': roadNamePath,
+      if (roadIdPath.isNotEmpty) 'roadIdPath': roadIdPath,
+      'episodesPath': episodesPath,
+      'episodeNamePath': episodeNamePath,
+      'episodeUrlPath': episodeUrlPath,
+    },
+    if (format == ApiChapterFormat.delimited || _hasDelimitedConfig) ...{
+      'roadNamesPath': roadNamesPath,
+      'roadEpisodesPath': roadEpisodesPath,
+      'roadSeparator': roadSeparator,
+      'episodeSeparator': episodeSeparator,
+      'fieldSeparator': fieldSeparator,
+    },
+    if (variables.isNotEmpty) 'variables': variables,
+    if (episodePage != null) 'episodePage': episodePage!.toJson(),
+  };
 }
 
 Map<String, dynamic> _asStringMap(Object? value) {

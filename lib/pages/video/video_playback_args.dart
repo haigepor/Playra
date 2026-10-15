@@ -20,6 +20,8 @@ class OnlineVideoPlaybackArgs extends VideoPlaybackArgs {
     required this.src,
     required this.roads,
     this.automatic = false,
+    this.initialEpisode,
+    this.initialRoad = 0,
   });
 
   final Plugin plugin;
@@ -27,6 +29,10 @@ class OnlineVideoPlaybackArgs extends VideoPlaybackArgs {
   final String src;
   final List<Road> roads;
   final bool automatic;
+
+  /// 退休来源恢复时，由同作品同集匹配产生；不沿用旧目录下标。
+  final int? initialEpisode;
+  final int initialRoad;
 }
 
 class OfflineVideoPlaybackArgs extends VideoPlaybackArgs {

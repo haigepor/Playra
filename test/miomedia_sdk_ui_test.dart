@@ -245,7 +245,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('automatic and current line have distinct selection marks', (
+  testWidgets('automatic mode does not mark an unplayed line as current', (
     tester,
   ) async {
     final fixture = _SourceFixture(movie: true);
@@ -253,7 +253,7 @@ void main() {
     try {
       await _mount(tester, fixture);
       await _openLines(tester);
-      expect(find.text('当前使用'), findsOneWidget);
+      expect(find.text('当前使用'), findsNothing);
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       expect(
         tester

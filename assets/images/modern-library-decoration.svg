@@ -1,11 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="248" height="132" viewBox="0 0 248 132" fill="none">
-  <g stroke="#A7B7FF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-    <g transform="rotate(13 195 53)">
-      <rect x="163" y="13" width="65" height="85" rx="11"/>
-      <path d="M179 13v39l13-9 13 9V13M179 73h30m-30 10h20"/>
-    </g>
-    <path d="m156 27-16 3a9 9 0 0 0-7 11l12 60a9 9 0 0 0 11 7l44-9M112 55v10m-5-5h10M233 106v8m-4-4h8"/>
-    <circle cx="221" cy="10" r="2"/>
-    <path d="M46 118c24-2 37-29 64-24" stroke-dasharray="3 7"/>
-  </g>
+  <path d="m148 41-12 3a17 17 0 0 0-12 20l10 36a17 17 0 0 0 20 12l15-4" stroke="#A7B7FF" stroke-opacity=".45" stroke-width="6" stroke-linecap="round"/>
+  <rect x="151" y="22" width="79" height="96" rx="20" fill="#A7B7FF" fill-opacity=".1"/>
+  <path d="M191 22h-20a20 20 0 0 0-20 20v56a20 20 0 0 0 20 20h39a20 20 0 0 0 20-20V65" stroke="#A7B7FF" stroke-width="6" stroke-linecap="round"/>
+  <path d="M170 24v39l11-7 11 7V24" fill="#A7B7FF"/>
+  <path d="m180 77 22 14-22 14V77Z" fill="#A7B7FF"/>
+  <path d="m219 4 6 15 16 7-16 6-6 16-7-16-15-6 15-7 7-15Z" fill="#C9D3FF"/>
 </svg>

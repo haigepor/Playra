@@ -36,6 +36,21 @@ class SourcePolicy {
   }
 
   bool enabled(String id) => _preferences[id]?['enabled'] != false;
+
+  /// 同站历史别名只补缺失偏好，不覆盖用户已为新名称设置的开关。
+  Future<void> inheritPreference(String oldId, String newId) async {
+    if (_preferences.containsKey(newId) || !_preferences.containsKey(oldId)) {
+      return;
+    }
+    _preferences[newId] = Map.of(_preferences[oldId]!);
+    try {
+      await flush();
+    } catch (_) {
+      _preferences.remove(newId);
+      rethrow;
+    }
+  }
+
   SourceProfile profile(String id, Map<String, dynamic> rule) {
     final declared = SourceProfile.fromJson(rule);
     final override = _preferences[id]?['domains'];

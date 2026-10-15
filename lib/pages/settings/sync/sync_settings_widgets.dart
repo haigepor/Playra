@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
+import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 
 class SyncPageBody extends StatelessWidget {
   const SyncPageBody({super.key, required this.children, this.maxWidth = 880});
@@ -17,7 +17,10 @@ class SyncPageBody extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: ModernSettingsScope.isActiveOf(context) ? 760 : maxWidth,
+            // 表单调用方的640/720宽度需要保留，服务总览最多760。
+            maxWidth: ModernSettingsScope.isActiveOf(context)
+                ? maxWidth.clamp(0.0, 760.0).toDouble()
+                : maxWidth,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -36,27 +39,43 @@ class SyncPageIntro extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.description,
+    this.artwork,
   });
 
   final IconData icon;
   final String title;
   final String description;
+  final String? artwork;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final modern = ModernSettingsScope.isActiveOf(context);
+    if (artwork != null) {
+      return UtilityPageIntro(
+        icon: UtilityIconKind.synchronization,
+        title: title,
+        description: description,
+        artwork: artwork,
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StateIconBadge(
-            icon: icon,
-            size: modern ? 40 : 64,
-            iconSize: modern ? 20 : 28,
-            backgroundColor: theme.colorScheme.primaryContainer,
-            foregroundColor: theme.colorScheme.onPrimaryContainer,
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: .1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const UtilitySvgIcon(
+              UtilityIconKind.synchronization,
+              size: 22,
+            ),
           ),
           SizedBox(width: modern ? 12 : 16),
           Expanded(
@@ -123,12 +142,12 @@ class SyncFeedback extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
+                UtilitySvgIcon(
                   error
-                      ? Icons.error_outline_rounded
+                      ? UtilityIconKind.failed
                       : busy
-                      ? Icons.sync_rounded
-                      : Icons.check_circle_outline_rounded,
+                      ? UtilityIconKind.synchronization
+                      : UtilityIconKind.completed,
                   size: 20,
                   color: error
                       ? colors.onErrorContainer

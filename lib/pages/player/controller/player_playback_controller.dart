@@ -1,5 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
+import 'dart:async';
+
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:kazumi/services/platform/media_resource.dart';
 import 'package:kazumi/services/player/native_player_access.dart';
@@ -16,6 +18,7 @@ import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
 import 'package:kazumi/services/player/playback_cache_policy.dart';
 import 'package:kazumi/services/player/player_error_mapper.dart';
+import 'package:kazumi/services/player/playback_start_position.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/video_source/video_source_format.dart';
 import 'package:kazumi/utils/async_serial_queue.dart';
@@ -484,6 +487,10 @@ abstract class _PlayerPlaybackController with Store {
       if (!isCurrentPlayer(player)) {
         return await _discardIfNotCurrent(candidate);
       }
+      await configureMediaPlayback(player);
+      if (!isCurrentPlayer(player)) {
+        return await _discardIfNotCurrent(candidate);
+      }
       await player.open(
         Media(
           mediaResource,
@@ -495,6 +502,16 @@ abstract class _PlayerPlaybackController with Store {
       );
       if (!isCurrentPlayer(player)) {
         return await _discardIfNotCurrent(candidate);
+      }
+
+      if (kIsWeb && offset > 0) {
+        unawaited(
+          restorePlaybackStart(
+            player,
+            Duration(seconds: offset),
+            isCurrent: () => isCurrentPlayer(player) && canInstall(),
+          ),
+        );
       }
 
       if (cachePolicy.networkAutomatic) {

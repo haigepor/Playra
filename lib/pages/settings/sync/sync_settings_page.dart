@@ -3,7 +3,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
-import 'package:kazumi/bean/widget/state_presentation.dart';
+import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 import 'package:kazumi/pages/settings/sync/sync_settings_widgets.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/sync/bangumi_sync_service.dart';
@@ -104,6 +104,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
               icon: Icons.sync_rounded,
               title: '让追番保持同步',
               description: '选择需要的服务，也可以同时使用。',
+              artwork: 'modern-sync-art',
             ),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -163,49 +164,64 @@ class _SyncServiceCard extends StatelessWidget {
       padding: EdgeInsets.all(modern ? 16 : 24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(modern ? 16 : 28),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: .3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              StateIconBadge(
-                icon: icon,
-                size: modern ? 36 : 56,
-                iconSize: modern ? 20 : 26,
-                backgroundColor: color,
-                foregroundColor: onColor,
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: UtilitySvgIcon(
+                  service == 'Bangumi'
+                      ? UtilityIconKind.collection
+                      : UtilityIconKind.devices,
+                  size: 22,
+                  color: onColor,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _SyncStatusChip(status: status),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        service,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      title,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: modern ? 12 : 20),
-          Text(
-            service,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _SyncStatusChip(status: status),
           ),
-          const SizedBox(height: 6),
-          Semantics(
-            header: true,
-            child: Text(
-              title,
-              style:
-                  (modern
-                          ? theme.textTheme.titleLarge
-                          : theme.textTheme.headlineSmall)
-                      ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             description,
             style: modern
@@ -220,10 +236,11 @@ class _SyncServiceCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: modern ? 16 : 24),
-          StateActionButton.tonal(
+          FilledButton.tonalIcon(
+            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
             onPressed: onPressed,
-            text: action,
-            icon: Icons.arrow_forward_rounded,
+            label: Text(action),
+            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
           ),
         ],
       ),
@@ -254,7 +271,7 @@ class _SyncStatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

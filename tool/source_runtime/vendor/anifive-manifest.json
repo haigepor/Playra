@@ -1,0 +1,71 @@
+{
+  "upstreamCommit": "dc13fdb",
+  "integrationVersion": 1,
+  "files": [
+    {
+      "file": "__init__.py",
+      "upstreamSha256": "22da1532bcd0cdf8498ea48f7fd41ac24d1216d4f3b133757125da0cab15ba71",
+      "sha256": "94a80f8350ccdff29ae2ddf7df121ed4b050c0daa878905464ae7539a54cb0d0"
+    },
+    {
+      "file": "clarity.py",
+      "upstreamSha256": "2ef658c3ce335f8154e6d48163bfc447833adfb45d5107c414b040c3432e3f63",
+      "sha256": "2ef658c3ce335f8154e6d48163bfc447833adfb45d5107c414b040c3432e3f63"
+    },
+    {
+      "file": "client.py",
+      "upstreamSha256": "158ca4688ad6cd06ecb2f020629104d60d46441ac3c58da4509517fa05ae113d",
+      "sha256": "95365a094faf018df8f0537478a0289c1cc31510fe90c9d3c62d8808aba6cab9"
+    },
+    {
+      "file": "codec.py",
+      "upstreamSha256": "8c0d7139a474285bf03350c8e38c46ad0483b1dad8b277a524215a44c6a12b9d",
+      "sha256": "8c0d7139a474285bf03350c8e38c46ad0483b1dad8b277a524215a44c6a12b9d"
+    },
+    {
+      "file": "config.py",
+      "upstreamSha256": "c93656147a4aed67c64c64e09024cb339d9f80db6ba5b8b0b503f45506ff4e3f",
+      "sha256": "c93656147a4aed67c64c64e09024cb339d9f80db6ba5b8b0b503f45506ff4e3f"
+    },
+    {
+      "file": "profile.py",
+      "upstreamSha256": "f72638f2cbe8fa93368747525d92c33da6ba54804d36150e31f407218935f7c6",
+      "sha256": "44af234e7e33283d34c4d3f29f5dfa9d71b6b61543405e8d3c1cde24a00bf236"
+    },
+    {
+      "file": "selector.py",
+      "upstreamSha256": "b7e102362e6ffdf70f76e224bf252164987d6784b83046410d6f2baf7759fcc4",
+      "sha256": "47b6ae73ffb0db2b31a8b064eb09cd27be55bdb68f97ac783f5979ff0824fc12"
+    },
+    {
+      "file": "selftest.py",
+      "upstreamSha256": "6e7b4985b9823191466e2b04d6a4d2d3a025d2ef0a5cfa8dbd660cd501452b1d",
+      "sha256": "6e7b4985b9823191466e2b04d6a4d2d3a025d2ef0a5cfa8dbd660cd501452b1d"
+    },
+    {
+      "file": "source_a.py",
+      "upstreamSha256": "039f8eab8fcd15900a50f6d6b276ef9bfd1069fd037c19110ebd41c2e2b20a83",
+      "sha256": "039f8eab8fcd15900a50f6d6b276ef9bfd1069fd037c19110ebd41c2e2b20a83"
+    },
+    {
+      "file": "source_b.py",
+      "upstreamSha256": "9b7b4bbdfe05e7089e218d11c5a3c6fb801930ad3ad17ce3d95ba3ade27e12f4",
+      "sha256": "9b7b4bbdfe05e7089e218d11c5a3c6fb801930ad3ad17ce3d95ba3ade27e12f4"
+    },
+    {
+      "file": "source_c.py",
+      "upstreamSha256": "d2d10798437a21ff3c57ac01bee96bbacb2d023f5150e0b9688c99f6a1b6a9ad",
+      "sha256": "1965517f3d62dc21f73cfbcfb713fa8a0610fc4d9e4372354e088f7f6b53acc7"
+    },
+    {
+      "file": "source_d.py",
+      "upstreamSha256": "376b1052b9dd7f66f5d7e2721ed0c63723c1ed876b272cea54f8639ac5e8efce",
+      "sha256": "d829cfa70d4c856525f2bed7263711eefebc11844e72fe89002e3774b354976e"
+    },
+    {
+      "file": "transport.py",
+      "upstreamSha256": "4c077012e4e4e084625425f1eaccd5c2acdd201bec8ce204746567063af5f3f0",
+      "sha256": "cc235e1c6d21be9b08f079b8beb403cb97da14e5709a4127cffea9b198b61731"
+    }
+  ]
+}

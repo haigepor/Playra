@@ -22,6 +22,7 @@ import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/plugin_import_parser.dart';
 import 'package:kazumi/services/source/source_policy.dart';
+import 'package:kazumi/services/source/source_sdk_group.dart';
 
 class PluginViewPage extends StatefulWidget {
   const PluginViewPage({super.key, required this.controller});
@@ -244,11 +245,27 @@ class _PluginViewPageState extends State<PluginViewPage> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
+            constraints: const BoxConstraints(maxWidth: 880),
             child: Observer(
               builder: (context) {
                 final colors = Theme.of(context).colorScheme;
                 final all = _controller.pluginList.toList();
+                // SDK身份复用播放入口的登记规则，不依据站点名称或HTTP模式猜测。
+                final sdkGroups = PlaybackSourceGroup.fromPlugins(all);
+                final sdkByProvider = {
+                  for (final group in sdkGroups)
+                    for (final plugin in group.plugins)
+                      plugin.providerId: group,
+                };
+                final registeredSdks = sdkGroups
+                    .where((group) => !group.id.startsWith('rule:'))
+                    .toList();
+                final independentCount = sdkGroups
+                    .where((group) => group.id.startsWith('rule:'))
+                    .fold<int>(
+                      0,
+                      (total, group) => total + group.plugins.length,
+                    );
                 final updates = all
                     .where(
                       (p) =>
@@ -261,7 +278,14 @@ class _PluginViewPageState extends State<PluginViewPage> {
                     .where(
                       (p) =>
                           (p.name.toLowerCase().contains(query) ||
-                              p.baseUrl.toLowerCase().contains(query)) &&
+                              p.baseUrl.toLowerCase().contains(query) ||
+                              (sdkByProvider[p.providerId]?.id.startsWith(
+                                        'rule:',
+                                      ) ==
+                                      false &&
+                                  sdkByProvider[p.providerId]!.name
+                                      .toLowerCase()
+                                      .contains(query))) &&
                           (_domain.isEmpty ||
                               (_domain == 'unknown'
                                   ? p.profile.domains.isEmpty
@@ -290,8 +314,9 @@ class _PluginViewPageState extends State<PluginViewPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       RulePageIntro(
-                        title: '我的规则',
-                        description: '按动漫与影视管理来源；自动播放会参考近期启动速度，手动选择保持固定。',
+                        title: '来源与 SDK',
+                        description:
+                            '${all.length} 个来源 · ${registeredSdks.length} 个 SDK${independentCount > 0 ? ' · $independentCount 条独立规则' : ''}。查看对应 SDK，管理启用状态与更新。',
                         icon: Icons.extension_rounded,
                         actions: [
                           FilledButton.icon(
@@ -302,8 +327,8 @@ class _PluginViewPageState extends State<PluginViewPage> {
                             icon: const Icon(Icons.add_rounded),
                             label: const Text('添加规则'),
                           ),
-                          FilledButton.tonalIcon(
-                            style: FilledButton.styleFrom(
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
                               minimumSize: const Size(120, 48),
                             ),
                             onPressed: () =>
@@ -319,7 +344,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                         onChanged: (_) => setState(() {}),
                         decoration: ruleInputDecoration(
                           context,
-                          hint: '搜索名称或站点',
+                          hint: '搜索规则、站点或 SDK',
                           prefix: const Icon(Icons.search_rounded),
                           suffix: query.isEmpty
                               ? null
@@ -331,55 +356,115 @@ class _PluginViewPageState extends State<PluginViewPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          FilterChip(
-                            label: Text('全部 ${all.length}'),
-                            selected: !_updatesOnly,
-                            onSelected: (_) =>
-                                setState(() => _updatesOnly = false),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: colors.outlineVariant.withValues(alpha: .3),
                           ),
-                          FilterChip(
-                            label: Text('可更新 $updates'),
-                            selected: _updatesOnly,
-                            onSelected: (value) =>
-                                setState(() => _updatesOnly = value),
-                          ),
-                          TextButton.icon(
-                            onPressed: _updating || _updatingNames.isNotEmpty
-                                ? null
-                                : _updateAll,
-                            icon: _updating
-                                ? const LoadingIndicator(size: 20)
-                                : const Icon(Icons.sync_rounded, size: 20),
-                            label: Text(_updating ? '正在更新' : '更新全部'),
-                          ),
-                          if (_selecting)
-                            TextButton(
-                              onPressed: () => setState(() {
-                                if (visible.every(
-                                  (p) => _selected.contains(p.name),
-                                )) {
-                                  _selected.removeAll(
-                                    visible.map((p) => p.name),
-                                  );
-                                } else {
-                                  _selected.addAll(visible.map((p) => p.name));
-                                }
-                              }),
-                              child: Text(
-                                visible.isNotEmpty &&
-                                        visible.every(
-                                          (p) => _selected.contains(p.name),
-                                        )
-                                    ? '取消全选'
-                                    : '全选当前列表',
+                        ),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            KazumiMenuButton(
+                              builder: (context, toggle) => TextButton.icon(
+                                onPressed: toggle,
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  foregroundColor: _domain.isEmpty
+                                      ? colors.onSurfaceVariant
+                                      : colors.primary,
+                                ),
+                                icon: const Icon(
+                                  Icons.filter_list_rounded,
+                                  size: 18,
+                                ),
+                                label: Text(switch (_domain) {
+                                  'anime' => '动漫',
+                                  'screen' => '影视',
+                                  'unknown' => '未分类',
+                                  _ => '全部分类',
+                                }),
+                              ),
+                              menuChildren: [
+                                for (final entry in const {
+                                  '': '全部分类',
+                                  'anime': '动漫',
+                                  'screen': '影视',
+                                  'unknown': '未分类',
+                                }.entries)
+                                  KazumiMenuItem(
+                                    label:
+                                        '${entry.value} · ${entry.key.isEmpty ? all.length : all.where((p) => entry.key == 'unknown' ? p.profile.domains.isEmpty : p.profile.supports(entry.key)).length}',
+                                    selected: _domain == entry.key,
+                                    onPressed: () =>
+                                        setState(() => _domain = entry.key),
+                                  ),
+                              ],
+                            ),
+                            Semantics(
+                              toggled: _updatesOnly,
+                              child: TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  foregroundColor: _updatesOnly
+                                      ? colors.primary
+                                      : colors.onSurfaceVariant,
+                                  backgroundColor: _updatesOnly
+                                      ? colors.primary.withValues(alpha: .1)
+                                      : Colors.transparent,
+                                ),
+                                icon: Icon(
+                                  _updatesOnly
+                                      ? Icons.check_circle_outline_rounded
+                                      : Icons.system_update_alt_rounded,
+                                  size: 18,
+                                ),
+                                label: Text('可更新 $updates'),
+                                onPressed: () => setState(
+                                  () => _updatesOnly = !_updatesOnly,
+                                ),
                               ),
                             ),
-                        ],
+                            TextButton.icon(
+                              onPressed: _updating || _updatingNames.isNotEmpty
+                                  ? null
+                                  : _updateAll,
+                              icon: _updating
+                                  ? const LoadingIndicator(size: 20)
+                                  : const Icon(Icons.sync_rounded, size: 20),
+                              label: Text(_updating ? '正在更新' : '更新全部'),
+                            ),
+                            if (_selecting)
+                              TextButton(
+                                onPressed: () => setState(() {
+                                  if (visible.every(
+                                    (p) => _selected.contains(p.name),
+                                  )) {
+                                    _selected.removeAll(
+                                      visible.map((p) => p.name),
+                                    );
+                                  } else {
+                                    _selected.addAll(
+                                      visible.map((p) => p.name),
+                                    );
+                                  }
+                                }),
+                                child: Text(
+                                  visible.isNotEmpty &&
+                                          visible.every(
+                                            (p) => _selected.contains(p.name),
+                                          )
+                                      ? '取消全选'
+                                      : '全选当前列表',
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                       if (_catalogFailed)
                         Padding(
@@ -390,26 +475,24 @@ class _PluginViewPageState extends State<PluginViewPage> {
                                 ?.copyWith(color: colors.onSurfaceVariant),
                           ),
                         ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          for (final entry in const {
-                            '': '全部',
-                            'anime': '动漫',
-                            'screen': '影视',
-                            'unknown': '未分类',
-                          }.entries)
-                            ChoiceChip(
-                              label: Text(
-                                '${entry.value} ${entry.key.isEmpty ? all.length : all.where((p) => entry.key == 'unknown' ? p.profile.domains.isEmpty : p.profile.supports(entry.key)).length}',
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(2, 20, 2, 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '已安装来源',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
-                              selected: _domain == entry.key,
-                              onSelected: (_) =>
-                                  setState(() => _domain = entry.key),
                             ),
-                        ],
+                            Text(
+                              '${visible.length} / ${all.length}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: colors.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -439,17 +522,40 @@ class _PluginViewPageState extends State<PluginViewPage> {
                   itemCount: visible.length,
                   itemBuilder: (context, index) {
                     final plugin = visible[index];
+                    final sdk = sdkByProvider[plugin.providerId]!;
+                    final independent = sdk.id.startsWith('rule:');
+                    final route = Uri.tryParse(
+                      plugin.chapterApiConfig.request.url,
+                    );
+                    final adapter =
+                        !independent &&
+                            route?.host == 'source-runtime.playra.invalid'
+                        ? RegExp(
+                            r'^/v1/adapters/([A-Za-z0-9_-]+)/episodes$',
+                          ).firstMatch(route?.path ?? '')?.group(1)
+                        : null;
                     final actualIndex = all.indexOf(plugin);
                     final updatable =
                         _controller.pluginUpdateStatus(plugin) ==
                         PluginUpdateAvailability.updatable;
+                    final performanceSummary = SourcePolicy.shared.summary(
+                      plugin.providerId,
+                      plugin.version,
+                    );
                     return RuleCard(
                       key: ValueKey(plugin.name),
                       title: plugin.name,
-                      caption: SourcePolicy.shared.summary(
-                        plugin.providerId,
-                        plugin.version,
-                      ),
+                      sdkLabel: independent
+                          ? '独立规则 · 未关联 SDK'
+                          : 'SDK · ${sdk.name}',
+                      caption: [
+                        ?adapter,
+                        'v${plugin.version}',
+                        plugin.profile.adapterKind == 'http'
+                            ? 'HTTP 接口'
+                            : '页面规则',
+                        ?performanceSummary,
+                      ].join(' · '),
                       subtitle:
                           Uri.tryParse(plugin.baseUrl)?.host ?? plugin.baseUrl,
                       selected: _selected.contains(plugin.name),
@@ -470,26 +576,31 @@ class _PluginViewPageState extends State<PluginViewPage> {
                       tags: [
                         RuleTag(
                           label: plugin.profile.label,
-                          background: colors.secondaryContainer,
-                          foreground: colors.onSecondaryContainer,
-                        ),
-                        RuleTag(
-                          label: plugin.profile.adapterKind == 'http'
-                              ? 'HTTP 接口'
-                              : '规则',
                           background: colors.surfaceContainerHighest,
                           foreground: colors.onSurfaceVariant,
                         ),
-                        if (!plugin.enabled)
-                          RuleTag(
-                            label: '已停用',
-                            background: colors.surfaceContainerHighest,
-                            foreground: colors.onSurfaceVariant,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                plugin.enabled
+                                    ? Icons.check_circle_rounded
+                                    : Icons.pause_circle_outline_rounded,
+                                size: 13,
+                                color: plugin.enabled
+                                    ? colors.primary
+                                    : colors.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                plugin.enabled ? '已启用' : '已停用',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(color: colors.onSurfaceVariant),
+                              ),
+                            ],
                           ),
-                        RuleTag(
-                          label: plugin.version,
-                          background: colors.surfaceContainerHighest,
-                          foreground: colors.onSurfaceVariant,
                         ),
                         if (updatable)
                           RuleTag(

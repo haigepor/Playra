@@ -9,7 +9,7 @@ import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test(
-    'first-use registry loads sixteen bundled anime rules without installation',
+    'first-use registry loads four bundled anime adapters without installation',
     () async {
       final providers = await loadContentProviders(const []);
       addTearDown(() {
@@ -18,7 +18,13 @@ void main() {
         }
       });
       final rules = providers.whereType<RuleContentProvider>().toList();
-      expect(rules, hasLength(16));
+      expect(rules, hasLength(4));
+      expect(rules.map((p) => p.id).toSet(), {
+        'dm84',
+        'mxdm',
+        'akianime',
+        'moonci',
+      });
       expect(
         rules.every(
           (p) => p.groups.length == 1 && p.groups.contains(ContentGroup.anime),

@@ -74,11 +74,11 @@ Future<PlaybackCandidate?> prepareSearchPlayback(
             ? known
                   .map((h) => SearchItem(name: h.title, src: h.contentId))
                   .toList()
-            : (await provider.plugin.queryBangumi(
-                item.nameCn.isEmpty ? item.name : item.nameCn,
-                shouldRethrow: true,
+            : await SourceCandidates.shared.searchMatches(
+                item,
+                provider.plugin,
                 cancelToken: cancel,
-              )).data;
+              );
         final matched = results
             .where((r) => SourceCandidates.shared.matches(item, r.name))
             .toList();

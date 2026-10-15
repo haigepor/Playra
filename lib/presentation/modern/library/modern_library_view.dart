@@ -131,6 +131,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                 bottom: false,
                 child: ModernPageArt(
                   kind: ModernPageArtKind.library,
+                  contentMaxWidth: 1200,
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1200),

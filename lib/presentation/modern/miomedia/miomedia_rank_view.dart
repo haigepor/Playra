@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 import '../home/modern_home_controller.dart';
+import '../widgets/modern_section_mark.dart';
 import 'miomedia_browse.dart';
 import 'miomedia_home_controller.dart';
 
@@ -84,14 +85,7 @@ class _MioRankSectionState extends State<MioRankSection> {
         if (rank != null) ...[
           Row(
             children: [
-              Container(
-                width: 3,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+              const ModernSectionMark(kind: ModernSectionKind.ranking),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

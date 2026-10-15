@@ -22,3 +22,10 @@ test('static serving cannot escape the configured directory', () => {
   assert.throws(() => resolveStaticPath('C:\\project\\web', '/%2e%2e/secret'));
   assert.equal(resolveStaticPath('/project/web', '/main.dart.js'), path.resolve('/project/web/main.dart.js'));
 });
+
+test('AniFive D media permits its maintained HTTPS port only on the exact public host', async () => {
+  const lookup = async () => [{ address: '1.1.1.1', family: 4 }];
+  assert.equal((await validateTarget('https://play.xfvod.pro:8088/media', lookup)).url.port, '8088');
+  await assert.rejects(validateTarget('https://example.com:8088/media', lookup));
+  await assert.rejects(validateTarget('https://play.xfvod.pro:8088/media', async () => [{ address: '127.0.0.1', family: 4 }]));
+});

@@ -4,6 +4,7 @@ const tls = require('node:tls');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pipeline } = require('node:stream/promises');
+const { Readable } = require('node:stream');
 const { validateTarget, resolveStaticPath } = require('./security.cjs');
 const { parseVideo } = require('./parser.cjs');
 const { captcha } = require('./captcha.cjs');
@@ -15,6 +16,7 @@ const root = process.env.KAZUMI_WEB_ROOT
   : path.resolve(__dirname, '../../build/web');
 const port = Number(process.env.KAZUMI_WEB_PORT || 8930);
 const sourceApiPort = Number(process.env.KAZUMI_SOURCE_API_PORT || 8940);
+const bangumiEchPort = Number(process.env.PLAYRA_BANGUMI_ECH_PORT || 0);
 const runtimeBridge = createRuntimeBridge({
   port: process.env.PLAYRA_SOURCE_RUNTIME_PORT
     ? Number(process.env.PLAYRA_SOURCE_RUNTIME_PORT) : undefined,
@@ -24,8 +26,16 @@ const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascri
   '.json': 'application/json', '.wasm': 'application/wasm', '.css': 'text/css',
   '.png': 'image/png', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.woff2': 'font/woff2' };
 const dnsCache = new Map();
+const dns = require('node:dns/promises');
 
 async function publicLookup(host) {
+  try { return await dohLookup(host); } catch (_) {
+    // 公共 DoH 不可达时使用系统解析；validateTarget 仍检查所有地址并固定连接。
+    return dns.lookup(host, { all: true });
+  }
+}
+
+async function dohLookup(host) {
   const cached = dnsCache.get(host);
   if (cached && cached.expires > Date.now()) return cached.addresses;
   // 使用固定的公共 DoH 入口，避免本机 DNS 污染，同时保留地址检查与连接固定。
@@ -58,6 +68,19 @@ function verifyOrigin(req) {
 }
 
 async function upstreamRequest(target, method, headers = {}, bootstrap = false) {
+  const requested = new URL(target);
+  if (!bootstrap && bangumiEchPort && requested.protocol === 'https:' &&
+      !requested.username && !requested.password && !requested.port &&
+      ['api.bgm.tv', 'next.bgm.tv', 'lain.bgm.tv'].includes(requested.hostname)) {
+    const forwarded = { 'x-kazumi-request': '1' };
+    for (const [name, value] of Object.entries(headers)) {
+      if (['accept', 'content-type', 'user-agent'].includes(name.toLowerCase())) forwarded[name] = value;
+    }
+    const request = http.request({ hostname: '127.0.0.1', port: bangumiEchPort,
+      path: `/relay?url=${encodeURIComponent(target)}`, method, headers: forwarded });
+    request.setTimeout(35000, () => request.destroy(new Error('Bangumi 网络请求超时')));
+    return request;
+  }
   const { url, address } = await validateTarget(target, bootstrap ?
     async () => [{ address: '8.8.8.8', family: 4 }] : publicLookup);
   const host = url.hostname.replace(/^\[|\]$/g, '');
@@ -110,6 +133,16 @@ async function upstreamRequest(target, method, headers = {}, bootstrap = false) 
 }
 
 async function relay(req, res, url) {
+  let activeRequest, activeResponse, cancelled = false;
+  const cancel = () => {
+    cancelled = true;
+    activeResponse?.destroy();
+    activeRequest?.destroy(new Error('媒体请求已取消'));
+  };
+  const closed = () => { if (!res.writableEnded) cancel(); };
+  req.once('aborted', cancel);
+  res.once('close', closed);
+  try {
   if (!req.headers['x-kazumi-request'] && req.method !== 'GET') throw new Error('缺少请求标记');
   const rawHeaders = req.headers['x-kazumi-headers'] || url.searchParams.get('headers');
   if (rawHeaders && rawHeaders.length > 32768) throw new Error('请求头过大');
@@ -129,12 +162,15 @@ async function relay(req, res, url) {
   let body = Buffer.concat(chunks);
   for (let count = 0; count < 8; count++) {
     const request = await upstreamRequest(current, method, headers);
+    activeRequest = request;
     const responsePromise = new Promise((resolve, reject) => {
       request.once('response', resolve);
       request.once('error', reject);
     });
-    request.end(body);
+    if (cancelled) request.destroy(new Error('媒体请求已取消'));
+    else request.end(body);
     const response = await responsePromise;
+    activeResponse = response;
     if ([301, 302, 303, 307, 308].includes(response.statusCode) && response.headers.location) {
       response.resume();
       const next = new URL(response.headers.location, current).href;
@@ -149,6 +185,26 @@ async function relay(req, res, url) {
       current = next;
       continue;
     }
+    // 部分来源把清单伪装成图片 MIME；只预读短前缀，二进制继续流式传输。
+    const iterator = response[Symbol.asyncIterator]();
+    const prefix = []; let prefixBytes = 0;
+    while (prefixBytes < 32) {
+      const next = await iterator.next();
+      if (next.done) break;
+      prefix.push(next.value); prefixBytes += next.value.length;
+      const head = Buffer.concat(prefix).subarray(0, 128).toString('utf8').trimStart();
+      if ((head && !'#EXTM3U'.startsWith(head) && !head.startsWith('#EXTM3U')) || head.startsWith('#EXTM3U')) break;
+    }
+    const isHls = /^\s*#EXTM3U/.test(Buffer.concat(prefix).subarray(0, 128).toString('utf8')) ||
+      /mpegurl/i.test(String(response.headers['content-type'])) || /\.m3u8(?:\?|$)/i.test(current);
+    if (isHls && response.statusCode === 206) {
+      // 清单重写会改变字节偏移；先重新获取完整清单，不能拼接上游的局部响应。
+      const rangeKeys = Object.keys(headers).filter((key) => key.toLowerCase() === 'range');
+      if (!rangeKeys.length) throw new Error('上游未返回完整播放列表');
+      for (const key of rangeKeys) delete headers[key];
+      response.destroy();
+      continue;
+    }
     res.statusCode = response.statusCode;
     if (response.headers['set-cookie']) {
       res.setHeader('X-Kazumi-Set-Cookie', Buffer.from(JSON.stringify(response.headers['set-cookie'])).toString('base64url'));
@@ -156,23 +212,43 @@ async function relay(req, res, url) {
     for (const header of ['content-type', 'content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified', 'www-authenticate', 'dav', 'allow']) {
       if (response.headers[header]) res.setHeader(header, response.headers[header]);
     }
-    // HLS 中的分片、密钥和子列表也必须走同源网关。
-    if (/mpegurl/i.test(String(response.headers['content-type'])) || /\.m3u8(?:\?|$)/i.test(current)) {
-      const parts = []; let length = 0;
-      for await (const part of response) { length += part.length; if (length > 4 * 1024 * 1024) throw new Error('播放列表过大'); parts.push(part); }
+    if (isHls) {
+      const parts = [...prefix]; let length = prefixBytes;
+      if (length > 4 * 1024 * 1024) throw new Error('播放列表过大');
+      for (;;) {
+        const next = await iterator.next();
+        if (next.done) break;
+        length += next.value.length;
+        if (length > 4 * 1024 * 1024) throw new Error('播放列表过大');
+        parts.push(next.value);
+      }
+      // 使用重定向后允许的头，不能把已清除的凭据重新放回子请求。
+      const childHeaders = Object.fromEntries(Object.entries(headers).filter(([key]) => !['range', 'content-type'].includes(key.toLowerCase())));
+      const encodedHeaders = Object.keys(childHeaders).length ? Buffer.from(JSON.stringify(childHeaders)).toString('base64url') : null;
       const proxied = (value) => '/api/proxy?' + new URLSearchParams({ url: new URL(value, current).href,
-        ...(rawHeaders ? { headers: rawHeaders } : {}) });
+        ...(encodedHeaders ? { headers: encodedHeaders } : {}) });
       const text = Buffer.concat(parts).toString('utf8').split('\n').map((line) => {
         if (line.trim() && !line.startsWith('#')) return proxied(line.trim());
         return line.replace(/URI="([^"]+)"/g, (_, value) => `URI="${proxied(value)}"`);
       }).join('\n');
-      res.removeHeader('content-length'); res.end(text); return;
+      res.setHeader('content-type', 'application/vnd.apple.mpegurl');
+      // 返回的是新的完整表示，原清单的 Range、长度和校验信息已失效。
+      for (const header of ['content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified']) res.removeHeader(header);
+      res.end(text); return;
     }
-    req.once('aborted', () => response.destroy());
-    await pipeline(response, res);
+    await pipeline(Readable.from((async function* () {
+      yield* prefix;
+      for (;;) { const next = await iterator.next(); if (next.done) break; yield next.value; }
+    })()), res);
     return;
   }
   throw new Error('重定向次数过多');
+  } finally {
+    activeResponse?.destroy();
+    activeRequest?.destroy();
+    req.removeListener('aborted', cancel);
+    res.removeListener('close', closed);
+  }
 }
 
 const server = http.createServer(async (req, res) => {

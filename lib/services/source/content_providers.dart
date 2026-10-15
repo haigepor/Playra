@@ -12,6 +12,7 @@ import 'sdk_playback_provider.dart';
 import 'source_service.dart';
 import 'source_models.dart';
 import 'source_playback_service.dart';
+import 'package:kazumi/services/video_source/video_source_format.dart';
 import 'source_resolve_config.dart';
 
 /// 维护者接入新来源只需登记 Adapter；没有实现的来源不加入执行集合。
@@ -139,12 +140,15 @@ class RuleContentProvider extends ContentSearchProvider {
       return SourceResolvedMedia(
         url: media.url,
         expiresAt: media.expiresAt,
+        format: media.format == VideoSourceFormat.hls ? 'hls' : 'auto',
+        inheritHeaders: media.inheritHeaders,
         headers: {
-          ...plugin.buildHttpHeaders(),
+          if (media.inheritHeaders) ...plugin.buildHttpHeaders(),
           ...media.headers,
-          if (cookies.isNotEmpty)
+          if (media.inheritHeaders && cookies.isNotEmpty)
             'cookie': cookies.map((c) => '${c.name}=${c.value}').join('; '),
-          if (cookies.isNotEmpty &&
+          if (media.inheritHeaders &&
+              cookies.isNotEmpty &&
               PluginCookieManager.instance.userAgentFor(plugin.name) != null)
             'user-agent': PluginCookieManager.instance.userAgentFor(
               plugin.name,

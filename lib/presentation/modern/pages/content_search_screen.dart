@@ -8,6 +8,7 @@ import 'package:kazumi/services/source/content_providers.dart';
 import 'package:kazumi/services/source/content_search.dart';
 import '../secondary/secondary_theme.dart';
 import '../settings/modern_back_button.dart';
+import '../widgets/modern_page_art.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/info/source_search_entry.dart';
@@ -100,8 +101,13 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     child: Builder(
       builder: (context) => Scaffold(
         appBar: AppBar(
+          toolbarHeight: 56,
           leading: const ModernBackButton(),
           title: const Text('搜索作品'),
+          titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
           actions: [
             IconButton(
               tooltip: '番组资料高级搜索',
@@ -114,110 +120,70 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
           top: false,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: AnimatedBuilder(
-                animation: session,
-                builder: (context, _) => Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: _searchField(context),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      // 五个频道在 320px 也保留完整标签；缩小内边距，保留 48dp 触摸高度。
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          tabBarTheme: Theme.of(context).tabBarTheme.copyWith(
-                            labelPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                            ),
-                          ),
-                        ),
-                        child: SecondaryTabs(
-                          labels: [
-                            '全部',
-                            ...ContentGroup.values.map((g) => g.label),
-                          ],
-                          selected: group == null ? 0 : group!.index + 1,
-                          onChanged: (index) {
-                            setState(() {
-                              group = index == 0
-                                  ? null
-                                  : ContentGroup.values[index - 1];
-                              region = '';
-                            });
-                            if (submitted) unawaited(_search());
-                          },
-                        ),
-                      ),
-                    ),
-                    if (group == ContentGroup.series)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _regionFilter(context),
-                        ),
-                      ),
-                    Expanded(
-                      child: !submitted
-                          ? const Center(
-                              child: SingleChildScrollView(
-                                child: SecondaryEmptyState(
-                                  title: '找到下一部想看的作品',
-                                  description: '选择频道，输入名称开始搜索',
-                                ),
-                              ),
-                            )
-                          : CustomScrollView(
-                              key: const ValueKey('content-search-results'),
-                              keyboardDismissBehavior:
-                                  ScrollViewKeyboardDismissBehavior.onDrag,
-                              slivers: [
-                                SliverToBoxAdapter(child: _progress(context)),
-                                if (session.works.isEmpty)
-                                  SliverFillRemaining(
-                                    hasScrollBody: false,
-                                    child: _empty(),
-                                  )
-                                else ...[
-                                  SliverPadding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      16,
-                                      4,
-                                      16,
-                                      12,
-                                    ),
-                                    sliver: SliverList.builder(
-                                      itemCount: session.works.length,
-                                      itemBuilder: (context, index) =>
-                                          _resultTile(
-                                            context,
-                                            session.works[index],
-                                          ),
-                                    ),
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: ModernPageArt(
+                kind: ModernPageArtKind.discover,
+                child: AnimatedBuilder(
+                  animation: session,
+                  builder: (context, _) => Column(
+                    children: [
+                      _searchHeader(context),
+                      Expanded(
+                        child: !submitted
+                            ? const Center(
+                                child: SingleChildScrollView(
+                                  child: SecondaryEmptyState(
+                                    title: '找到下一部想看的作品',
+                                    description: '选择频道，输入名称开始搜索',
                                   ),
-                                  if (session.hasMore)
-                                    SliverToBoxAdapter(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16),
-                                        child: ShadButton.outline(
-                                          onPressed: session.searching
-                                              ? null
-                                              : session.loadMore,
-                                          child: const Text('加载更多'),
-                                        ),
+                                ),
+                              )
+                            : CustomScrollView(
+                                key: const ValueKey('content-search-results'),
+                                keyboardDismissBehavior:
+                                    ScrollViewKeyboardDismissBehavior.onDrag,
+                                slivers: [
+                                  SliverToBoxAdapter(child: _progress(context)),
+                                  if (session.works.isEmpty)
+                                    SliverFillRemaining(
+                                      hasScrollBody: false,
+                                      child: _empty(),
+                                    )
+                                  else ...[
+                                    SliverPadding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        16,
+                                        4,
+                                        16,
+                                        12,
+                                      ),
+                                      sliver: SliverList.builder(
+                                        itemCount: session.works.length,
+                                        itemBuilder: (context, index) =>
+                                            _resultTile(
+                                              context,
+                                              session.works[index],
+                                            ),
                                       ),
                                     ),
+                                    if (session.hasMore)
+                                      SliverToBoxAdapter(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: ShadButton.outline(
+                                            onPressed: session.searching
+                                                ? null
+                                                : session.loadMore,
+                                            child: const Text('加载更多'),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ],
-                              ],
-                            ),
-                    ),
-                  ],
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -227,60 +193,145 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     ),
   );
 
+  Widget _searchHeader(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _searchField(context),
+        const SizedBox(height: 10),
+        _groupFilters(context),
+        if (group == ContentGroup.series) ...[
+          const SizedBox(height: 8),
+          Align(alignment: Alignment.centerLeft, child: _regionFilter(context)),
+        ],
+      ],
+    ),
+  );
+
+  Widget _groupFilters(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final groups = <ContentGroup?>[null, ...ContentGroup.values];
+    // 常规字号下五项可在 320px 内并排；大字体时横向滚动，不截断频道名称。
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var index = 0; index < groups.length; index++) ...[
+            if (index > 0) const SizedBox(width: 6),
+            Semantics(
+              selected: group == groups[index],
+              inMutuallyExclusiveGroup: true,
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    group = groups[index];
+                    region = '';
+                  });
+                  if (submitted) unawaited(_search());
+                },
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  backgroundColor: group == groups[index]
+                      ? c.primary.withValues(alpha: .13)
+                      : Colors.transparent,
+                  foregroundColor: group == groups[index]
+                      ? c.primary
+                      : c.onSurfaceVariant,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 14,
+                    fontWeight: group == groups[index]
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+                child: Text(groups[index]?.label ?? '全部'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _searchField(BuildContext context) {
     final c = Theme.of(context).colorScheme;
     // 编辑器与焦点不随每个按键重建；仅清空按钮监听输入，保留 IME composing/selection。
-    return TextField(
-      key: const ValueKey('content-search-input'),
-      controller: input,
-      focusNode: inputFocus,
-      cursorColor: c.primary,
-      autocorrect: false,
-      keyboardType: TextInputType.text,
-      // Android 的禁用建议会附带 visible-password 标记，触发部分手机的安全键盘。
-      enableSuggestions: true,
-      smartDashesType: SmartDashesType.disabled,
-      smartQuotesType: SmartQuotesType.disabled,
-      textInputAction: TextInputAction.search,
-      style: Theme.of(context).textTheme.bodyMedium,
-      onSubmitted: (_) => _search(),
-      decoration: InputDecoration(
-        hintText: '搜索作品名称',
-        fillColor: c.surfaceContainerLow,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 13,
-        ),
-        prefixIcon: Icon(
-          LucideIcons.search,
-          size: 20,
-          color: c.onSurfaceVariant,
-        ),
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: input,
-              builder: (_, value, _) => Visibility(
-                visible: value.text.isNotEmpty,
-                maintainSize: true,
-                maintainState: true,
-                maintainAnimation: true,
-                child: IconButton(
-                  tooltip: '清空输入',
-                  onPressed: () {
-                    input.clear();
-                    inputFocus.requestFocus();
-                  },
-                  icon: const Icon(LucideIcons.x, size: 16),
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            key: const ValueKey('content-search-input'),
+            controller: input,
+            focusNode: inputFocus,
+            cursorColor: c.primary,
+            autocorrect: false,
+            keyboardType: TextInputType.text,
+            // Android 的禁用建议会附带 visible-password 标记，触发部分手机的安全键盘。
+            enableSuggestions: true,
+            smartDashesType: SmartDashesType.disabled,
+            smartQuotesType: SmartQuotesType.disabled,
+            textInputAction: TextInputAction.search,
+            style: Theme.of(context).textTheme.bodyMedium,
+            onSubmitted: (_) => _search(),
+            decoration: InputDecoration(
+              hintText: '搜索作品名称',
+              fillColor: c.surfaceContainerLow,
+              filled: true,
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 44,
+                minHeight: 48,
+              ),
+              suffixIconConstraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 13,
+              ),
+              prefixIcon: Icon(
+                LucideIcons.search,
+                size: 20,
+                color: c.onSurfaceVariant,
+              ),
+              suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: input,
+                builder: (_, value, _) => Visibility(
+                  visible: value.text.isNotEmpty,
+                  maintainSize: true,
+                  maintainState: true,
+                  maintainAnimation: true,
+                  child: IconButton(
+                    tooltip: '清空输入',
+                    onPressed: () {
+                      input.clear();
+                      inputFocus.requestFocus();
+                    },
+                    icon: const Icon(LucideIcons.x, size: 16),
+                  ),
                 ),
               ),
             ),
-            TextButton(onPressed: _search, child: const Text('搜索')),
-            const SizedBox(width: 4),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(width: 8),
+        FilledButton(
+          onPressed: _search,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(56, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text('搜索'),
+        ),
+      ],
     );
   }
 
@@ -291,51 +342,132 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         .map((h) => h.providerId)
         .toSet()
         .length;
-    return Card(
+    return Padding(
       key: ValueKey(work.id),
-      margin: const EdgeInsets.only(bottom: 10),
-      color: c.surfaceContainerLow,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: work.cover.isEmpty
-            ? const SizedBox(
-                width: 48,
-                height: 64,
-                child: Icon(LucideIcons.film),
-              )
-            : NetworkImgLayer(
-                src: work.cover,
-                width: 48,
-                height: 64,
-                borderRadius: BorderRadius.circular(6),
-              ),
-        title: Text(
-          work.title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: c.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: c.outlineVariant.withValues(alpha: .35)),
         ),
-        subtitle: Text(
-          [
-            work.primary.group?.label ?? '待分类',
-            if (work.primary.year != null) '${work.primary.year}',
-            sources == 0 ? '作品资料' : '$sources 个候选来源',
-          ].join(' · '),
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: c.onSurfaceVariant),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: openingWork == null ? () => _openWork(work) : null,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final largeText = MediaQuery.textScalerOf(context).scale(14) > 20;
+              final coverWidth = constraints.maxWidth < 340 || largeText
+                  ? 64.0
+                  : 72.0;
+              final coverHeight = coverWidth * 1.5;
+              return Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (work.cover.isEmpty)
+                      Container(
+                        width: coverWidth,
+                        height: coverHeight,
+                        decoration: BoxDecoration(
+                          color: c.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Icon(
+                          LucideIcons.film,
+                          size: 24,
+                          color: c.onSurfaceVariant,
+                        ),
+                      )
+                    else
+                      NetworkImgLayer(
+                        src: work.cover,
+                        width: coverWidth,
+                        height: coverHeight,
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: coverHeight),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              work.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    fontSize: 15,
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w600,
+                                    color: c.onSurface,
+                                  ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              [
+                                if (work.primary.year != null)
+                                  '${work.primary.year}',
+                                work.primary.group?.label ?? '待分类',
+                              ].join(' · '),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: c.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                SvgPicture.asset(
+                                  sources == 0
+                                      ? 'assets/images/modern-work-info.svg'
+                                      : 'assets/images/modern-source-candidates.svg',
+                                  width: 18,
+                                  height: 18,
+                                  excludeFromSemantics: true,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    sources == 0 ? '作品资料' : '$sources 个候选来源',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: sources == 0
+                                              ? c.onSurfaceVariant
+                                              : c.primary,
+                                          fontSize: 11,
+                                        ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (openingWork == work.id)
+                                  SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: c.primary,
+                                    ),
+                                  )
+                                else
+                                  Icon(
+                                    LucideIcons.chevronRight,
+                                    size: 17,
+                                    color: c.onSurfaceVariant,
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-        trailing: openingWork == work.id
-            ? const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(LucideIcons.chevronRight, size: 18),
-        onTap: openingWork == null ? () => _openWork(work) : null,
       ),
     );
   }
@@ -464,7 +596,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         if (submitted) unawaited(_search());
       },
       child: Container(
-        constraints: const BoxConstraints(minHeight: 40),
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: c.surfaceContainerLow,
@@ -513,19 +645,15 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     ),
   );
 
-  Widget _progress(BuildContext context) => Container(
-    margin: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    clipBehavior: Clip.antiAlias,
+  Widget _progress(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
     child: ExpansionTile(
       key: const ValueKey('content-search-progress'),
       dense: true,
       shape: const Border(),
       collapsedShape: const Border(),
-      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 2),
+      minTileHeight: 48,
       textColor: Theme.of(context).colorScheme.onSurfaceVariant,
       collapsedTextColor: Theme.of(context).colorScheme.onSurfaceVariant,
       iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -542,7 +670,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Icon(LucideIcons.listFilter, size: 18),
+          : const Icon(LucideIcons.listFilter, size: 16),
       children: [
         ConstrainedBox(
           constraints: BoxConstraints(

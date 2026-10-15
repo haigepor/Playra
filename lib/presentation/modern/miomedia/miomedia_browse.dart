@@ -8,6 +8,7 @@ import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 import '../home/home_theme.dart';
 import '../home/modern_home_controller.dart';
 import '../settings/modern_back_button.dart';
+import '../widgets/modern_section_mark.dart';
 import 'miomedia_home_controller.dart';
 
 class MioHomeSections extends StatelessWidget {
@@ -44,15 +45,8 @@ class MioHomeSections extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 3,
-                      height: 16,
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
+                    const ModernSectionMark(kind: ModernSectionKind.curated),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         kind.label,
@@ -229,6 +223,7 @@ class MioPoster extends StatelessWidget {
   final MioVideo video;
   final VoidCallback onTap;
   final int? rank;
+
   @override
   Widget build(BuildContext context) => Semantics(
     label:
@@ -282,7 +277,14 @@ class MioPoster extends StatelessWidget {
                       Positioned(
                         top: 0,
                         left: 0,
+                        // 名次统一为紧凑数字角标，避免小尺寸奖牌遮挡海报。
                         child: Container(
+                          constraints: rank == null
+                              ? null
+                              : const BoxConstraints(
+                                  minWidth: 24,
+                                  minHeight: 26,
+                                ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 5,
@@ -297,9 +299,10 @@ class MioPoster extends StatelessWidget {
                             rank == null
                                 ? video.score.toStringAsFixed(1)
                                 : '$rank',
-                            style: const TextStyle(
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
                               color: Color(0xff272017),
-                              fontSize: 11,
+                              fontSize: rank == null ? 11 : 13,
                               height: 1.2,
                               fontWeight: FontWeight.w800,
                             ),

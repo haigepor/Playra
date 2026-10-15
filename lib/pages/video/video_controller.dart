@@ -17,6 +17,7 @@ import 'package:kazumi/services/source/source_playback_service.dart';
 import 'package:kazumi/services/source/source_models.dart';
 import 'package:kazumi/services/source/source_service.dart';
 import 'package:kazumi/services/source/source_candidates.dart';
+import 'package:kazumi/services/source/source_sdk_group.dart';
 import 'package:kazumi/services/source/source_policy.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
@@ -202,6 +203,9 @@ abstract class _VideoPageController with Store implements Disposable {
 
   SourcePlaybackService? _videoSourceService;
   bool automaticSource = false;
+  String? activeProviderId, activeContentRef, activeRoadId, activeRouteLabel;
+  RuleCancelToken? _pendingSourceCancel;
+  int _sourceSwitchVersion = 0;
   RuleCancelToken? _recoveryCancel;
   int _mediaRecoveries = 0;
   String? _mediaFailure;
@@ -492,7 +496,14 @@ abstract class _VideoPageController with Store implements Disposable {
     required PlayerController playerController,
     bool fromRecovery = false,
     Duration? expectedDuration,
+    VideoSource? preparedSource,
   }) async {
+    _sourceSwitchVersion++;
+    _pendingSourceCancel?.cancel('episode changed');
+    _pendingSourceCancel = null;
+    // 明确换线视为手动锁定；同线路的下一集保留现有自动/手动模式。
+    if (!fromRecovery && currentRoad != selectedEpisode.road)
+      automaticSource = false;
     final originalDuration =
         expectedDuration ?? playerController.playback.playerDuration;
     var durationGuard = expectedDuration;
@@ -516,6 +527,10 @@ abstract class _VideoPageController with Store implements Disposable {
     if (session.isStale) {
       return;
     }
+    activeProviderId = null;
+    activeContentRef = null;
+    activeRoadId = null;
+    activeRouteLabel = null;
 
     if (isOfflineMode) {
       await _changeOfflineEpisode(
@@ -573,7 +588,9 @@ abstract class _VideoPageController with Store implements Disposable {
           playerController: playerController,
           budgetRemaining: maxTime - budget.elapsed,
           expectedDuration: durationGuard,
+          preparedSource: preparedSource,
         );
+        preparedSource = null;
         if (success || session.isStale || cancel.isCancelled) return;
         if (!const [
               'TIMEOUT',
@@ -590,7 +607,10 @@ abstract class _VideoPageController with Store implements Disposable {
       }
       final number = regularEpisodeNumber(resolvedEpisode.displayTitle);
       if (number == null) break;
-      final plugins = inject<PluginsController>().pluginList.toList();
+      final plugins = samePlaybackSdk(
+        currentPlugin,
+        inject<PluginsController>().pluginList,
+      );
       alternatives ??= SourceCandidates.shared.cached(bangumiItem, plugins);
       final hasAlternative = alternatives.any(
         (candidate) =>
@@ -680,7 +700,7 @@ abstract class _VideoPageController with Store implements Disposable {
     }
   }
 
-  /// 换源先作废旧解析并停止媒体，再安装新上下文，防止旧进度写到新来源。
+  /// 新地址准备期间保留旧媒体与历史身份，确认可用后才停止并提交新上下文。
   Future<void> switchOnlineSource(
     OnlineVideoPlaybackArgs args, {
     required VideoEpisodeSelection selection,
@@ -689,6 +709,53 @@ abstract class _VideoPageController with Store implements Disposable {
     Duration? expectedDuration,
     void Function()? onReady,
   }) async {
+    final switchVersion = ++_sourceSwitchVersion;
+    _pendingSourceCancel?.cancel('replaced');
+    final pending = _pendingSourceCancel = RuleCancelToken();
+    final road = selection.road >= 0 && selection.road < args.roads.length
+        ? args.roads[selection.road]
+        : null;
+    if (road == null ||
+        selection.episode < 1 ||
+        selection.episode > road.data.length) {
+      pending.cancel('invalid selection');
+      _pendingSourceCancel = null;
+      return;
+    }
+    final preparer = SourcePlaybackService();
+    VideoSource? prepared;
+    try {
+      if (playerController.playback.mediaPlayer != null) {
+        prepared = await preparer.resolve(
+          normalizeEpisodeUrl(
+            args.plugin.baseUrl,
+            road.data[selection.episode - 1],
+          ),
+          useLegacyParser: args.plugin.useLegacyParser,
+          offset: offset,
+          definition: SourceDefinition.fromJson(args.plugin.toJson()),
+          context: SourceContext(
+            providerId: args.plugin.providerId,
+            cancelToken: pending,
+            timeout: const Duration(seconds: 55),
+          ),
+        );
+      }
+      if (pending.isCancelled) return;
+    } catch (_) {
+      if (pending.isCancelled) return;
+      if (!args.automatic) {
+        _errorMessage = '新线路解析失败，请重试或选择其他线路';
+        if (identical(_pendingSourceCancel, pending))
+          _pendingSourceCancel = null;
+        return;
+      }
+      // 自动模式交给统一恢复循环，在同一 SDK 内继续尝试同集。
+    } finally {
+      preparer.cancel();
+    }
+    if (pending.isCancelled || switchVersion != _sourceSwitchVersion) return;
+    _pendingSourceCancel = null;
     final session = _playbackSessions.begin();
     _recoveryCancel?.cancel('replaced');
     _firstFrameTimer?.cancel();
@@ -699,7 +766,7 @@ abstract class _VideoPageController with Store implements Disposable {
     _loading = true;
     _errorMessage = null;
     await playerController.stop();
-    if (session.isStale) return;
+    if (session.isStale || switchVersion != _sourceSwitchVersion) return;
     isOfflineMode = false;
     _playbackHistoryIdentity = null;
     applyPlaybackArgs(args);
@@ -711,6 +778,7 @@ abstract class _VideoPageController with Store implements Disposable {
       offset: offset,
       expectedDuration: expectedDuration,
       playerController: playerController,
+      preparedSource: prepared,
     );
   }
 
@@ -829,6 +897,9 @@ abstract class _VideoPageController with Store implements Disposable {
 
   /// 外壳切换版本时路由作用域仍在；取消请求但保持控制器可再次使用。
   void cancelPendingPlayback() {
+    _sourceSwitchVersion++;
+    _pendingSourceCancel?.cancel('playback disposed');
+    _pendingSourceCancel = null;
     _firstFrameTimer?.cancel();
     _recoveryCancel?.cancel();
     _playbackSessions.cancel();
@@ -858,6 +929,7 @@ abstract class _VideoPageController with Store implements Disposable {
     required PlayerController playerController,
     Duration budgetRemaining = const Duration(seconds: 120),
     Duration? expectedDuration,
+    VideoSource? preparedSource,
   }) async {
     _videoSourceService ??= SourcePlaybackService();
 
@@ -873,21 +945,36 @@ abstract class _VideoPageController with Store implements Disposable {
     final attemptVersion = ++_attemptVersion;
     _firstFrameTimer?.cancel();
     final attemptedPlugin = currentPlugin;
-    try {
-      final source = await _videoSourceService!.resolve(
-        url,
-        useLegacyParser: currentPlugin.useLegacyParser,
-        offset: offset,
-        definition: SourceDefinition.fromJson(currentPlugin.toJson()),
-        context: SourceContext(
-          providerId: currentPlugin.providerId,
-          cancelToken: _recoveryCancel,
-          sessionId: 'playback',
-          timeout: budgetRemaining < const Duration(seconds: 55)
-              ? budgetRemaining
-              : const Duration(seconds: 55),
-        ),
+    void markActiveRoute() {
+      if (session.isStale || attemptVersion != _attemptVersion) return;
+      activeProviderId = currentPlugin.providerId;
+      activeContentRef = src;
+      final road = roadList[resolvedEpisode.roadIndex];
+      activeRoadId = road.id.isEmpty ? '${resolvedEpisode.roadIndex}' : road.id;
+      activeRouteLabel = '${currentPlugin.name} / ${road.name}';
+      playingEpisode = VideoEpisodeSelection(
+        episode: resolvedEpisode.listIndex,
+        road: resolvedEpisode.roadIndex,
       );
+    }
+
+    try {
+      final source =
+          preparedSource ??
+          await _videoSourceService!.resolve(
+            url,
+            useLegacyParser: currentPlugin.useLegacyParser,
+            offset: offset,
+            definition: SourceDefinition.fromJson(currentPlugin.toJson()),
+            context: SourceContext(
+              providerId: currentPlugin.providerId,
+              cancelToken: _recoveryCancel,
+              sessionId: 'playback',
+              timeout: budgetRemaining < const Duration(seconds: 55)
+                  ? budgetRemaining
+                  : const Duration(seconds: 55),
+            ),
+          );
 
       if (session.isStale) {
         return false;
@@ -897,7 +984,7 @@ abstract class _VideoPageController with Store implements Disposable {
         throw const SourceException('EXPIRED', '视频地址已过期，请重新解析');
       }
       KazumiLogger().i(
-        'VideoPageController: resolved video URL: ${source.url}',
+        'VideoPageController: resolved video for ${currentPlugin.name}',
       );
 
       final bool forceAdBlocker = GStorage.getSetting(
@@ -917,16 +1004,17 @@ abstract class _VideoPageController with Store implements Disposable {
         pageUrl: resolvedEpisode.pageUrl,
         sortNumber: resolvedEpisode.sortNumber,
         httpHeaders: {
-          'user-agent': currentPlugin.userAgent.isEmpty
-              ? getRandomUA()
-              : currentPlugin.userAgent,
-          if (currentPlugin.referer.isNotEmpty)
+          if (source.inheritHeaders)
+            'user-agent': currentPlugin.userAgent.isEmpty
+                ? getRandomUA()
+                : currentPlugin.userAgent,
+          if (source.inheritHeaders && currentPlugin.referer.isNotEmpty)
             'referer': currentPlugin.referer,
           ...source.headers,
         },
         adBlockerEnabled: forceAdBlocker || currentPlugin.adBlocker,
         episodeTitle: resolvedEpisode.displayTitle,
-        referer: currentPlugin.referer,
+        referer: source.inheritHeaders ? currentPlugin.referer : '',
         currentRoad: resolvedEpisode.roadIndex,
         coverUrl: bangumiItem.images['large'],
         bangumiName: bangumiItem.nameCn.isNotEmpty
@@ -970,6 +1058,7 @@ abstract class _VideoPageController with Store implements Disposable {
             .videoController
             ?.waitUntilFirstFrameRendered;
         var rendered = firstFrame == null;
+        if (rendered) markActiveRoute();
         var waited = Duration.zero;
         var hasPlayed = false;
         final resolveMs = measured.elapsedMilliseconds;
@@ -1022,6 +1111,7 @@ abstract class _VideoPageController with Store implements Disposable {
                   if (session.isActive &&
                       attemptVersion == _attemptVersion &&
                       _mediaFailure == null) {
+                    markActiveRoute();
                     SourcePolicy.shared.record(
                       attemptedPlugin.providerId,
                       attemptedPlugin.version,
@@ -1116,6 +1206,9 @@ abstract class _VideoPageController with Store implements Disposable {
     PlayerController playerController, {
     bool mediaError = false,
   }) async {
+    // 新选线正在准备时，旧媒体错误不能发起恢复并取消用户的新选择。
+    if (_pendingSourceCancel != null && !_pendingSourceCancel!.isCancelled)
+      return;
     if (isOfflineMode || _loading || (mediaError && ++_mediaRecoveries > 2)) {
       if (mediaError && _mediaRecoveries > 2) _failLoading('播放持续失败，请手动重试或换源');
       return;

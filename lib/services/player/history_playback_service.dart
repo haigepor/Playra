@@ -3,6 +3,8 @@ import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/pages/video/video_playback_args.dart';
 import 'package:kazumi/plugins/plugins.dart';
+import 'package:kazumi/plugins/bundled_anime_migration.dart';
+import 'package:kazumi/services/source/source_candidates.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
@@ -63,13 +65,23 @@ class HistoryPlaybackService {
     }
     Plugin? targetPlugin;
     for (final plugin in _pluginsController.pluginList) {
-      if (plugin.name == history.adapterName) {
+      if (matchesAnimeHistorySource(
+        plugin,
+        history.adapterName,
+        history.lastSrc,
+      )) {
         targetPlugin = plugin;
         break;
       }
     }
     if (targetPlugin == null) {
-      return null;
+      // aafun 是 moonci 同站旧名；优先复用原详情/集路径，不改写历史库。
+      if (history.adapterName.toLowerCase() == 'aafun') {
+        targetPlugin = _pluginsController.pluginList
+            .where((p) => isManagedAnimeSource(p, 'd') && p.enabled)
+            .firstOrNull;
+      }
+      if (targetPlugin == null) return _replacementArgs(history, cancelToken);
     }
     try {
       final roads = await targetPlugin.queryChapterRoads(
@@ -91,6 +103,42 @@ class HistoryPlaybackService {
     } catch (_) {
       KazumiLogger().w("QueryManager: failed to query roads");
       return null;
+    }
+  }
+
+  Future<VideoPlaybackArgs?> _replacementArgs(
+    History history,
+    RuleCancelToken? parent,
+  ) async {
+    final number = regularEpisodeNumber(history.lastWatchEpisodeName);
+    if (number == null || history.bangumiItem.type != 2) return null;
+    final cancel = parent ?? RuleCancelToken();
+    try {
+      final choice = await SourceCandidates.shared
+          .selectEpisode(
+            history.bangumiItem,
+            _pluginsController.pluginList.toList(),
+            number,
+            cancel,
+          )
+          .timeout(const Duration(seconds: 30), onTimeout: () => null);
+      if (choice == null || cancel.isCancelled) return null;
+      final args = choice.candidate.args(history.bangumiItem, automatic: true);
+      // 不跨版本盲目套用时间偏移；旧历史和进度仍保留，目标集从头打开。
+      return OnlineVideoPlaybackArgs(
+        bangumiItem: args.bangumiItem,
+        plugin: args.plugin,
+        title: args.title,
+        src: args.src,
+        roads: args.roads,
+        automatic: true,
+        initialEpisode: choice.episode,
+        initialRoad: choice.road,
+      );
+    } catch (_) {
+      return null;
+    } finally {
+      if (parent == null) cancel.cancel('history lookup finished');
     }
   }
 

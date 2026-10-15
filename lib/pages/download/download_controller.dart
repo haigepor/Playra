@@ -623,6 +623,7 @@ abstract class _DownloadController with Store {
 
       String? m3u8Url;
       Map<String, String> resolvedHeaders = {};
+      bool inheritHeaders = true;
       try {
         if (lease.isCancelled) {
           throw const VideoSourceCancelledException();
@@ -636,6 +637,7 @@ abstract class _DownloadController with Store {
         );
         m3u8Url = source.url;
         resolvedHeaders = source.headers;
+        inheritHeaders = source.inheritHeaders;
       } on VideoSourceTimeoutException {
         if (lease.isCancelled) {
           wasCancelled = true;
@@ -667,7 +669,7 @@ abstract class _DownloadController with Store {
       }
 
       KazumiLogger().i(
-        'DownloadController: resolved M3U8 URL for episode ${request.episodeNumber}: $m3u8Url',
+        'DownloadController: resolved media for episode ${request.episodeNumber}',
       );
 
       final freshRecord = _repository.getRecord(request.recordKey);
@@ -688,7 +690,10 @@ abstract class _DownloadController with Store {
 
       await _startBackgroundServiceIfNeeded();
 
-      final httpHeaders = {...plugin.buildHttpHeaders(), ...resolvedHeaders};
+      final httpHeaders = {
+        if (inheritHeaders) ...plugin.buildHttpHeaders(),
+        ...resolvedHeaders,
+      };
       bool adBlockerEnabled =
           _repository.getForceAdBlocker() || plugin.adBlocker;
 

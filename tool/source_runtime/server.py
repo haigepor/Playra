@@ -10,6 +10,7 @@ from threading import BoundedSemaphore
 from urllib.parse import parse_qs, urlsplit
 
 from adapters import RuntimeContext, RuntimeFailure, registered_adapters
+from dispatch import operation as dispatch_operation
 
 MAX_BODY = 32768
 MAX_RESPONSE = 2 * 1024 * 1024
@@ -19,7 +20,7 @@ ROUTE = re.compile(r"^/v1/adapters/([A-Za-z0-9_-]{1,64})/(search|episodes|resolv
 class RuntimeServer(ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, port, registry=None, max_workers=4):
+    def __init__(self, port, registry=None, max_workers=8):
         self.registry = registered_adapters() if registry is None else registry
         self.pool = ThreadPoolExecutor(max_workers=max_workers)
         self.slots = BoundedSemaphore(max_workers)
@@ -163,35 +164,9 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             if budget < 1 or budget > 60000:
                 raise RuntimeFailure("INVALID_ARGUMENT", 400)
             context = RuntimeContext(budget)
-            if action == "sdk":
-                if query:
-                    raise RuntimeFailure("INVALID_ARGUMENT", 400)
-                body = self.read_body(frozenset({"operation", "payload"}))
-                name = self.required_text(body["operation"], 32)
-                if not isinstance(body["payload"], dict):
-                    raise RuntimeFailure("INVALID_ARGUMENT", 400)
-                operation = lambda: adapter.sdk_call(name, body["payload"], context)
-            elif action == "search":
-                if set(query) - {"q", "page", "pageSize"}:
-                    raise RuntimeFailure("INVALID_ARGUMENT", 400)
-                keyword = self.required_text(query.get("q", [""])[0], 300)
-                page, size = int(query.get("page", ["1"])[0]), int(query.get("pageSize", ["20"])[0])
-                if page < 1 or page > 1000000 or size < 1 or size > 100:
-                    raise RuntimeFailure("INVALID_ARGUMENT", 400)
-                operation = lambda: adapter.search(keyword, page, size, context)
-            elif action == "episodes":
-                if set(query) != {"source"}:
-                    raise RuntimeFailure("INVALID_ARGUMENT", 400)
-                source = self.required_text(query["source"][0])
-                operation = lambda: adapter.episodes(source, context)
-            else:
-                if query:
-                    raise RuntimeFailure("INVALID_ARGUMENT", 400)
-                body = self.read_body()
-                episode_url = self.required_text(body.get("episodeUrl"))
-                operation = lambda: adapter.resolve(episode_url, context)
-            if action not in adapter.capabilities:
-                raise RuntimeFailure("UNSUPPORTED", 422)
+            body = self.read_body(frozenset({"operation", "payload"}) if action == "sdk" else frozenset({"episodeUrl"})) if action in ("sdk", "resolve") else None
+            operation = dispatch_operation(self.server.registry, url.path.removeprefix('/v1/'), self.command,
+                                           {key: value[0] for key, value in query.items()}, body, context)
             result = self.execute(operation, context)
             if not isinstance(result, dict):
                 raise RuntimeFailure("PARSE_ERROR", 502)

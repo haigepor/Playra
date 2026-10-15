@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
 import 'package:kazumi/modules/my/watch_stats.dart';
 import 'profile_sync_state.dart';
+import '../widgets/modern_page_art.dart';
 
 class ModernProfileView extends StatelessWidget {
   const ModernProfileView({
@@ -160,7 +161,7 @@ class ModernProfileView extends StatelessWidget {
     final empty =
         stats.watchedBangumiCount == 0 && stats.watchedEpisodeCount == 0;
     return Container(
-      constraints: const BoxConstraints(minHeight: 148),
+      constraints: BoxConstraints(minHeight: empty ? 148 : 176),
       decoration: BoxDecoration(
         color: c.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
@@ -175,13 +176,17 @@ class ModernProfileView extends StatelessWidget {
             child: IgnorePointer(
               child: ExcludeSemantics(
                 child: Opacity(
-                  opacity: empty ? .45 : .11,
-                  child: SvgPicture.asset(
-                    empty
-                        ? 'assets/images/modern-profile-empty.svg'
-                        : 'assets/images/modern-profile-decoration.svg',
-                    width: empty ? 80 : 248,
-                  ),
+                  opacity: empty ? .45 : .20,
+                  child: empty
+                      ? SvgPicture.asset(
+                          'assets/images/modern-profile-empty.svg',
+                          width: 80,
+                        )
+                      : const ModernMaterialArt(
+                          asset: 'modern-profile-header-art.png',
+                          width: 480,
+                          opacity: 1,
+                        ),
                 ),
               ),
             ),

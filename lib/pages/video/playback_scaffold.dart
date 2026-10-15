@@ -189,12 +189,22 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
 
   void _initOnlineMode() {
     videoPageController.historyOffset = 0;
+    // 冷启动首页直接读取仓库；全局控制器可能尚未装载历史，先刷新再核验真实 URL。
+    historyController.init();
 
     var progress = historyController.lastWatching(
       videoPageController.bangumiItem,
       videoPageController.currentPlugin.name,
     );
-    if (widget.verifyHistoryIdentity &&
+    final initial = widget.args;
+    if (initial is OnlineVideoPlaybackArgs && initial.initialEpisode != null) {
+      videoPageController.resetEpisodeState(
+        episode: initial.initialEpisode!,
+        road: initial.initialRoad,
+      );
+    } else if ((widget.verifyHistoryIdentity ||
+            videoPageController.currentPlugin.sourceConfig['managedBy'] ==
+                'playra-anifive') &&
         widget.args is OnlineVideoPlaybackArgs) {
       final resume = verifiedResume(
         widget.args! as OnlineVideoPlaybackArgs,

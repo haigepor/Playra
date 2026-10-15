@@ -1,5 +1,7 @@
 import 'dart:io';
-import 'embedded_runtime.dart';
+// 独立 Dart HTTP 服务没有 Flutter engine；仅 Android Flutter 绑定原生桥。
+import 'embedded_runtime_stub.dart'
+    if (dart.library.ui) 'embedded_runtime.dart';
 
 String defaultRuntimeEndpoint() =>
     const String.fromEnvironment('PLAYRA_SOURCE_RUNTIME_URL');

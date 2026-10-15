@@ -8,10 +8,16 @@ class SourceResolvedMedia {
     this.headers = const {},
     this.format = 'auto',
     this.expiresAt,
+    this.inheritHeaders = true,
   });
   final String url, format;
   final Map<String, String> headers;
   final DateTime? expiresAt;
+  final bool inheritHeaders;
+  Map<String, String> effectiveHeaders(Map<String, String> defaults) => {
+    if (inheritHeaders) ...defaults,
+    ...headers,
+  };
 }
 
 class SourceResolveConfig {
@@ -35,6 +41,7 @@ class SourceResolveConfig {
       'headersPath',
       'formatPath',
       'expiresAtPath',
+      'headerPolicyPath',
     ]) {
       final path = json[key];
       if (path != null) RestrictedJsonPath.validate(path as String);
@@ -76,6 +83,7 @@ class SourceResolveConfig {
           ? 'hls'
           : 'auto',
       expiresAt: expires,
+      inheritHeaders: read('headerPolicyPath', r'$.headerPolicy') != 'replace',
     );
   }
 }

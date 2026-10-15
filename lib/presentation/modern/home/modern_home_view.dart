@@ -4,6 +4,7 @@ import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../widgets/modern_page_art.dart';
+import '../widgets/modern_section_mark.dart';
 import '../widgets/modern_feature_carousel.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
@@ -58,6 +59,7 @@ class ModernHomeView extends StatelessWidget {
           bottom: false,
           child: ModernPageArt(
             kind: ModernPageArtKind.discover,
+            contentMaxWidth: 760,
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 760),
@@ -847,15 +849,8 @@ class _ChannelRail extends StatelessWidget {
             padding: const EdgeInsets.only(left: 20, right: 12),
             child: Row(
               children: [
-                Container(
-                  width: 3,
-                  height: 16,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+                const ModernSectionMark(kind: ModernSectionKind.curated),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     title,
@@ -1395,6 +1390,8 @@ class _SectionHeading extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     crossAxisAlignment: CrossAxisAlignment.center,
     children: [
+      const ModernSectionMark(kind: ModernSectionKind.resume),
+      const SizedBox(width: 8),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

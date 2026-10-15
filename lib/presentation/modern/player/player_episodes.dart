@@ -239,6 +239,7 @@ class PlayerEpisodesSheet extends StatefulWidget {
     this.playing,
     this.sourceName = '',
     this.confirmSource = false,
+    this.showRoadSelector = true,
     this.downloadedUrls = const {},
   });
   final List<Road> roads;
@@ -246,6 +247,7 @@ class PlayerEpisodesSheet extends StatefulWidget {
   final VideoEpisodeSelection? playing;
   final String sourceName;
   final bool confirmSource;
+  final bool showRoadSelector;
   final Set<String> downloadedUrls;
   @override
   State<PlayerEpisodesSheet> createState() => _PlayerEpisodesSheetState();
@@ -325,7 +327,7 @@ class _PlayerEpisodesSheetState extends State<PlayerEpisodesSheet> {
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (widget.roads.isNotEmpty)
+              if (widget.showRoadSelector && widget.roads.isNotEmpty)
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 180),
                   child: DropdownButton<int>(

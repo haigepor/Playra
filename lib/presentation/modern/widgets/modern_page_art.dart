@@ -1,37 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 enum ModernPageArtKind { discover, calendar, library }
 
-/// 装饰只覆盖页头，不参与布局、点击命中或读屏，列表滚动区域保持纯净。
+/// 大幅透明素材位于内容下层，不占布局、不拦截点击或进入读屏。
 class ModernPageArt extends StatelessWidget {
-  const ModernPageArt({super.key, required this.kind, required this.child});
+  const ModernPageArt({
+    super.key,
+    required this.kind,
+    required this.child,
+    this.contentMaxWidth,
+  });
 
   final ModernPageArtKind kind;
   final Widget child;
+  final double? contentMaxWidth;
 
   @override
-  Widget build(BuildContext context) => Stack(
-    children: [
-      Positioned(
-        top: 0,
-        right: 0,
-        width: 248,
-        height: 132,
-        child: IgnorePointer(
-          child: ExcludeSemantics(
-            child: SvgPicture.asset(
-              'assets/images/modern-${kind.name}-decoration.svg',
-              fit: BoxFit.contain,
-              colorFilter: ColorFilter.mode(
-                Theme.of(context).colorScheme.primary.withValues(alpha: .11),
-                BlendMode.srcIn,
-              ),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final discover = kind == ModernPageArtKind.discover;
+      final artwork = switch (kind) {
+        ModernPageArtKind.discover => 'modern-cinema-header-art.png',
+        ModernPageArtKind.calendar => 'modern-calendar-header-art.png',
+        ModernPageArtKind.library => 'modern-library-header-art.png',
+      };
+      final contentWidth = contentMaxWidth == null
+          ? constraints.maxWidth
+          : constraints.maxWidth.clamp(0.0, contentMaxWidth!).toDouble();
+      // 原图左侧约一半是透明留白，按画布放大才能让右侧主体达到背景尺寸。
+      final artWidth = (contentWidth * 1.6).clamp(0.0, 1020.0).toDouble();
+      return Stack(
+        children: [
+          Positioned(
+            top: 0,
+            right: (constraints.maxWidth - contentWidth) / 2,
+            width: artWidth,
+            child: ModernMaterialArt(
+              asset: artwork,
+              width: artWidth,
+              opacity: discover ? .2 : .16,
             ),
+          ),
+          child,
+        ],
+      );
+    },
+  );
+}
+
+/// 这一组素材均为 3:1，完整展示右侧主体；越界部分只是原图的透明留白。
+class ModernMaterialArt extends StatelessWidget {
+  const ModernMaterialArt({
+    super.key,
+    required this.asset,
+    required this.width,
+    this.opacity = .18,
+  });
+
+  final String asset;
+  final double width;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: ExcludeSemantics(
+      child: SizedBox(
+        width: width,
+        height: width / 3,
+        child: Opacity(
+          opacity: opacity,
+          child: Image.asset(
+            'assets/images/$asset',
+            fit: BoxFit.contain,
+            alignment: Alignment.topRight,
+            cacheWidth: 1440,
+            excludeFromSemantics: true,
           ),
         ),
       ),
-      child,
-    ],
+    ),
   );
 }

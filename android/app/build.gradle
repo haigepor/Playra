@@ -99,6 +99,10 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
         if (!required.every { new File(sdkDir, it).isFile() }) {
             throw new GradleException("Missing private SDK input: docs/release/build-inputs.zh.md")
         }
+        def animeSdk = file("../../tool/source_runtime/vendor/anifive")
+        if (!["__init__.py", "client.py", "transport.py", "profile.py", "source_a.py", "source_b.py", "source_c.py", "source_d.py", "codec.py", "selector.py", "config.py", "clarity.py"].every { new File(animeSdk, it).isFile() }) {
+            throw new GradleException("Missing AniFive SDK: run tool/source_runtime/import_anifive.py")
+        }
         // 当前 SDK 引用此 Python 桥；原生加速库可选，Android 使用纯 Python 回退。
         if (new File(sdkDir, "suite.py").getText("UTF-8").contains("import _native") &&
             !new File(sdkDir, "_native/__init__.py").isFile()) {
@@ -107,6 +111,7 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
     }
     from("../../tool/source_runtime") {
         include "adapters.py", "miomedia_adapter.py", "miomedia_quality.py", "android_bridge.py"
+        include "dispatch.py", "anifive_adapter.py", "anifive_transport.py", "vendor/anifive/*.py"
         include "vendor/__init__.py", "vendor/miomedia/*.py"
         include "vendor/miomedia/_native/__init__.py"
         // M6 的固定查表资源由原样 SDK 读取，不能只打包 Python 模块。

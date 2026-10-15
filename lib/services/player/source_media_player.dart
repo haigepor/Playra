@@ -4,6 +4,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/player/controller/player_debug_controller.dart';
 import 'package:kazumi/pages/player/controller/player_playback_controller.dart';
 import 'package:kazumi/services/platform/resource_url.dart';
+import 'package:kazumi/services/platform/media_resource.dart';
 import 'package:kazumi/services/shaders/shader_asset_service.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/video_source/video_source_format.dart';
@@ -61,6 +62,8 @@ class SourceMediaPlayer {
       await candidate.stop();
       if (!current()) return null;
       _errors = candidate.stream.error.listen(onError);
+      await configureMediaPlayback(candidate);
+      if (!current()) return null;
       await candidate.open(Media(mediaUrl));
       return current() ? candidate : null;
     }

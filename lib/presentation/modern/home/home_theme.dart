@@ -114,6 +114,45 @@ ThemeData modernHomeTheme(ThemeData base, {bool forceDark = false}) {
         overlayColor: zinc.primary.withValues(alpha: .08),
       ),
     ),
+    // 强制暗色页面不能继续继承全局浅色Chip表面，否则浅色文字会落在白底上。
+    chipTheme: base.chipTheme.copyWith(
+      brightness: brightness,
+      color: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return zinc.muted.withValues(alpha: .6);
+        }
+        if (states.contains(WidgetState.selected)) {
+          return zinc.primary.withValues(alpha: .14);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          return zinc.muted;
+        }
+        return zinc.card;
+      }),
+      backgroundColor: zinc.card,
+      selectedColor: zinc.muted,
+      disabledColor: zinc.muted,
+      labelStyle: base.textTheme.labelLarge?.copyWith(
+        color: zinc.foreground,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+      ),
+      secondaryLabelStyle: base.textTheme.labelLarge?.copyWith(
+        color: zinc.primary,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      side: BorderSide(color: zinc.border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+      checkmarkColor: zinc.primary,
+      deleteIconColor: zinc.mutedForeground,
+      elevation: 0,
+      pressElevation: 0,
+      surfaceTintColor: Colors.transparent,
+    ),
     hoverColor: zinc.primary.withValues(alpha: .04),
     highlightColor: zinc.primary.withValues(alpha: .06),
     focusColor: zinc.primary.withValues(alpha: .12),

@@ -16,6 +16,9 @@ import 'package:kazumi/modules/download/download_module.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/services/player/history_playback_service.dart';
 import 'package:kazumi/services/source/source_candidates.dart';
+import 'package:kazumi/services/source/source_sdk_group.dart';
+import 'package:kazumi/services/source/anime_source_session.dart';
+import 'package:kazumi/modules/search/plugin_search_module.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
 import 'package:kazumi/pages/download/download_controller.dart';
@@ -40,6 +43,7 @@ import '../player/player_discussion.dart';
 import '../player/player_detail_tabs.dart';
 import '../player/player_episodes.dart';
 import '../player/player_work_info.dart';
+import '../player/sdk_source_widgets.dart';
 
 class ModernPlayerDetailPage extends StatefulWidget {
   const ModernPlayerDetailPage({
@@ -85,6 +89,33 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
   String? automaticSourceError;
   final episodeCatalogCancel = RuleCancelToken();
   RuleCancelToken? automaticSourceCancel;
+  late final sourceSession = AnimeSourceSession(widget.item)
+    ..addListener(sourcesChanged);
+  String? selectedSdkId;
+  int manualLineGeneration = 0;
+  VoidCallback? refreshSourceSheet;
+  List<Plugin> get sourceRules =>
+      widget.sourceRules ?? inject<PluginsController>().pluginList.toList();
+  List<PlaybackSourceGroup> get sourceGroups => PlaybackSourceGroup.fromPlugins(
+    SourceCandidates.shared.eligible(sourceRules, item),
+  );
+  PlaybackSourceGroup? get selectedGroup {
+    final id =
+        selectedSdkId ??
+        (hasPlayback && !video.isOfflineMode
+            ? playbackSdkId(video.currentPlugin)
+            : 'anifive');
+    return sourceGroups.where((g) => g.id == id).firstOrNull ??
+        sourceGroups.firstOrNull;
+  }
+
+  void sourcesChanged() {
+    if (mounted) {
+      setState(() {});
+      refreshSourceSheet?.call();
+    }
+  }
+
   InfoController get info => widget.infoController;
   VideoPageController get video => widget.videoController;
   BangumiItem get item => info.bangumiItem;
@@ -134,6 +165,17 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         return;
       }
       final args = result.args as OnlineVideoPlaybackArgs;
+      if (args.initialEpisode != null) {
+        await playbackKey.currentState?.startSource(
+          args,
+          VideoEpisodeSelection(
+            episode: args.initialEpisode!,
+            road: args.initialRoad,
+          ),
+          onReady: playbackReady,
+        );
+        return;
+      }
       final verified = verifiedResume(args, [history]);
       if (verified == null) {
         await playAutomatically(
@@ -168,6 +210,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
   void dispose() {
     episodeCatalogCancel.cancel('page disposed');
     automaticSourceCancel?.cancel('page disposed');
+    sourceSession.dispose();
     tabs.dispose();
     super.dispose();
   }
@@ -221,9 +264,27 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
 
   Future<void> playAutomatically({EpisodeInfo? episode, int? number}) async {
     if (choosingSource || video.isOfflineMode && hasPlayback) return;
+    if (hasPlayback &&
+        episode == null &&
+        number == null &&
+        regularEpisodeNumber(
+              video.resolveEpisode(video.selectedEpisode)?.displayTitle ?? '',
+            ) ==
+            null) {
+      setState(() => automaticSourceError = '当前特别篇无法自动对齐，请手动选择线路和剧集');
+      return;
+    }
     selectedCatalogEpisode =
         episode ?? selectedCatalogEpisode ?? catalogEpisodes.firstOrNull;
-    final targetNumber = number ?? selectedCatalogEpisode?.episode.toInt() ?? 1;
+    final targetNumber =
+        number ??
+        episode?.episode.toInt() ??
+        (hasPlayback
+            ? regularEpisodeNumber(
+                video.resolveEpisode(video.selectedEpisode)?.displayTitle ?? '',
+              )
+            : selectedCatalogEpisode?.episode.toInt()) ??
+        1;
     final cancel = RuleCancelToken();
     automaticSourceCancel?.cancel('superseded');
     automaticSourceCancel = cancel;
@@ -235,8 +296,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
       final choice = await SourceCandidates.shared
           .selectEpisode(
             item,
-            widget.sourceRules ??
-                inject<PluginsController>().pluginList.toList(),
+            selectedGroup?.plugins ?? [],
             targetNumber,
             cancel,
           )
@@ -251,10 +311,25 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         );
         return;
       }
+      sourceSession.seed(choice.candidate);
       await playbackKey.currentState?.startSource(
         choice.candidate.args(item, automatic: true),
         VideoEpisodeSelection(episode: choice.episode, road: choice.road),
         onReady: playbackReady,
+        offset:
+            hasPlayback &&
+                regularEpisodeNumber(
+                      video
+                              .resolveEpisode(video.selectedEpisode)
+                              ?.displayTitle ??
+                          '',
+                    ) ==
+                    targetNumber
+            ? widget.playerController.playback.playerPosition.inSeconds
+            : 0,
+        expectedDuration: hasPlayback
+            ? widget.playerController.playback.playerDuration
+            : null,
       );
       if (mounted) setState(() {});
     } catch (_) {
@@ -284,6 +359,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         loaded.images = item.images;
       }
       info.bangumiItem = loaded;
+      sourceSession.updateWork(loaded);
       await info.collectController.updateLocalCollect(loaded);
     } catch (_) {
       if (mounted) setState(() => infoError = true);
@@ -363,6 +439,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
 
   Future<void> chooseSource(BuildContext themedContext) async {
     if (choosingSource) return;
+    manualLineGeneration++;
     automaticSourceCancel?.cancel('manual source selection');
     automaticSourceCancel = null;
     final oldNumber = hasPlayback
@@ -382,7 +459,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         context: themedContext,
         maxHeightFactor: .9,
         builder: (sheetContext) => SourceSheet(
-          rules: widget.sourceRules,
+          rules: selectedGroup?.plugins,
           infoController: info,
           episodeNumber: oldNumber,
           emptyIllustration: SvgPicture.asset(
@@ -395,6 +472,15 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         ),
       );
       if (!mounted || args == null || !themedContext.mounted) return;
+      selectedSdkId = playbackSdkId(args.plugin);
+      sourceSession.seed(
+        PlaybackCandidate(
+          plugin: args.plugin,
+          item: SearchItem(name: args.title, src: args.src),
+          roads: args.roads,
+          matched: SourceCandidates.shared.matches(item, args.title),
+        ),
+      );
       final resume = !hasPlayback
           ? verifiedResume(args, widget.historyController.histories)
           : null;
@@ -455,6 +541,329 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     }
   }
 
+  Widget sourceControls(BuildContext context) {
+    if (hasPlayback && video.isOfflineMode)
+      return Text('离线 · ${video.offlinePluginName}');
+    final group = selectedGroup;
+    final entries = [
+      for (final p in group?.plugins ?? <Plugin>[])
+        if (sourceSession.status[p.providerId] == 'ready')
+          ...?sourceSession.entries[p.providerId],
+    ];
+    final count = entries.fold<int>(0, (n, c) => n + c.roads.length);
+    final sameGroup =
+        hasPlayback && playbackSdkId(video.currentPlugin) == group?.id;
+    final road = sameGroup && video.selectedEpisode.road < video.roadList.length
+        ? video.roadList[video.selectedEpisode.road]
+        : null;
+    final automatic = !hasPlayback || video.automaticSource;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PlaybackSourcePanel(
+          selectorKey: const ValueKey('anime-line-selector'),
+          trailing: IconButton(
+            tooltip: '高级选源',
+            onPressed: choosingSource ? null : () => chooseSource(context),
+            icon: const Icon(Icons.more_horiz_rounded, size: 20),
+          ),
+          groups: [
+            for (final g in sourceGroups)
+              PlaybackSdkChip(
+                name: g.name,
+                selected: group?.id == g.id,
+                onSelected: choosingSource
+                    ? null
+                    : () {
+                        if (selectedGroup?.id == g.id) return;
+                        setState(() => selectedSdkId = g.id);
+                        unawaited(playAutomatically());
+                      },
+              ),
+          ],
+          automatic: automatic,
+          summary: choosingSource
+              ? '正在准备新线路…'
+              : road == null
+              ? '自动 · 优选线路'
+              : '${automatic ? "自动 · " : "手动 · "}${video.currentPlugin.name} / ${road.name}',
+          detail:
+              automaticSourceError ??
+              (video.activeRouteLabel != null && (video.loading || !sameGroup)
+                  ? '当前播放：${video.activeRouteLabel}'
+                  : null),
+          lineCount: count == 0 && road != null ? video.roadList.length : count,
+          onShowLines: () => showAnimeLines(context),
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
+  Future<void> showAnimeLines(BuildContext pageContext) async {
+    sourceSession.updateWork(item);
+    final group = selectedGroup;
+    if (group == null) return;
+    // 通过历史直接进入时先纳入现有目录，避免已播放的线路在弹层中消失。
+    if (hasPlayback &&
+        !video.isOfflineMode &&
+        playbackSdkId(video.currentPlugin) == group.id) {
+      sourceSession.seed(
+        PlaybackCandidate(
+          plugin: video.currentPlugin,
+          item: SearchItem(name: video.title, src: video.src),
+          roads: video.roadList.toList(),
+          matched: true,
+        ),
+      );
+    }
+    for (final plugin in group.plugins) {
+      unawaited(sourceSession.prepare(plugin));
+    }
+    try {
+      await showModalBottomSheet<void>(
+        context: pageContext,
+        isScrollControlled: true,
+        showDragHandle: false,
+        useSafeArea: true,
+        sheetAnimationStyle: MediaQuery.disableAnimationsOf(pageContext)
+            ? AnimationStyle.noAnimation
+            : null,
+        constraints: const BoxConstraints(maxWidth: 640),
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (context, update) {
+            refreshSourceSheet = () {
+              if (context.mounted) update(() {});
+            };
+            return PlaybackLineSheet(
+              sdkName: group.name,
+              onClose: () => Navigator.of(sheetContext).pop(),
+              automaticOption: SdkLineOption(
+                title: '自动选择',
+                subtitle: '仅在 ${group.name} 内优选',
+                automatic: true,
+                selected: !hasPlayback || video.automaticSource,
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  unawaited(playAutomatically());
+                },
+              ),
+              children: [
+                for (final plugin in group.plugins)
+                  animeProviderSection(plugin, pageContext, sheetContext),
+              ],
+            );
+          },
+        ),
+      );
+    } finally {
+      refreshSourceSheet = null;
+    }
+  }
+
+  Widget animeProviderSection(
+    Plugin plugin,
+    BuildContext pageContext,
+    BuildContext sheetContext,
+  ) {
+    final candidates =
+        sourceSession.entries[plugin.providerId] ?? <PlaybackCandidate>[];
+    final ready = sourceSession.status[plugin.providerId] == 'ready';
+    final loading = sourceSession.loading.contains(plugin.providerId);
+    final roads = [for (final candidate in candidates) ...candidate.roads];
+    final episodeCounts = roads.map((r) => r.identifier.length).toSet();
+    final status = sourceSession.status[plugin.providerId] ?? '';
+    final failed = status.startsWith('目录获取失败');
+    final theme = Theme.of(pageContext);
+    final colors = theme.colorScheme;
+    final cardShape = theme.cardTheme.shape ?? const RoundedRectangleBorder();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: ShapeDecoration(
+        color: colors.surfaceContainerLow,
+        // 自定义 ShapeBorder 未必支持改描边，保留其形状实现。
+        shape: cardShape is OutlinedBorder
+            ? cardShape.copyWith(side: BorderSide(color: colors.outline))
+            : cardShape,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plugin.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (loading || !ready || roads.isEmpty)
+                      Text(
+                        loading
+                            ? '获取线路…'
+                            : failed
+                            ? '线路获取失败'
+                            : ready
+                            ? '该来源暂无线路'
+                            : status.contains('歧义')
+                            ? '多个同名作品'
+                            : '未匹配作品',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: failed && !loading
+                              ? colors.error
+                              : colors.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (loading)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: LoadingIndicator(size: 16),
+                )
+              else if (!ready) ...[
+                if (!failed)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      unawaited(chooseSource(pageContext));
+                    },
+                    child: const Text('手动确认'),
+                  ),
+                IconButton(
+                  tooltip: '重试 ${plugin.name}',
+                  onPressed: () => sourceSession.prepare(plugin, retry: true),
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ] else if (roads.isNotEmpty)
+                Text(
+                  '${roads.length} 条${episodeCounts.length == 1 ? " · ${episodeCounts.single} 集" : ""}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          if (ready && !loading && roads.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 2,
+              children: [
+                for (final candidate in candidates)
+                  for (var r = 0; r < candidate.roads.length; r++)
+                    PlaybackRouteChip(
+                      name: candidate.roads[r].name,
+                      episodeCount: candidate.roads[r].identifier.length,
+                      current:
+                          video.activeProviderId == plugin.providerId &&
+                          video.activeContentRef == candidate.item.src &&
+                          video.activeRoadId ==
+                              (candidate.roads[r].id.isEmpty
+                                  ? '$r'
+                                  : candidate.roads[r].id),
+                      selected:
+                          hasPlayback &&
+                          !video.automaticSource &&
+                          video.currentPlugin.providerId == plugin.providerId &&
+                          video.src == candidate.item.src &&
+                          video.selectedEpisode.road == r,
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        unawaited(selectAnimeLine(pageContext, candidate, r));
+                      },
+                    ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> selectAnimeLine(
+    BuildContext context,
+    PlaybackCandidate candidate,
+    int road,
+  ) async {
+    final generation = ++manualLineGeneration;
+    automaticSourceCancel?.cancel('manual line selected');
+    automaticSourceCancel = null;
+    final args = candidate.args(item);
+    final previousTitle = hasPlayback
+        ? video.resolveEpisode(video.selectedEpisode)?.displayTitle
+        : null;
+    final number = previousTitle == null
+        ? selectedCatalogEpisode?.episode.toInt()
+        : regularEpisodeNumber(previousTitle);
+    final names = candidate.roads[road].identifier;
+    final matches = [
+      for (var i = 0; i < names.length; i++)
+        if (number != null
+            ? regularEpisodeNumber(names[i]) == number
+            : previousTitle != null &&
+                  normalizeWorkTitle(names[i]) ==
+                      normalizeWorkTitle(previousTitle))
+          i + 1,
+    ];
+    VideoEpisodeSelection? target = matches.length == 1
+        ? VideoEpisodeSelection(episode: matches.single, road: road)
+        : null;
+    if (!hasPlayback && number == null) {
+      final resume = verifiedResume(args, widget.historyController.histories);
+      if (resume?.selection.road == road) target = resume?.selection;
+    }
+    target ??= await showModernPlayerSheet<VideoEpisodeSelection>(
+      context,
+      PlayerEpisodesSheet(
+        roads: args.roads,
+        selected: VideoEpisodeSelection(episode: 1, road: road),
+        sourceName: candidate.plugin.name,
+        confirmSource: true,
+      ),
+    );
+    if (!mounted || target == null || generation != manualLineGeneration)
+      return;
+    final sameEpisode =
+        previousTitle != null &&
+        (number != null
+            ? regularEpisodeNumber(
+                    args.roads[target.road].identifier[target.episode - 1],
+                  ) ==
+                  number
+            : normalizeWorkTitle(
+                    args.roads[target.road].identifier[target.episode - 1],
+                  ) ==
+                  normalizeWorkTitle(previousTitle));
+    setState(() {
+      choosingSource = true;
+      automaticSourceError = null;
+    });
+    try {
+      await playbackKey.currentState?.startSource(
+        args,
+        target,
+        onReady: playbackReady,
+        offset: sameEpisode
+            ? widget.playerController.playback.playerPosition.inSeconds
+            : 0,
+        expectedDuration: sameEpisode
+            ? widget.playerController.playback.playerDuration
+            : null,
+      );
+    } finally {
+      if (mounted && generation == manualLineGeneration) {
+        setState(() => choosingSource = false);
+      }
+    }
+  }
+
   Set<String> get downloadedUrls {
     if (!hasPlayback || video.isOfflineMode) return {};
     final record = widget.downloadController.getRecord(
@@ -496,6 +905,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
             ? '离线 · ${video.offlinePluginName}'
             : video.currentPlugin.name,
         downloadedUrls: downloadedUrls,
+        showRoadSelector: false,
       ),
     );
     if (mounted && result != null && result != video.selectedEpisode) {
@@ -781,6 +1191,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
           ],
         ),
         const SizedBox(height: 18),
+        sourceControls(context),
         Row(
           children: [
             const Expanded(
@@ -800,37 +1211,6 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
           ],
         ),
         if (hasPlayback) ...[
-          Wrap(
-            spacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                '来源',
-                style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
-              ),
-              TextButton(
-                onPressed: choosingSource ? null : () => chooseSource(context),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  padding: EdgeInsets.zero,
-                ),
-                child: Text(
-                  video.isOfflineMode
-                      ? '离线 · ${video.offlinePluginName}'
-                      : '${video.currentPlugin.name}⌄',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-              TextButton(
-                onPressed: () => allEpisodes(context),
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                child: Text(
-                  road?.name ?? '',
-                  style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
-                ),
-              ),
-            ],
-          ),
           SizedBox(
             height: math.max(56, MediaQuery.textScalerOf(context).scale(42)),
             child: ListView.separated(
@@ -908,98 +1288,11 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                 },
               ),
             ),
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: c.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: c.outlineVariant.withValues(alpha: .65),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      automaticSourceError == null
-                          ? LucideIcons.zap
-                          : LucideIcons.circleAlert,
-                      size: 18,
-                      color: c.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        choosingSource ? '正在匹配播放来源' : '智能选源',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  automaticSourceError ??
-                      (choosingSource
-                          ? '正在核对作品与剧集，请稍候…'
-                          : '点击剧集即可播放，优先匹配启动更快的来源'),
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.5,
-                    color: c.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: choosingSource
-                          ? null
-                          : () => playAutomatically(),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(48, 40),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      icon: choosingSource
-                          ? const LoadingIndicator(size: 16)
-                          : const Icon(LucideIcons.play, size: 16),
-                      label: Text(
-                        automaticSourceError == null ? '自动播放' : '重新匹配',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: choosingSource
-                          ? null
-                          : () => chooseSource(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: c.onSurfaceVariant,
-                        side: BorderSide(color: c.outline),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      icon: const Icon(LucideIcons.slidersHorizontal, size: 15),
-                      label: const Text('手动换源', style: TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                ),
-                if (episodesError)
-                  TextButton(
-                    onPressed: loadEpisodeCatalog,
-                    child: const Text('剧集资料加载失败，点击重试'),
-                  ),
-              ],
-            ),
+          if (choosingSource) const LinearProgressIndicator(),
+          TextButton.icon(
+            onPressed: choosingSource ? null : () => playAutomatically(),
+            icon: const Icon(LucideIcons.play, size: 16),
+            label: const Text('自动播放'),
           ),
         ],
         const SizedBox(height: 24),

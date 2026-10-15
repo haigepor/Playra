@@ -150,6 +150,12 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
   @override
   Widget build(BuildContext context) {
     final item = widget.controller.bangumiItem;
+    // 只在展示层合并重复标签，保留原资料及标签搜索行为。
+    final seenTags = <String>{};
+    final tags = item.tags.where((tag) {
+      final name = tag.name.trim();
+      return name.isNotEmpty && seenTags.add(name.toLowerCase());
+    }).toList();
     return Column(
       children: [
         const PlayerSheetHeader(title: '作品资料'),
@@ -194,13 +200,27 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
                     style: const TextStyle(fontSize: 14, height: 1.8),
                   ),
                   const SizedBox(height: 20),
+                  if (tags.isNotEmpty) ...[
+                    Text(
+                      '作品标签',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 6,
+                    runSpacing: 6,
                     children: [
-                      for (final tag in item.tags)
+                      for (final tag in tags)
                         ActionChip(
-                          label: Text(tag.name),
+                          label: Text(
+                            tag.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           onPressed: () => context.pushNamed(
                             '/search/${Uri.encodeComponent(tag.name)}',
                           ),

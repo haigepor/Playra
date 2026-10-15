@@ -251,6 +251,7 @@ class SourceService {
             (e) => SourceContent(
               ref: SourceRef(providerId: source.manifest.id, rawRef: e.src),
               title: e.name,
+              coverUrl: e.coverUrl.isEmpty ? null : e.coverUrl,
               classification: SourceClassification(
                 kind: kind,
                 evidence: kind == 'unknown' ? 'unknown' : 'rule',
@@ -306,7 +307,7 @@ class SourceService {
       return [
         for (var i = 0; i < trace.roads.length; i++)
           SourceLine(
-            id: '${ref.id}:$i',
+            id: '${ref.id}:${trace.roads[i].id.isEmpty ? i : trace.roads[i].id}',
             name: trace.roads[i].name,
             episodes: [
               for (var j = 0; j < trace.roads[i].data.length; j++)

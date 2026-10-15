@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 
 class RuleCard extends StatelessWidget {
   const RuleCard({
@@ -7,6 +8,7 @@ class RuleCard extends StatelessWidget {
     this.tags = const [],
     this.caption,
     this.subtitle,
+    this.sdkLabel,
     this.trailing,
     this.onTap,
     this.onLongPress,
@@ -18,6 +20,7 @@ class RuleCard extends StatelessWidget {
   final List<Widget> tags;
   final String? caption;
   final String? subtitle;
+  final String? sdkLabel;
   final Widget? trailing;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -51,107 +54,259 @@ class RuleCard extends StatelessWidget {
             color: selected
                 ? colors.secondaryContainer
                 : colors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(selected ? 20 : 28),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? colors.secondary : Colors.transparent,
-              width: 2,
+              color: selected
+                  ? colors.primary
+                  : colors.outlineVariant.withValues(alpha: .3),
+              width: 1,
             ),
           ),
           child: Material(
             type: MaterialType.transparency,
-            borderRadius: BorderRadius.circular(selected ? 18 : 26),
+            borderRadius: BorderRadius.circular(13),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: onTap,
               onLongPress: onLongPress,
               child: Padding(
                 padding: const EdgeInsets.all(14),
-                child: LayoutBuilder(builder: (context, constraints) {
-                  final stacked = constraints.maxWidth < 300 ||
-                      MediaQuery.textScalerOf(context).scale(14) > 20;
-                  final identity = Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AnimatedContainer(
-                        duration: duration,
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: selected || installed
-                              ? colors.secondaryContainer
-                              : colors.primaryContainer,
-                          borderRadius:
-                              BorderRadius.circular(installed ? 24 : 16),
-                        ),
-                        child: Icon(
-                          selected
-                              ? Icons.check_rounded
-                              : Icons.extension_rounded,
-                          color: selected || installed
-                              ? colors.onSecondaryContainer
-                              : colors.onPrimaryContainer,
-                        ),
+                child: sdkLabel != null
+                    ? _sourceContent(context, actions)
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final stacked =
+                              constraints.maxWidth < 300 ||
+                              MediaQuery.textScalerOf(context).scale(14) > 20;
+                          final identity = Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AnimatedContainer(
+                                duration: duration,
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withValues(
+                                    alpha: selected || installed ? .16 : .09,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Center(
+                                  child: selected
+                                      ? Icon(
+                                          Icons.check_rounded,
+                                          color: colors.primary,
+                                          size: 20,
+                                        )
+                                      : const UtilitySvgIcon(
+                                          UtilityIconKind.rules,
+                                          size: 21,
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: text.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (subtitle != null &&
+                                        subtitle!.isNotEmpty) ...[
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        subtitle!,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: text.bodySmall?.copyWith(
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                    if (tags.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: tags,
+                                      ),
+                                    ],
+                                    if (caption != null) ...[
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        caption!,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: text.bodySmall?.copyWith(
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                          if (stacked) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                identity,
+                                if (actions != null) ...[
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: AlignmentDirectional.centerEnd,
+                                    child: actions,
+                                  ),
+                                ],
+                              ],
+                            );
+                          }
+                          return Row(
+                            children: [
+                              Expanded(child: identity),
+                              if (actions != null) ...[
+                                const SizedBox(width: 12),
+                                actions,
+                              ],
+                            ],
+                          );
+                        },
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(title,
-                                style: text.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis),
-                            if (subtitle != null && subtitle!.isNotEmpty) ...[
-                              const SizedBox(height: 3),
-                              Text(subtitle!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: text.bodySmall?.copyWith(
-                                      color: colors.onSurfaceVariant)),
-                            ],
-                            if (tags.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Wrap(spacing: 6, runSpacing: 6, children: tags),
-                            ],
-                            if (caption != null) ...[
-                              const SizedBox(height: 6),
-                              Text(caption!,
-                                  style: text.bodySmall?.copyWith(
-                                      color: colors.onSurfaceVariant)),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                  if (stacked) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        identity,
-                        if (actions != null) ...[
-                          const SizedBox(height: 8),
-                          Align(
-                              alignment: AlignmentDirectional.centerEnd,
-                              child: actions),
-                        ],
-                      ],
-                    );
-                  }
-                  return Row(children: [
-                    Expanded(child: identity),
-                    if (actions != null) ...[
-                      const SizedBox(width: 12),
-                      actions
-                    ],
-                  ]);
-                }),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _sourceContent(BuildContext context, Widget? actions) {
+    final colors = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact =
+            constraints.maxWidth < 330 ||
+            MediaQuery.textScalerOf(context).scale(14) > 20;
+        final identity = Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: .09),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: colors.primary.withValues(alpha: .14),
+                ),
+              ),
+              child: Center(
+                child: selected
+                    ? Icon(Icons.check_rounded, color: colors.primary, size: 21)
+                    : const UtilitySvgIcon(UtilityIconKind.rules, size: 22),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (subtitle?.isNotEmpty == true) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: identity),
+                if (!compact && actions != null) ...[
+                  const SizedBox(width: 8),
+                  actions,
+                ],
+              ],
+            ),
+            if (tags.isNotEmpty || (compact && actions != null)) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Wrap(spacing: 8, runSpacing: 6, children: tags),
+                  ),
+                  if (compact && actions != null) actions,
+                ],
+              ),
+            ],
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(
+                height: 1,
+                color: colors.outlineVariant.withValues(alpha: .3),
+              ),
+            ),
+            Wrap(
+              spacing: 16,
+              runSpacing: 7,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const UtilitySvgIcon(UtilityIconKind.sdk, size: 16),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Text(
+                        sdkLabel!,
+                        style: text.labelMedium?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (caption != null)
+                  Text(
+                    caption!,
+                    style: text.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -170,15 +325,17 @@ class RuleTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .labelSmall
-                ?.copyWith(color: foreground, fontWeight: FontWeight.w600)),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      label,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: foreground,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
 }

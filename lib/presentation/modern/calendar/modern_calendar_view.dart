@@ -98,6 +98,7 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
               bottom: false,
               child: ModernPageArt(
                 kind: ModernPageArtKind.calendar,
+                contentMaxWidth: 760,
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 760),

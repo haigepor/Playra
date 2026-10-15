@@ -1,33 +1,90 @@
 {
-  "api": "5",
+  "api": "8",
   "type": "anime",
+  "sourceId": "dm84",
   "name": "DM84",
-  "version": "1.4",
+  "version": "3.1.0",
   "muliSources": true,
-  "useWebview": true,
+  "useWebview": false,
   "useNativePlayer": true,
   "usePost": false,
   "useLegacyParser": false,
-  "adBlocker": true,
+  "adBlocker": false,
   "userAgent": "",
   "baseURL": "https://dmbus.cc/",
-  "searchURL": "https://dmbus.cc/s----------.html?wd=@keyword",
-  "searchList": "//div/div[3]/ul/li",
-  "searchName": "//div/a[2]",
-  "searchResult": "//div/a[2]",
-  "chapterRoads": "//div/div[4]/div/ul",
-  "chapterResult": "//li/a",
+  "searchURL": "",
+  "searchList": "",
+  "searchName": "",
+  "searchResult": "",
+  "chapterRoads": "",
+  "chapterResult": "",
   "referer": "",
-  "searchMode": "xpath",
-  "chapterMode": "xpath",
-  "antiCrawlerConfig": {
-    "enabled": false,
-    "captchaType": 1,
-    "captchaImage": "",
-    "captchaInput": "",
-    "captchaButton": "",
-    "captchaDetectType": 1,
-    "captchaDetectValue": "",
-    "captchaScript": ""
+  "searchMode": "api",
+  "chapterMode": "api",
+  "searchApiConfig": {
+    "request": {
+      "method": "GET",
+      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/search",
+      "query": {
+        "q": "@keyword",
+        "page": "@page",
+        "pageSize": "@pageSize"
+      }
+    },
+    "listPath": "$.data[*]",
+    "namePath": "$.name",
+    "sourcePath": "$.url",
+    "coverPath": "$.cover"
+  },
+  "chapterApiConfig": {
+    "request": {
+      "method": "GET",
+      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/episodes",
+      "query": {
+        "source": "@source"
+      }
+    },
+    "format": "nested",
+    "roadsPath": "$.data.roads[*]",
+    "roadNamePath": "$.name",
+    "episodesPath": "$.episodes[*]",
+    "episodeNamePath": "$.name",
+    "episodeUrlPath": "$.url",
+    "roadIdPath": "$.id"
+  },
+  "sourceConfig": {
+    "domains": [
+      "anime"
+    ],
+    "searchPagination": {
+      "enabled": true,
+      "totalPath": "$.total",
+      "hasMorePath": "$.hasMore"
+    },
+    "resolveApi": {
+      "request": {
+        "method": "POST",
+        "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/resolve",
+        "bodyType": "json",
+        "body": {
+          "episodeUrl": "@episodeUrl"
+        }
+      },
+      "urlPath": "$.data.url",
+      "headersPath": "$.data.headers",
+      "formatPath": "$.data.format",
+      "expiresAtPath": "$.data.expiresAt",
+      "headerPolicyPath": "$.data.headerPolicy"
+    },
+    "contentGroups": [
+      "anime"
+    ],
+    "managedBy": "playra-anifive",
+    "bundleVersion": 1,
+    "catalog": {
+      "entrySelector": "a.title[href], a.video-wrapper[href]",
+      "detailPathPattern": "/(?:v|voddetail)/",
+      "priority": 0
+    }
   }
 }

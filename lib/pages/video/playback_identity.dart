@@ -2,6 +2,8 @@ import 'package:kazumi/modules/bangumi/episode_item.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/pages/video/video_playback_args.dart';
+import 'package:kazumi/plugins/bundled_anime_migration.dart';
+import 'package:kazumi/utils/episode_url.dart';
 
 /// 新版恢复只接受同作品、同站点、同详情 URL 与唯一剧集 URL。
 /// 历史位置可能因站点补番/重排变化，不能直接使用旧列表索引。
@@ -11,9 +13,14 @@ import 'package:kazumi/pages/video/video_playback_args.dart';
 ) {
   for (final history in histories) {
     if (history.bangumiItem.id != args.bangumiItem.id ||
-        history.adapterName != args.plugin.name ||
+        !matchesAnimeHistorySource(
+          args.plugin,
+          history.adapterName,
+          history.lastSrc,
+        ) ||
         history.entryKind != HistoryEntryKind.online ||
-        history.lastSrc != args.src ||
+        normalizeEpisodeUrl(args.plugin.baseUrl, history.lastSrc) !=
+            normalizeEpisodeUrl(args.plugin.baseUrl, args.src) ||
         history.episodePageUrl.isEmpty) {
       continue;
     }
@@ -21,7 +28,8 @@ import 'package:kazumi/pages/video/video_playback_args.dart';
     for (var road = 0; road < args.roads.length; road++) {
       final data = args.roads[road];
       for (var i = 0; i < data.data.length && i < data.identifier.length; i++) {
-        if (data.data[i] == history.episodePageUrl) {
+        if (normalizeEpisodeUrl(args.plugin.baseUrl, data.data[i]) ==
+            normalizeEpisodeUrl(args.plugin.baseUrl, history.episodePageUrl)) {
           matches.add(VideoEpisodeSelection(episode: i + 1, road: road));
         }
       }

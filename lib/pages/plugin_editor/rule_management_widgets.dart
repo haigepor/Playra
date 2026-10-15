@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
+import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 
 class RulePageIntro extends StatelessWidget {
   const RulePageIntro({
@@ -17,58 +18,12 @@ class RulePageIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final modern = ModernSettingsScope.isActiveOf(context);
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(modern ? 16 : 24),
-      decoration: BoxDecoration(
-        color: colors.primaryContainer,
-        borderRadius: BorderRadius.circular(modern ? 16 : 32),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style:
-                      (modern
-                              ? theme.textTheme.titleLarge
-                              : theme.textTheme.headlineMedium)
-                          ?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: colors.onPrimaryContainer,
-                          ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Icon(
-                icon,
-                size: modern ? 20 : 32,
-                color: colors.onPrimaryContainer,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style:
-                (modern
-                        ? theme.textTheme.bodySmall
-                        : theme.textTheme.bodyMedium)
-                    ?.copyWith(color: colors.onPrimaryContainer),
-          ),
-          if (actions.isNotEmpty) ...[
-            SizedBox(height: modern ? 12 : 20),
-            Wrap(spacing: 8, runSpacing: 8, children: actions),
-          ],
-        ],
-      ),
+    return UtilityPageIntro(
+      icon: UtilityIconKind.rules,
+      title: title,
+      description: description,
+      artwork: 'modern-library-header-art',
+      actions: actions,
     );
   }
 }
@@ -93,7 +48,12 @@ class RuleSection extends StatelessWidget {
     final modern = ModernSettingsScope.isActiveOf(context);
     return Material(
       color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(modern ? 16 : 28),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(modern ? 14 : 20),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: .3),
+        ),
+      ),
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: EdgeInsets.all(modern ? 16 : 20),
@@ -109,7 +69,7 @@ class RuleSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: theme.textTheme.titleLarge?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -120,11 +80,9 @@ class RuleSection extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 description!,
-                style:
-                    (modern
-                            ? theme.textTheme.bodySmall
-                            : theme.textTheme.bodyMedium)
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
             SizedBox(height: modern ? 16 : 24),
@@ -157,15 +115,15 @@ InputDecoration ruleInputDecoration(
       vertical: modern ? 14 : 18,
     ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(modern ? 14 : 16),
       borderSide: BorderSide.none,
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(modern ? 14 : 16),
       borderSide: BorderSide.none,
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(modern ? 14 : 16),
       borderSide: BorderSide(color: colors.primary, width: 2),
     ),
   );

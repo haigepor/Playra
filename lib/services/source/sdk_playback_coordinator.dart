@@ -254,6 +254,7 @@ class SdkPlaybackCoordinator {
     List<SdkLine> lines,
     CancelToken cancel, {
     bool manual = false,
+    bool confirmedSingleMovie = false,
   }) async {
     final generation = ++_probeGeneration;
     final unique = <String, SdkLine>{
@@ -271,11 +272,12 @@ class SdkPlaybackCoordinator {
         if (!probe.isCancelled) probe.cancel();
       }),
     );
-    bool verifiedMovie = false;
+    bool verifiedMovie = confirmedSingleMovie && singleMovie;
     if (singleMovie && requested != null) {
       // 当前选集来自已加载的目录；没有缓存证据时保持严格匹配，避免串行等待原线路。
       final items = _cache[requested.code]?.items;
       verifiedMovie =
+          verifiedMovie ||
           items?.length == 1 && items!.single.number == requested.number;
     }
     void publish() {

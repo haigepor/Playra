@@ -63,32 +63,59 @@ class BangumiItem {
 
   factory BangumiItem.fromJson(Map<String, dynamic> json) {
     List<String> parseBangumiAliases(Map<String, dynamic> jsonData) {
+      final aliases = <String>{};
+      void addAlias(dynamic value) {
+        final text = value is String ? value.trim() : '';
+        if (text.isNotEmpty) aliases.add(text);
+      }
+
       if (jsonData.containsKey('infobox') && jsonData['infobox'] is List) {
         final List<dynamic> infobox = jsonData['infobox'];
         for (var item in infobox) {
           if (item is Map && item['key'] == '别名') {
             // api.bgm.tv /v0 uses `value`; next.bgm.tv /p1 uses `values`
             final dynamic raw = item['values'] ?? item['value'];
-            if (raw == null) {
-              return [];
-            }
             if (raw is List) {
-              return raw
-                  .map<String>((element) {
-                    if (element is Map && element.containsKey('v')) {
-                      return element['v'].toString();
-                    }
-                    return element.toString().trim();
-                  })
-                  .where((alias) => alias.isNotEmpty)
-                  .toList();
+              for (final element in raw) {
+                addAlias(element is Map ? element['v'] : element);
+              }
+            } else {
+              addAlias(raw);
             }
-            final text = raw.toString().trim();
-            return text.isEmpty ? [] : [text];
           }
         }
       }
-      return [];
+      // 镜像详情仅返回原始Wiki info；只读明确的别名字段，不从简介/其他条目猜名称。
+      final info = jsonData['info'];
+      if (info is String) {
+        final lines = info.split(RegExp(r'\r?\n'));
+        for (var i = 0; i < lines.length; i++) {
+          final field = RegExp(r'^\s*\|\s*别名\s*=\s*(.*)$').firstMatch(lines[i]);
+          if (field == null) continue;
+          final value = field[1]!.trim();
+          if (value != '{') {
+            if (!value.contains('{') && !value.contains('}')) addAlias(value);
+            continue;
+          }
+          final block = <String>[];
+          var closed = false;
+          while (++i < lines.length) {
+            final line = lines[i].trim();
+            if (line == '}') {
+              closed = true;
+              break;
+            }
+            if (line.startsWith('|') || line.startsWith('}}')) {
+              i--;
+              break;
+            }
+            final entry = RegExp(r'^\[([^\[\]]+)\]$').firstMatch(line);
+            if (entry != null) block.add(entry[1]!.split('|').last);
+          }
+          if (closed) block.forEach(addAlias);
+        }
+      }
+      return aliases.toList();
     }
 
     List<int> parseBangumiVoteCount(Map<String, dynamic> jsonData) {
@@ -132,8 +159,9 @@ class BangumiItem {
     if (interestRaw is Map<String, dynamic>) {
       interest = BangumiInterest.fromJson(interestRaw);
     } else if (interestRaw is Map) {
-      interest =
-          BangumiInterest.fromJson(Map<String, dynamic>.from(interestRaw));
+      interest = BangumiInterest.fromJson(
+        Map<String, dynamic>.from(interestRaw),
+      );
     }
     return BangumiItem(
       id: json['id'],
@@ -144,8 +172,9 @@ class BangumiItem {
           : json['name_cn'],
       summary: json['summary'] ?? '',
       airDate: airDateStr,
-      airWeekday:
-          dateStringToWeekday(airDateStr.isEmpty ? '2000-11-11' : airDateStr),
+      airWeekday: dateStringToWeekday(
+        airDateStr.isEmpty ? '2000-11-11' : airDateStr,
+      ),
       rank: json['rating']['rank'] ?? 0,
       images: Map<String, String>.from(
         json['images'] ??
@@ -154,23 +183,24 @@ class BangumiItem {
               "common": "",
               "medium": "",
               "small": "",
-              "grid": ""
+              "grid": "",
             },
       ),
       tags: tagList,
       alias: parseBangumiAliases(json),
       ratingScore: double.parse(
-          (json['rating']['score'] ?? 0.0).toDouble().toStringAsFixed(1)),
+        (json['rating']['score'] ?? 0.0).toDouble().toStringAsFixed(1),
+      ),
       votes: json['rating']['total'] ?? 0,
       votesCount: parseBangumiVoteCount(json),
       info: json['info'] ?? '',
       metaTags: rawMetaTags is List
           ? rawMetaTags
-              .whereType<String>()
-              .map((name) => name.trim())
-              .where((name) => name.isNotEmpty)
-              .toSet()
-              .toList()
+                .whereType<String>()
+                .map((name) => name.trim())
+                .where((name) => name.isNotEmpty)
+                .toSet()
+                .toList()
           : const [],
       interest: interest,
     );

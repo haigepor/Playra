@@ -22,7 +22,7 @@ import 'package:kazumi/services/source/sdk_playback_provider.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/sdk_playback_coordinator.dart';
 import '../miomedia/miomedia_playing_mark.dart';
-import '../home/home_theme.dart';
+import '../player/player_theme.dart';
 import '../settings/modern_back_button.dart';
 import '../player/sdk_source_widgets.dart';
 
@@ -53,6 +53,8 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         onChanged: _metadataChanged,
       );
   bool automatic = true;
+  String? _activeSdkId, _activeLineCode;
+  String? _installedSdkId, _installedLineCode;
   SdkQuality? selectedQuality;
   String? resumeNotice;
   int _selectionGeneration = 0;
@@ -95,7 +97,13 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     unawaited(loadDetail());
   }
 
-  Future<void> loadDetail({bool forceAutoPlay = false}) async {
+  Future<void> loadDetail({
+    bool forceAutoPlay = false,
+    SdkEpisode? retainedEpisode,
+    bool retainedSingleMovie = false,
+    Duration resumeAt = Duration.zero,
+    Duration resumeDuration = Duration.zero,
+  }) async {
     _detailCancel?.cancel();
     final cancel = _detailCancel = CancelToken();
     final generation = ++_detailGeneration;
@@ -119,12 +127,34 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
       setState(() => video = result);
       if (result.lines.isNotEmpty) {
         // 首次目录直接并发探测，首条慢线路不阻塞其他线路进入候选。
-        final initial = await _playback.prepare(null, result.lines, cancel);
+        final initial = await _playback.prepare(
+          retainedEpisode,
+          result.lines,
+          cancel,
+          confirmedSingleMovie: retainedSingleMovie && result.singleMovie,
+        );
         if (!current()) return;
         final available = initial
             .where((item) => item.episode != null)
             .firstOrNull;
-        if (available != null) await _loadLine(available.line);
+        final directory = available ?? initial.firstOrNull;
+        if (directory != null) await _loadLine(directory.line);
+        if (retainedEpisode != null && current()) {
+          final target = SdkPlaybackCoordinator.match(
+            retainedEpisode,
+            episodes,
+            singleMovie: retainedSingleMovie && result.singleMovie,
+          );
+          if (target == null) {
+            setState(() => playMessage = '该来源没有对应当前集，请选择剧集或其他来源');
+          } else {
+            _autoStarted = true;
+            unawaited(
+              play(target, resumeAt: resumeAt, resumeDuration: resumeDuration),
+            );
+          }
+          return;
+        }
         if ((widget.entry.autoPlay || forceAutoPlay) &&
             !_autoStarted &&
             current() &&
@@ -218,6 +248,10 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
   }
 
   Future<void> switchSource(SdkSourceBinding selected) async {
+    final previous = _requestedEpisode;
+    final previousSingle = video.singleMovie && episodes.length == 1;
+    final position = _player?.state.position ?? Duration.zero;
+    final duration = _player?.state.duration ?? Duration.zero;
     _selectionGeneration++;
     _playCancel?.cancel();
     _playGeneration++;
@@ -236,13 +270,19 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
           );
       line = null;
       episodes = [];
-      _requestedEpisode = null;
+      _requestedEpisode = previous;
       selectedQuality = null;
       decodedResolution = null;
       automatic = true;
       _autoStarted = false;
     });
-    await loadDetail(forceAutoPlay: true);
+    await loadDetail(
+      forceAutoPlay: true,
+      retainedEpisode: previous,
+      retainedSingleMovie: previousSingle,
+      resumeAt: position,
+      resumeDuration: duration,
+    );
   }
 
   Future<void> play(
@@ -299,6 +339,10 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
       if (!mounted || generation != _playGeneration || cancel.isCancelled) {
         return;
       }
+      if (result.status == 'ready') {
+        _activeSdkId = service.id;
+        _activeLineCode = line?.code;
+      }
       setState(
         () => playMessage = switch (result.status) {
           'ready' => null,
@@ -340,6 +384,10 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         (state.width ?? 0) > 0 &&
         (state.height ?? 0) > 0;
     if (_activity.value != active) _activity.value = active;
+    if (active) {
+      _activeSdkId = _installedSdkId;
+      _activeLineCode = _installedLineCode;
+    }
     // 首帧超时或瞬时媒体错误后仍可能恢复；当前媒体真正播放时撤掉过期的重试遮罩。
     if (active && !playingLoading && playMessage != null) {
       setState(() => playMessage = null);
@@ -388,6 +436,8 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
       setState(() {
         playingCode = episode.code;
         playingNumber = episode.number;
+        _installedSdkId = service.id;
+        _installedLineCode = episode.code;
       });
       if (!kIsWeb) {
         if (!mounted) return false;
@@ -518,146 +568,29 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '播放源',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          children: [
+        PlaybackSourcePanel(
+          selectorKey: const ValueKey('sdk-line-selector'),
+          groups: [
             for (final binding in widget.entry.sources)
-              ChoiceChip(
-                label: Text(binding.provider.name),
-                showCheckmark: false,
-                avatar: const SdkSourceGlyph(size: 18),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 9,
-                ),
-                side: BorderSide(
-                  color: binding.provider.id == service.id
-                      ? colors.primary.withValues(alpha: .4)
-                      : colors.outline,
-                ),
+              PlaybackSdkChip(
+                name: binding.provider.name,
                 selected: binding.provider.id == service.id,
-                onSelected: (_) {
+                onSelected: () {
                   if (binding.provider.id != service.id) {
                     unawaited(switchSource(binding));
-                  } else if (!playingLoading && episodes.isNotEmpty) {
-                    setState(() => automatic = true);
-                    unawaited(play(_requestedEpisode ?? episodes.first));
                   }
                 },
               ),
           ],
-        ),
-        const SizedBox(height: 10),
-        Material(
-          color: colors.surfaceContainerLow,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: colors.outline),
-          ),
-          child: InkWell(
-            key: const ValueKey('sdk-line-selector'),
-            borderRadius: BorderRadius.circular(14),
-            onTap: () => showLines(context),
-            child: Stack(
-              children: [
-                const Positioned(
-                  right: 16,
-                  top: -12,
-                  child: SdkSourceDecoration(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: .10),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: SdkSourceGlyph(automatic: automatic),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '播放线路',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            AnimatedSwitcher(
-                              duration: sdkMotion(context),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
-                              child: Text(
-                                '${automatic ? "自动 · " : ""}${line?.label ?? "正在获取线路"}',
-                                key: ValueKey('${automatic}:${line?.code}'),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            if (selectedQuality != null ||
-                                decodedResolution != null)
-                              Text(
-                                decodedResolution != null
-                                    ? '$decodedResolution · 实际分辨率'
-                                    : '${selectedQuality!.label}${selectedQuality!.height == null ? "" : " · 来源声明"}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${video.lines.length} 条',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          automatic: automatic,
+          summary: '${automatic ? "自动 · " : "手动 · "}${line?.label ?? "正在获取线路"}',
+          detail: decodedResolution != null
+              ? '$decodedResolution · 实际分辨率'
+              : selectedQuality == null
+              ? null
+              : '${selectedQuality!.label}${selectedQuality!.height == null ? "" : " · 来源声明"}',
+          lineCount: video.lines.length,
+          onShowLines: () => showLines(context),
         ),
         if (video.lines.isEmpty && !detailLoading)
           const Padding(
@@ -677,13 +610,11 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
   }
 
   Future<void> showLines(BuildContext pageContext) async {
-    final colors = Theme.of(pageContext).colorScheme;
     try {
       await showModalBottomSheet<void>(
         context: pageContext,
-        backgroundColor: colors.surface,
         isScrollControlled: true,
-        showDragHandle: true,
+        showDragHandle: false,
         useSafeArea: true,
         constraints: const BoxConstraints(maxWidth: 640),
         sheetAnimationStyle: MediaQuery.disableAnimationsOf(pageContext)
@@ -693,125 +624,38 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                 reverseDuration: Duration(milliseconds: 200),
               ),
         clipBehavior: Clip.antiAlias,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
         builder: (sheetContext) => StatefulBuilder(
           builder: (context, update) {
             _refreshLineSheet = () {
               if (context.mounted) update(() {});
             };
-            return SafeArea(
-              child: SizedBox(
-                height: MediaQuery.sizeOf(context).height * .76,
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        const Positioned(
-                          right: 44,
-                          top: -14,
-                          child: SdkSourceDecoration(),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 20, right: 8),
-                          child: Row(
-                            children: [
-                              const SdkSourceGlyph(automatic: true, size: 24),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${service.name} · 播放线路',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: colors.onSurface,
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      '共 ${video.lines.length} 条线路 · 随时切换',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: '关闭线路选择',
-                                color: colors.onSurfaceVariant,
-                                style: IconButton.styleFrom(
-                                  backgroundColor: colors.surfaceContainerLow,
-                                ),
-                                onPressed: () =>
-                                    Navigator.of(sheetContext).pop(),
-                                icon: const Icon(Icons.close_rounded),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: video.lines.length + 1,
-                        itemBuilder: (_, index) {
-                          if (index == 0)
-                            return SdkLineOption(
-                              title: '自动（最高画质）',
-                              subtitle: '按已知画质优先，失败时尝试其他线路',
-                              automatic: true,
-                              selected: automatic,
-                              onTap: () {
-                                Navigator.of(sheetContext).pop();
-                                setState(() => automatic = true);
-                                final target =
-                                    _requestedEpisode ?? episodes.firstOrNull;
-                                if (target != null)
-                                  unawaited(
-                                    play(
-                                      target,
-                                      resumeAt:
-                                          _player?.state.position ??
-                                          Duration.zero,
-                                      resumeDuration:
-                                          _player?.state.duration ??
-                                          Duration.zero,
-                                    ),
-                                  );
-                              },
-                            );
-                          final candidate = video.lines[index - 1];
-                          final metadata = _playback.candidates
-                              .where((item) => item.line.code == candidate.code)
-                              .firstOrNull;
-                          return SdkLineOption(
-                            title: candidate.label,
-                            subtitle: metadata?.bestQuality?.height != null
-                                ? '${metadata!.summary} · 来源声明'
-                                : metadata?.summary ?? '画质待确认',
-                            current: line?.code == candidate.code,
-                            selected:
-                                !automatic && line?.code == candidate.code,
-                            onTap: () {
-                              Navigator.of(sheetContext).pop();
-                              unawaited(selectLine(candidate));
-                            },
-                          );
-                        },
+            return PlaybackLineSheet(
+              sdkName: service.name,
+              onClose: () => Navigator.of(sheetContext).pop(),
+              automaticOption: SdkLineOption(
+                title: '自动（最高画质）',
+                subtitle: '优先已知画质，失败时换线',
+                automatic: true,
+                selected: automatic,
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  setState(() => automatic = true);
+                  final target = _requestedEpisode ?? episodes.firstOrNull;
+                  if (target != null)
+                    unawaited(
+                      play(
+                        target,
+                        resumeAt: _player?.state.position ?? Duration.zero,
+                        resumeDuration:
+                            _player?.state.duration ?? Duration.zero,
                       ),
-                    ),
-                  ],
-                ),
+                    );
+                },
               ),
+              children: [
+                for (final candidate in video.lines)
+                  sdkLineOption(sheetContext, candidate),
+              ],
             );
           },
         ),
@@ -819,6 +663,24 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     } finally {
       _refreshLineSheet = null;
     }
+  }
+
+  Widget sdkLineOption(BuildContext sheetContext, SdkLine candidate) {
+    final metadata = _playback.candidates
+        .where((item) => item.line.code == candidate.code)
+        .firstOrNull;
+    return SdkLineOption(
+      title: candidate.label,
+      subtitle: metadata?.bestQuality?.height != null
+          ? '${metadata!.summary} · 来源声明'
+          : metadata?.summary ?? '',
+      current: _activeSdkId == service.id && _activeLineCode == candidate.code,
+      selected: !automatic && line?.code == candidate.code,
+      onTap: () {
+        Navigator.of(sheetContext).pop();
+        unawaited(selectLine(candidate));
+      },
+    );
   }
 
   void showDescription(BuildContext pageContext) {
@@ -950,7 +812,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                       (groups > 1 ? 48 : 0))
                   .clamp(0, MediaQuery.sizeOf(context).height * .8)
                   .toDouble();
-          return ModernHomeScope(
+          return ModernPlayerScope(
             child: SafeArea(
               child: SizedBox(
                 height: contentHeight,
@@ -1105,7 +967,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
   }
 
   @override
-  Widget build(BuildContext context) => ModernHomeScope(
+  Widget build(BuildContext context) => ModernPlayerScope(
     // 页面操作必须拿到深色 Theme 下的上下文，弹层才能捕获相同主题。
     child: Builder(
       builder: (context) {

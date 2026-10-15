@@ -53,6 +53,7 @@ class SourcePlaybackService extends WebViewVideoSourceService {
                 ? VideoSourceFormat.hls
                 : VideoSourceFormat.auto,
             headers: media.headers,
+            inheritHeaders: media.inheritHeaders,
             expiresAt: media.expiresAt,
           );
         }

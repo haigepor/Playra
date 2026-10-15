@@ -95,7 +95,87 @@ class SourceCandidates {
     ...work.alias,
   ].where((s) => s.trim().isNotEmpty).toList();
   bool matches(BangumiItem work, String title) =>
+      normalizeWorkTitle(title).isNotEmpty &&
       titles(work).map(normalizeWorkTitle).contains(normalizeWorkTitle(title));
+
+  /// 只尝试资料已确认的名称；中文别名优先，不截短季号或放宽为子串匹配。
+  List<String> searchTitles(BangumiItem work) {
+    final names = [
+      work.nameCn,
+      ...work.alias.where((s) => RegExp(r'[\u3400-\u9fff]').hasMatch(s)),
+      work.name,
+      ...work.alias,
+    ];
+    final seen = <String>{};
+    return names
+        .where((s) {
+          final key = normalizeWorkTitle(s);
+          return key.isNotEmpty && seen.add(key);
+        })
+        .map((s) => s.trim())
+        .take(4)
+        .toList();
+  }
+
+  /// 所有自动入口共用有界别名回退；首个有精确同作品候选的搜索页即可停止。
+  Future<List<SearchItem>> searchMatches(
+    BangumiItem work,
+    Plugin plugin, {
+    RuleCancelToken? cancelToken,
+  }) async {
+    final searchCancel = RuleCancelToken();
+    if (cancelToken != null) {
+      if (cancelToken.isCancelled) return [];
+      unawaited(
+        cancelToken.whenCancel.then(
+          (_) => searchCancel.cancel('parent cancelled'),
+        ),
+      );
+    }
+    final deadline = Timer(
+      const Duration(seconds: 25),
+      () => searchCancel.cancel('alias search timeout'),
+    );
+    Object? firstError;
+    try {
+      for (final keyword in searchTitles(work)) {
+        if (searchCancel.isCancelled) break;
+        try {
+          final response = await plugin.queryBangumi(
+            keyword,
+            shouldRethrow: true,
+            cancelToken: searchCancel,
+          );
+          if (searchCancel.isCancelled) break;
+          final seen = <String>{};
+          final matched = response.data
+              .where(
+                (item) =>
+                    matches(work, item.name) &&
+                    item.src.trim().isNotEmpty &&
+                    seen.add(item.src),
+              )
+              .toList();
+          if (matched.isNotEmpty) return matched;
+        } on NoResultException {
+          // Plugin以异常表示合法空结果；继续别名，不将它归为网络/目录失败。
+          continue;
+        } catch (error) {
+          firstError ??= error;
+        }
+      }
+      if (cancelToken?.isCancelled == true) return [];
+      // 部分别名查询失败不能宣称已确认无作品。
+      if (firstError != null) throw firstError;
+      if (searchCancel.isCancelled)
+        throw TimeoutException('alias search timeout');
+      return [];
+    } finally {
+      deadline.cancel();
+      searchCancel.cancel('alias search finished');
+    }
+  }
+
   List<Plugin> eligible(Iterable<Plugin> plugins, BangumiItem work) => plugins
       .where((p) => p.enabled && p.profile.supports(workDomain(work)))
       .toList();
@@ -112,9 +192,20 @@ class SourceCandidates {
           (e) =>
               e.key.startsWith('${work.id}|') &&
               versions[e.value.candidate.plugin.providerId] ==
-                  e.value.candidate.plugin.version,
+                  e.value.candidate.plugin.version &&
+              matches(work, e.value.candidate.item.name),
         )
-        .map((e) => e.value.candidate)
+        .map((e) {
+          final candidate = e.value.candidate;
+          return candidate.matched
+              ? candidate
+              : PlaybackCandidate(
+                  plugin: candidate.plugin,
+                  item: candidate.item,
+                  roads: candidate.roads,
+                  matched: true,
+                );
+        })
         .toList();
     result.sort((a, b) {
       final score = SourcePolicy.shared
@@ -189,7 +280,9 @@ class SourceCandidates {
             names.add(road.identifier[i]);
           }
           if (data.isNotEmpty) {
-            roads.add(Road(name: road.name, data: data, identifier: names));
+            roads.add(
+              Road(id: road.id, name: road.name, data: data, identifier: names),
+            );
           }
         }
         if (roads.isEmpty) continue;
@@ -236,15 +329,15 @@ class SourceCandidates {
       while (!cancelToken.isCancelled && next < sources.length) {
         final plugin = sources[next++];
         try {
-          final response = await plugin.queryBangumi(
-            work.nameCn.isEmpty ? work.name : work.nameCn,
-            shouldRethrow: true,
+          final results = await searchMatches(
+            work,
+            plugin,
             cancelToken: cancelToken,
           );
           final candidates = await prepare(
             work,
             plugin,
-            response.data,
+            results,
             cancelToken: cancelToken,
           );
           if (!cancelToken.isCancelled) onPrepared?.call(candidates);

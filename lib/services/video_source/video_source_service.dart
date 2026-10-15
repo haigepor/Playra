@@ -21,6 +21,9 @@ class VideoSource {
   final Map<String, String> headers;
   final DateTime? expiresAt;
 
+  /// SDK 可禁止继承源站 Cookie/Referer，避免裸媒体请求被污染。
+  final bool inheritHeaders;
+
   /// 视频源类型
   final VideoSourceType type;
 
@@ -34,6 +37,7 @@ class VideoSource {
     this.format = VideoSourceFormat.auto,
     this.headers = const {},
     this.expiresAt,
+    this.inheritHeaders = true,
   });
 
   @override

@@ -62,4 +62,5 @@ def registered_adapters():
     # SDK 只登记受限操作；健康/清单不初始化设备或发起上游请求。
     from miomedia_adapter import MioMediaAdapter
     miomedia = MioMediaAdapter()
-    return {adapter.adapter_id: adapter, miomedia.adapter_id: miomedia}
+    from anifive_adapter import registered_anifive
+    return {adapter.adapter_id: adapter, miomedia.adapter_id: miomedia, **registered_anifive()}

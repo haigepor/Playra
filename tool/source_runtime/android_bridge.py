@@ -5,6 +5,8 @@ import re
 import threading
 
 from adapters import RuntimeContext, RuntimeFailure
+from dispatch import operation
+from anifive_adapter import registered_anifive
 from miomedia_adapter import MioMediaAdapter, MioMediaSdk, public_data, validate_payload
 
 MAX_BODY = 32768
@@ -18,6 +20,7 @@ class AndroidRuntime:
             raise ValueError('Private directory must be absolute')
         self.adapter = adapter or MioMediaAdapter(
             sdk=MioMediaSdk(directory / 'miomedia' / 'device.json'))
+        self.registry = {'miomedia': self.adapter, **registered_anifive()}
         self._lock = threading.Lock()
         self._requests = {}
         self._early_cancelled = set()
@@ -53,7 +56,7 @@ class AndroidRuntime:
             except (ValueError, UnicodeError):
                 raise RuntimeFailure('INVALID_ARGUMENT', 400) from None
             if not isinstance(request, dict) or set(request) != {'path', 'method', 'query', 'body'} or \
-                    not isinstance(request['query'], dict) or request['query']:
+                    not isinstance(request['query'], dict):
                 raise RuntimeFailure('INVALID_ARGUMENT', 400)
             context = RuntimeContext(timeout_ms)
             with self._lock:
@@ -66,17 +69,12 @@ class AndroidRuntime:
                     context.cancelled.set()
             context.check_active()
             path, method, body = request['path'], request['method'], request['body']
-            if path == 'health' and method == 'GET' and body is None:
+            if path == 'health' and method == 'GET' and body is None and not request['query']:
                 response = {'data': {'service': 'playra-source-runtime', 'apiVersion': '1', 'embedded': True}}
-            elif path == 'adapters' and method == 'GET' and body is None:
-                response = {'data': {'adapters': [self.adapter.manifest()]}}
-            elif path == 'adapters/miomedia/sdk' and method == 'POST':
-                if not isinstance(body, dict) or set(body) != {'operation', 'payload'}:
-                    raise RuntimeFailure('INVALID_ARGUMENT', 400)
-                validate_payload(body['operation'], body['payload'])
-                response = self.adapter.sdk_call(body['operation'], body['payload'], context)
+            elif path == 'adapters' and method == 'GET' and body is None and not request['query']:
+                response = {'data': {'adapters': [a.manifest() for a in self.registry.values()]}}
             else:
-                raise RuntimeFailure('UNSUPPORTED', 422)
+                response = operation(self.registry, path, method, request['query'], body, context)()
             context.check_active()
             encoded = json.dumps(public_data(response), ensure_ascii=False, allow_nan=False, separators=(',', ':'))
             if len(encoded.encode('utf-8')) > MAX_RESPONSE:

@@ -5,6 +5,7 @@ import 'package:mobx/mobx.dart';
 import 'package:flutter/services.dart' show rootBundle, AssetManifest;
 import 'package:kazumi/services/platform/platform_paths.dart';
 import 'package:kazumi/plugins/plugins.dart';
+import 'package:kazumi/plugins/bundled_anime_migration.dart';
 import 'package:kazumi/services/plugin/plugin_validity_tracker.dart';
 import 'package:kazumi/services/source/source_policy.dart';
 import 'package:kazumi/services/network/metered_network_service.dart';
@@ -135,6 +136,68 @@ abstract class _PluginsController with Store {
         '${kIsWeb ? 'web' : defaultTargetPlatform.name}|${MeteredNetworkService.isMetered ? 'mobile' : 'local'}';
     SourcePolicy.shared.persist = (json) =>
         policyFile.writeAsString(json).then((_) {});
+    await _migrateBundledAnime(policyFile);
+  }
+
+  Future<void> _migrateBundledAnime(File policyFile) async {
+    final directory = newPluginDirectory!.path;
+    final marker = File('$directory/anifive-v1.complete');
+    final migrated = await marker.exists();
+    final snapshot =
+        jsonDecode(
+              await rootBundle.loadString('assets/migrations/anifive-v1.json'),
+            )
+            as Map;
+    final legacy = (snapshot['legacyRules'] as List)
+        .map((e) => Plugin.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final bundled = <Plugin>[];
+    for (final path in manifest.listAssets().where(
+      (p) => p.startsWith('assets/plugins/') && p.endsWith('.json'),
+    )) {
+      bundled.add(
+        Plugin.fromJson(jsonDecode(await rootBundle.loadString(path))),
+      );
+    }
+    if (migrated) {
+      // 受管来源随应用资产更新，始终保留本地 ID/名称及独立来源策略。
+      await _mutateAndPersist(() {
+        for (var i = 0; i < pluginList.length; i++) {
+          final current = pluginList[i];
+          if (!isManagedAnime(current)) continue;
+          final next = bundled.where((p) =>
+              p.searchApiConfig.request.url == current.searchApiConfig.request.url).firstOrNull;
+          if (next == null || next.version == current.version) continue;
+          pluginList[i] = Plugin.fromJson(next.toJson())
+            ..sourceId = current.providerId
+            ..name = current.name;
+        }
+      }, errorMessage: '四源内置更新保存失败，已恢复内存快照');
+      return;
+    }
+    final backup = File('$directory/plugins.before-anifive-v1.json');
+    // 首次快照永久保留；崩溃重试不得把迁移后的内容覆盖到备份。
+    if (!await backup.exists()) {
+      await backup.writeAsString(jsonEncode(_pluginListToJson()), flush: true);
+    }
+    final policyBackup = File(
+      '$directory/source-policy.before-anifive-v1.json',
+    );
+    if (await policyFile.exists() && !await policyBackup.exists()) {
+      await policyBackup.writeAsString(
+        await policyFile.readAsString(),
+        flush: true,
+      );
+    }
+    await _mutateAndPersist(() {
+      final next = migrateBundledAnime(pluginList.toList(), legacy, bundled);
+      pluginList
+        ..clear()
+        ..addAll(next);
+    }, errorMessage: '四源规则迁移保存失败，已恢复内存快照');
+    await SourcePolicy.shared.inheritPreference('aafun', 'moonci');
+    await marker.writeAsString('1', flush: true);
   }
 
   // Loads all plugins from the directory, populates the plugin list, and saves to plugins.json if needed
@@ -349,7 +412,9 @@ abstract class _PluginsController with Store {
       await writer(jsonData);
     } else {
       final pluginsFile = File('${newPluginDirectory!.path}/$pluginsFileName');
-      await pluginsFile.writeAsString(jsonData);
+      final pending = File('${pluginsFile.path}.pending');
+      await pending.writeAsString(jsonData, flush: true);
+      await pending.rename(pluginsFile.path);
       KazumiLogger().i('Plugin: updated plugin file $pluginsFileName');
     }
   }
@@ -404,6 +469,7 @@ abstract class _PluginsController with Store {
     var pluginStatus = PluginCatalogItemStatus.install;
     for (Plugin plugin in pluginList) {
       if (pluginNameKey(pluginHTTPItem.name) == pluginNameKey(plugin.name)) {
+        if (isManagedAnime(plugin)) return PluginCatalogItemStatus.installed;
         if (_remoteIsNewer(plugin.version, pluginHTTPItem.version)) {
           pluginStatus = PluginCatalogItemStatus.update;
         } else {
@@ -416,6 +482,7 @@ abstract class _PluginsController with Store {
   }
 
   PluginUpdateAvailability pluginUpdateStatus(Plugin plugin) {
+    if (isManagedAnime(plugin)) return PluginUpdateAvailability.latest;
     if (_pluginCatalogRefreshedAt == null) {
       return PluginUpdateAvailability.unknown;
     }
@@ -453,6 +520,11 @@ abstract class _PluginsController with Store {
   }
 
   Future<_PluginUpdateAttempt> _preparePluginUpdate(String name) async {
+    if (pluginList.any(
+      (p) => pluginNameKey(p.name) == pluginNameKey(name) && isManagedAnime(p),
+    )) {
+      return (result: PluginUpdateResult.notNewer, plugin: null);
+    }
     late final Plugin remotePlugin;
     try {
       remotePlugin = await _pluginLoader(name);

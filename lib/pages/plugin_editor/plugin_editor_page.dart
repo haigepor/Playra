@@ -456,7 +456,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
+              constraints: const BoxConstraints(maxWidth: 880),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -464,10 +464,10 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                     title: widget.plugin.name.isEmpty
                         ? '编写新规则'
                         : widget.plugin.name,
-                    description: '从站点信息到搜索与选集，逐步配置你的番剧来源。',
+                    description: '配置站点与检索方式，测试通过后保存。',
                     icon: Icons.edit_note_rounded,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   if (_editorError != null) ...[
                     Semantics(
                       liveRegion: true,
@@ -512,13 +512,16 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
             child: Align(
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 900),
+                constraints: const BoxConstraints(maxWidth: 880),
                 child: Row(
                   children: [
                     Expanded(
-                      child: FilledButton.tonalIcon(
-                        style: FilledButton.styleFrom(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
                           minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: _saving ? null : _testRule,
                         icon: const Icon(Icons.science_outlined),
@@ -534,6 +537,9 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
                           minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: _saving ? null : _save,
                         icon: _saving
@@ -573,49 +579,101 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
         _ => Icons.video_library_outlined,
       },
       child: Column(
-        spacing: 20,
+        spacing: 16,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: _section == 0
             ? [
-                DropdownButtonFormField<String>(
-                  initialValue:
-                      const [
-                        'anime',
-                        'movie',
-                        'tv',
-                        'variety',
-                        'documentary',
-                        'comic',
-                        'unknown',
-                      ].contains(_type)
-                      ? _type
-                      : 'unknown',
-                  decoration: ruleInputDecoration(context, label: '内容分类'),
-                  items: [
-                    for (final entry in const {
-                      'anime': '动漫（含动漫电影）',
-                      'movie': '电影',
-                      'tv': '电视剧',
-                      'variety': '综艺',
-                      'documentary': '纪录片',
-                      'comic': '漫剧',
-                      'unknown': '未分类',
-                    }.entries)
-                      DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('内容分类', style: Theme.of(context).textTheme.labelLarge),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      initialValue:
+                          const [
+                            'anime',
+                            'movie',
+                            'tv',
+                            'variety',
+                            'documentary',
+                            'comic',
+                            'unknown',
+                          ].contains(_type)
+                          ? _type
+                          : 'unknown',
+                      decoration: ruleInputDecoration(context).copyWith(
+                        fillColor: Theme.of(context).colorScheme.surface,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outlineVariant.withValues(alpha: .65),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
+                      items: [
+                        for (final entry in const {
+                          'anime': '动漫（含动漫电影）',
+                          'movie': '电影',
+                          'tv': '电视剧',
+                          'variety': '综艺',
+                          'documentary': '纪录片',
+                          'comic': '漫剧',
+                          'unknown': '未分类',
+                        }.entries)
+                          DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(
+                              entry.value,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _type = value ?? 'unknown'),
+                    ),
                   ],
-                  onChanged: (value) =>
-                      setState(() => _type = value ?? 'unknown'),
                 ),
-                EditorTextField(
-                  controller: nameController,
-                  label: _RuleEditorText.ruleName,
-                ),
-                EditorTextField(
-                  controller: versionController,
-                  label: _RuleEditorText.ruleVersion,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final name = EditorTextField(
+                      controller: nameController,
+                      label: _RuleEditorText.ruleName,
+                    );
+                    final version = EditorTextField(
+                      controller: versionController,
+                      label: _RuleEditorText.ruleVersion,
+                    );
+                    if (constraints.maxWidth < 540 ||
+                        MediaQuery.textScalerOf(context).scale(14) > 20) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [name, const SizedBox(height: 16), version],
+                      );
+                    }
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 2, child: name),
+                        const SizedBox(width: 16),
+                        Expanded(child: version),
+                      ],
+                    );
+                  },
                 ),
                 EditorTextField(
                   controller: baseURLController,
