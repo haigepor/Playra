@@ -1,11 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:octo_image/octo_image.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/image_extension.dart';
 import 'package:kazumi/services/platform/resource_url.dart';
+import 'package:kazumi/services/network/cached_bytes_image_provider.dart';
 
 class NetworkImgLayer extends StatelessWidget {
   const NetworkImgLayer({
@@ -67,11 +70,16 @@ class NetworkImgLayer extends StatelessWidget {
     }
 
     final (memCacheWidth, memCacheHeight) = _cacheSize(context);
+    final url = platformResourceUrl(imageUrl);
     return ClipRRect(
       clipBehavior: Clip.antiAlias,
       borderRadius: _borderRadius,
-      child: CachedNetworkImage(
-        imageUrl: platformResourceUrl(imageUrl),
+      // 复用 CachedNetworkImage 内部的同一淡入组件与原生缓存 provider。
+      // Web 用框架的字节解码分支，确保缩略尺寸生效，坏图片也能结束等待。
+      child: OctoImage(
+        image: kIsWeb
+            ? CachedBytesImageProvider(url)
+            : CachedNetworkImageProvider(url),
         width: width,
         height: height,
         memCacheWidth: memCacheWidth,
@@ -86,13 +94,18 @@ class NetworkImgLayer extends StatelessWidget {
         filterQuality: filterQuality,
         color: color,
         colorBlendMode: colorBlendMode,
-        errorListener: (e) {
-          KazumiLogger().w("NetworkImage: network image load error", error: e);
+        errorBuilder: (context, error, stackTrace) {
+          KazumiLogger().w(
+            'NetworkImage: network image load error',
+            error: error,
+          );
+          return _placeholder(context);
         },
-        errorWidget: (context, url, error) => _placeholder(context),
         // 仅请求等待期间使用骨架；失败和空地址继续显示静态回退。
-        placeholder: (context, url) => ContentSkeleton(
+        placeholderBuilder: (context) => ContentSkeleton(
           key: const ValueKey('content-skeleton-image'),
+          // 每张图片独立脉冲会在慢源等待期间持续占用绘制预算。
+          animate: false,
           child: Bone(
             width: width,
             height: height,

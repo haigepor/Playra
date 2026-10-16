@@ -26,6 +26,7 @@ dependencies:
   hive_ce: ^2.16.0
   hive_ce_flutter: ^2.3.3
   cached_network_image: ^3.4.1
+  octo_image: ^2.1.0
   flutter_cache_manager: ^3.4.1
   ech_http: ^0.2.1
   http: ^1.6.0

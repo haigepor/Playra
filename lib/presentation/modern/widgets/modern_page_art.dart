@@ -73,7 +73,10 @@ class ModernMaterialArt extends StatelessWidget {
             'assets/images/$asset',
             fit: BoxFit.contain,
             alignment: Alignment.topRight,
-            cacheWidth: 1440,
+            // 小尺寸装饰按物理显示宽度解码；大图沿用既有上限。
+            cacheWidth: (width * MediaQuery.devicePixelRatioOf(context))
+                .ceil()
+                .clamp(1, 1440),
             excludeFromSemantics: true,
           ),
         ),
