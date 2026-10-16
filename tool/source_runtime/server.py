@@ -151,7 +151,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             if not match:
                 raise RuntimeFailure("NOT_FOUND", 404)
             adapter_id, action = match.groups()
-            if action == "sdk" and adapter_id != "miomedia":
+            if action == "sdk" and adapter_id not in ("miomedia", "lumina"):
                 raise RuntimeFailure("NOT_FOUND", 404)
             if self.command != ("POST" if action in ("resolve", "sdk") else "GET"):
                 raise RuntimeFailure("UNSUPPORTED", 405)

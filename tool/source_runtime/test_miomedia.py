@@ -169,6 +169,22 @@ class MioMediaTests(unittest.TestCase):
         self.assertEqual(result['data']['error'], 'CLIENT_PARSE_INVALID_RESPONSE')
         self.assertNotIn('private', json.dumps(result))
 
+    def test_plain_text_parser_rejection_is_not_a_json_failure(self):
+        # 第三方实际返回 HTTP 200 + 纯文本业务拒绝，不能误报为协议损坏。
+        self.sdk._ensure_session(RuntimeContext(3000))
+        with patch.object(self.sdk, '_parse_get', return_value='解析播放地址失败！'), \
+                patch('miomedia_adapter.PlaybackClient') as factory:
+            playback = factory.return_value
+            playback.rotations = 0
+            def play(*args, **kwargs):
+                session = factory.call_args.args[0]
+                session.http_get('http://resolver.invalid/opaque')
+                return {'status': 'unavailable', 'error': 'JSON解析失败: private'}
+            playback.play.side_effect = play
+            result = self.call('play', {'videoId': '123', 'code': 'sb', 'episodeNum': 1})
+        self.assertEqual(result['data']['error'], 'CLIENT_PARSE_REJECTED')
+        self.assertNotIn('private', json.dumps(result))
+
     def test_playback_failures_classify_without_leaking_tokens(self):
         cases = [('解析请求失败: private', 'CLIENT_PARSE_NETWORK'),
                  ('接口业务失败: private', 'CLIENT_PARSE_REJECTED'),

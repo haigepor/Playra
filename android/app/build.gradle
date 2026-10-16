@@ -47,6 +47,12 @@ android {
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
+        main.jniLibs.srcDir layout.buildDirectory.dir("luminaJni")
+    }
+
+    // Lumina 通过 nativeLibraryDir 加载只读引擎，不从可写缓存目录执行。
+    packaging {
+        jniLibs { useLegacyPackaging = true }
     }
 
     defaultConfig {
@@ -103,7 +109,21 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
         if (!["__init__.py", "client.py", "transport.py", "profile.py", "source_a.py", "source_b.py", "source_c.py", "source_d.py", "codec.py", "selector.py", "config.py", "clarity.py"].every { new File(animeSdk, it).isFile() }) {
             throw new GradleException("Missing AniFive SDK: run tool/source_runtime/import_anifive.py")
         }
-        // 当前 SDK 引用此 Python 桥；原生加速库可选，Android 使用纯 Python 回退。
+        def luminaSdk = file("../../tool/source_runtime/vendor/lumina")
+        if (!["__init__.py", "client.py", "block.py", "auth.py", "envelope.py", "play.py", "profile.py", "config.py", "_fuse/__init__.py", "_fuse/assets/fuse_image.bin.gz"].every { new File(luminaSdk, it).isFile() }) {
+            throw new GradleException("Missing Lumina SDK: run tool/source_runtime/import_lumina.py; see docs/release/build-inputs.zh.md")
+        }
+        // 导入收据与原SDK摘要一致，才能把对应算法和资源打入应用。
+        def manifest = new groovy.json.JsonSlurper().parse(file("../../tool/source_runtime/vendor/lumina-manifest.json"))
+        manifest.files.each { row ->
+            def input = new File(luminaSdk, row.file)
+            if (!input.isFile() || input.length() != row.size ||
+                java.security.MessageDigest.getInstance("SHA-256").digest(input.bytes).encodeHex().toString() != row.sha256 ||
+                (!(row.file in ["config.py", "profile.py"]) && row.sha256 != row.upstreamSha256)) {
+                throw new GradleException("Lumina SDK integrity check failed")
+            }
+        }
+        // 此段仅检查既有 Mio 桥，不是为 Lumina 安装缺失后端。
         if (new File(sdkDir, "suite.py").getText("UTF-8").contains("import _native") &&
             !new File(sdkDir, "_native/__init__.py").isFile()) {
             throw new GradleException("Missing private SDK accelerator bridge: _native/__init__.py")
@@ -116,12 +136,27 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
         include "vendor/miomedia/_native/__init__.py"
         // M6 的固定查表资源由原样 SDK 读取，不能只打包 Python 模块。
         include "vendor/miomedia/bf_tables.bin"
+        include "lumina_adapter.py", "vendor/lumina/*.py", "vendor/lumina/_fuse/__init__.py"
+        include "vendor/lumina/_fuse/assets/fuse_image.bin.gz"
     }
     into(embeddedPythonDir)
+}
+def stageLuminaJni = tasks.register("stageLuminaJni", Sync) {
+    from("../../tool/source_runtime/vendor/lumina/_fuse/assets/liblumafuse_android_arm64.so") {
+        into "arm64-v8a"
+        rename { "liblumafuse.so" }
+    }
+    from("../../tool/source_runtime/vendor/lumina/_fuse/assets/liblumafuse_android_x64.so") {
+        into "x86_64"
+        rename { "liblumafuse.so" }
+    }
+    into layout.buildDirectory.dir("luminaJni")
 }
 chaquopy {
     defaultConfig {
         version = "3.11"
+        // SDK 用真实文件路径读取镜像；只提取需要文件系统的最深层包。
+        extractPackages("vendor.lumina._fuse")
         def configuredPython = System.getenv("PLAYRA_BUILD_PYTHON")
         if (configuredPython) { buildPython(configuredPython) }
     }
@@ -131,6 +166,9 @@ chaquopy {
 }
 tasks.matching { it.name.startsWith("merge") && it.name.endsWith("PythonSources") }.configureEach {
     dependsOn(stageEmbeddedPython)
+}
+tasks.named("preBuild").configure {
+    dependsOn(stageEmbeddedPython, stageLuminaJni)
 }
 
 // F-droid splits APKs by ABI, and requires different versionCode for each ABI.

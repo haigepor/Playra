@@ -63,4 +63,7 @@ def registered_adapters():
     from miomedia_adapter import MioMediaAdapter
     miomedia = MioMediaAdapter()
     from anifive_adapter import registered_anifive
-    return {adapter.adapter_id: adapter, miomedia.adapter_id: miomedia, **registered_anifive()}
+    from lumina_adapter import LuminaAdapter
+    lumina = LuminaAdapter()
+    return {adapter.adapter_id: adapter, miomedia.adapter_id: miomedia,
+            lumina.adapter_id: lumina, **registered_anifive()}

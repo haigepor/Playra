@@ -9,6 +9,7 @@ const { validateTarget, resolveStaticPath } = require('./security.cjs');
 const { parseVideo } = require('./parser.cjs');
 const { captcha } = require('./captcha.cjs');
 const { createRuntimeBridge } = require('./runtime.cjs');
+const { serveStatic } = require('./static_assets.cjs');
 
 // 开发预览可复用同一代理，正式 Web 默认仍服务 build/web。
 const root = process.env.KAZUMI_WEB_ROOT
@@ -91,7 +92,8 @@ async function upstreamRequest(target, method, headers = {}, bootstrap = false) 
     }
   }
   filtered.host = url.host;
-  filtered['user-agent'] ||= 'Kazumi-Web/1.0 (https://github.com/Predidit/Kazumi)';
+  // SDK 的空 UA 是显式协议要求，只有未提供该头时才能安装默认值。
+  filtered['user-agent'] ??= 'Kazumi-Web/1.0 (https://github.com/Predidit/Kazumi)';
   filtered['accept-encoding'] = 'identity';
   const options = { method, hostname: host, port: url.port || (url.protocol === 'https:' ? 443 : 80),
     path: url.pathname + url.search, headers: filtered, agent: false,
@@ -295,9 +297,7 @@ const server = http.createServer(async (req, res) => {
     if (!['GET', 'HEAD'].includes(req.method)) { res.statusCode = 405; res.end(); return; }
     let file = resolveStaticPath(root, url.pathname === '/' ? '/index.html' : url.pathname);
     if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(root, 'index.html');
-    res.setHeader('Content-Type', mime[path.extname(file)] || 'application/octet-stream');
-    if (req.method === 'HEAD') { res.end(); return; }
-    await pipeline(fs.createReadStream(file), res);
+    await serveStatic(req, res, file, mime[path.extname(file)] || 'application/octet-stream');
   } catch (error) {
     if (!res.headersSent) { res.statusCode = 502; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ error: error.message })); }
     else res.destroy();

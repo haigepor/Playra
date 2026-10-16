@@ -1,26 +1,37 @@
 """应用内固定 SDK 入口；仅接受业务 JSON，不加载客户端指定脚本。"""
 import json
+import os
 from pathlib import Path
+import platform
 import re
+import sys
 import threading
 
 from adapters import RuntimeContext, RuntimeFailure
 from dispatch import operation
 from anifive_adapter import registered_anifive
 from miomedia_adapter import MioMediaAdapter, MioMediaSdk, public_data, validate_payload
+from lumina_adapter import LuminaAdapter, LuminaSdk
 
 MAX_BODY = 32768
 MAX_RESPONSE = 2 * 1024 * 1024
 
 
 class AndroidRuntime:
-    def __init__(self, private_directory, adapter=None):
+    def __init__(self, private_directory, adapter=None, native_library_directory=None):
         directory = Path(private_directory)
         if not directory.is_absolute():
             raise ValueError('Private directory must be absolute')
         self.adapter = adapter or MioMediaAdapter(
             sdk=MioMediaSdk(directory / 'miomedia' / 'device.json'))
         self.registry = {'miomedia': self.adapter, **registered_anifive()}
+        # SDK 只提供 Android arm64/x64 引擎，ARM32 不登记且不安装仿真依赖。
+        android = bool(os.environ.get('ANDROID_ROOT')) or os.path.exists('/system/build.prop')
+        if not android or (sys.maxsize > 2 ** 32 and platform.machine().lower() in ('arm64', 'aarch64', 'x86_64', 'amd64')):
+            self.registry['lumina'] = LuminaAdapter(LuminaSdk(
+                directory / 'lumina' / 'device.json',
+                cache_directory=directory / 'lumina' / 'runtime-cache',
+                engine_directory=native_library_directory))
         self._lock = threading.Lock()
         self._requests = {}
         self._early_cancelled = set()
@@ -95,11 +106,11 @@ _runtime = None
 _startup_lock = threading.Lock()
 
 
-def configure(private_directory):
+def configure(private_directory, native_library_directory=None):
     global _runtime
     with _startup_lock:
         if _runtime is None:
-            _runtime = AndroidRuntime(private_directory)
+            _runtime = AndroidRuntime(private_directory, native_library_directory=native_library_directory)
 
 
 def request(raw, request_id, timeout_ms):

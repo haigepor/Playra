@@ -330,6 +330,7 @@ class MioMediaSdk:
         sdk = self
         underlying = self._client(context)
         parsed_quality = {}
+        parser_failure = {}
         class PlaybackSession:
             def request(self, path, body):
                 if path not in ('/resolve/qualities', '/resolve/exchange', '/resolve/episodes',
@@ -349,8 +350,13 @@ class MioMediaSdk:
                     data = rank_qualities(data)
                 return 200, {'code': 4031 if data.get('adRequired') is True else 200, 'success': True, 'data': data}
             def http_get(self, url):
+                raw = sdk._parse_get(url, context)
+                # HTTP 200 也可能是解析器的纯文本业务拒绝；算法 SDK 保持原样，
+                # 只修正公开错误分类，不把没有资源误报成 JSON 协议损坏。
+                if raw.strip() in ('解析播放地址失败！', '解析播放地址失败!'):
+                    parser_failure['code'] = 'CLIENT_PARSE_REJECTED'
                 body, height = select_parse_variant(
-                    sdk._parse_get(url, context), payload.get('quality'), normalize_urls)
+                    raw, payload.get('quality'), normalize_urls)
                 if height is not None:
                     parsed_quality.update(height=height, evidence='parser')
                 return body
@@ -388,7 +394,8 @@ class MioMediaSdk:
                 ('source为空', 'EMPTY_SOURCE'),
                 ('未知 exchange 响应形态', 'UNKNOWN_PLAYBACK_RESPONSE'),
             )
-            code = next((code for prefix, code in codes if reason.startswith(prefix)), 'PLAYBACK_UNAVAILABLE')
+            code = parser_failure.get('code') or next(
+                (code for prefix, code in codes if reason.startswith(prefix)), 'PLAYBACK_UNAVAILABLE')
             return {**diagnostics, 'status': 'unavailable', 'error': code}
         media = result.get('media')
         if not isinstance(media, dict):

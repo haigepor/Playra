@@ -22,11 +22,14 @@ def operation(registry, path, method, query, body, context):
     if adapter is None:
         raise RuntimeFailure('NOT_FOUND', 404)
     if action == 'sdk':
-        if adapter_id != 'miomedia':
+        if adapter_id not in ('miomedia', 'lumina'):
             raise RuntimeFailure('UNSUPPORTED', 422)
         if query or not isinstance(body, dict) or set(body) != {'operation', 'payload'}:
             raise RuntimeFailure('INVALID_ARGUMENT', 400)
-        from miomedia_adapter import validate_payload
+        if adapter_id == 'lumina':
+            from lumina_adapter import validate_payload
+        else:
+            from miomedia_adapter import validate_payload
         validate_payload(body['operation'], body['payload'])
         return lambda: adapter.sdk_call(body['operation'], body['payload'], context)
     if action not in adapter.capabilities:

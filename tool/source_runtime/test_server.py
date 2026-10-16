@@ -52,6 +52,22 @@ class RuntimeTests(unittest.TestCase):
         status, result = self.call("/v1/adapters/template/search?q=x")
         self.assertEqual((status, result["error"]["code"]), (422, "UNSUPPORTED"))
 
+    def test_lumina_http_boundary_accepts_only_registered_sdk_operations(self):
+        class LuminaFixture:
+            capabilities = ('sdk',)
+            def sdk_call(self, operation, payload, context):
+                context.check_active()
+                return {'data': {'part': payload['part'], 'headers': {'User-Agent': ''}}}
+        self.server.registry['lumina'] = LuminaFixture()
+        payload = {'operation': 'play', 'payload': {
+            'videoId': '18446744073709551616', 'playFormat': 'mp4', 'part': '特别篇·上'}}
+        status, value = self.call('/v1/adapters/lumina/sdk', 'POST', json.dumps(payload))
+        self.assertEqual(status, 200)
+        self.assertEqual(value['data'], {'part': '特别篇·上', 'headers': {'User-Agent': ''}})
+        self.assertEqual(self.call('/v1/adapters/lumina/sdk')[0], 405)
+        payload['payload']['host'] = 'private.invalid'
+        self.assertEqual(self.call('/v1/adapters/lumina/sdk', 'POST', json.dumps(payload))[0], 400)
+
     def test_pagination_and_business_errors(self):
         self.assertFalse(self.call("/v1/adapters/fixture/search?q=x&page=2")[1]["hasMore"])
         self.assertEqual(self.call("/v1/adapters/fixture/search?q=decrypt-error")[1]["error"]["code"], "DECRYPT_ERROR")

@@ -5,7 +5,7 @@ const route = /^adapters\/[A-Za-z0-9_-]{1,64}\/(search|episodes|resolve)$/;
 
 function allowed(path, method) {
   if (method === 'GET' && ['health', 'adapters'].includes(path)) return true;
-  if (path === 'adapters/miomedia/sdk' && method === 'POST') return true;
+  if (['adapters/miomedia/sdk', 'adapters/lumina/sdk'].includes(path) && method === 'POST') return true;
   const match = route.exec(path);
   return !!match && method === (match[1] === 'resolve' ? 'POST' : 'GET');
 }

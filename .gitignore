@@ -64,6 +64,7 @@ android/build/reports/problems/
 # Private SDK input includes configuration and sensitive self-test vectors.
 /tool/source_runtime/vendor/miomedia/
 /tool/source_runtime/vendor/anifive/
+/tool/source_runtime/vendor/lumina/
 .env
 .env.*
 !.env.example

@@ -31,6 +31,33 @@ test('disabled runtime and invalid routes do not forward', async () => {
     assert.equal((await request(web.port, '/api/runtime/v1/scripts/run')).status, 422);
   } finally { await web.close(); }
 });
+
+test('Lumina uses only the fixed SDK route and preserves opaque episode references', async () => {
+  const received = [];
+  const upstream = await listen(async (req, res) => {
+    const chunks = []; for await (const chunk of req) chunks.push(chunk);
+    received.push({ path: req.url, body: JSON.parse(Buffer.concat(chunks)) });
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({ data: { status: 'ready', media: {
+      url: 'https://media.example/episode.m3u8', format: 'hls', headers: { 'User-Agent': '' },
+    } } }));
+  });
+  const web = await listen(handler(createRuntimeBridge({ port: upstream.port })));
+  try {
+    const payload = { operation: 'play', payload: {
+      videoId: '18446744073709551616', playFormat: 'mp4', part: '特别篇·上',
+    } };
+    const result = await request(web.port, '/api/runtime/v1/adapters/lumina/sdk',
+      { method: 'POST', body: JSON.stringify(payload) });
+    assert.equal(result.status, 200);
+    assert.deepEqual(received, [{ path: '/v1/adapters/lumina/sdk', body: payload }]);
+    assert.deepEqual(result.data.data.media.headers, { 'User-Agent': '' });
+    assert.equal((await request(web.port, '/api/runtime/v1/adapters/lumina/sdk')).status, 422);
+    assert.equal((await request(web.port, '/api/runtime/v1/adapters/unknown/sdk',
+      { method: 'POST', body: '{}' })).status, 422);
+    assert.equal(received.length, 1);
+  } finally { await web.close(); await upstream.close(); }
+});
 test('bridge forwards a fixed protocol route, query and POST body', async () => {
   const received = [];
   const upstream = await listen(async (req, res) => {

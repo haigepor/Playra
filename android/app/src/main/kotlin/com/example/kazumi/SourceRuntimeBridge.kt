@@ -97,7 +97,7 @@ class SourceRuntimeBridge(messenger: BinaryMessenger, context: Context) : Method
                 if (!Python.isStarted()) Python.start(AndroidPlatform(context))
                 Python.getInstance().getModule("android_bridge").also {
                     // 私有身份路径只由原生 applicationContext 提供，不接受 Flutter 参数覆盖。
-                    it.callAttr("configure", context.filesDir.absolutePath)
+                    it.callAttr("configure", context.filesDir.absolutePath, context.applicationInfo.nativeLibraryDir)
                     pythonModule = it
                 }
             }

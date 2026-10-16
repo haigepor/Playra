@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "sdk": "lumina",
+  "integrationVersion": 1,
+  "allowedBindingFiles": [
+    "config.py",
+    "profile.py"
+  ],
+  "runtimeBindings": [
+    "profile.DEVICE_FP"
+  ],
+  "hostBound": true,
+  "platforms": [
+    "windows-x64",
+    "linux-x64",
+    "linux-arm64",
+    "macos-arm64",
+    "android-arm64",
+    "android-x64"
+  ],
+  "optionalBackendsIncluded": false,
+  "files": [
+    {
+      "file": "__init__.py",
+      "upstreamSha256": "2bfb2f74586056fa2cae523d7fd3d466c1081a3ec8130bdfc8c46ab0653fc945",
+      "sha256": "2bfb2f74586056fa2cae523d7fd3d466c1081a3ec8130bdfc8c46ab0653fc945",
+      "size": 2672
+    },
+    {
+      "file": "aes_cbc.py",
+      "upstreamSha256": "69ce0f033fcf5952b84222f1676fcd4305daf52fc22b7c75e7e1ebbe928035b2",
+      "sha256": "69ce0f033fcf5952b84222f1676fcd4305daf52fc22b7c75e7e1ebbe928035b2",
+      "size": 5628
+    },
+    {
+      "file": "auth.py",
+      "upstreamSha256": "64cf55fca562920f3e2b4ba2ec59ca9f908ce3c4b6fa6cb8fadd396d2641d089",
+      "sha256": "64cf55fca562920f3e2b4ba2ec59ca9f908ce3c4b6fa6cb8fadd396d2641d089",
+      "size": 3525
+    },
+    {
+      "file": "block.py",
+      "upstreamSha256": "e033a729d5601d33bfe326efbf6444534cc140eca7b4bc5442a82633cde3f687",
+      "sha256": "e033a729d5601d33bfe326efbf6444534cc140eca7b4bc5442a82633cde3f687",
+      "size": 16837
+    },
+    {
+      "file": "client.py",
+      "upstreamSha256": "f469ec060941d8c108712c901fea5dc53c3ed4a52560c8fc7a9dfc1ed8f8baea",
+      "sha256": "f469ec060941d8c108712c901fea5dc53c3ed4a52560c8fc7a9dfc1ed8f8baea",
+      "size": 7882
+    },
+    {
+      "file": "codec.py",
+      "upstreamSha256": "4de50ea452b00f6026314529a3232834d736e90fe66a3592720ce1e4540cd77c",
+      "sha256": "4de50ea452b00f6026314529a3232834d736e90fe66a3592720ce1e4540cd77c",
+      "size": 1785
+    },
+    {
+      "file": "config.py",
+      "upstreamSha256": "49c62d619e715db76741f68cb00564e196ce3163523f8b05658d949794dfe9f5",
+      "sha256": "c957db2382276b07837b27d4c3e1e1e64f1ab5ca1193afc1dec88084b34b4163",
+      "size": 2453
+    },
+    {
+      "file": "envelope.py",
+      "upstreamSha256": "5e48138091bccc2f5851b501e6dc81b30c9eff67e5a82f13f9f9a45d91c28b52",
+      "sha256": "5e48138091bccc2f5851b501e6dc81b30c9eff67e5a82f13f9f9a45d91c28b52",
+      "size": 6538
+    },
+    {
+      "file": "play.py",
+      "upstreamSha256": "c02b45801b7f29126597f823f5bb3dfc0f6b8635b3bf4891aabfb4d2d7e434bc",
+      "sha256": "c02b45801b7f29126597f823f5bb3dfc0f6b8635b3bf4891aabfb4d2d7e434bc",
+      "size": 7535
+    },
+    {
+      "file": "profile.py",
+      "upstreamSha256": "2c3d97682cde54d24b98ca1c18101d306b3bc247a7bab814234838ff6c984d59",
+      "sha256": "2c3d97682cde54d24b98ca1c18101d306b3bc247a7bab814234838ff6c984d59",
+      "size": 1865
+    },
+    {
+      "file": "rsaio.py",
+      "upstreamSha256": "6f9d2950e54c3dc5a2e5e6d45f735b9b559fbeb92f33648b0e45cf4febcb9e47",
+      "sha256": "6f9d2950e54c3dc5a2e5e6d45f735b9b559fbeb92f33648b0e45cf4febcb9e47",
+      "size": 6495
+    },
+    {
+      "file": "_fuse/__init__.py",
+      "upstreamSha256": "7b22d4ed3d20efbbe92a0b3aefa43d63d7097776f30f69530130dcc83329e7a7",
+      "sha256": "7b22d4ed3d20efbbe92a0b3aefa43d63d7097776f30f69530130dcc83329e7a7",
+      "size": 18506
+    },
+    {
+      "file": "_fuse/assets/fuse_core.dll",
+      "upstreamSha256": "294c98277efba7aba154b5fd2a583f59c3e964edaebbacf6875bf30c42fbcff3",
+      "sha256": "294c98277efba7aba154b5fd2a583f59c3e964edaebbacf6875bf30c42fbcff3",
+      "size": 1379328
+    },
+    {
+      "file": "_fuse/assets/liblumafuse_android_arm64.so",
+      "upstreamSha256": "31485cd855b4a3947e281e2b63e7d05af7177d5ef1c238270f12fee242ac9f52",
+      "sha256": "31485cd855b4a3947e281e2b63e7d05af7177d5ef1c238270f12fee242ac9f52",
+      "size": 936424
+    },
+    {
+      "file": "_fuse/assets/liblumafuse_android_x64.so",
+      "upstreamSha256": "fefdd5dae4b826326caeacecc88dd95a665b776ccab845042c82f2aab693f573",
+      "sha256": "fefdd5dae4b826326caeacecc88dd95a665b776ccab845042c82f2aab693f573",
+      "size": 1330304
+    },
+    {
+      "file": "_fuse/assets/liblumafuse_linux_arm64.so.gz",
+      "upstreamSha256": "6d6c8b8a8cd16afd893d8fbc64d5576b05eda529382d251f87335987dfb6879a",
+      "sha256": "6d6c8b8a8cd16afd893d8fbc64d5576b05eda529382d251f87335987dfb6879a",
+      "size": 811085
+    },
+    {
+      "file": "_fuse/assets/liblumafuse_linux_x64.so.gz",
+      "upstreamSha256": "b06c4c608e6724ab07d6ed88749a25aedb828a279e670f34b46db454e819e86e",
+      "sha256": "b06c4c608e6724ab07d6ed88749a25aedb828a279e670f34b46db454e819e86e",
+      "size": 832397
+    },
+    {
+      "file": "_fuse/assets/liblumafuse_macos_arm64.dylib.gz",
+      "upstreamSha256": "d1a43ccb695ef45ab2358be9d4cb5f6dd619669b63e3f55a848f6042d979da4b",
+      "sha256": "d1a43ccb695ef45ab2358be9d4cb5f6dd619669b63e3f55a848f6042d979da4b",
+      "size": 404045
+    },
+    {
+      "file": "_fuse/assets/fuse_image.bin.gz",
+      "upstreamSha256": "184b5c35bce4fca3cc111fe924d594c55b143e2da2062e6789ac4f57a3606bfc",
+      "sha256": "184b5c35bce4fca3cc111fe924d594c55b143e2da2062e6789ac4f57a3606bfc",
+      "size": 3719655
+    }
+  ]
+}

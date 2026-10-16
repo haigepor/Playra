@@ -13,7 +13,7 @@ $savedEchPort = $env:PLAYRA_BANGUMI_ECH_PORT
 Push-Location -LiteralPath $projectRoot
 try {
   if ($Build -or -not (Test-Path -LiteralPath 'build\web\index.html')) {
-    & $flutter build web --no-wasm-dry-run
+    & $flutter build web --no-wasm-dry-run --no-web-resources-cdn
     if ($LASTEXITCODE -ne 0) { throw 'Web build failed' }
   }
   if (-not (Test-Path -LiteralPath 'tool\web_backend\node_modules\playwright')) {
@@ -44,6 +44,11 @@ try {
       throw '请先用 tool/source_runtime/import_anifive.py 导入四源 SDK，详见四源接入文档。'
     }
     $python = if ($env:PLAYRA_BUILD_PYTHON) { $env:PLAYRA_BUILD_PYTHON } else { (Get-Command python.exe).Source }
+    if (-not (Test-Path 'tool/source_runtime/vendor/lumina/client.py')) {
+      throw '请先用 tool/source_runtime/import_lumina.py 显式导入并配置 Lumina，详见 docs/release/build-inputs.zh.md。'
+    }
+    & $python '-B' '-X' 'utf8' 'tool/source_runtime/import_lumina.py' '--verify'
+    if ($LASTEXITCODE -ne 0) { throw 'Lumina 私有输入完整性校验未通过' }
     Ensure-LocalService $RuntimePort 'v1/health' 'playra-source-runtime' $python @('-B', '-X', 'utf8', 'tool/source_runtime/server.py', '--port', "$RuntimePort") 'runtime'
     $env:PLAYRA_SOURCE_RUNTIME_PORT = "$RuntimePort"
   }
