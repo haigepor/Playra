@@ -25,6 +25,9 @@ import 'package:kazumi/pages/video/episode_selection_panel.dart';
 import 'package:kazumi/pages/video/player_content_tabs.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/pages/video/video_playback_args.dart';
+import 'package:kazumi/pages/video/prepared_online_playback.dart';
+import 'package:kazumi/services/plugin/rule_engine_models.dart'
+    show RuleCancelToken;
 import 'package:kazumi/pages/video/playback_identity.dart';
 import 'package:kazumi/pages/video/video_page_layout.dart';
 import 'package:kazumi/pages/video/video_side_panel.dart';
@@ -66,6 +69,16 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
   VideoPageController get videoPageController => widget.videoPageController;
   bool _didInitializePlayback = false;
   bool hasPlayback = false;
+  bool _hasPlayIntent = false, _hasOpenedMedia = false;
+  OnlineVideoPlaybackArgs? _onlineArgs;
+  PreparedOnlinePlayback? _prepared;
+  RuleCancelToken? _prepareCancel;
+  Future<void>? _prepareFuture;
+  int _prepareGeneration = 0;
+  bool isPreparing = false;
+  String? preparationError;
+  bool get isPrepared => _prepared?.isFresh(DateTime.now()) == true;
+  bool get hasOnlineSelection => _onlineArgs != null;
   bool _isExiting = false;
   HistoryController get historyController => widget.historyController;
   DownloadController get downloadController => widget.downloadController;
@@ -94,6 +107,11 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
   void initState() {
     super.initState();
     hasPlayback = widget.args != null;
+    _hasPlayIntent = widget.args is OfflineVideoPlaybackArgs;
+    _hasOpenedMedia = _hasPlayIntent;
+    if (widget.args is OnlineVideoPlaybackArgs) {
+      _onlineArgs = widget.args as OnlineVideoPlaybackArgs;
+    }
     if (widget.args case final args?) {
       videoPageController.applyPlaybackArgs(args);
     }
@@ -248,16 +266,23 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
       if (!mounted) {
         return;
       }
-      changeEpisode(
-        videoPageController.selectedEpisode.episode,
-        currentRoad: videoPageController.selectedEpisode.road,
-        offset: videoPageController.historyOffset,
-      );
+      final args = _onlineArgs;
+      if (args != null) {
+        unawaited(
+          startSource(
+            args,
+            videoPageController.selectedEpisode,
+            offset: videoPageController.historyOffset,
+          ),
+        );
+      }
     });
   }
 
   @override
   void dispose() {
+    _prepareGeneration++;
+    _prepareCancel?.cancel('page disposed');
     videoPageController.cancelPendingPlayback();
     if (!_isExiting) unawaited(playerController.stop());
     _browserFullscreenListener?.call();
@@ -309,6 +334,30 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
     if (!mounted || _isExiting) {
       return;
     }
+    if (!_hasPlayIntent && _onlineArgs != null) {
+      final args = _onlineArgs!;
+      // 明确换线仍保持手动锁定，未播放的选集只更新准备目标。
+      final selected = OnlineVideoPlaybackArgs(
+        bangumiItem: args.bangumiItem,
+        plugin: args.plugin,
+        title: args.title,
+        src: args.src,
+        roads: args.roads,
+        automatic:
+            currentRoad == videoPageController.selectedEpisode.road &&
+            videoPageController.automaticSource,
+      );
+      await startSource(
+        selected,
+        VideoEpisodeSelection(episode: episode, road: currentRoad),
+        offset: offset,
+      );
+      return;
+    }
+    _hasOpenedMedia = true;
+    _prepareCancel?.cancel('episode changed');
+    _prepareGeneration++;
+    _prepared = null;
     setState(() {
       webviewLogLines.clear();
       showDebugLog = false;
@@ -426,11 +475,79 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
     VoidCallback? onReady,
   }) async {
     if (!mounted || _isExiting) return;
+    _onlineArgs = args;
+    if (!_hasPlayIntent) {
+      _prepareCancel?.cancel('selection changed');
+      final cancel = _prepareCancel = RuleCancelToken();
+      final generation = ++_prepareGeneration;
+      videoPageController.applyPlaybackArgs(args);
+      videoPageController.resetEpisodeState(
+        episode: selection.episode,
+        road: selection.road,
+      );
+      setState(() {
+        hasPlayback = true;
+        isPreparing = true;
+        preparationError = null;
+        _prepared = null;
+      });
+      onReady?.call();
+      Future<void> prepare() async {
+        try {
+          final source = await videoPageController.prepareOnlineSource(
+            args,
+            selection,
+            cancel: cancel,
+            offset: offset,
+          );
+          if (!mounted ||
+              _isExiting ||
+              cancel.isCancelled ||
+              generation != _prepareGeneration) {
+            return;
+          }
+          setState(
+            () => _prepared = PreparedOnlinePlayback(
+              args: args,
+              selection: selection,
+              source: source,
+              resolvedAt: DateTime.now(),
+              offset: offset,
+              expectedDuration: expectedDuration,
+            ),
+          );
+        } catch (_) {
+          if (mounted &&
+              !cancel.isCancelled &&
+              generation == _prepareGeneration) {
+            setState(() => preparationError = '播放链接准备失败，可点击重试或手动换源');
+          }
+        } finally {
+          if (mounted && generation == _prepareGeneration) {
+            setState(() => isPreparing = false);
+          }
+        }
+      }
+
+      final future = _prepareFuture = prepare();
+      await future;
+      return;
+    }
+    final prepared = _prepared;
+    _prepareCancel?.cancel('play requested');
+    _prepareGeneration++;
+    _prepared = null;
+    _hasOpenedMedia = true;
     await videoPageController.switchOnlineSource(
       args,
       selection: selection,
       offset: offset,
       expectedDuration: expectedDuration,
+      preparedSource:
+          prepared?.matches(args, selection) == true &&
+              prepared!.isFresh(DateTime.now())
+          ? prepared.source
+          : null,
       playerController: playerController,
       onReady: () {
         if (mounted) setState(() => hasPlayback = true);
@@ -439,9 +556,61 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
     );
   }
 
+  /// 仅明确点击播放建立播放意图，准备完成或迟到响应本身没有起播权限。
+  void markPlaybackIntent() => _hasPlayIntent = true;
+
+  Future<void> playPrepared() async {
+    if (!mounted || _isExiting || _onlineArgs == null) return;
+    final generation = _prepareGeneration;
+    final requested = videoPageController.selectedEpisode;
+    _hasPlayIntent = true;
+    await _prepareFuture;
+    if (!mounted || _isExiting || generation != _prepareGeneration) return;
+    final prepared = _prepared;
+    await startSource(
+      _onlineArgs!,
+      requested,
+      offset: prepared?.offset ?? videoPageController.historyOffset,
+      expectedDuration: prepared?.expectedDuration,
+    );
+  }
+
   Widget _buildPlayerBody(VideoPlayerLayout layout) {
-    if (!hasPlayback) {
-      return widget.idlePlayerBuilder?.call(context) ?? const SizedBox.shrink();
+    if (!hasPlayback || !_hasOpenedMedia) {
+      return widget.idlePlayerBuilder?.call(context) ??
+          Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton.filled(
+                      tooltip: '播放当前选集',
+                      onPressed: _onlineArgs == null ? null : playPrepared,
+                      icon: const Icon(Icons.play_arrow),
+                    ),
+                    Text(
+                      isPreparing
+                          ? '正在准备播放链接…'
+                          : preparationError ??
+                                (isPrepared ? '播放链接已准备，点击播放' : '点击播放'),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 4,
+                left: 8,
+                child: IconButton(
+                  tooltip: '返回',
+                  onPressed: _onBackPressed,
+                  color: Colors.white,
+                  icon: const Icon(Icons.chevron_left),
+                ),
+              ),
+            ],
+          );
     }
     final bool playerLoading = playerController.playback.loading;
     return Stack(

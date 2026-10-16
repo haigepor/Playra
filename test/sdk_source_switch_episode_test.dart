@@ -86,7 +86,8 @@ Future<void> _mountAndSelectEpisode14(
     ),
   );
   await tester.pumpAndSettle();
-  expect(original.played, isEmpty);
+  expect(original.played, ['sdk_original/video|sdk_original-line|12']);
+  original.played.clear();
   expect(destination.played, isEmpty);
 
   final episode14 = find.widgetWithText(OutlinedButton, '第14集');

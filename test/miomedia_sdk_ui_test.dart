@@ -236,12 +236,12 @@ void main() {
     await _mount(tester, fixture);
 
     expect(find.text('播放源'), findsOneWidget);
-    final provider = find.widgetWithText(ChoiceChip, 'miomedia');
+    final provider = find.widgetWithText(ChoiceChip, '影视 · MioMedia');
     expect(provider, findsOneWidget);
     expect(tester.widget<ChoiceChip>(provider).selected, isTrue);
     expect(find.byKey(_selectorKey), findsOneWidget);
     expect(find.widgetWithText(ChoiceChip, fixture.label(1)), findsNothing);
-    expect(fixture.playCalls, isEmpty);
+    expect(fixture.playCalls, isNotEmpty, reason: '详情自动解析，但解析失败的线路不能标为正在播放');
     expect(tester.takeException(), isNull);
   });
 
@@ -257,7 +257,7 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       expect(
         tester
-            .getSemantics(find.widgetWithText(SdkLineOption, '自动（最高画质）'))
+            .getSemantics(find.widgetWithText(SdkLineOption, '自动（优选线路）'))
             .getSemanticsData()
             .flagsCollection
             .isSelected,
@@ -296,9 +296,10 @@ void main() {
   ) async {
     final fixture = _SourceFixture(movie: true, lineCount: 9);
     await _mount(tester, fixture, scale: 2);
+    final initialResolves = fixture.playCalls.length;
     await _openLines(tester);
 
-    expect(find.text('自动（最高画质）'), findsOneWidget);
+    expect(find.text('自动（优选线路）'), findsOneWidget);
     final sheet = find.byType(BottomSheet);
     final scrollable = find
         .descendant(of: sheet, matching: find.byType(Scrollable))
@@ -317,11 +318,15 @@ void main() {
     await tester.tap(close);
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsNothing);
-    expect(fixture.playCalls, isEmpty);
+    expect(
+      fixture.playCalls,
+      hasLength(initialResolves),
+      reason: '只浏览线路弹层不应额外解析或打开媒体',
+    );
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('manual movie line immediately plays its real episode identity', (
+  testWidgets('manual movie line prepares its real episode identity', (
     tester,
   ) async {
     final fixture = _SourceFixture(movie: true);

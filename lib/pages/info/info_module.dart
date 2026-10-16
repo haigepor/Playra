@@ -29,11 +29,11 @@ final infoModule = createModule(
         final entry = state.arguments;
         if (entry is SdkPlaybackEntry) return SdkDetailPage(entry: entry);
         if (entry is MioSearchEntry) {
-          return MioDetailPage(item: entry.item, autoPlay: true);
+          return MioDetailPage(item: entry.item);
         }
         final bangumiItem = entry is SourceSearchEntry ? entry.item : entry;
         if (bangumiItem is MioVideo) {
-          return MioDetailPage(item: bangumiItem, autoPlay: true);
+          return MioDetailPage(item: bangumiItem);
         }
         if (bangumiItem is! BangumiItem) {
           return const RouteErrorPage(message: '番组详情参数无效，请返回后重新打开。');

@@ -24,6 +24,8 @@ import 'package:kazumi/repositories/history_repository.dart';
 import 'package:kazumi/services/download/download_manager.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/video_source/video_source_service.dart';
+import 'package:kazumi/services/plugin/rule_engine_models.dart'
+    show RuleCancelToken;
 
 class _Paths extends PathProviderPlatform {
   _Paths(this.path);
@@ -64,8 +66,48 @@ class _RecordingVideo extends VideoPageController {
     : super(history, _DownloadRepository(), _DownloadManager());
 
   final starts = <({int episode, int road, int offset})>[];
+  final preparations = <({int episode, int road, int offset})>[];
+  VideoSource? consumed;
   @override
   final fullscreen = VideoFullscreenController(applyFullscreen: (_) async {});
+
+  @override
+  Future<VideoSource> prepareOnlineSource(
+    OnlineVideoPlaybackArgs args,
+    VideoEpisodeSelection selection, {
+    required RuleCancelToken cancel,
+    int offset = 0,
+  }) async {
+    preparations.add((
+      episode: selection.episode,
+      road: selection.road,
+      offset: offset,
+    ));
+    return VideoSource(
+      url: 'https://media.example/prepared.mp4',
+      offset: offset,
+      type: VideoSourceType.online,
+    );
+  }
+
+  @override
+  Future<void> switchOnlineSource(
+    OnlineVideoPlaybackArgs args, {
+    required VideoEpisodeSelection selection,
+    required PlayerController playerController,
+    int offset = 0,
+    Duration? expectedDuration,
+    VideoSource? preparedSource,
+    void Function()? onReady,
+  }) async {
+    consumed = preparedSource;
+    onReady?.call();
+    starts.add((
+      episode: selection.episode,
+      road: selection.road,
+      offset: offset,
+    ));
+  }
 
   @override
   Future<void> changeEpisode(
@@ -203,9 +245,20 @@ void main() {
       // 加载占位有循环动画，仅推进初始化回调，不等待媒体解码或所有动画停止。
       await tester.pump();
       expect(tester.takeException(), isNull);
-      expect(video.starts, [
+      expect(video.preparations, [
         (episode: 2, road: 0, offset: 344),
-      ], reason: '恢复必须读取持久历史中的唯一剧集 URL，不能因内存列表未初始化而播放首集。');
+      ], reason: '准备必须读取持久历史中的唯一剧集 URL，不能因内存列表未初始化而选首集。');
+      expect(video.starts, isEmpty, reason: '打开详情不能自动播放');
+      await tester.pump();
+      await tester.tap(find.byTooltip('播放当前选集'));
+      await tester.pump();
+      expect(video.starts, [(episode: 2, road: 0, offset: 344)]);
+      expect(
+        video.consumed?.url,
+        'https://media.example/prepared.mp4',
+        reason: '明确点击应复用预解析地址，不能再解析一遍',
+      );
+      expect(video.preparations, hasLength(1));
     },
   );
 }

@@ -701,6 +701,40 @@ abstract class _VideoPageController with Store implements Disposable {
     }
   }
 
+  /// 详情预解析不创建播放器，不修改播放身份或历史；取消由页面会话持有。
+  Future<VideoSource> prepareOnlineSource(
+    OnlineVideoPlaybackArgs args,
+    VideoEpisodeSelection selection, {
+    required RuleCancelToken cancel,
+    int offset = 0,
+  }) async {
+    if (selection.road < 0 ||
+        selection.road >= args.roads.length ||
+        selection.episode < 1 ||
+        selection.episode > args.roads[selection.road].data.length) {
+      throw const SourceException('INVALID_SELECTION', '所选剧集无效');
+    }
+    final preparer = SourcePlaybackService();
+    try {
+      return await preparer.resolve(
+        normalizeEpisodeUrl(
+          args.plugin.baseUrl,
+          args.roads[selection.road].data[selection.episode - 1],
+        ),
+        useLegacyParser: args.plugin.useLegacyParser,
+        offset: offset,
+        definition: SourceDefinition.fromJson(args.plugin.toJson()),
+        context: SourceContext(
+          providerId: args.plugin.providerId,
+          cancelToken: cancel,
+          timeout: const Duration(seconds: 55),
+        ),
+      );
+    } finally {
+      await preparer.dispose();
+    }
+  }
+
   /// 新地址准备期间保留旧媒体与历史身份，确认可用后才停止并提交新上下文。
   Future<void> switchOnlineSource(
     OnlineVideoPlaybackArgs args, {
@@ -708,6 +742,7 @@ abstract class _VideoPageController with Store implements Disposable {
     required PlayerController playerController,
     int offset = 0,
     Duration? expectedDuration,
+    VideoSource? preparedSource,
     void Function()? onReady,
   }) async {
     final switchVersion = ++_sourceSwitchVersion;
@@ -724,9 +759,9 @@ abstract class _VideoPageController with Store implements Disposable {
       return;
     }
     final preparer = SourcePlaybackService();
-    VideoSource? prepared;
+    VideoSource? prepared = preparedSource;
     try {
-      if (playerController.playback.mediaPlayer != null) {
+      if (prepared == null && playerController.playback.mediaPlayer != null) {
         prepared = await preparer.resolve(
           normalizeEpisodeUrl(
             args.plugin.baseUrl,

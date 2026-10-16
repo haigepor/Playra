@@ -146,6 +146,12 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
   }
 
   Future<void> resume(BuildContext context) async {
+    final scaffold = playbackKey.currentState;
+    if (scaffold?.hasOnlineSelection == true) {
+      await scaffold!.playPrepared();
+      return;
+    }
+    scaffold?.markPlaybackIntent();
     final history = resumeCandidate;
     if (history == null) return playAutomatically();
     if (dialogs.isRunning) return;
@@ -204,6 +210,64 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     unawaited(loadInfo());
     unawaited(loadRelations());
     unawaited(loadEpisodeCatalog());
+    // 进入详情只确认历史同集和解析地址；播放器由封面的明确点击启动。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && widget.args == null) unawaited(prepareInitialSource());
+    });
+  }
+
+  Future<void> prepareInitialSource() async {
+    widget.historyController.init();
+    final history = resumeCandidate;
+    if (history == null) {
+      await playAutomatically();
+      return;
+    }
+    final cancel = RuleCancelToken();
+    automaticSourceCancel?.cancel('initial preparation');
+    automaticSourceCancel = cancel;
+    setState(() => choosingSource = true);
+    try {
+      final result = await inject<HistoryPlaybackService>().open(
+        history,
+        cancelToken: cancel,
+      );
+      if (!mounted || cancel.isCancelled) return;
+      if (result is HistoryPlaybackReady &&
+          result.args is OnlineVideoPlaybackArgs) {
+        final args = result.args as OnlineVideoPlaybackArgs;
+        final verified = verifiedResume(args, [history]);
+        final initial = args.initialEpisode;
+        if (initial != null || verified != null) {
+          setState(() => choosingSource = false);
+          await playbackKey.currentState?.startSource(
+            args,
+            initial != null
+                ? VideoEpisodeSelection(
+                    episode: initial,
+                    road: args.initialRoad,
+                  )
+                : verified!.selection,
+            offset: GStorage.getSetting(SettingsKeys.playResume) == true
+                ? verified?.offset ?? 0
+                : 0,
+            onReady: playbackReady,
+          );
+          return;
+        }
+      }
+    } catch (_) {
+      // 历史来源失效时仍通过已有同作品同集匹配恢复，不按旧下标猜首集。
+    } finally {
+      if (mounted && identical(automaticSourceCancel, cancel)) {
+        setState(() => choosingSource = false);
+      }
+    }
+    if (mounted && !cancel.isCancelled) {
+      await playAutomatically(
+        number: regularEpisodeNumber(history.lastWatchEpisodeName),
+      );
+    }
   }
 
   @override
@@ -988,8 +1052,13 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    choosingSource
-                        ? '正在自动匹配来源'
+                    choosingSource ||
+                            playbackKey.currentState?.isPreparing == true
+                        ? '正在准备播放链接…'
+                        : playbackKey.currentState?.preparationError != null
+                        ? playbackKey.currentState!.preparationError!
+                        : playbackKey.currentState?.isPrepared == true
+                        ? '播放链接已准备，点击播放'
                         : resumeCandidate != null
                         ? '继续观看 · ${resumeCandidate!.lastWatchEpisodeName}'
                         : '开始观看 · 自动选源',

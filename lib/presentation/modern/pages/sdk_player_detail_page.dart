@@ -21,20 +21,46 @@ import 'package:kazumi/services/source/sdk_playback_models.dart';
 import 'package:kazumi/services/source/sdk_playback_provider.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/sdk_playback_coordinator.dart';
+import 'package:kazumi/services/source/prepared_playback.dart';
+import 'package:kazumi/services/source/source_display_names.dart';
+import 'package:kazumi/services/source/sdk_playback_resume.dart';
+import 'package:kazumi/services/source/source_models.dart' show SourceException;
 import '../miomedia/miomedia_playing_mark.dart';
 import '../player/player_theme.dart';
 import '../settings/modern_back_button.dart';
 import '../player/sdk_source_widgets.dart';
+import '../player/sdk_quality_selector.dart';
+import 'package:kazumi/services/storage/sdk_library_store.dart';
+import 'package:kazumi/modules/collect/collect_type.dart';
 
-/// 来源作品有独立身份；不创建 Bangumi 收藏、历史或弹幕上下文。
+/// 来源作品有独立个人库身份，不创建伪造的Bangumi或弹幕上下文。
 class SdkDetailPage extends StatefulWidget {
-  const SdkDetailPage({super.key, required this.entry});
+  const SdkDetailPage({super.key, required this.entry, this.library});
   final SdkPlaybackEntry entry;
+  final SdkLibraryStore? library;
   @override
   State<SdkDetailPage> createState() => _SdkDetailPageState();
 }
 
-class _SdkDetailPageState extends State<SdkDetailPage> {
+class _SdkDetailPageState extends State<SdkDetailPage>
+    with WidgetsBindingObserver {
+  SdkLibraryStore get _library => widget.library ?? SdkLibraryStore.shared;
+  SdkWatchProgress? _initialResume;
+  SdkEpisode? _recordEpisode;
+  SdkVideo? _recordVideo;
+  String? _recordProvider;
+  bool _recordAutomatic = true;
+  String? _recordQuality;
+  Timer? _historyTimer;
+  String? _storageError;
+  bool _collectBusy = false;
+  String? _lastSavedState;
+  final _historySeekGuard = SdkResumeProgressGuard();
+  bool _recordStarted = false, _recordRestoreHandled = true;
+  Duration _recordResumeAt = Duration.zero,
+      _recordResumeDuration = Duration.zero;
+  int _recordEpoch = 0;
+  String? _recordMediaUrl;
   late SdkSourceBinding source = widget.entry.sources.first;
   late SdkVideo video =
       source.seed ??
@@ -53,6 +79,8 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         onChanged: _metadataChanged,
       );
   bool automatic = true;
+  // 线路锁与画质锁分别保存；恢复自动画质不能解除手动线路。
+  String? _manualQualityCode;
   String? _activeSdkId, _activeLineCode;
   String? _installedSdkId, _installedLineCode;
   SdkQuality? selectedQuality;
@@ -74,7 +102,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
   bool detailLoading = false, episodesLoading = false, playingLoading = false;
   String? detailError, episodesError, playMessage;
   String? playingCode;
-  int? playingNumber;
+  String? playingIdentity;
   SdkEpisode? _requestedEpisode;
   Player? _player;
   VideoController? _videoController;
@@ -89,21 +117,143 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
   final _activitySubscriptions = <StreamSubscription<dynamic>>[];
   Future<void> _mediaTail = Future.value();
   bool _disposed = false;
-  bool _autoStarted = false;
+  bool _hasPlayIntent = false;
+  bool _preparingOnly = false;
+  PreparedPlayback? _prepared;
+  Future<void>? _preparationFuture;
+
+  SdkLineCandidate? get _qualityCandidate {
+    final target = _requestedEpisode;
+    if (target == null) return null;
+    return _playback.candidates
+        .where(
+          (item) =>
+              item.line.code == target.code &&
+              (item.episode == null ||
+                  item.episode?.identityKey == target.identityKey),
+        )
+        .firstOrNull;
+  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _library.addListener(_metadataChanged);
+    _initialResume = _library.get(service.id, source.contentId)?.lastWatch;
+    automatic = _initialResume?.automatic ?? true;
+    _manualQualityCode = _initialResume?.qualityCode;
+    _historyTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _saveProgress(),
+    );
     unawaited(loadDetail());
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _saveProgress();
+  }
+
+  void _saveProgress() {
+    final episode = _recordEpisode,
+        savedVideo = _recordVideo,
+        provider = _recordProvider;
+    final state = _player?.state;
+    if (episode == null ||
+        savedVideo == null ||
+        provider == null ||
+        state == null) {
+      return;
+    }
+    if (!state.playlist.medias.any((media) => media.uri == _recordMediaUrl))
+      return;
+    // HLS的尺寸回报可能晚于播放时钟；正进度和已知时长足以确认实际播放。
+    if (!_recordStarted) {
+      if (state.position < const Duration(milliseconds: 200) ||
+          state.duration <= Duration.zero)
+        return;
+      _recordStarted = true;
+    }
+    if (!_recordRestoreHandled && state.duration > Duration.zero) {
+      _recordRestoreHandled = true;
+      if (_recordResumeAt > Duration.zero) {
+        final offset = sdkResumePosition(
+          position: _recordResumeAt,
+          previousDuration: _recordResumeDuration,
+          targetDuration: state.duration,
+        );
+        if (offset != null) {
+          final player = _player!, epoch = _recordEpoch;
+          _historySeekGuard.waitFor(offset);
+          unawaited(
+            player
+                .seek(offset)
+                .then((_) {
+                  if (!_disposed && epoch == _recordEpoch) _saveProgress();
+                })
+                .catchError((Object _) {
+                  if (mounted && !_disposed && epoch == _recordEpoch) {
+                    setState(() => resumeNotice = '进度恢复失败，可手动拖动重试');
+                  }
+                }),
+          );
+          return;
+        }
+        if (mounted && !_disposed)
+          setState(() => resumeNotice = '线路版本时长不同，已从头播放');
+      }
+    }
+    if (!_historySeekGuard.accepts(state.position)) return;
+    final savedState =
+        '$provider:${savedVideo.id}:${episode.code}:${episode.identityKey}:${state.position.inMilliseconds}:${state.duration.inMilliseconds}:$_recordAutomatic:$_recordQuality';
+    if (_lastSavedState == savedState) return;
+    _lastSavedState = savedState;
+    // 使用已装入媒体的快照，准备下一集期间不能把旧进度写入新集。
+    unawaited(
+      _library
+          .record(
+            providerId: provider,
+            video: savedVideo,
+            episode: episode,
+            position: state.position,
+            duration: state.duration,
+            automatic: _recordAutomatic,
+            qualityCode: _recordQuality,
+          )
+          .catchError((Object _) {
+            if (_lastSavedState == savedState) _lastSavedState = null;
+            if (mounted && !_disposed) {
+              setState(() => _storageError = '观看进度保存失败，请检查本地存储');
+            }
+          }),
+    );
+  }
+
+  Future<void> _collect(int type) async {
+    if (_collectBusy) return;
+    setState(() => _collectBusy = true);
+    try {
+      await _library.collect(providerId: service.id, video: video, type: type);
+      if (mounted) setState(() => _storageError = null);
+    } catch (_) {
+      if (mounted) setState(() => _storageError = '收藏保存失败，请重试');
+    } finally {
+      if (mounted) setState(() => _collectBusy = false);
+    }
+  }
+
   Future<void> loadDetail({
-    bool forceAutoPlay = false,
     SdkEpisode? retainedEpisode,
     bool retainedSingleMovie = false,
     Duration resumeAt = Duration.zero,
     Duration resumeDuration = Duration.zero,
+    bool? resumePlaying,
   }) async {
+    final initialResume = _initialResume;
+    _initialResume = null;
+    retainedEpisode ??= _requestedEpisode ?? initialResume?.episode;
+    _requestedEpisode = retainedEpisode;
     _detailCancel?.cancel();
     final cancel = _detailCancel = CancelToken();
     final generation = ++_detailGeneration;
@@ -126,6 +276,14 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
       _coordinator = null;
       setState(() => video = result);
       if (result.lines.isNotEmpty) {
+        if (initialResume != null &&
+            !initialResume.automatic &&
+            !result.lines.any(
+              (candidate) => candidate.code == initialResume.episode.code,
+            )) {
+          setState(() => playMessage = '上次锁定的线路已不可用，请手动选择线路');
+          return;
+        }
         // 首次目录直接并发探测，首条慢线路不阻塞其他线路进入候选。
         final initial = await _playback.prepare(
           retainedEpisode,
@@ -137,7 +295,16 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         final available = initial
             .where((item) => item.episode != null)
             .firstOrNull;
-        final directory = available ?? initial.firstOrNull;
+        final preferred = initialResume == null
+            ? null
+            : initial
+                  .where(
+                    (item) =>
+                        item.line.code == initialResume.episode.code &&
+                        item.episode != null,
+                  )
+                  .firstOrNull;
+        final directory = preferred ?? available ?? initial.firstOrNull;
         if (directory != null) await _loadLine(directory.line);
         if (retainedEpisode != null && current()) {
           final target = SdkPlaybackCoordinator.match(
@@ -148,19 +315,21 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
           if (target == null) {
             setState(() => playMessage = '该来源没有对应当前集，请选择剧集或其他来源');
           } else {
-            _autoStarted = true;
             unawaited(
-              play(target, resumeAt: resumeAt, resumeDuration: resumeDuration),
+              _hasPlayIntent
+                  ? play(
+                      target,
+                      resumeAt: resumeAt,
+                      resumeDuration: resumeDuration,
+                      resumePlaying: resumePlaying,
+                    )
+                  : prepare(target),
             );
           }
           return;
         }
-        if ((widget.entry.autoPlay || forceAutoPlay) &&
-            !_autoStarted &&
-            current() &&
-            episodes.isNotEmpty) {
-          _autoStarted = true;
-          unawaited(play(episodes.first));
+        if (current() && episodes.isNotEmpty) {
+          unawaited(prepare(episodes.first));
         }
       }
     } catch (_) {
@@ -178,6 +347,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     // 切线路作废尚未完成的播放请求，不把旧线路解析结果装到新选择上。
     _playCancel?.cancel();
     _playGeneration++;
+    _prepared = null;
     _episodesCancel?.cancel();
     final cancel = _episodesCancel = CancelToken();
     final generation = ++_episodesGeneration;
@@ -239,12 +409,17 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
       );
       return;
     }
-    await play(
-      target,
-      manual: true,
-      resumeAt: position,
-      resumeDuration: duration,
-    );
+    if (_hasPlayIntent) {
+      await play(
+        target,
+        manual: true,
+        resumeAt: position,
+        resumeDuration: duration,
+        resumePlaying: _player?.state.playing,
+      );
+    } else {
+      await prepare(target, manual: true);
+    }
   }
 
   Future<void> switchSource(SdkSourceBinding selected) async {
@@ -252,6 +427,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     final previousSingle = video.singleMovie && episodes.length == 1;
     final position = _player?.state.position ?? Duration.zero;
     final duration = _player?.state.duration ?? Duration.zero;
+    final wasPlaying = _player?.state.playing;
     _selectionGeneration++;
     _playCancel?.cancel();
     _playGeneration++;
@@ -272,16 +448,17 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
       episodes = [];
       _requestedEpisode = previous;
       selectedQuality = null;
+      _manualQualityCode = null;
       decodedResolution = null;
       automatic = true;
-      _autoStarted = false;
+      _prepared = null;
     });
     await loadDetail(
-      forceAutoPlay: true,
       retainedEpisode: previous,
       retainedSingleMovie: previousSingle,
       resumeAt: position,
       resumeDuration: duration,
+      resumePlaying: wasPlaying,
     );
   }
 
@@ -290,16 +467,112 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     bool? manual,
     Duration resumeAt = Duration.zero,
     Duration resumeDuration = Duration.zero,
+    bool? resumePlaying,
+    bool preservePlayback = false,
+  }) async {
+    final saved = _library
+        .get(service.id, source.contentId)
+        ?.progressFor(episode);
+    if (!preservePlayback &&
+        resumeAt == Duration.zero &&
+        (playingIdentity != episode.identityKey ||
+            _installedSdkId != service.id)) {
+      resumeAt = saved?.completed == true
+          ? Duration.zero
+          : saved?.position ?? Duration.zero;
+      resumeDuration = saved?.duration ?? Duration.zero;
+    }
+    _hasPlayIntent = true;
+    // 点击准备中的同一集共用请求；换集/换源后，旧点击不能打开迟到结果。
+    if (playingLoading &&
+        _preparingOnly &&
+        _requestedEpisode?.code == episode.code &&
+        _requestedEpisode?.identityKey == episode.identityKey) {
+      final generation = _playGeneration;
+      await _preparationFuture;
+      if (!mounted || _disposed || generation != _playGeneration) return;
+    }
+    return _resolveOrPlay(
+      episode,
+      openMedia: true,
+      manual: manual,
+      resumeAt: resumeAt,
+      resumeDuration: resumeDuration,
+      resumePlaying: resumePlaying,
+      preservePlayback: preservePlayback,
+    );
+  }
+
+  Future<void> prepare(SdkEpisode episode, {bool? manual}) {
+    final future = _resolveOrPlay(episode, openMedia: false, manual: manual);
+    _preparationFuture = future;
+    return future;
+  }
+
+  Future<void> selectEpisode(SdkEpisode episode) =>
+      _hasPlayIntent ? play(episode) : prepare(episode);
+
+  Future<void> selectQuality(String? code) async {
+    final target = _requestedEpisode;
+    if (target == null || line?.code != target.code) return;
+    if (code != null &&
+        _qualityCandidate?.qualities.any(
+              (q) => q.code == code && q.height != null,
+            ) !=
+            true) {
+      return;
+    }
+    if (_manualQualityCode == code &&
+        !playingLoading &&
+        playMessage == null &&
+        _qualityCandidate?.qualityStatus == 'ready') {
+      return;
+    }
+    final state = _player?.state;
+    _detailCancel?.cancel('quality selected');
+    _playCancel?.cancel('quality selected');
+    _playGeneration++;
+    setState(() {
+      _manualQualityCode = code;
+      detailLoading = false;
+      // 不等待旧档位的准备请求；新 generation 独立负责当前选择。
+      playingLoading = false;
+    });
+    if (_hasPlayIntent) {
+      await play(
+        target,
+        manual: true,
+        preservePlayback: true,
+        resumeAt: state?.position ?? Duration.zero,
+        resumeDuration: state?.duration ?? Duration.zero,
+        resumePlaying: state?.playing,
+      );
+    } else {
+      await prepare(target, manual: true);
+    }
+  }
+
+  Future<void> _resolveOrPlay(
+    SdkEpisode episode, {
+    required bool openMedia,
+    bool? manual,
+    Duration resumeAt = Duration.zero,
+    Duration resumeDuration = Duration.zero,
+    bool? resumePlaying,
+    bool preservePlayback = false,
   }) async {
     _selectionGeneration++;
     _playCancel?.cancel();
     final cancel = _playCancel = CancelToken();
     final generation = ++_playGeneration;
+    final prepared = _prepared;
     setState(() {
       _requestedEpisode = episode;
       playingLoading = true;
       playMessage = null;
       resumeNotice = null;
+      _preparingOnly = !openMedia;
+      if (!openMedia) _prepared = null;
     });
     try {
       // 目录/解析仍在准备时保留旧媒体；只有新地址就绪后才交给播放器切换。
@@ -307,35 +580,71 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         return;
       }
       var attempt = 0;
-      final result = await _playback.playAutomatic(
-        episode,
-        video.lines,
-        cancel: cancel,
-        manual: manual ?? !automatic,
-        onAttempt: (selected, target, quality) async {
-          final items = selected.code == line?.code
-              ? episodes
-              : await _playback.episodes(selected);
-          if (!mounted || generation != _playGeneration || cancel.isCancelled)
-            return;
-          setState(() {
-            line = selected;
-            episodes = items;
-            _requestedEpisode = target;
-            selectedQuality = quality;
-            decodedResolution = null;
-            playMessage = attempt++ == 0 ? null : '正在尝试${selected.label}…';
-          });
-        },
-        open: (target, media, attemptCancel) => _openMedia(
-          target,
-          media,
-          generation,
-          attemptCancel,
-          resumeAt: resumeAt,
-          resumeDuration: resumeDuration,
-        ),
-      );
+      var positionToRestore = resumeAt, durationToRestore = resumeDuration;
+      var playingToRestore = resumePlaying;
+      var capturedAtCommit = false;
+      Future<void> onAttempt(
+        SdkLine selected,
+        SdkEpisode target,
+        SdkQuality? quality,
+      ) async {
+        final items = selected.code == line?.code
+            ? episodes
+            : await _playback.episodes(selected);
+        if (!mounted || generation != _playGeneration || cancel.isCancelled)
+          return;
+        setState(() {
+          line = selected;
+          episodes = items;
+          _requestedEpisode = target;
+          selectedQuality = quality;
+          playMessage = attempt++ == 0 ? null : '正在尝试${selected.label}…';
+        });
+      }
+
+      final result = openMedia
+          ? await _playback.playAutomatic(
+              episode,
+              video.lines,
+              cancel: cancel,
+              manual: manual ?? !automatic,
+              qualityCode: _manualQualityCode,
+              onAttempt: onAttempt,
+              prepared: prepared,
+              open: (target, media, attemptCancel) {
+                // 同集换画质在提交新媒体前读取最新进度，避免解析期间发生倒退。
+                if (preservePlayback && !capturedAtCommit) {
+                  capturedAtCommit = true;
+                  if (_installedSdkId == service.id &&
+                      playingCode == episode.code &&
+                      playingIdentity == episode.identityKey) {
+                    final state = _player?.state;
+                    if (state != null) {
+                      positionToRestore = state.position;
+                      durationToRestore = state.duration;
+                      playingToRestore = state.playing;
+                    }
+                  }
+                }
+                return _openMedia(
+                  target,
+                  media,
+                  generation,
+                  attemptCancel,
+                  resumeAt: positionToRestore,
+                  resumeDuration: durationToRestore,
+                  resumePlaying: playingToRestore,
+                );
+              },
+            )
+          : await _playback.preparePlayback(
+              episode,
+              video.lines,
+              cancel: cancel,
+              manual: manual ?? !automatic,
+              qualityCode: _manualQualityCode,
+              onAttempt: onAttempt,
+            );
       if (!mounted || generation != _playGeneration || cancel.isCancelled) {
         return;
       }
@@ -343,9 +652,10 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         _activeSdkId = service.id;
         _activeLineCode = line?.code;
       }
-      setState(
-        () => playMessage = switch (result.status) {
-          'ready' => null,
+      setState(() {
+        _prepared = result.prepared;
+        playMessage = switch (result.status) {
+          'ready' || 'prepared' => null,
           'interaction_required' => '点击播放器继续播放',
           'ad_required' => '来源平台仍要求广告校验，请重试或切换线路。',
           'identity_mismatch' => '播放资源与所选剧集不匹配',
@@ -354,15 +664,16 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
             'CLIENT_PARSE_INVALID_RESPONSE' => '该线路解析接口返回了无效数据，请重试或切换线路。',
             'CLIENT_PARSE_NETWORK' || 'TIMEOUT' => '解析请求超时或网络异常，请重试或切换线路。',
             'MEDIA_LOAD_FAILED' => '已取得视频地址，但媒体加载失败，请重试或切换线路。',
-            'CLIENT_PARSE_REJECTED' => '来源解析接口未提供可播放资源，请切换线路。',
+            'QUALITY_UNAVAILABLE' => '当前集或线路没有所选画质，请选择其他画质或自动。',
+            'CLIENT_PARSE_REJECTED' => '该线路暂未提供可播放地址，可重试或切换线路。',
             'ATTEMPT_BUDGET_EXHAUSTED' =>
               result.untried > 0
                   ? '自动尝试已超时，仍有 ${result.untried} 个候选未试，可手动选择线路。'
                   : '解析或加载已超时，可重试当前线路或手动切换。',
             _ => '暂时无法取得播放资源，可重试或切换线路。',
           },
-        },
-      );
+        };
+      });
     } catch (_) {
       if (mounted && generation == _playGeneration && !cancel.isCancelled) {
         setState(() => playMessage = '播放请求失败，请重试');
@@ -401,6 +712,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     CancelToken cancel, {
     Duration resumeAt = Duration.zero,
     Duration resumeDuration = Duration.zero,
+    bool? resumePlaying,
   }) async {
     // stop/open 串行，旧操作未退出前不向同一个播放器装入另一份媒体。
     final previous = _mediaTail;
@@ -414,6 +726,11 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     try {
       await previous;
       if (!current()) return false;
+      _saveProgress();
+      _recordEpisode = null;
+      _recordEpoch++;
+      _recordStarted = false;
+      _historySeekGuard.waitFor(Duration.zero);
       for (final subscription in _activitySubscriptions) {
         await subscription.cancel();
       }
@@ -422,6 +739,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
       setState(() {
         _player = null;
         _videoController = null;
+        decodedResolution = null;
       });
       _activity.value = false;
       if (!current()) return false;
@@ -435,7 +753,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
       }
       setState(() {
         playingCode = episode.code;
-        playingNumber = episode.number;
+        playingIdentity = episode.identityKey;
         _installedSdkId = service.id;
         _installedLineCode = episode.code;
       });
@@ -451,7 +769,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         );
         if (!current()) return false;
         final index = episodes.indexWhere(
-          (e) => e.code == episode.code && e.number == episode.number,
+          (e) => e.code == episode.code && e.identityKey == episode.identityKey,
         );
         if (index < 0) return false;
         _nativeView!.bindSourcePlayer(
@@ -466,7 +784,10 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
             Road(
               name: line!.label,
               data: episodes
-                  .map((e) => '${service.id}:${video.id}:${e.code}:${e.number}')
+                  .map(
+                    (e) =>
+                        '${service.id}:${video.id}:${e.code}:${e.identityKey}',
+                  )
                   .toList(),
               identifier: episodes.map((e) => e.label).toList(),
             ),
@@ -480,6 +801,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         videoSourceFormat: media['format'] == 'm3u8' || media['format'] == 'hls'
             ? VideoSourceFormat.hls
             : VideoSourceFormat.auto,
+        play: resumePlaying,
         canInstall: current,
         onError: (message) {
           if (!current()) return;
@@ -487,20 +809,49 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
           if (started) setState(() => playMessage = '媒体加载失败，请检查网络或切换线路');
         },
       );
-      if (player == null || !current()) return false;
+      if (player == null || !current()) {
+        if (current() && RegExp(r'\b(?:403|410)\b').hasMatch(error)) {
+          throw const SourceException('EXPIRED', '媒体地址已失效');
+        }
+        return false;
+      }
       setState(() {
         _player = player;
         _videoController = _mediaSession.controller;
       });
+      // 先绑定已安装媒体的身份，允许晚出画时仍保存正确作品与分集。
+      _recordEpisode = episode;
+      _recordVideo = video;
+      _recordProvider = service.id;
+      _recordAutomatic = automatic;
+      _recordQuality = _manualQualityCode;
+      _recordMediaUrl = _mediaSession.mediaUrl;
+      _recordResumeAt = resumeAt;
+      _recordResumeDuration = resumeDuration;
+      _recordRestoreHandled = resumeAt <= Duration.zero;
+      if (!kIsWeb &&
+          resumePlaying != false &&
+          _nativePlayer!.playback.autoPlay == false &&
+          current()) {
+        // 全局关闭自动播放不应吞掉本次明确点击；详情准备阶段从不进入这里。
+        await player.play();
+        if (!current()) return false;
+      }
       _activitySubscriptions.addAll([
         player.stream.playing.listen((_) {
-          if (current()) _updateActivity();
+          if (current()) {
+            _updateActivity();
+            if (!player.state.playing) _saveProgress();
+          }
         }),
         player.stream.buffering.listen((_) {
           if (current()) _updateActivity();
         }),
         player.stream.position.listen((_) {
-          if (current()) _updateActivity();
+          if (current()) {
+            _historySeekGuard.accepts(player.state.position);
+            _updateActivity();
+          }
         }),
       ]);
       final url = _mediaSession.mediaUrl;
@@ -510,20 +861,30 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
         final selected = state.playlist.medias.any((m) => m.uri == url);
         final hasVideo =
             selected && (state.width ?? 0) > 0 && (state.height ?? 0) > 0;
-        if (hasVideo && state.position > const Duration(milliseconds: 200)) {
+        if (hasVideo &&
+            (state.position > const Duration(milliseconds: 200) ||
+                resumePlaying == false && state.duration > Duration.zero)) {
           started = true;
-          if (resumeAt > Duration.zero && state.duration > Duration.zero) {
-            final difference = (state.duration - resumeDuration).inSeconds
-                .abs();
-            final tolerance = resumeDuration.inSeconds * .02 + 2;
-            if (resumeDuration > Duration.zero &&
-                difference <= tolerance &&
-                resumeAt < state.duration) {
-              await player.seek(resumeAt);
+          if (resumeAt > Duration.zero &&
+              state.duration > Duration.zero &&
+              !_recordRestoreHandled) {
+            _recordRestoreHandled = true;
+            final offset = sdkResumePosition(
+              position: resumeAt,
+              previousDuration: resumeDuration,
+              targetDuration: state.duration,
+            );
+            if (offset != null) {
+              _historySeekGuard.waitFor(offset);
+              await player.seek(offset);
               if (!current()) return false;
             } else {
               setState(() => resumeNotice = '线路版本时长不同，已从头播放');
             }
+          }
+          if (resumePlaying == false) {
+            await player.pause();
+            if (!current()) return false;
           }
           if (current()) {
             setState(() {
@@ -536,10 +897,16 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
             });
           }
           _updateActivity();
+          _recordStarted = true;
+          _saveProgress();
           return true;
         }
-        if (error.isNotEmpty && clock.elapsed > const Duration(seconds: 2))
+        if (error.isNotEmpty && clock.elapsed > const Duration(seconds: 2)) {
+          if (RegExp(r'\b(?:403|410)\b').hasMatch(error)) {
+            throw const SourceException('EXPIRED', '媒体地址已失效');
+          }
           return false;
+        }
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
       if (!current()) return false;
@@ -551,6 +918,11 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
           state.duration > Duration.zero)
         return null;
       return false;
+    } catch (error) {
+      if (current() && RegExp(r'\b(?:403|410)\b').hasMatch('$error')) {
+        throw const SourceException('EXPIRED', '媒体地址已失效');
+      }
+      rethrow;
     } finally {
       // 预算取消只停止本次打开的媒体，避免迟到起播或干扰新选择。
       try {
@@ -565,15 +937,82 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
 
   Widget _sourceControls(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    // 未选中线路不等于仍在加载；成功空目录与请求失败必须分别结束等待状态。
+    final lineSummary = detailLoading
+        ? '正在获取线路'
+        : detailError != null
+        ? '线路获取失败'
+        : line?.label ?? (video.lines.isEmpty ? '暂无播放线路' : '请选择线路');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_library.get(service.id, source.contentId)?.lastWatch != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              '上次看到 ${_library.get(service.id, source.contentId)!.progressLabel}',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
+          ),
+        if (_storageError != null)
+          Text(_storageError!, style: TextStyle(color: colors.error)),
         PlaybackSourcePanel(
+          trailing: PopupMenuButton<int>(
+            tooltip: '设置收藏状态',
+            enabled: !_collectBusy,
+            initialValue:
+                _library.get(service.id, source.contentId)?.collectionType ?? 0,
+            onSelected: (type) => unawaited(_collect(type)),
+            itemBuilder: (_) => [
+              for (final type in CollectType.values)
+                PopupMenuItem(
+                  value: type.value,
+                  child: Text(type == CollectType.none ? '取消收藏' : type.label),
+                ),
+            ],
+            child: Semantics(
+              container: true,
+              button: true,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 12,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bookmark_border_rounded, size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      CollectType.fromValue(
+                            _library
+                                    .get(service.id, source.contentId)
+                                    ?.collectionType ??
+                                0,
+                          ).isCollected
+                          ? CollectType.fromValue(
+                              _library
+                                  .get(service.id, source.contentId)!
+                                  .collectionType,
+                            ).label
+                          : '收藏',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           selectorKey: const ValueKey('sdk-line-selector'),
           groups: [
             for (final binding in widget.entry.sources)
               PlaybackSdkChip(
-                name: binding.provider.name,
+                name: playbackSourceName(
+                  binding.provider.id,
+                  binding.provider.name,
+                  anime: video.isAnime,
+                ),
                 selected: binding.provider.id == service.id,
                 onSelected: () {
                   if (binding.provider.id != service.id) {
@@ -583,16 +1022,44 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
               ),
           ],
           automatic: automatic,
-          summary: '${automatic ? "自动 · " : "手动 · "}${line?.label ?? "正在获取线路"}',
-          detail: decodedResolution != null
+          summary: '${automatic ? "自动 · " : "手动 · "}$lineSummary',
+          // 旧媒体在新线路准备失败时会保留；其分辨率不能冒充新线路的结果。
+          detail:
+              decodedResolution != null &&
+                  _installedSdkId == service.id &&
+                  _installedLineCode == line?.code &&
+                  playingIdentity == _requestedEpisode?.identityKey
               ? '$decodedResolution · 实际分辨率'
               : selectedQuality == null
               ? null
               : '${selectedQuality!.label}${selectedQuality!.height == null ? "" : " · 来源声明"}',
           lineCount: video.lines.length,
-          onShowLines: () => showLines(context),
+          onShowLines: video.lines.isEmpty ? null : () => showLines(context),
         ),
-        if (video.lines.isEmpty && !detailLoading)
+        if (service.supportsQualities &&
+            episodes.isNotEmpty &&
+            _requestedEpisode != null &&
+            _requestedEpisode?.code == line?.code) ...[
+          const SizedBox(height: 8),
+          SdkQualitySelector(
+            qualities: [...?_qualityCandidate?.qualities]
+              ..sort(
+                (a, b) => service
+                    .qualityPreference(b)
+                    .compareTo(service.qualityPreference(a)),
+              ),
+            automaticLabel: service.automaticQualityLabel,
+            selectedCode: _manualQualityCode,
+            status: switch (_qualityCandidate?.status) {
+              'timeout' || 'failed' => _qualityCandidate!.status,
+              'loading' => 'loading',
+              _ => _qualityCandidate?.qualityStatus ?? 'loading',
+            },
+            busy: playingLoading,
+            onSelected: (code) => unawaited(selectQuality(code)),
+          ),
+        ],
+        if (video.lines.isEmpty && !detailLoading && detailError == null)
           const Padding(
             padding: EdgeInsets.only(top: 8),
             child: Text('该作品暂无播放线路'),
@@ -630,11 +1097,15 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
               if (context.mounted) update(() {});
             };
             return PlaybackLineSheet(
-              sdkName: service.name,
+              sdkName: playbackSourceName(
+                service.id,
+                service.name,
+                anime: video.isAnime,
+              ),
               onClose: () => Navigator.of(sheetContext).pop(),
               automaticOption: SdkLineOption(
-                title: '自动（最高画质）',
-                subtitle: '优先已知画质，失败时换线',
+                title: '自动（优选线路）',
+                subtitle: '在当前 SDK 内选线，保留画质偏好',
                 automatic: true,
                 selected: automatic,
                 onTap: () {
@@ -643,12 +1114,16 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                   final target = _requestedEpisode ?? episodes.firstOrNull;
                   if (target != null)
                     unawaited(
-                      play(
-                        target,
-                        resumeAt: _player?.state.position ?? Duration.zero,
-                        resumeDuration:
-                            _player?.state.duration ?? Duration.zero,
-                      ),
+                      _hasPlayIntent
+                          ? play(
+                              target,
+                              resumeAt:
+                                  _player?.state.position ?? Duration.zero,
+                              resumeDuration:
+                                  _player?.state.duration ?? Duration.zero,
+                              resumePlaying: _player?.state.playing,
+                            )
+                          : prepare(target),
                     );
                 },
               ),
@@ -744,11 +1219,22 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
   }
 
   List<SdkEpisode> get inlineEpisodes {
-    final current = episodes.indexWhere(
-      (e) => e.code == playingCode && e.number == playingNumber,
-    );
+    final current = _displayEpisodeIndex(episodes);
     final start = current > 3 ? current - 3 : 0;
     return episodes.skip(start).take(12).toList();
+  }
+
+  int _displayEpisodeIndex(List<SdkEpisode> items) {
+    // 待播放也应显示用户实际选中的集，不能只跟随上一次已打开的媒体。
+    final selected = items.indexWhere(
+      (e) =>
+          e.code == _requestedEpisode?.code &&
+          e.identityKey == _requestedEpisode?.identityKey,
+    );
+    if (selected >= 0) return selected;
+    return items.indexWhere(
+      (e) => e.code == playingCode && e.identityKey == playingIdentity,
+    );
   }
 
   Widget episodeButton(
@@ -757,9 +1243,11 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
   }) => _SdkEpisodeButton(
     episode: episode,
     size: size,
-    selected: playingCode == episode.code && playingNumber == episode.number,
+    selected:
+        _requestedEpisode?.code == episode.code &&
+        _requestedEpisode?.identityKey == episode.identityKey,
     activity: _activity,
-    onPressed: () => play(episode),
+    onPressed: () => selectEpisode(episode),
   );
 
   void showEpisodes(BuildContext pageContext) {
@@ -767,9 +1255,7 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
     // 弹层只调整显示顺序；点击始终传回真实线路与剧集编号。
     final ascending = List<SdkEpisode>.of(episodes);
     var descending = false;
-    final currentIndex = ascending.indexWhere(
-      (e) => e.code == playingCode && e.number == playingNumber,
-    );
+    final currentIndex = _displayEpisodeIndex(ascending);
     var segment = currentIndex < 0 ? 0 : currentIndex ~/ 50;
     showModalBottomSheet<void>(
       context: pageContext,
@@ -840,12 +1326,12 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                             child: Text(descending ? '降序' : '升序'),
                           ),
                           if (playingCode == line?.code &&
-                              playingNumber != null)
+                              playingIdentity != null)
                             IconButton(
                               tooltip: '定位当前集',
                               onPressed: () => update(() {
                                 final index = ordered.indexWhere(
-                                  (e) => e.number == playingNumber,
+                                  (e) => e.identityKey == playingIdentity,
                                 );
                                 if (index >= 0) segment = index ~/ 50;
                               }),
@@ -877,7 +1363,8 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                         _SdkEpisodeSegments(
                           labels: [
                             for (var i = 0; i < groups; i++)
-                              '${ordered[i * 50].number}–${ordered[((i + 1) * 50).clamp(1, ordered.length) - 1].number}',
+                              // 有真实集号时保留非连续编号；原文 part 不伪造数字身份。
+                              '${ordered[i * 50].number ?? i * 50 + 1}–${ordered[((i + 1) * 50).clamp(1, ordered.length) - 1].number ?? ((i + 1) * 50).clamp(1, ordered.length)}',
                           ],
                           selected: segment,
                           onChanged: (index) => update(() => segment = index),
@@ -901,10 +1388,11 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                                         size: row.size,
                                         selected:
                                             episode.code == playingCode &&
-                                            episode.number == playingNumber,
+                                            episode.identityKey ==
+                                                playingIdentity,
                                         onPressed: () {
                                           Navigator.of(sheetContext).pop();
-                                          unawaited(play(episode));
+                                          unawaited(selectEpisode(episode));
                                         },
                                       );
                                   return _episodeRow(row, button);
@@ -926,10 +1414,10 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                                     activity: _activity,
                                     selected:
                                         episode.code == playingCode &&
-                                        episode.number == playingNumber,
+                                        episode.identityKey == playingIdentity,
                                     onPressed: () {
                                       Navigator.of(sheetContext).pop();
-                                      unawaited(play(episode));
+                                      unawaited(selectEpisode(episode));
                                     },
                                   );
                                 },
@@ -948,6 +1436,10 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
 
   @override
   void dispose() {
+    _saveProgress();
+    _historyTimer?.cancel();
+    _library.removeListener(_metadataChanged);
+    WidgetsBinding.instance.removeObserver(this);
     _disposed = true;
     _detailGeneration++;
     _episodesGeneration++;
@@ -1043,7 +1535,8 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                                         final index = episodes.indexWhere(
                                           (episode) =>
                                               episode.code == playingCode &&
-                                              episode.number == playingNumber,
+                                              episode.identityKey ==
+                                                  playingIdentity,
                                         );
                                         if (index >= 0 &&
                                             index + 1 < episodes.length) {
@@ -1069,17 +1562,19 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                               const ColoredBox(color: Color(0x66000000)),
                               Center(
                                 child: IconButton.filled(
-                                  tooltip: '播放所选线路第一集',
-                                  onPressed: episodes.isEmpty || playingLoading
+                                  tooltip: '播放当前选集',
+                                  onPressed: episodes.isEmpty
                                       ? null
-                                      : () => play(episodes.first),
+                                      : () => play(
+                                          _requestedEpisode ?? episodes.first,
+                                        ),
                                   icon: const Icon(Icons.play_arrow, size: 34),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      if (playingLoading)
+                      if (playingLoading && !_preparingOnly)
                         const Center(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
@@ -1170,16 +1665,36 @@ class _SdkDetailPageState extends State<SdkDetailPage> {
                       if (playMessage != null)
                         _MioPlaybackNotice(
                           message: playMessage!,
+                          onSwitch: video.lines.length < 2
+                              ? null
+                              : () => showLines(context),
                           onRetry:
                               playingLoading ||
                                   _requestedEpisode == null ||
                                   _requestedEpisode!.code != line?.code
                               ? null
-                              : () => play(_requestedEpisode!),
+                              : () => selectEpisode(_requestedEpisode!),
                         ),
-                      const SizedBox(height: 8),
+                      if (_videoController == null &&
+                          playMessage == null &&
+                          detailError == null &&
+                          !detailLoading &&
+                          episodes.isNotEmpty)
+                        Text(
+                          playingLoading
+                              ? '正在准备播放链接…'
+                              : _prepared != null
+                              ? '播放链接已准备，点击播放'
+                              : '选择剧集后准备播放链接',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       _sourceControls(context),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           const Expanded(
@@ -1541,43 +2056,71 @@ class _SdkEpisodeButton extends StatelessWidget {
 }
 
 class _MioPlaybackNotice extends StatelessWidget {
-  const _MioPlaybackNotice({required this.message, this.onRetry});
+  const _MioPlaybackNotice({
+    required this.message,
+    this.onRetry,
+    this.onSwitch,
+  });
   final String message;
   final VoidCallback? onRetry;
+  final VoidCallback? onSwitch;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
       key: const ValueKey('miomedia-playback-notice'),
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
       decoration: BoxDecoration(
         color: colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors.outlineVariant),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(Icons.info_outline_rounded, size: 18, color: colors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.5,
-                color: colors.onSurface,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final actions = Wrap(
+            spacing: 4,
+            children: [
+              if (onRetry != null)
+                TextButton(
+                  onPressed: onRetry,
+                  child: const Text('重试', style: TextStyle(fontSize: 12)),
+                ),
+              if (onSwitch != null)
+                TextButton(
+                  onPressed: onSwitch,
+                  child: const Text('切换线路', style: TextStyle(fontSize: 12)),
+                ),
+            ],
+          );
+          final messageRow = Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 18, color: colors.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.5,
+                    color: colors.onSurface,
+                  ),
+                ),
               ),
-            ),
-          ),
-          if (onRetry != null)
-            TextButton(
-              onPressed: onRetry,
-              child: const Text('重试', style: TextStyle(fontSize: 12)),
-            ),
-        ],
+              if (constraints.maxWidth >= 420) actions,
+            ],
+          );
+          return constraints.maxWidth >= 420
+              ? messageRow
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    messageRow,
+                    Align(alignment: Alignment.centerRight, child: actions),
+                  ],
+                );
+        },
       ),
     );
   }

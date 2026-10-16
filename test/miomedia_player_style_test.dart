@@ -73,7 +73,17 @@ void main() {
       final button = tester.widget<OutlinedButton>(
         find.widgetWithText(OutlinedButton, '第12集'),
       );
-      expect(button.style!.side!.resolve({})!.color, const Color(0xff30384a));
+      expect(
+        button.style!.side!.resolve({})!.color,
+        const Color(0xffa7b7ff),
+        reason: '自动准备会选中当前集，选中描边仍使用新页面primary token',
+      );
+      expect(
+        calls.where((r) => r['operation'] == 'play'),
+        hasLength(1),
+        reason: '详情进入只自动解析一次，尚未打开媒体',
+      );
+      calls.clear();
       expect(
         Theme.of(tester.element(find.text('电影测试作品'))).brightness,
         Brightness.dark,
@@ -185,6 +195,11 @@ void main() {
       final short = find.widgetWithText(OutlinedButton, labels[0]);
       final middle = find.widgetWithText(OutlinedButton, labels[2]);
       final full = find.widgetWithText(OutlinedButton, labels[4]);
+      expect(
+        tester.widget<OutlinedButton>(middle).style!.side!.resolve({})!.color,
+        const Color(0xff30384a),
+        reason: '未选集仍保持outlineVariant描边token',
+      );
       expect(tester.getSize(short).width, closeTo(114, .01));
       expect(tester.getSize(middle).width, 175);
       expect(tester.getSize(full).width, 358);
@@ -224,6 +239,12 @@ void main() {
     (tester) async {
       final calls = <Map<String, dynamic>>[];
       final service = await mount(tester, calls, scale: 2, count: 80);
+      // 大字模式下来源/画质区域允许自然换行，像用户一样滚动到选集入口。
+      await tester.scrollUntilVisible(
+        find.text('全部 80集 ›'),
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.tap(find.text('全部 80集 ›'));
       await tester.pumpAndSettle();
       final first = find.widgetWithText(OutlinedButton, '第12集').last;

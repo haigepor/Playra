@@ -11,6 +11,8 @@ import 'package:kazumi/modules/history/history_module.dart';
 import '../home/home_theme.dart';
 import 'modern_library_controller.dart';
 import 'widgets/library_card.dart';
+import 'package:kazumi/services/storage/sdk_library_store.dart';
+import 'sdk_library_widgets.dart';
 
 const _categories = <CollectType?>[
   null,
@@ -20,6 +22,19 @@ const _categories = <CollectType?>[
   CollectType.onHold,
   CollectType.abandoned,
 ];
+
+class _PersonalLibraryRow {
+  _PersonalLibraryRow.legacy(this.legacy) : sdk = null;
+  _PersonalLibraryRow.sdk(this.sdk) : legacy = null;
+  final LibraryEntry? legacy;
+  final SdkLibraryRecord? sdk;
+  String get title => sdk?.title ?? legacy!.title;
+  DateTime get watchedAt =>
+      sdk?.lastWatch?.updatedAt ??
+      legacy?.history?.lastWatchTime ??
+      DateTime(1970);
+  DateTime get changedAt => sdk?.collectedAt ?? legacy!.collection.time;
+}
 
 class ModernLibraryView extends StatefulWidget {
   const ModernLibraryView({
@@ -136,11 +151,54 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1200),
                       child: ListenableBuilder(
-                        listenable: widget.controller,
+                        listenable: Listenable.merge([
+                          widget.controller,
+                          SdkLibraryStore.shared,
+                        ]),
                         builder: (context, _) {
                           final controller = widget.controller;
                           final colors = Theme.of(context).colorScheme;
-                          final entries = controller.entries;
+                          final sdkRecords = SdkLibraryStore.shared.collections;
+                          final sdkEntries = sdkRecords.where(
+                            (record) =>
+                                (controller.category == null ||
+                                    record.collectionType ==
+                                        controller.category!.value) &&
+                                '${record.title} ${record.sourceName}'
+                                    .toLowerCase()
+                                    .contains(
+                                      controller.query.trim().toLowerCase(),
+                                    ),
+                          );
+                          final entries = <_PersonalLibraryRow>[
+                            ...controller.entries.map(
+                              _PersonalLibraryRow.legacy,
+                            ),
+                            ...sdkEntries.map(_PersonalLibraryRow.sdk),
+                          ];
+                          final originalOrder = {
+                            for (final entry in entries.indexed)
+                              entry.$2: entry.$1,
+                          };
+                          entries.sort((a, b) {
+                            final result = switch (controller.sort) {
+                              LibrarySort.title => a.title.compareTo(b.title),
+                              LibrarySort.recentlyWatched =>
+                                b.watchedAt.compareTo(a.watchedAt),
+                              LibrarySort.recentlyChanged =>
+                                b.changedAt.compareTo(a.changedAt),
+                              // SDK没有可信评分/开播日时置后，不伪造值参与排名。
+                              _ =>
+                                a.sdk == null
+                                    ? (b.sdk == null ? 0 : -1)
+                                    : (b.sdk == null ? 1 : 0),
+                            };
+                            return result != 0
+                                ? result
+                                : originalOrder[a]!.compareTo(
+                                    originalOrder[b]!,
+                                  );
+                          });
                           return Column(
                             children: [
                               Padding(
@@ -288,7 +346,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                     Expanded(
                                       child: Text(
                                         controller.query.trim().isEmpty
-                                            ? '${controller.count(controller.category)} 部番剧'
+                                            ? '${controller.count(controller.category) + sdkRecords.where((r) => controller.category == null || r.collectionType == controller.category!.value).length} 部作品'
                                             : '${entries.length} 部匹配',
                                         style: TextStyle(
                                           fontSize: 12,
@@ -380,7 +438,28 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                                     crossAxisSpacing: 12,
                                                   ),
                                               itemBuilder: (context, index) {
-                                                final entry = entries[index];
+                                                final row = entries[index];
+                                                if (row.sdk != null) {
+                                                  final record = row.sdk!;
+                                                  return SdkLibraryTile(
+                                                    key: ValueKey(
+                                                      'library-sdk-${record.key}',
+                                                    ),
+                                                    record: record,
+                                                    onOpen: () =>
+                                                        openSdkLibraryRecord(
+                                                          context,
+                                                          record,
+                                                        ),
+                                                    onCollect: (type) =>
+                                                        SdkLibraryStore.shared
+                                                            .changeCollection(
+                                                              record,
+                                                              type,
+                                                            ),
+                                                  );
+                                                }
+                                                final entry = row.legacy!;
                                                 return LibraryCard(
                                                   key: ValueKey(
                                                     'library-card-${entry.item.id}',
@@ -434,7 +513,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
 
   Widget _empty(BuildContext context, ModernLibraryController controller) {
     final searching = controller.query.trim().isNotEmpty;
-    final emptyLibrary = controller.count(null) == 0;
+    final emptyLibrary = controller.count(null) == 0 && SdkLibraryStore.shared.collections.isEmpty;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

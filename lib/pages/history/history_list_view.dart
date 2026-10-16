@@ -4,6 +4,8 @@ import 'package:kazumi/bean/widget/empty_state_widget.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/pages/history/history_list_query.dart';
+import 'personal_history_query.dart';
+import 'package:kazumi/services/storage/sdk_library_store.dart';
 import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
 import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 
@@ -13,9 +15,13 @@ class HistoryListView extends StatefulWidget {
     required this.entries,
     required this.itemBuilder,
     this.editing = false,
+    this.sdkEntries = const [],
+    this.sdkItemBuilder,
   });
 
   final List<History> entries;
+  final List<SdkLibraryRecord> sdkEntries;
+  final Widget Function(SdkLibraryRecord)? sdkItemBuilder;
   final bool editing;
   final Widget Function(History history, BorderRadius borderRadius) itemBuilder;
 
@@ -61,8 +67,9 @@ class _HistoryListViewState extends State<HistoryListView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final groups = groupHistoryEntries(
+    final groups = groupPersonalHistory(
       widget.entries,
+      widget.sdkEntries,
       query: _query,
       source: _source,
     );
@@ -120,7 +127,9 @@ class _HistoryListViewState extends State<HistoryListView> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
-                  if (widget.entries.isNotEmpty || filtered)
+                  if (widget.entries.isNotEmpty ||
+                      widget.sdkEntries.isNotEmpty ||
+                      filtered)
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(inset, 16, inset, 0),
                       sliver: SliverToBoxAdapter(
@@ -131,7 +140,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                               icon: UtilityIconKind.history,
                               title: '接着上次的故事',
                               description:
-                                  '共 ${widget.entries.length} 条观看记录 · 按最近观看排列',
+                                  '共 ${widget.entries.length + widget.sdkEntries.length} 条观看记录 · 按最近观看排列',
                               artwork: 'modern-history-art',
                             ),
                             const SizedBox(height: 16),
@@ -264,7 +273,9 @@ class _HistoryListViewState extends State<HistoryListView> {
     return Padding(
       key: row.key,
       padding: const EdgeInsets.only(bottom: 8),
-      child: widget.itemBuilder(group.entries[entryIndex], shape),
+      child: group.entries[entryIndex].sdk != null
+          ? widget.sdkItemBuilder!(group.entries[entryIndex].sdk!)
+          : widget.itemBuilder(group.entries[entryIndex].history!, shape),
     );
   }
 
@@ -364,7 +375,7 @@ class _HistoryListViewState extends State<HistoryListView> {
 class _HistoryListRow {
   const _HistoryListRow(this.group, {this.entryIndex});
 
-  final HistoryDateGroup group;
+  final PersonalHistoryGroup group;
   final int? entryIndex;
 
   Key get key {

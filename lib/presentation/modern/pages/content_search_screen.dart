@@ -483,13 +483,16 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     inputFocus.unfocus();
     setState(() => openingWork = work.id);
     try {
+      // SDK 原生动漫直接使用自身作品身份，不强制匹配 Bangumi 才允许进入。
+      final sdkEntry = SdkPlaybackEntry.fromWork(work, [
+        for (final hit in work.hits) session.provider(hit.providerId),
+      ]);
+      if (sdkEntry != null) {
+        if (!current()) return;
+        await context.pushNamed('/info/', arguments: sdkEntry);
+        return;
+      }
       if (work.primary.group != ContentGroup.anime) {
-        final sdkEntry = SdkPlaybackEntry.fromWork(work, session.providers);
-        if (sdkEntry != null) {
-          if (!current()) return;
-          await context.pushNamed('/info/', arguments: sdkEntry);
-          return;
-        }
         if (current()) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('没有可确认的 SDK 作品来源，请尝试更完整的名称或年份')),
