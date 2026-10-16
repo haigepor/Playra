@@ -51,6 +51,7 @@ class SourceMediaPlayer {
     required bool Function() canInstall,
     required void Function(String) onError,
     VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
+    bool? play,
   }) async {
     bool current() => !_closed && canInstall();
     if (!current()) return null;
@@ -64,7 +65,7 @@ class SourceMediaPlayer {
       _errors = candidate.stream.error.listen(onError);
       await configureMediaPlayback(candidate);
       if (!current()) return null;
-      await candidate.open(Media(mediaUrl));
+      await candidate.open(Media(mediaUrl), play: play ?? true);
       return current() ? candidate : null;
     }
 
@@ -96,6 +97,13 @@ class SourceMediaPlayer {
       return null;
     }
     await candidate.setRate(_defaultRate());
+    if (play != null && current()) {
+      if (play) {
+        await candidate.play();
+      } else {
+        await candidate.pause();
+      }
+    }
     if (!current()) {
       await core.stop();
       return null;

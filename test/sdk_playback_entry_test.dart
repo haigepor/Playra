@@ -70,7 +70,34 @@ ContentHit hit(String sdk, String id) => ContentHit(
   year: 2025,
 );
 
+class RankedSearchSdk extends SearchSdk {
+  RankedSearchSdk(
+    ForeignSdk sdk,
+    this.priority, [
+    List<ContentHit> hits = const [],
+  ]) : super(sdk, hits);
+  @override
+  final int priority;
+}
+
 void main() {
+  test(
+    'preferred SDK wins even when fallback provider is supplied first',
+    () async {
+      final fallback = ForeignSdk('miomedia'), preferred = ForeignSdk('lumina');
+      // 同一已确认作品携带不同 SDK 身份，入参次序不决定首选。
+      final providers = [
+        RankedSearchSdk(fallback, -100, [hit(fallback.id, 'mio-identity')]),
+        RankedSearchSdk(preferred, 100, [hit(preferred.id, 'lumina-identity')]),
+      ];
+      final session = ContentSearchSession(providers, ownsProviders: false);
+      addTearDown(session.dispose);
+      await session.submit(const ContentQuery('相同电影'));
+      final entry = SdkPlaybackEntry.fromWork(session.works.single, providers)!;
+      expect(entry.sources.first.provider.id, 'lumina');
+      expect(entry.sources.last.contentId, 'mio-identity');
+    },
+  );
   test(
     'work carries both SDK identities without converting foreign references to Mio IDs',
     () async {
@@ -105,7 +132,7 @@ void main() {
     expect(SdkPlaybackEntry.fromWork(work, [SearchSdk(sdk)]), isNull);
   });
   testWidgets(
-    'second SDK works through the same player page and starts on explicit selection',
+    'SDK detail prepares the selected provider without opening media',
     (tester) async {
       final a = ForeignSdk('miomedia'), b = ForeignSdk('sdk_other');
       await tester.pumpWidget(
@@ -123,13 +150,14 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(ChoiceChip, 'miomedia'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, '影视 · MioMedia'), findsOneWidget);
       final other = find.widgetWithText(ChoiceChip, 'sdk_other');
       await tester.ensureVisible(other);
+      await tester.pumpAndSettle();
       await tester.tap(other);
       await tester.pumpAndSettle();
       expect(tester.widget<ChoiceChip>(other).selected, isTrue);
-      expect(a.played, isEmpty);
+      expect(a.played, ['a-identity|line/a-identity|57']);
       expect(b.played, ['foreign/id?x|line/foreign/id?x|57']);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

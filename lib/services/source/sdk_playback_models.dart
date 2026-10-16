@@ -12,6 +12,7 @@ abstract class SdkVideo {
   double get score;
   List<SdkLine> get lines;
   bool get singleMovie;
+  bool get isAnime => false;
   String? get edition => null;
   String get subtitle => [
     year,
@@ -59,12 +60,19 @@ class SdkEpisode {
     required this.name,
     required this.code,
     this.vip = false,
+    this.reference,
   });
-  final int number;
+  // 非数字的 SP/日期/上下篇没有真实集号，不能以目录下标替代来源身份。
+  final int? number;
   final String name, code;
   final bool vip;
-  String get label =>
-      name.isEmpty ? '第${number.toString().padLeft(2, '0')}集' : name;
+  final String? reference;
+  String get identityKey => reference ?? '$number';
+  String get label => name.isNotEmpty
+      ? name
+      : number == null
+      ? '未命名剧集'
+      : '第${number.toString().padLeft(2, '0')}集';
 }
 
 class SdkQuality {
@@ -73,6 +81,7 @@ class SdkQuality {
   // 空值表示证据不足；“原画/蓝光”这样的营销名称不虚构分辨率。
   final int? height;
   String get label => height == null ? '画质待确认' : '${height}p';
+  String get choiceLabel => height == 2160 ? '4K' : label;
 
   static int? resolution(Object? value) {
     if (value is num && value.isFinite && value == value.roundToDouble()) {
@@ -113,11 +122,13 @@ class SdkLineCandidate {
     this.episode,
     this.qualities = const [],
     this.status = 'ready',
+    this.qualityStatus = 'ready',
   });
   final SdkLine line;
   final SdkEpisode? episode;
   final List<SdkQuality> qualities;
   final String status;
+  final String qualityStatus;
   SdkQuality? get bestQuality {
     SdkQuality? best;
     for (final quality in qualities) {

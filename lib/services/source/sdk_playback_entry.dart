@@ -18,7 +18,7 @@ class SdkPlaybackEntry {
     required this.title,
     required Iterable<SdkSourceBinding> sources,
     this.cover = '',
-    this.autoPlay = true,
+    this.autoPlay = false,
   }) : sources = List.unmodifiable(sources) {
     if (this.sources.isEmpty) {
       throw ArgumentError('SDK playback requires a source');
@@ -33,7 +33,27 @@ class SdkPlaybackEntry {
     Iterable<ContentSearchProvider> providers,
   ) {
     final sources = <SdkSourceBinding>[];
-    for (final provider in providers) {
+    final ordered = providers.toList().asMap().entries.toList()
+      ..sort((a, b) {
+        final rank = b.value.priority.compareTo(a.value.priority);
+        return rank == 0 ? a.key.compareTo(b.key) : rank;
+      });
+    // 动漫规则已确认且优先级更高时，不能因后备影视 SDK 有接口就抢走入口。
+    final playable = ordered
+        .map((e) => e.value)
+        .where(
+          (p) => p.canPlay && work.hits.any((hit) => hit.providerId == p.id),
+        )
+        .toList();
+    if (work.primary.group == ContentGroup.anime &&
+        playable.isNotEmpty &&
+        playable.first.sdkPlayback == null) {
+      return null;
+    }
+    final seen = <String>{};
+    for (final item in ordered) {
+      final provider = item.value;
+      if (!seen.add(provider.id)) continue;
       final sdk = provider.sdkPlayback;
       if (sdk == null || sdk.id != provider.id || !provider.canPlay) continue;
       final hits = work.hits

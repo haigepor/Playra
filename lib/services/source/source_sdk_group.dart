@@ -1,4 +1,5 @@
 import 'package:kazumi/plugins/plugins.dart';
+import 'source_display_names.dart';
 
 /// SDK 分组只改变展示与自动尝试范围，不改变历史使用的 providerId。
 /// 新 SDK 在此注册受管理标记和运行路由；自定义规则默认各自独立。
@@ -31,7 +32,7 @@ class PlaybackSourceGroup {
       for (final entry in groups.entries)
         PlaybackSourceGroup(
           entry.key,
-          entry.key == 'anifive' ? 'AniFive' : entry.value.first.name,
+          playbackSourceName(entry.key, entry.value.first.name, anime: true),
           List.unmodifiable(entry.value),
         ),
     ];

@@ -145,6 +145,8 @@ class MioVideo extends SdkVideo {
   MioKind get kind => mioKind(categoryName, types);
   @override
   bool get singleMovie => kind == MioKind.movie;
+  @override
+  bool get isAnime => kind == MioKind.anime;
   String get identity => 'miomedia:$id';
   @override
   String get subtitle => [
@@ -168,7 +170,7 @@ class MioEpisode extends SdkEpisode {
         code: _text(raw['code']),
         vip: raw['isVip'] == 1 || raw['isVip'] == true,
       ) {
-    if (number < 1 || !_lineCode(code)) {
+    if (number == null || number! < 1 || !_lineCode(code)) {
       throw const FormatException('Invalid episode');
     }
   }

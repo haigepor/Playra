@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'sdk_playback_models.dart';
 import 'sdk_playback_provider.dart';
 import 'source_models.dart';
+import 'prepared_playback.dart';
 
 class SdkPlaybackOutcome {
   const SdkPlaybackOutcome(
@@ -12,12 +13,14 @@ class SdkPlaybackOutcome {
     this.errorCode,
     this.quality,
     this.untried = 0,
+    this.prepared,
   });
   final String status;
   final SdkEpisode? episode;
   final String? errorCode;
   final SdkQuality? quality;
   final int untried;
+  final PreparedPlayback? prepared;
 }
 
 /// 仅编排来源调用；凭证和身份策略仍由 SDK 负责。
@@ -29,12 +32,14 @@ class SdkPlaybackCoordinator {
     this.onChanged,
     this.metadataBudget = const Duration(seconds: 10),
     this.playbackBudget = const Duration(seconds: 75),
-  });
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
   final String videoId;
   final SdkPlaybackProvider service;
   final bool singleMovie;
   final void Function()? onChanged;
   final Duration metadataBudget, playbackBudget;
+  final DateTime Function() _now;
   List<SdkLineCandidate> candidates = const [];
   int _probeGeneration = 0;
   final _cache = <String, ({DateTime at, List<SdkEpisode> items})>{};
@@ -182,10 +187,10 @@ class SdkPlaybackCoordinator {
         attempts++;
         await onAttempt(line, episode);
         if (cancelled()) return const SdkPlaybackOutcome('cancelled');
-        final result = await service.play(
+        final result = await service.playEpisode(
           videoId,
           line.code,
-          episode.number,
+          episode,
           cancel: cancel,
         );
         if (cancelled()) return const SdkPlaybackOutcome('cancelled');
@@ -213,7 +218,7 @@ class SdkPlaybackCoordinator {
         if (selection is! Map ||
             selection['videoId'] != videoId ||
             selection['code'] != line.code ||
-            selection['episodeNum'] != episode.number) {
+            !_sameEpisode(selection, episode)) {
           return const SdkPlaybackOutcome('identity_mismatch');
         }
         final uri = media is Map && media['url'] is String
@@ -300,7 +305,7 @@ class SdkPlaybackCoordinator {
               ? items.firstOrNull
               : line.code == requested.code
               ? items
-                    .where((item) => item.number == requested.number)
+                    .where((item) => item.identityKey == requested.identityKey)
                     .firstOrNull
               : match(requested, items, singleMovie: verifiedMovie);
           if (episode == null) {
@@ -310,20 +315,29 @@ class SdkPlaybackCoordinator {
             );
           } else {
             // 先保留已匹配的目录，画质超时不能把可播放线路变成无命中。
-            results[line.code] = SdkLineCandidate(line: line, episode: episode);
+            results[line.code] = SdkLineCandidate(
+              line: line,
+              episode: episode,
+              qualityStatus: service.supportsQualities ? 'loading' : 'unknown',
+            );
             publish();
             List<SdkQuality> qualities = const [];
+            var qualityStatus = 'unknown';
             if (service.supportsQualities) {
               try {
                 qualities = await service
-                    .qualities(
+                    .qualitiesForEpisode(
                       videoId,
                       line.code,
-                      episode.number,
+                      episode,
                       cancel: probe,
                     )
                     .timeout(metadataBudget);
-              } catch (_) {
+                qualityStatus = 'ready';
+              } catch (error) {
+                qualityStatus = error is TimeoutException
+                    ? 'timeout'
+                    : 'failed';
                 /* 画质未知仍保留可重试的目录，不伪造清晰度。 */
               }
             }
@@ -332,6 +346,7 @@ class SdkPlaybackCoordinator {
               line: line,
               episode: episode,
               qualities: qualities,
+              qualityStatus: qualityStatus,
             );
           }
         } catch (error) {
@@ -360,13 +375,46 @@ class SdkPlaybackCoordinator {
         !_disposed && !cancel.isCancelled && generation == _probeGeneration;
     probe.cancel('metadata finished');
     if (!valid) return const [];
-    candidates = [
-      for (final line in unique)
-        results[line.code] ?? SdkLineCandidate(line: line, status: 'timeout'),
-    ];
+    candidates = unique.map((line) {
+      final item =
+          results[line.code] ?? SdkLineCandidate(line: line, status: 'timeout');
+      // 总预算到期时，目录已经匹配的线路仍可播放，但画质不能永远停在加载中。
+      return item.qualityStatus == 'loading'
+          ? SdkLineCandidate(
+              line: item.line,
+              episode: item.episode,
+              qualities: item.qualities,
+              status: item.status,
+              qualityStatus: 'timeout',
+            )
+          : item;
+    }).toList();
     onChanged?.call();
     return candidates;
   }
+
+  static bool _sameEpisode(Map selection, SdkEpisode episode) =>
+      episode.reference != null
+      ? selection['episodeRef'] == episode.reference
+      : episode.number != null && selection['episodeNum'] == episode.number;
+
+  /// 只解析当前同集候选，不打开播放器，也不登记首帧成功。
+  Future<SdkPlaybackOutcome> preparePlayback(
+    SdkEpisode requested,
+    List<SdkLine> lines, {
+    required CancelToken cancel,
+    required FutureOr<void> Function(SdkLine, SdkEpisode, SdkQuality?)
+    onAttempt,
+    bool manual = false,
+    String? qualityCode,
+  }) => _runAutomatic(
+    requested,
+    lines,
+    cancel: cancel,
+    onAttempt: onAttempt,
+    manual: manual,
+    qualityCode: qualityCode,
+  );
 
   Future<SdkPlaybackOutcome> playAutomatic(
     SdkEpisode requested,
@@ -381,6 +429,30 @@ class SdkPlaybackCoordinator {
     )
     open,
     bool manual = false,
+    PreparedPlayback? prepared,
+    String? qualityCode,
+  }) => _runAutomatic(
+    requested,
+    lines,
+    cancel: cancel,
+    onAttempt: onAttempt,
+    manual: manual,
+    open: open,
+    prepared: prepared,
+    qualityCode: qualityCode,
+  );
+
+  Future<SdkPlaybackOutcome> _runAutomatic(
+    SdkEpisode requested,
+    List<SdkLine> lines, {
+    required CancelToken cancel,
+    required FutureOr<void> Function(SdkLine, SdkEpisode, SdkQuality?)
+    onAttempt,
+    Future<bool?> Function(SdkEpisode, Map<dynamic, dynamic>, CancelToken)?
+    open,
+    bool manual = false,
+    PreparedPlayback? prepared,
+    String? qualityCode,
   }) async {
     bool cancelled() => _disposed || cancel.isCancelled;
     final clock = Stopwatch()..start();
@@ -389,11 +461,14 @@ class SdkPlaybackCoordinator {
     final attempts = <({SdkLineCandidate candidate, SdkQuality? quality})>[];
     for (final candidate in choices.where((item) => item.episode != null)) {
       if (candidate.qualities.isEmpty) {
-        attempts.add((candidate: candidate, quality: null));
+        if (qualityCode == null) {
+          attempts.add((candidate: candidate, quality: null));
+        }
       } else {
         final codes = <String>{};
         for (final quality in candidate.qualities) {
-          if (codes.add(quality.code)) {
+          if (codes.add(quality.code) &&
+              (qualityCode == null || quality.code == qualityCode)) {
             attempts.add((candidate: candidate, quality: quality));
           }
         }
@@ -401,16 +476,20 @@ class SdkPlaybackCoordinator {
     }
     final ranks = ranked(lines).map((line) => line.code).toList();
     attempts.sort((a, b) {
-      final quality = (b.quality?.height ?? 0).compareTo(
-        a.quality?.height ?? 0,
-      );
+      final quality =
+          (b.quality == null ? 0 : service.qualityPreference(b.quality!))
+              .compareTo(
+                a.quality == null ? 0 : service.qualityPreference(a.quality!),
+              );
       return quality != 0
           ? quality
           : ranks
                 .indexOf(a.candidate.line.code)
                 .compareTo(ranks.indexOf(b.candidate.line.code));
     });
-    var failure = 'PLAYBACK_UNAVAILABLE';
+    var failure = qualityCode != null && attempts.isEmpty
+        ? 'QUALITY_UNAVAILABLE'
+        : 'PLAYBACK_UNAVAILABLE';
     for (var index = 0; index < attempts.length; index++) {
       if (cancelled()) return const SdkPlaybackOutcome('cancelled');
       if (clock.elapsed >= playbackBudget) {
@@ -434,66 +513,113 @@ class SdkPlaybackCoordinator {
           () => onAttempt(candidate.line, episode, attempt.quality),
         ).timeout(remaining());
         if (cancelled()) return const SdkPlaybackOutcome('cancelled');
-        final result = await service
-            .play(
-              videoId,
-              candidate.line.code,
-              episode.number,
-              quality: attempt.quality?.code,
-              cancel: attemptCancel,
-            )
-            .timeout(remaining());
-        if (cancelled()) return const SdkPlaybackOutcome('cancelled');
-        if (result['status'] == 'ad_required') {
-          return const SdkPlaybackOutcome('ad_required');
-        }
-        if (result['status'] != 'ready') {
-          failure = result['error'] is String
-              ? result['error']
-              : 'PLAYBACK_UNAVAILABLE';
-          _record(candidate.line, 30000);
-          continue;
-        }
-        final selection = result['selection'], media = result['media'];
-        if (selection is! Map ||
-            selection['videoId'] != videoId ||
-            selection['code'] != candidate.line.code ||
-            selection['episodeNum'] != episode.number) {
-          return const SdkPlaybackOutcome('identity_mismatch');
-        }
-        final uri = media is Map && media['url'] is String
-            ? Uri.tryParse(media['url'])
-            : null;
-        if (uri == null ||
-            !['http', 'https'].contains(uri.scheme) ||
-            uri.host.isEmpty ||
-            uri.userInfo.isNotEmpty) {
-          failure = 'INVALID_MEDIA';
-          continue;
-        }
-        final startedAt = Stopwatch()..start();
-        final started = await open(
-          episode,
-          media as Map,
-          attemptCancel,
-        ).timeout(remaining());
-        if (cancelled()) return const SdkPlaybackOutcome('cancelled');
-        if (started == null || started) {
-          if (started == true) {
-            _record(
-              candidate.line,
-              startedAt.elapsedMilliseconds.toDouble(),
-              success: true,
+        for (var refresh = 0; refresh < 2; refresh++) {
+          Map media;
+          if (refresh == 0 &&
+              prepared != null &&
+              prepared.isFresh(_now()) &&
+              prepared.matches(
+                providerId: service.id,
+                contentId: videoId,
+                lineCode: candidate.line.code,
+                episodeIdentity: episode.identityKey,
+                qualityCode: attempt.quality?.code,
+              )) {
+            media = prepared.media;
+          } else {
+            final result = await service
+                .playEpisode(
+                  videoId,
+                  candidate.line.code,
+                  episode,
+                  quality: attempt.quality?.code,
+                  cancel: attemptCancel,
+                )
+                .timeout(remaining());
+            if (cancelled()) return const SdkPlaybackOutcome('cancelled');
+            if (result['status'] == 'ad_required') {
+              return const SdkPlaybackOutcome('ad_required');
+            }
+            if (result['status'] != 'ready') {
+              failure = result['error'] is String
+                  ? result['error']
+                  : 'PLAYBACK_UNAVAILABLE';
+              _record(candidate.line, 30000);
+              break;
+            }
+            final selection = result['selection'], value = result['media'];
+            if (selection is! Map ||
+                selection['videoId'] != videoId ||
+                selection['code'] != candidate.line.code ||
+                !_sameEpisode(selection, episode)) {
+              return const SdkPlaybackOutcome('identity_mismatch');
+            }
+            if (value is! Map) {
+              failure = 'INVALID_MEDIA';
+              break;
+            }
+            media = value;
+          }
+          final uri = media['url'] is String
+              ? Uri.tryParse(media['url'])
+              : null;
+          if (uri == null ||
+              !['http', 'https'].contains(uri.scheme) ||
+              uri.host.isEmpty ||
+              uri.userInfo.isNotEmpty) {
+            failure = 'INVALID_MEDIA';
+            break;
+          }
+          if (open == null) {
+            return SdkPlaybackOutcome(
+              'prepared',
+              episode: episode,
+              quality: attempt.quality,
+              prepared: PreparedPlayback(
+                providerId: service.id,
+                contentId: videoId,
+                lineCode: candidate.line.code,
+                episodeIdentity: episode.identityKey,
+                qualityCode: attempt.quality?.code,
+                resolvedAt: _now(),
+                media: media,
+              ),
             );
           }
-          return SdkPlaybackOutcome(
-            started == null ? 'interaction_required' : 'ready',
-            episode: episode,
-            quality: attempt.quality,
-          );
+          final startedAt = Stopwatch()..start();
+          bool? started;
+          try {
+            started = await open(
+              episode,
+              media,
+              attemptCancel,
+            ).timeout(remaining());
+          } on SourceException catch (error) {
+            // 短效地址拒绝时只在原同集同线路刷新一次，手动锁定范围不扩大。
+            if (error.code == 'EXPIRED' && refresh == 0 && !cancelled()) {
+              continue;
+            }
+            rethrow;
+          }
+          if (cancelled()) return const SdkPlaybackOutcome('cancelled');
+          if (started == null || started) {
+            if (started == true) {
+              _record(
+                candidate.line,
+                startedAt.elapsedMilliseconds.toDouble(),
+                success: true,
+              );
+            }
+            return SdkPlaybackOutcome(
+              started == null ? 'interaction_required' : 'ready',
+              episode: episode,
+              quality: attempt.quality,
+            );
+          }
+          failure = 'MEDIA_LOAD_FAILED';
+          _record(candidate.line, 30000);
+          break;
         }
-        failure = 'MEDIA_LOAD_FAILED';
-        _record(candidate.line, 30000);
       } catch (error) {
         if (cancelled()) return const SdkPlaybackOutcome('cancelled');
         if (error is TimeoutException) {

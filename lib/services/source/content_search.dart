@@ -97,6 +97,9 @@ abstract class ContentSearchProvider {
   String get name;
   Set<ContentGroup> get groups;
   bool get canPlay => false;
+
+  /// 展示优先级独立于网络返回顺序；默认保留现有来源顺序。
+  int get priority => 0;
   Future<ContentSearchPage> search(
     ContentQuery query,
     int page,
@@ -158,13 +161,28 @@ ContentMatch matchContent(ContentHit a, ContentHit b) {
 }
 
 class ContentWork {
-  ContentWork(ContentHit first) : id = first.key, _hits = {first.key: first};
+  ContentWork(ContentHit first, {int Function(String)? providerPriority})
+    : id = first.key,
+      _hits = {first.key: first},
+      _providerPriority = providerPriority ?? _defaultPriority;
+  static int _defaultPriority(String _) => 0;
+  final int Function(String) _providerPriority;
   final String id;
   final Map<String, ContentHit> _hits;
-  List<ContentHit> get hits => List.unmodifiable(_hits.values);
-  ContentHit get primary => _hits.values.first;
+  List<ContentHit> get hits {
+    final indexed = _hits.values.toList().asMap().entries.toList();
+    indexed.sort((a, b) {
+      final rank = _providerPriority(
+        b.value.providerId,
+      ).compareTo(_providerPriority(a.value.providerId));
+      return rank == 0 ? a.key.compareTo(b.key) : rank;
+    });
+    return List.unmodifiable(indexed.map((e) => e.value));
+  }
+
+  ContentHit get primary => hits.first;
   String get title => primary.title;
-  String get cover => _hits.values
+  String get cover => hits
       .map((h) => h.cover)
       .firstWhere((v) => v.isNotEmpty, orElse: () => '');
   bool accepts(ContentHit hit) => _hits.values.every(
@@ -223,7 +241,17 @@ class ContentSearchSession extends ChangeNotifier {
   CancelToken _cancel = CancelToken();
   int _generation = 0;
   bool _disposed = false, searching = false;
-  List<ContentWork> get works => List.unmodifiable(_works);
+  List<ContentWork> get works {
+    final indexed = _works.asMap().entries.toList();
+    indexed.sort((a, b) {
+      final rank = provider(
+        b.value.primary.providerId,
+      ).priority.compareTo(provider(a.value.primary.providerId).priority);
+      return rank == 0 ? a.key.compareTo(b.key) : rank;
+    });
+    return List.unmodifiable(indexed.map((e) => e.value));
+  }
+
   bool get hasProviders => statuses.isNotEmpty;
   bool get hasMore => _more.values.any((v) => v);
   int get failures => statuses.values
@@ -408,7 +436,9 @@ class ContentSearchSession extends ChangeNotifier {
     if (matches.length == 1) {
       matches.single._hits[hit.key] = hit;
     } else {
-      _works.add(ContentWork(hit));
+      _works.add(
+        ContentWork(hit, providerPriority: (id) => provider(id).priority),
+      );
     }
   }
 

@@ -14,13 +14,18 @@ import 'source_models.dart';
 import 'source_playback_service.dart';
 import 'package:kazumi/services/video_source/video_source_format.dart';
 import 'source_resolve_config.dart';
+import 'lumina/lumina_content_provider.dart';
+import 'lumina/lumina_service.dart';
+import 'package:kazumi/services/platform/lumina_support.dart';
 
 /// 维护者接入新来源只需登记 Adapter；没有实现的来源不加入执行集合。
 List<ContentSearchProvider> contentProviders(
   Iterable<Plugin> rules, {
   MioMediaService? mio,
+  LuminaService? lumina,
   bool includeMetadata = true,
 }) => [
+  if (luminaSupported) LuminaContentProvider(lumina ?? LuminaService()),
   if (includeMetadata) BangumiContentProvider(),
   MioContentProvider(mio ?? MioMediaService()),
   for (final rule in rules)
@@ -171,12 +176,16 @@ class MioContentProvider extends ContentSearchProvider {
   String get id => 'miomedia';
   @override
   String get name => 'miomedia';
+  // 同类动漫由原生动漫来源优先；影视 SDK 的动漫只能作为后备候选。
+  @override
+  int get priority => -100;
   late final _sdkPlayback = MioSdkPlaybackProvider(service);
   @override
   SdkPlaybackProvider get sdkPlayback => _sdkPlayback;
   // 保留 SDK 已有内容；后续专属来源通过登记加入，不复制 SDK。
   @override
   Set<ContentGroup> get groups => {
+    ContentGroup.anime,
     ContentGroup.screen,
     ContentGroup.comicDrama,
     ContentGroup.series,
@@ -197,8 +206,7 @@ class MioContentProvider extends ContentSearchProvider {
     final items = <ContentHit>[];
     for (final video in result.items) {
       final group = ContentGroup.fromKind(video.kind.name);
-      if (group == ContentGroup.anime ||
-          query.group != null && query.group != group) {
+      if (query.group != null && query.group != group) {
         continue;
       }
       items.add(

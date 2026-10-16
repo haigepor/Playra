@@ -14,7 +14,7 @@ void main() {
     final groups = PlaybackSourceGroup.fromPlugins(rules);
     expect(groups, hasLength(1));
     expect(groups.single.id, 'anifive');
-    expect(groups.single.name, 'AniFive');
+    expect(groups.single.name, '动漫 · AniFive');
     expect(groups.single.plugins.map((p) => p.providerId), [
       'dm84',
       'mxdm',

@@ -29,6 +29,7 @@ class GStorage {
   static late final Box<dynamic> _setting;
   static late Box<SearchHistory> searchHistory;
   static late Box<DownloadRecord> downloads;
+  static Box<String>? sdkLibrary;
 
   /// Hive directory path, initialized during init()
   static String? _hivePath;
@@ -162,6 +163,8 @@ class GStorage {
     shieldList = await _openBoxSafe<String>('shieldList');
     searchHistory = await _openBoxSafe<SearchHistory>('searchHistory');
     downloads = await _openBoxSafe<DownloadRecord>('downloads');
+    // 不复用旧Bangumi适配器或恢复时删除Box，独立SDK身份按JSON版本保存。
+    sdkLibrary = await Hive.openBox<String>('sdk_personal_library_v1');
     if (Platform.isIOS) {
       await rebaseIosDownloadPaths(downloads);
     }

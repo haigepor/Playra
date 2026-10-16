@@ -83,6 +83,40 @@ void main() {
     ).execute(request, config);
     expect(identical(delegate.received, request), true);
   });
+  test('Lumina uses a fixed route and preserves opaque part and empty UA', () async {
+    server.listen((req) async {
+      expect(req.method, 'POST');
+      expect(req.uri.path, '/v1/adapters/lumina/sdk');
+      expect(jsonDecode(await utf8.decoder.bind(req).join()), {
+        'operation': 'play',
+        'payload': {
+          'videoId': '18446744073709551616',
+          'playFormat': 'mp4',
+          'part': '特别篇·上',
+        },
+      });
+      req.response.write(jsonEncode({
+        'data': {
+          'status': 'ready',
+          'media': {
+            'url': 'https://media.example/test.m3u8',
+            'headers': {'User-Agent': ''},
+          },
+        },
+      }));
+      await req.response.close();
+    });
+    final result = await runtime.callLumina('play', payload: {
+      'videoId': '18446744073709551616',
+      'playFormat': 'mp4',
+      'part': '特别篇·上',
+    });
+    expect(result['data']['media']['headers'], {'User-Agent': ''});
+    await expectLater(
+      runtime.request('adapters/unknown/sdk', method: 'POST'),
+      throwsA(code('UNSUPPORTED')),
+    );
+  });
   test(
     'MioMedia SDK uses the fixed POST envelope and preserves string IDs',
     () async {

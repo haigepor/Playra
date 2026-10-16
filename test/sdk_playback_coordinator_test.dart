@@ -92,6 +92,81 @@ Future<SdkPlaybackOutcome> auto(
 
 void main() {
   test(
+    'an explicit 1080p request never upgrades to 4K or unlocks its line',
+    () async {
+      final sdk = TestSdk()
+        ..heights.addAll({
+          'first': [
+            const SdkQuality('2160p', height: 2160),
+            const SdkQuality('1080p', height: 1080),
+          ],
+          'other': [const SdkQuality('2160p', height: 2160)],
+        });
+      final coordinator = SdkPlaybackCoordinator('work', sdk);
+      addTearDown(coordinator.dispose);
+      final result = await coordinator.preparePlayback(
+        anchor,
+        lines(sdk),
+        cancel: CancelToken(),
+        manual: true,
+        qualityCode: '1080p',
+        onAttempt: (_, _, _) {},
+      );
+      expect(result.status, 'prepared');
+      expect(result.quality?.code, '1080p');
+      expect(sdk.played, ['first:1080p:1']);
+    },
+  );
+
+  test(
+    'an unavailable explicit quality cannot become an automatic resolution',
+    () async {
+      final sdk = TestSdk()
+        ..heights['first'] = [const SdkQuality('1080p', height: 1080)];
+      final coordinator = SdkPlaybackCoordinator('work', sdk);
+      addTearDown(coordinator.dispose);
+      final result = await coordinator.preparePlayback(
+        anchor,
+        lines(sdk),
+        cancel: CancelToken(),
+        manual: true,
+        qualityCode: '2160p',
+        onAttempt: (_, _, _) {},
+      );
+      expect(result.errorCode, 'QUALITY_UNAVAILABLE');
+      expect(sdk.played, isEmpty);
+    },
+  );
+
+  test(
+    'a failed manual quality does not silently downgrade or switch lines',
+    () async {
+      final sdk = TestSdk()
+        ..heights.addAll({
+          'first': [
+            const SdkQuality('2160p', height: 2160),
+            const SdkQuality('1080p', height: 1080),
+          ],
+          'other': [const SdkQuality('2160p', height: 2160)],
+        })
+        ..failed.add('first:2160p');
+      final coordinator = SdkPlaybackCoordinator('work', sdk);
+      addTearDown(coordinator.dispose);
+      final result = await coordinator.playAutomatic(
+        anchor,
+        lines(sdk),
+        cancel: CancelToken(),
+        manual: true,
+        qualityCode: '2160p',
+        onAttempt: (_, _, _) {},
+        open: (_, _, _) async => true,
+      );
+      expect(result.status, 'unavailable');
+      expect(sdk.played, ['first:2160p:1']);
+    },
+  );
+
+  test(
     'quality timeout retains the already matched playable episode',
     () async {
       final sdk = TestSdk()
@@ -106,6 +181,11 @@ void main() {
       try {
         expect((await auto(c, sdk)).status, 'ready');
         expect(sdk.played, ['first:auto:1']);
+        expect(
+          c.candidates.single.qualityStatus,
+          'timeout',
+          reason: '已结束的画质探测不能一直显示加载中',
+        );
       } finally {
         sdk.held['first']!.complete();
       }

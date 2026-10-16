@@ -9,6 +9,33 @@ import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test(
+    'Mio anime is classified as anime and offered only as a low priority fallback',
+    () async {
+      final provider = MioContentProvider(
+        MioMediaService(
+          request: (_, _, _) async => {
+            'data': {
+              'videos': [
+                {'id': '42', 'title': '动画', 'categoryName': '日本动漫'},
+                {'id': '43', 'title': '真人电影', 'categoryName': '电影大全'},
+              ],
+            },
+          },
+        ),
+      );
+      addTearDown(provider.dispose);
+      expect(provider.groups, contains(ContentGroup.anime));
+      expect(provider.priority, lessThan(0));
+      final result = await provider.search(
+        const ContentQuery('作品', group: ContentGroup.anime),
+        1,
+        CancelToken(),
+      );
+      expect(result.items.map((hit) => hit.contentId), ['42']);
+      expect(result.items.single.group, ContentGroup.anime);
+    },
+  );
+  test(
     'first-use registry loads four bundled anime adapters without installation',
     () async {
       final providers = await loadContentProviders(const []);

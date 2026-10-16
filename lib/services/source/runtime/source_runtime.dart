@@ -66,7 +66,8 @@ class SourceRuntimeClient {
   static bool accepts(Uri uri, String method) {
     final path = uri.path;
     if (method == 'GET' && ['health', 'adapters'].contains(path)) return true;
-    if (path == 'adapters/miomedia/sdk' && method == 'POST') return true;
+    if (const ['adapters/miomedia/sdk', 'adapters/lumina/sdk'].contains(path) &&
+        method == 'POST') return true;
     final match = RegExp(
       r'^adapters/[A-Za-z0-9_-]{1,64}/(search|episodes|resolve)$',
     ).firstMatch(path);
@@ -83,6 +84,18 @@ class SourceRuntimeClient {
     CancelToken? cancelToken,
   }) => request(
     'adapters/miomedia/sdk',
+    method: 'POST',
+    body: {'operation': operation, 'payload': payload},
+    cancelToken: cancelToken,
+  );
+
+  /// 只开放 Lumina 内容与播放业务；环境绑定值和算法始终留在运行宿主。
+  Future<Map<String, dynamic>> callLumina(
+    String operation, {
+    Map<String, dynamic> payload = const {},
+    CancelToken? cancelToken,
+  }) => request(
+    'adapters/lumina/sdk',
     method: 'POST',
     body: {'operation': operation, 'payload': payload},
     cancelToken: cancelToken,

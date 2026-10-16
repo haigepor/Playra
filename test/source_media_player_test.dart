@@ -7,6 +7,17 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 class _Player implements Player {
   double rate = 1;
+  int pauses = 0, plays = 0;
+  @override
+  Future<void> pause({bool sync = true}) async {
+    pauses++;
+  }
+
+  @override
+  Future<void> play({bool sync = true}) async {
+    plays++;
+  }
+
   @override
   Future<void> setRate(double value, {bool sync = true}) async => rate = value;
   @override
@@ -60,6 +71,28 @@ class _Playback implements PlayerPlaybackController {
 }
 
 void main() {
+  test(
+    'a paused quality switch keeps native playback paused without changing global settings',
+    () async {
+      late _Playback core;
+      final player = SourceMediaPlayer(
+        useWeb: false,
+        createNative: (url, debug) => core = _Playback(url),
+        defaultRate: () => 1,
+        logLevel: () => 2,
+      );
+      await player.open(
+        'https://media.example/1080.mp4',
+        {},
+        canInstall: () => true,
+        onError: (_) {},
+        play: false,
+      );
+      expect(core.current.pauses, 1);
+      expect(core.current.plays, 0);
+      await player.dispose();
+    },
+  );
   test(
     'native Mio playback delegates headers and configuration to the original core',
     () async {
