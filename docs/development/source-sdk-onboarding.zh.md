@@ -1,16 +1,17 @@
 # Playra 统一 SDK 接入规范
 
-版本：1.4；更新：2026-10-15；适用：新增 SDK、内容 HTTP API、动漫规则和资料源。本文是唯一接入入口；[接入记录模板](templates/source-sdk-checklist.zh.md)是每次交付的必填附件。历史分析说明背景，不代替本文或当前源码。
+版本：1.8；更新：2026-10-16；适用：新增 SDK、内容 HTTP API、动漫规则和资料源。本文是唯一接入入口；[接入记录模板](templates/source-sdk-checklist.zh.md)是每次交付的必填附件。历史分析说明背景，不代替本文或当前源码。
 
 本文中的“必须”为新增接入的验收条件；“当前实现”为代码现状；“待补齐”为尚未实现或尚无验证证据的事项。规范更新不表示对应业务代码已自动升级。
 
 ## 1. 当前接入盘点与架构结论
 
-按 SDK 家族计，当前有 **MioMedia、AniFive 两套 SDK**；按可执行运行适配器计，有 **5 个**。HTTP 注册表另有 `template` 占位，不能计入可播放来源。Bangumi 是资料提供方，不是第 3 套播放 SDK。
+按 SDK 家族计，当前有 **Lumina、MioMedia、AniFive 三套 SDK**；支持Lumina的平台通常有 **6 个**运行适配器，Android ARM32与当前iOS不登记Lumina，保留原5个来源适配器。HTTP 注册表另有 `template` 占位，不能计入可播放来源。Bangumi是资料提供方，不计入播放SDK。
 
 | 家族 / 来源 | Python adapterId | Flutter 业务身份 | 当前路径与能力 |
 |---|---|---|---|
 | MioMedia | `miomedia` | `miomedia` | `ContentSearchProvider` + `SdkPlaybackProvider`；11 个受限 SDK 操作 |
+| Lumina | `lumina` | `lumina` | 动漫优先内容/搜索/独立详情；7个受限操作，真实字符串part |
 | AniFive A / DM84 | `anifive-a` | 默认 `dm84` | 动漫规则；search / episodes / resolve |
 | AniFive B / MXdm | `anifive-b` | 默认 `mxdm` | 同上 |
 | AniFive C / akianime | `anifive-c` | 默认 `akianime` | 同上；目前只公开 SDK 实际支持的线路 2 |
@@ -28,13 +29,14 @@
 |---|---|---|
 | 动漫站 HTML、JSON API，或能转换成搜索/目录/解析的动漫 SDK | `Plugin` → `SourceService` / `RuleEngine` → `RuleContentProvider`，继续使用真实 Bangumi 身份 | `assets/plugins/`、`contentProviders()`；参考四源资产与 `anifive_adapter.py` |
 | 影视、漫剧、剧集 SDK / 专用内容 API | 专属 Service + `ContentSearchProvider` + `SdkPlaybackProvider` → 共享 `SdkDetailPage` | `contentProviders()`；参考 `miomedia/` |
+| 提供完整原生内容目录的动漫 SDK | 同上，保留独立SDK作品身份；显式priority决定内容优先级 | 参考 `lumina/`；不伪造Bangumi ID |
 | 仅资料、不提供媒体 | `ContentSearchProvider`，保持 `canPlay=false` | 参考 `BangumiContentProvider` |
 | 任一形态需要 Python 算法 | 在上述业务路径下增加受限 Python Adapter | HTTP 和 Android 都登记，不能只接通一端 |
 | 不需要 Python 的受控 HTTP API | 可直接由专属 Service 转换公共模型 | 仍须满足身份、取消、媒体头和双端验收要求 |
 
-注意：`RuleContentProvider` 当前没有 `sdkPlayback`；把规则分类改成影视不会自动获得通用 SDK 播放入口。反之，通用 SDK 页当前不是四源动漫的默认入口；不能用假 Bangumi ID 绕开动漫身份校验。新增来源若不适合这两种路径，必须先明确契约变更及下游调用者，再实现。
+注意：`RuleContentProvider`没有`sdkPlayback`；改分类不会自动获得SDK入口。Lumina等独立动漫SDK先走其可确认的SDK入口；旧四源/Bangumi资料入口继续要求真实资料身份。两种身份不可互相冒充，旧历史不按片名猜测迁移到新SDK。
 
-分类使用 `anime / screen / comicDrama / series` 四个 `ContentGroup`。地区是筛选字段；电影、综艺、纪录片映射 `screen`，真人连续剧和真人短剧映射 `series`。Python `manifest.domains` 是运行能力领域，不能直接当作 UI 分类：当前 Mio 的 manifest 为 `anime/screen`，其 Flutter 搜索提供方只公开 `screen/comicDrama/series`。
+分类使用 `anime / screen / comicDrama / series` 四个 `ContentGroup`。地区是筛选字段；电影、综艺、纪录片映射 `screen`，真人连续剧和真人短剧映射 `series`。Python `manifest.domains` 是运行能力领域，不能直接当作 UI 分类。Mio 的真实动漫也归入 `anime`，以priority=-100提供后备；Lumina priority=100优先，原动漫规则默认0。电影和剧集仍使用Mio；同作品的SDK入口按优先级稳定排序，不依赖请求完成或入参顺序。
 
 ## 3. 目录职责与新增文件放置规则
 
@@ -153,13 +155,14 @@ Android 默认不需要电脑 Python 服务。显式设置 `PLAYRA_SOURCE_RUNTIM
 | `contentId` / `SourceRef.rawRef` | 来源作品的原始字符串 ID 或详情 URL；大整数保持字符串 |
 | `lineCode` / `SdkLine.code` | 当前作品真实线路码；不以数组下标替代，不全局硬编码线路数 |
 | 规则剧集 `url` / `ContentEpisode.id` | 不透明的真实剧集引用；允许原始路径和字符串 ID |
-| `SdkEpisode.number` | 当前通用 SDK 接口要求整数真实集号；不能用列表位置或随机 hash 冒充 |
-| `quality.code` | 上游真实画质码；分辨率未知则 `height=null` |
+| `SdkEpisode.number` | 可空的真实数字集号，仅在上游标签/字段有证据时提供；不能用列表位置冒充 |
+| `SdkEpisode.reference / identityKey` | 供应商原始字符串分集引用；同线选集、准备缓存、播放请求保留原文，不能trim后重造 |
+| `quality.code` | 有画质参数的SDK使用其真实画质码；Lumina用明确档位生成本地选择码、不传给上游；未知则 `height=null` |
 | `metadataId` | 独立资料身份，例如 `bangumi:975`；不得从供应商 ID 推导假资料 ID |
 
-通用 SDK 只有字符串剧集 ID 时，必须先定义稳定映射或升级 `SdkEpisode` 和所有调用者；不要静默塞入当前整数接口。四源通过剧集 URL 保存真实引用，因此 A 的倒序/特别篇、B 的不透明播放路径、C 的线路 2 都不依赖 UI 索引。
+通用SDK通过`playEpisode/qualitiesForEpisode`消费完整分集对象；旧Mio默认委托真实整数接口，Lumina用真实play/part原文调用。两个特别篇不能因number都为空而视为同一集；不能同时缺少number和reference。四源仍通过真实剧集URL保存身份。
 
-聚合搜索保留 `providerId/contentId/title/group`，有证据时提供 `year/edition/aliases/metadataId/region/cover`。同名但资料稀疏的条目保留候选；年份/季数/版本/资料 ID 冲突不能合并。动漫打开入口必须匹配唯一真实 Bangumi 身份，资料服务不可达应明确失败，不能自动制造新身份。
+聚合搜索保留`providerId/contentId/title/group`，有证据时提供`year/edition/aliases/metadataId/region/cover`。稀疏同名保留候选，年份/季数/版本/资料ID冲突不能合并。规则动漫入口需要唯一真实Bangumi身份；原生SDK动漫入口保留其独立身份。显式priority决定主标题/封面及排序，不能用并发返回先后决定优先来源。
 
 ### 5.1 播放源分组与选择契约
 
@@ -185,6 +188,12 @@ Android 默认不需要电脑 Python 服务。显式设置 `PLAYRA_SOURCE_RUNTIM
 
 无真实画质声明的来源使用“自动（优选线路）”；有已知画质档位才允许展示相应策略。验收至少包含 SDK 范围隔离、手动锁定、非连续剧集 ID、缺集、真实线路2、快速切换/退页取消、旧历史/收藏/自定义规则及两端实际媒体播放。
 
+Lumina的`playFormat/part`与画质分别处理：原始请求只有videoId/playFormat/part，不新增quality参数。解析器返回的`medias`如带“4K 超清/1080P 高清”，自动画质按4K→1080p→其他已知→未知选择；只有mp4旧单链时保留未知画质。画质探测与准备共用一次解析，短效材料27秒内消费一次，403刷新不能读回已消费链接。详情保持不自动播放；独立画质控件仅显示当前集真实档位。协调器的qualityCode仅用于明确选档，Lumina不将它传到原始协议；Mio继续使用自己的真实画质参数。详见[4K与切换核验](../analysis/lumina-quality-switching-20261016.zh.md)。
+
+线路automatic与手动qualityCode必须分别保存：手动1080p不能被自动升回4K，恢复自动画质不能解除线路锁；只有自动画质允许降档。换集保留偏好，缺档明确提示，不静默播放别集；换SDK清除原SDK画质码。同集换画质在提交媒体前采集最新进度/时长/暂停状态，按2%+2秒时长容差恢复；暂停切换不改全局自动播放设置。快速选择由generation隔离；目录成功不等于画质查询成功，超时必须结束loading。
+
+来源名只在展示层映射：“动漫 · Lumina”“动漫 · AniFive”；Mio真实动漫显示“动漫备用 · MioMedia”，其他内容显示“影视 · MioMedia”。自定义名称、providerId和历史关联不更改。
+
 ## 6. 运行时接口契约 v1
 
 详细限额和运维见[算法运行时参考](../source-algorithm-runtime.zh.md)。以下通用业务响应在 HTTP 和 Android 共用同一 `dispatch.py`；新增适配器先适配这三个操作，确有额外能力再扩展固定协议。
@@ -197,6 +206,7 @@ Android 默认不需要电脑 Python 服务。显式设置 `PLAYRA_SOURCE_RUNTIM
 | 目录 | `GET /v1/adapters/{id}/episodes` | 仅 `source`，非空字符串≤8192字符；Adapter 可设更小限额/同源路径约束 |
 | 解析 | `POST /v1/adapters/{id}/resolve` | 仅 JSON `{"episodeUrl":"https://source.example/play/42"}`；禁止额外字段和 query |
 | Mio 扩展 | `POST /v1/adapters/miomedia/sdk` | 仅 JSON `{"operation":"detail","payload":{"videoId":"42"}}`；固定操作/字段白名单 |
+| Lumina扩展 | `POST /v1/adapters/lumina/sdk` | 同一信封；仅config/channels/banners/catalog/search/detail/play，禁止任意host、模块或脚本 |
 
 `adapterId` 匹配 `[A-Za-z0-9_-]{1,64}`；业务 HTTP 请求携带 `X-Kazumi-Request: 1`。超时头 `X-Playra-Timeout-Ms` 为1–60000毫秒；标记头不是生产鉴权。
 
@@ -225,6 +235,26 @@ Android 默认不需要电脑 Python 服务。显式设置 `PLAYRA_SOURCE_RUNTIM
 规则的 `sourceConfig.resolveApi` 映射 `$.data.url / headers / format / expiresAt / headerPolicy`。规则层 HLS 使用 `hls`、其他容器用 `auto`；通用 SDK 播放页同时兼容现有 `m3u8`。只有真实硬过期时间才提供 ISO 8601 `expiresAt`；供应商建议刷新时间不能冒充硬过期。
 
 ### 6.1 通用 SDK 播放接口与 Mio 扩展
+
+自2026-10-16起，在线详情默认“自动准备、点击播放”。`autoPlay=false`不再表示停止解析：`SdkPlaybackCoordinator.preparePlayback`只解析并校验媒体，`playAutomatic`消费准备结果后才打开播放器；`PreparedPlayback`按SDK/作品/真实线路/分集/画质绑定，默认内存TTL30秒，已知过期时间提前3秒失效。未开始播放时换集/换线只准备；用户明确开始后保留原播放意图。准备不写观看进度、收藏、当前起播线路或首帧成功；403/410/EXPIRED仅在当前同集/手动线路内最多刷新一次。
+
+旧规则动漫使用`PreparedOnlinePlayback`保存同样短时的`VideoSource`，点击才交给原播放控制器；冷历史先确定唯一URL/真实集，再准备及恢复进度。旧规则媒体失败保持其原恢复循环，不宣称与通用SDK新增的403刷新完全相同。离线播放保持原入口语义。
+
+### 6.1.1 Lumina 专属内容接口
+
+固定POST`adapters/lumina/sdk`，body仅`operation/payload`。公开操作：config、channels、banners(channelId)、catalog(channelId/pageIndex/pageSize/sort)、search(keyword/pageIndex/pageSize)、detail(videoId)、play(videoId/playFormat/part)。ID为原始十进制字符串，playFormat与part必须来自真实详情，不能省略后让SDK补请求，也不能按下标猜集名。`resolve=False`仍请求播放凭证，只跳过第三方解析器；完整准备必须完成直链解析。
+
+响应只包含规范化公开内容/媒体；config只表示可用性，不下发内部配置。每线程一个复用Client，认证缓存按SDK原90秒窗口，nonce每请求随机。设备指纹保存在宿主私有目录中，一次生成持久复用，不接受客户端指定host/设备指纹/脚本。直链headers包含空UA时必须保留，不能用随机UA或Web默认UA覆盖。
+
+平台：Web/桌面服务端使用受支持的`_fuse`；Android仅arm64/x86_64登记Lumina、从只读JNI库加载；ARM32不接入，保留旧来源。按用户最新范围，iOS不登记或展示Lumina，已有影视远端地址也不隐式启用；旧动漫来源继续原路径，不启动本地Python。包内无`_native`，零依赖约束下不安装`_emu`所需Unicorn。具体输入与证据见[接入验收](../verification/lumina-sdk-20261016.zh.md)和[优化分析](../analysis/lumina-sdk-optimization-20261016.zh.md)。
+
+首页只转换公开内容数据到既有推荐卡/轮播/海报轨，继续沿用新页面tokens和信息层级，不因SDK接入增加品牌大面板。展示模型必须保留真实provider/contentId及详情回调，不能为复用UI制造Bangumi ID。轮播实际作品名字段`vname`由Python归一为title，不用SDK名称冒充作品。
+
+“热播推荐”并行组合Lumina推荐序和Mio来源榜序，保留provider+id身份与sourcePosition；混排position仅为展示顺序。单端失败不清空另一端，不制造跨SDK热度值/评分，不声称接口没有提供的七天窗口。未来新增SDK仍按此数据契约接入原组件。
+
+**来源混合不等于内容类型混合。** Mio全站目录/全站榜可能全是动漫；“推荐/热门”必须使用来源元数据发现的电影、剧集分类catalog/榜单，成功数据按动漫/电影/剧集交错展示。不得把categoryId=0的条目或标题含“电影”的结果直接当电影；主推荐电影池以真实kind、categoryId及成功分类catalog为证。分类晚到应通知首页与更新榜单请求scope。动漫分类页保持纯动漫；混合内容栏目使用通用标题，不在“动漫推荐”标题下混入真人电影。
+
+### 6.1.2 Mio 兼容契约
 
 `SdkPlaybackProvider` 的必需方法为 `id/name/detail/episodes/play`；`supportsQualities` 默认 false，`qualities` 默认空。`detail` 返回 `SdkVideo`，`episodes` 返回 `List<SdkEpisode>`，`play` 仍为受校验的 JSON Map：
 
@@ -347,6 +377,18 @@ Python/Node 当前只绑定 loopback。公网生产部署须另行提供 HTTPS�
 | 8 归档 | `docs/verification/<provider>-integration-YYYYMMDD.zh.md`、能力矩阵、构建输入说明 | 未验证项保持未验证，剩余问题有明确归属 |
 
 ## 11. 验收门禁
+
+### 独立SDK个人库契约（v1.8）
+
+- 已绑定真实Bangumi/规则身份的AniFive继续原历史收藏链路；Lumina/MioMedia独立作品使用`SdkLibraryStore`及`SdkLibraryRecord`，键为JSON数组`[providerId,contentId]`，不得转换成伪Bangumi整数ID。
+- 本地`GStorage.sdkLibrary`对应`Box<String>('sdk_personal_library_v1')`，JSON记录带schemaVersion=1；进度键为`[lineCode,episode.identityKey]`，保存number/name/code/reference、positionMs/durationMs、更新时间及线路/画质偏好。不得保存直链、headers、认证参数或完整SDK响应。
+- 收藏状态复用CollectType的0–5语义，主动收藏可独立于历史存在。取消收藏保留进度；删除/清空历史保留收藏；旧Hive适配器、旧数据与自定义规则不重写。
+- 仅实际媒体就绪并开始播放后记录；只预解析/解析失败不写。定期5秒检查、暂停/切媒体/后台/退出补写，无变化不重复写；写入串行，失败不阻塞后续重试且界面提示。隐私模式逐次检查并禁止历史写入，用户主动收藏允许。
+- 保存已装入媒体的身份快照，不能使用正在准备的新选集。续播重新获取详情/目录/短效链接，优先原线路和原始集身份，校验时长后seek；手动锁线或分集消失应提示，不能默默跳首集。进入详情仍只准备。
+- 首页继续观看按真实时间混排；历史页统一搜索、在线/缓存筛选与删除；新版追番页统一状态、搜索、排序和管理。SDK无可信评分/开播日时不能伪造排序值。
+- 当前个人库只在各端本地持久，不接入旧Bangumi/WebDAV同步及其导出格式；后续跨设备同步须显式设计版本化独立身份协议，不把本地持久称为云同步。
+
+验收包括同ID不同SDK、特殊集、收藏/历史互删独立、隐私模式、队列并发、损坏记录隔离，以及真实Web刷新/安卓进程重启续播。实施范围和回退见[个人库实施约定](sdk-personal-library-plan.zh.md)。
 
 同一 checkout 的 Flutter analyze/test/build 串行运行。以下命令是可复现入口，不代表文档更新时已重新执行全量发布验收：
 

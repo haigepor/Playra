@@ -2,7 +2,21 @@
 
 更新：2026-10-15。新增来源的交付要求见[统一 SDK 接入规范](../development/source-sdk-onboarding.zh.md)。Android 包通过 Chaquopy 内置 Python 内容 SDK，不依赖电脑上的 Python 服务。Web 需要算法服务及同源网关。
 
-当前构建要求 **MioMedia、AniFive 两套私有输入**；运行适配器是 `miomedia` 与 `anifive-a/b/c/d`，不是五套独立 SDK。两套 vendor 目录均被忽略；干净克隆必须分别恢复。下文 Mio 的 CI 导出功能不能替代 AniFive 输入。
+当前构建要求 **MioMedia、AniFive、Lumina 三套私有输入**；常规运行适配器为`miomedia`、`anifive-a/b/c/d`与`lumina`，ARM32不登记Lumina。三个vendor目录均被忽略，干净克隆必须分别恢复；Mio的CI导出不能替代其他两套输入。
+
+## Lumina 私有输入
+
+```powershell
+# source必须指向lumina包；实际分配host由维护者显式填写，不使用出厂占位符。
+python -B -X utf8 tool/source_runtime/import_lumina.py C:/path/to/sdk/python/lumina --host <assigned-host>
+python -B -X utf8 tool/source_runtime/import_lumina.py --verify
+```
+
+导入器只允许`config.py/profile.py`环境绑定差异，其他算法与上游摘要逐字节一致；可提交的`vendor/lumina-manifest.json`仅包含摘要、大小和平台，不包含host、设备指纹或密钥。运行时在各宿主私有目录生成并复用32位十六进制指纹，禁止把开发机identity打包给所有设备。源码SDK和vendor算法不得提交到公共Git。
+
+Android通过`stageLuminaJni`将arm64/x86_64原形引擎分别安装为`lib/<abi>/liblumafuse.so`；`stageEmbeddedPython`仅打包Python模块与`fuse_image.bin.gz`，不打包桌面DLL/so/dylib。Chaquopy仅提取`vendor.lumina._fuse`以支持真实文件路径，库从只读`nativeLibraryDir`加载，解压镜像进入私有缓存。ARM32保留旧来源，不引入Unicorn或伪造后端。
+
+iOS当前不登记或展示Lumina，保留旧动漫来源；本轮暂停本地/远端Lumina研究，已有影视远端配置不代表Lumina能力。历史方案及验收边界见[三端接入与验收](../verification/lumina-sdk-20261016.zh.md)。现有公开CI尚未恢复Lumina输入；未恢复前不能宣称干净云构建就绪。
 
 ## AniFive 四源输入
 

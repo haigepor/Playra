@@ -2,12 +2,14 @@
 
 日期：2026-10-13。根据当前工作区的实际代码核对；“已接入”表示有调用实现，不等于所有服务今天在线，也不等于所有端点已实测。
 
+2026-10-16勘误：Mio模块未提供可确认的七天统计窗口，本文原“七天榜单”更正为来源热播榜。新增Lumina及双SDK“热播推荐”见[SDK接入规范](../development/source-sdk-onboarding.zh.md)，本清单其余条目仍为原日期快照。
+
 ## 总体结构
 
 当前业务由两条内容链路和若干辅助服务组成：
 
 - Bangumi：番剧元数据、榜单、日历、评论、角色与工作人员，以及基于 Access Token 的收藏同步。
-- MioMedia：来源作品目录、分类发现、热搜、搜索、七天榜单、线路、剧集与播放材料。来源作品保持独立字符串 ID。
+- MioMedia：来源作品目录、分类发现、热搜、搜索、来源热播榜、线路、剧集与播放材料。来源作品保持独立字符串 ID。
 - 弹弹play：弹幕与弹幕作品/剧集匹配。
 - 规则源：网页或 JSON API 搜索、线路/剧集提取和 WebView 视频解析。
 - 辅助服务：trace.moe 以图搜番、GitHub 发布更新、规则仓库、WebDAV 同步、Syncplay 同播。
@@ -30,7 +32,7 @@
 | `exchange` | `/resolve/exchange` | 换取播放材料 | 运行层开放，同时被 `play` 内部使用 |
 | `search` | `/video/search` | 关键词检索、分类发现兜底 | 搜索页、分类发现使用 |
 | `searchConfig` | `/video/searchConfig` | 热搜条目与作品分类线索 | 新版首页发现流程使用 |
-| `hotRank` | `/video/modules` | 栏目数据中的七天热播榜 | 页面按 `MOD_818368` 提取且校验 categoryId |
+| `hotRank` | `/video/modules` | 栏目数据中的来源热播榜（统计窗口未确认） | 页面按 `MOD_818368` 提取且校验 categoryId |
 | `play` | 组合调用，不是单个上游路径 | 剧集、清晰度、交换凭证、解析及媒体身份校验 | 详情页实际播放入口 |
 
 当前新版分类发现通过目录、热搜数据和分类关键词检索实现；没有调用 `/category/type/listActive`、`/category/filter/dimensions` 等独立分类管理端点。
