@@ -53,9 +53,15 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.entries.map((e) => e.id).join('|') !=
         widget.entries.map((e) => e.id).join('|')) {
-      _index = 0;
+      final previous = oldWidget.entries.isEmpty
+          ? null
+          : oldWidget.entries[_index.clamp(0, oldWidget.entries.length - 1)].id;
+      final retained = widget.entries.indexWhere(
+        (entry) => entry.id == previous,
+      );
+      _index = retained >= 0 ? retained : 0;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _pages.hasClients) _pages.jumpToPage(0);
+        if (mounted && _pages.hasClients) _pages.jumpToPage(_index);
       });
       _schedule();
     }

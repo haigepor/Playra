@@ -226,7 +226,11 @@ void main() {
       expect(tester.takeException(), isNull);
       tester.view.physicalSize = const Size(390, 844);
       await tester.pumpAndSettle();
-      expect(calls.where((r) => r['operation'] == 'play'), isEmpty);
+      expect(
+        calls.where((r) => r['operation'] == 'play'),
+        hasLength(1),
+        reason: '打开详情会解析凭证与直链，不代表媒体已经打开',
+      );
       await tester.tap(find.text('特别篇'));
       await tester.pumpAndSettle();
       expect(calls.last['episodeNum'], 12);
@@ -238,58 +242,53 @@ void main() {
     },
   );
 
-  testWidgets(
-    'search entry loads detail and episodes then requests playback without a tap',
-    (tester) async {
-      final calls = <String>[];
-      final raw = {
-        'id': '123',
-        'title': '自动准备',
-        'player': [
-          {'playerCode': 'source_auto', 'playerName': '线路'},
-        ],
-      };
-      final service = MioMediaService(
-        request: (operation, payload, cancel) async {
-          calls.add(operation);
-          return {
-            'data': switch (operation) {
-              'detail' => {'video': raw},
-              'episodes' => {
-                'episodes': [
-                  {
-                    'episodeNum': 1,
-                    'displayName': '第1集',
-                    'code': 'source_auto',
-                  },
-                ],
-              },
-              'play' => {
-                'status': 'ad_required',
-                'ad': {'adRequired': true},
-              },
-              _ => {},
+  testWidgets('search entry prepares playback data without requiring a tap', (
+    tester,
+  ) async {
+    final calls = <String>[];
+    final raw = {
+      'id': '123',
+      'title': '自动准备',
+      'player': [
+        {'playerCode': 'source_auto', 'playerName': '线路'},
+      ],
+    };
+    final service = MioMediaService(
+      request: (operation, payload, cancel) async {
+        calls.add(operation);
+        return {
+          'data': switch (operation) {
+            'detail' => {'video': raw},
+            'episodes' => {
+              'episodes': [
+                {'episodeNum': 1, 'displayName': '第1集', 'code': 'source_auto'},
+              ],
             },
-          };
-        },
-      );
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MioDetailPage(
-            item: MioVideo.fromJson(raw),
-            service: service,
-            autoPlay: true,
-          ),
+            'play' => {
+              'status': 'ad_required',
+              'ad': {'adRequired': true},
+            },
+            _ => {},
+          },
+        };
+      },
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MioDetailPage(
+          item: MioVideo.fromJson(raw),
+          service: service,
+          autoPlay: true,
         ),
-      );
-      await tester.pumpAndSettle();
-      expect(calls, containsAllInOrder(['detail', 'episodes', 'play']));
-      expect(calls.where((c) => c == 'play'), hasLength(1));
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-      service.dispose();
-    },
-  );
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(calls, containsAllInOrder(['detail', 'episodes', 'play']));
+    expect(calls.where((c) => c == 'play'), hasLength(1));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    service.dispose();
+  });
 
   testWidgets('all episodes sort and retain nonconsecutive real numbers', (
     tester,

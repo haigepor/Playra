@@ -68,6 +68,10 @@ class ModernHomeController extends ChangeNotifier {
   HomeCatalog catalog = const HomeCatalog();
   bool catalogLoading = false;
   final Map<int, HomeAiring> schedules = {};
+  final _scheduleUpdates = <int, ValueNotifier<int>>{};
+  Listenable scheduleChanges(int id) =>
+      _scheduleUpdates.putIfAbsent(id, () => ValueNotifier(0));
+  final historyUpdates = ValueNotifier(0);
   final Set<int> _scheduled = {};
   final List<int> _scheduleQueue = [];
   int _activeSchedules = 0, _catalogRequest = 0;
@@ -87,6 +91,7 @@ class ModernHomeController extends ChangeNotifier {
   bool _disposed = false;
   bool _visible = true;
   int _featuredBatch = 0;
+  int presentationRevision = 0;
   static const featuredBatchSize = 4;
 
   List<BangumiItem> get featuredItems {
@@ -174,7 +179,7 @@ class ModernHomeController extends ChangeNotifier {
         .where((entry) => seen.add(entry.bangumiItem.id))
         .take(10)
         .toList();
-    notifyListeners();
+    historyUpdates.value++;
   }
 
   Future<void> selectFeed(HomeFeed next) async {
@@ -187,10 +192,11 @@ class ModernHomeController extends ChangeNotifier {
     await _load(reset: true);
   }
 
-  Future<void> refresh() async {
+  Future<void> refresh({bool includeCatalog = true}) async {
+    presentationRevision++;
     // 与旧版一样先结束一页列表的等待，栏目目录独立增量更新。
     final firstPage = _load(reset: true);
-    if (feed.hasContentSource) unawaited(refreshCatalog());
+    if (includeCatalog && feed.hasContentSource) unawaited(refreshCatalog());
     await firstPage;
   }
 
@@ -331,7 +337,9 @@ class ModernHomeController extends ChangeNotifier {
         return;
       }
       schedules[id] = schedules[id]!.withDetail(json);
-      notifyListeners();
+      // 单个作品补全不重新混排、组装整页；只更新其可见海报。
+      final signal = _scheduleUpdates[id];
+      if (signal != null) signal.value++;
     } catch (_) {
       // 缺失资料保留“待定”，不影响其他栏目和详情入口。
     } finally {
@@ -414,6 +422,10 @@ class ModernHomeController extends ChangeNotifier {
     _disposed = true;
     _request++;
     _historySubscription?.cancel();
+    historyUpdates.dispose();
+    for (final signal in _scheduleUpdates.values) {
+      signal.dispose();
+    }
     super.dispose();
   }
 }

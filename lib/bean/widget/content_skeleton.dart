@@ -2,12 +2,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-PulseEffect _contentEffect(BuildContext context) {
+PulseEffect _contentEffect(BuildContext context, {bool animate = true}) {
   final colors = Theme.of(context).colorScheme;
   return PulseEffect(
     from: Color.lerp(colors.surface, colors.onSurface, .055)!,
     to: Color.lerp(colors.surface, colors.onSurface, .095)!,
-    duration: MediaQuery.disableAnimationsOf(context)
+    duration: !animate || MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 1800),
   );
@@ -26,8 +26,9 @@ class ContentSkeletonTheme extends StatelessWidget {
 
 /// 只绘制内容轮廓，不创建假作品或触发真实业务操作。
 class ContentSkeleton extends StatelessWidget {
-  const ContentSkeleton({super.key, required this.child});
+  const ContentSkeleton({super.key, required this.child, this.animate = true});
   final Widget child;
+  final bool animate;
   @override
   Widget build(BuildContext context) {
     return Semantics(
@@ -38,7 +39,7 @@ class ContentSkeleton extends StatelessWidget {
         child: RepaintBoundary(
           child: IgnorePointer(
             child: Skeletonizer.zone(
-              effect: _contentEffect(context),
+              effect: _contentEffect(context, animate: animate),
               child: child,
             ),
           ),

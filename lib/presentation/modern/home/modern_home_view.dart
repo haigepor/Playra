@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../widgets/modern_page_art.dart';
 import '../widgets/modern_section_mark.dart';
+import '../widgets/near_end_scroll.dart';
 import '../widgets/modern_feature_carousel.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
@@ -17,6 +19,17 @@ import '../miomedia/miomedia_browse.dart';
 import '../miomedia/miomedia_category_view.dart';
 import '../miomedia/miomedia_rank_view.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
+import 'package:kazumi/services/source/lumina/lumina_home_controller.dart';
+import 'package:kazumi/services/source/lumina/lumina_models.dart';
+import 'package:kazumi/services/source/sdk_rank_controller.dart';
+import 'package:kazumi/services/source/sdk_playback_entry.dart';
+import '../player/sdk_rank_section.dart';
+import 'home_anime_card.dart';
+import 'home_display_session.dart';
+import 'home_frame_updates.dart';
+import 'package:kazumi/services/storage/sdk_library_store.dart';
+import 'package:kazumi/pages/history/personal_history_query.dart';
+import '../library/sdk_library_widgets.dart';
 
 String homeTitle(BangumiItem item) =>
     item.nameCn.isEmpty ? item.name : item.nameCn;
@@ -29,7 +42,7 @@ String homeCover(BangumiItem item) {
   return '';
 }
 
-class ModernHomeView extends StatelessWidget {
+class ModernHomeView extends StatefulWidget {
   const ModernHomeView({
     super.key,
     required this.controller,
@@ -42,14 +55,239 @@ class ModernHomeView extends StatelessWidget {
     required this.onResume,
     this.media,
     this.onMediaDetails,
+    this.anime,
+    this.onAnimeDetails,
+    this.onAnimeBanner,
+    this.ranking,
+    this.onRankDetails,
+    this.refreshRanking,
+    this.refreshAnime,
   });
   final ModernHomeController controller;
   final MioHomeController? media;
   final ValueChanged<MioVideo>? onMediaDetails;
+  final LuminaHomeController? anime;
+  final ValueChanged<LuminaVideo>? onAnimeDetails;
+  final ValueChanged<LuminaBanner>? onAnimeBanner;
+  final SdkRankController? ranking;
+  final ValueChanged<SdkPlaybackEntry>? onRankDetails;
+  final VoidCallback? refreshRanking;
+  final Future<void> Function()? refreshAnime;
   final VoidCallback onSearch, onCalendar, onHistory, onToggleTheme;
   final ValueChanged<BangumiItem> onDetails;
   final ValueChanged<History> onResume;
   final ValueChanged<String> onBrowse;
+
+  @override
+  State<ModernHomeView> createState() => _ModernHomeViewState();
+}
+
+class _ModernHomeViewState extends State<ModernHomeView> {
+  ModernHomeController get controller => widget.controller;
+  MioHomeController? get media => widget.media;
+  LuminaHomeController? get anime => widget.anime;
+  ValueChanged<MioVideo>? get onMediaDetails => widget.onMediaDetails;
+  ValueChanged<LuminaVideo>? get onAnimeDetails => widget.onAnimeDetails;
+  ValueChanged<LuminaBanner>? get onAnimeBanner => widget.onAnimeBanner;
+  SdkRankController? get ranking => widget.ranking;
+  ValueChanged<SdkPlaybackEntry>? get onRankDetails => widget.onRankDetails;
+  VoidCallback? get refreshRanking => widget.refreshRanking;
+  Future<void> Function()? get refreshAnime => widget.refreshAnime;
+  VoidCallback get onSearch => widget.onSearch;
+  VoidCallback get onCalendar => widget.onCalendar;
+  VoidCallback get onHistory => widget.onHistory;
+  VoidCallback get onToggleTheme => widget.onToggleTheme;
+  ValueChanged<BangumiItem> get onDetails => widget.onDetails;
+  ValueChanged<History> get onResume => widget.onResume;
+  ValueChanged<String> get onBrowse => widget.onBrowse;
+  final _sessions = <HomeFeed, HomeDisplaySession>{};
+  int _revision = -1, _featuredRevision = 0;
+
+  late HomeFrameUpdates _contentUpdates;
+  HomeFrameUpdates _listenContent() =>
+      HomeFrameUpdates([controller, ?media, ?anime]);
+
+  @override
+  void initState() {
+    super.initState();
+    _contentUpdates = _listenContent();
+  }
+
+  @override
+  void didUpdateWidget(covariant ModernHomeView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != controller ||
+        oldWidget.media != media ||
+        oldWidget.anime != anime) {
+      _contentUpdates.dispose();
+      _contentUpdates = _listenContent();
+    }
+  }
+
+  @override
+  void dispose() {
+    _contentUpdates.dispose();
+    super.dispose();
+  }
+
+  HomeDisplaySession get _session {
+    if (_revision != controller.presentationRevision) {
+      _revision = controller.presentationRevision;
+      _sessions.clear();
+      _featuredRevision = 0;
+    }
+    return _sessions.putIfAbsent(controller.feed, HomeDisplaySession.new);
+  }
+
+  List<HomeAnimeCard> _stableAnime(
+    String key,
+    List<HomeAnimeCard> preferred,
+    List<HomeAnimeCard> fallback, [
+    String? bucket,
+  ]) => _session.anime(
+    key,
+    preferred,
+    fallback,
+    waitingForPrimary:
+        anime != null &&
+        (anime!.loading || anime!.loadingIn(bucket ?? animeBucket)),
+  );
+
+  String get animeBucket => switch (controller.feed) {
+    HomeFeed.japanese => 'japanese',
+    HomeFeed.chinese => 'chinese',
+    HomeFeed.animeMovies => 'movies',
+    HomeFeed.season => 'season',
+    _ => 'all',
+  };
+  List<HomeAnimeCard> _legacyCards(Iterable<BangumiItem> items) => [
+    for (final item in items)
+      HomeAnimeCard.metadata(item, controller, () => onDetails(item)),
+  ];
+  List<HomeAnimeCard> _sourceCards([String? bucket]) => onAnimeDetails == null
+      ? const []
+      : [
+          for (final video
+              in anime?.browseItems(bucket ?? animeBucket) ?? <LuminaVideo>[])
+            HomeAnimeCard.lumina(video, () => onAnimeDetails!(video)),
+        ];
+  String _channelBucket(HomeChannel channel) => switch (channel.id) {
+    'chinese' => 'chinese',
+    'japanese' => 'japanese',
+    'anime-movies' => 'movies',
+    'season' || 'season-more' || 'region-new' => 'season',
+    _ => animeBucket,
+  };
+  List<HomeAnimeCard> _screenCards({bool featured = false, MioKind? onlyKind}) {
+    final controller = media, onDetails = onMediaDetails;
+    if (controller == null || onDetails == null) return const [];
+    final pools = <List<MioVideo>>[];
+    for (final kind in const [MioKind.movie, MioKind.series]) {
+      if (onlyKind != null && kind != onlyKind) continue;
+      final category = controller.categoryIds[kind];
+      // 只有成功读取当前分类 catalog 才进入影视池，全站发现结果和旧分类页码不作证据。
+      if (category == null ||
+          category == '0' ||
+          (controller.loadedRevisions[kind] ?? 0) !=
+              controller.catalogRevision ||
+          controller.loadedCategoryIds[kind] != category) {
+        continue;
+      }
+      final videos = (controller.items[kind] ?? <MioVideo>[])
+          .where((video) => video.kind == kind && video.categoryId == category)
+          .toList();
+      final offset = featured ? controller.featuredOffsets[kind] ?? 0 : 0;
+      pools.add(
+        videos.isEmpty
+            ? videos
+            : List.generate(
+                videos.length,
+                (index) => videos[(offset + index) % videos.length],
+              ),
+      );
+    }
+    final result = <HomeAnimeCard>[];
+    final longest = pools.fold<int>(
+      0,
+      (value, pool) => pool.length > value ? pool.length : value,
+    );
+    for (var index = 0; index < longest; index++) {
+      for (final pool in pools) {
+        if (index < pool.length) {
+          final video = pool[index];
+          result.add(HomeAnimeCard.mio(video, () => onDetails(video)));
+        }
+      }
+    }
+    return result;
+  }
+
+  List<HomeAnimeCard> _channelCards(HomeChannel channel) {
+    final animeCards = _stableAnime(
+      'channel-${channel.id}',
+      _sourceCards(_channelBucket(channel)),
+      _legacyCards(
+        channel.id == 'anime' && controller.feed.isGeneralCategory
+            ? controller.items
+            : channel.allItems,
+      ),
+      _channelBucket(channel),
+    );
+    return _session.append(
+      'channel-mix-${channel.id}',
+      channel.id == 'anime' && controller.feed.isGeneralCategory
+          ? mixHomeContent(animeCards, _screenCards())
+          : animeCards,
+    );
+  }
+
+  String _channelTitle(HomeChannel channel) =>
+      channel.id == 'anime' &&
+          controller.feed.isGeneralCategory &&
+          media != null
+      ? (controller.feed == HomeFeed.popular ? '热门推荐' : '为你推荐')
+      : channel.title;
+  void _openChannel(BuildContext context, HomeChannel channel) {
+    final bucket = _channelBucket(channel);
+    final mixed = channel.id == 'anime' && controller.feed.isGeneralCategory;
+    final screenKinds = mixed && media != null
+        ? const [MioKind.movie, MioKind.series]
+        : const <MioKind>[];
+    _showChannelItems(
+      context,
+      HomeChannel(channel.id, _channelTitle(channel), channel.allItems),
+      controller,
+      onDetails,
+      readCards: () => _channelCards(channel),
+      sourceUpdates: Listenable.merge([?anime, ?media]),
+      sourceLoadMore: anime == null && screenKinds.isEmpty
+          ? null
+          : () async {
+              await Future.wait<void>([
+                if (anime != null) anime!.loadMoreIn(bucket),
+                for (final kind in screenKinds)
+                  if (media!.more.contains(kind)) media!.load(kind),
+              ]);
+            },
+      sourceHasMore: () =>
+          anime?.hasMoreIn(bucket) == true ||
+          screenKinds.any((kind) => media!.more.contains(kind)),
+      sourceLoading: () =>
+          anime?.loadingIn(bucket) == true ||
+          screenKinds.any((kind) => media!.loading.contains(kind)),
+      sourceFailed: () =>
+          anime?.pageFailedIn(bucket) == true ||
+          screenKinds.any((kind) => media!.failed.contains(kind)),
+    );
+  }
+
+  void _openOrBrowse(BuildContext context, HomeChannel channel, String tag) {
+    if (_sourceCards(_channelBucket(channel)).isNotEmpty) {
+      _openChannel(context, channel);
+    } else {
+      onBrowse(tag);
+    }
+  }
 
   @override
   Widget build(BuildContext context) => ModernHomeScope(
@@ -64,13 +302,102 @@ class ModernHomeView extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 760),
                 child: ListenableBuilder(
-                  listenable: Listenable.merge([controller, ?media]),
-                  builder: (context, _) {
-                    final items = controller.items;
-                    final recent = controller.recent;
+                  listenable: _contentUpdates,
+                  child: _HistorySection(
+                    controller: controller,
+                    onHistory: onHistory,
+                    onResume: onResume,
+                  ),
+                  builder: (context, recentSection) {
+                    final sourceCards = _sourceCards();
+                    final animeItems = _stableAnime(
+                      'items',
+                      sourceCards,
+                      _legacyCards(controller.items),
+                    );
+                    final screenCards = controller.feed.isGeneralCategory
+                        ? _screenCards()
+                        : <HomeAnimeCard>[];
+                    final items = _session.append(
+                      'mixed-items',
+                      controller.feed.isGeneralCategory
+                          ? mixHomeContent(animeItems, screenCards)
+                          : animeItems,
+                    );
                     final mediaKind = mioKindForHomeFeed(controller.feed);
-                    final scale =
-                        MediaQuery.textScalerOf(context).scale(14) / 14;
+                    final showAnime =
+                        anime != null &&
+                        (controller.feed.isAnimeCategory ||
+                            controller.feed.isGeneralCategory);
+                    final sourcePool =
+                        anime?.browseItems(animeBucket) ?? <LuminaVideo>[];
+                    final animeFeatured = _stableAnime(
+                      'featured-$_featuredRevision',
+                      onAnimeDetails == null
+                          ? const []
+                          : [
+                              for (final video
+                                  in anime?.featuredItems(sourcePool) ??
+                                      <LuminaVideo>[])
+                                HomeAnimeCard.lumina(
+                                  video,
+                                  () => onAnimeDetails!(video),
+                                ),
+                            ],
+                      _legacyCards(controller.featuredItems),
+                    );
+                    final featured = HomeDisplaySession.featured(
+                      animeFeatured,
+                      _session.append(
+                        'movies-$_featuredRevision',
+                        _screenCards(featured: true, onlyKind: MioKind.movie),
+                      ),
+                      _session.append(
+                        'series-$_featuredRevision',
+                        _screenCards(featured: true, onlyKind: MioKind.series),
+                      ),
+                      mixed: controller.feed.isGeneralCategory && media != null,
+                    );
+                    final heroCards = <HomeAnimeCard>[];
+                    if (animeBucket == 'all' && onAnimeBanner != null) {
+                      for (final banner in anime?.banners ?? <LuminaBanner>[]) {
+                        final catalog = sourcePool
+                            .where((video) => video.id == banner.videoId)
+                            .firstOrNull;
+                        final cover = banner.cover.isNotEmpty
+                            ? banner.cover
+                            : catalog?.cover ?? '';
+                        if (banner.title.trim().isEmpty ||
+                            cover.isEmpty ||
+                            catalog?.updatedTo == 0 &&
+                                catalog?.isEnd == false) {
+                          continue;
+                        }
+                        heroCards.add(
+                          HomeAnimeCard(
+                            id: 'lumina:${banner.videoId}',
+                            title: banner.title,
+                            cover: cover,
+                            onTap: () => onAnimeBanner!(banner),
+                            subtitle: catalog?.subtitle ?? '',
+                          ),
+                        );
+                      }
+                    }
+                    for (final item in animeItems) {
+                      if (!heroCards.any((card) => card.id == item.id)) {
+                        heroCards.add(item);
+                      }
+                    }
+                    final visibleHeroCards = _session
+                        .append(
+                          'hero',
+                          controller.feed.isGeneralCategory
+                              ? mixHomeContent(heroCards, screenCards, limit: 6)
+                              : heroCards.take(6).toList(),
+                        )
+                        .take(6)
+                        .toList();
                     // 固定导航独立于内容滚动，子分类展开仍可平滑改变内容区高度。
                     return Column(
                       children: [
@@ -93,6 +420,12 @@ class ModernHomeView extends StatelessWidget {
                           child: RefreshIndicator(
                             onRefresh: () async {
                               controller.reloadHistory();
+                              refreshRanking?.call();
+                              // 各来源独立刷新，慢 SDK 不阻塞影视或备用资料请求。
+                              final animeRefresh = showAnime
+                                  ? (refreshAnime?.call() ??
+                                        anime?.bootstrap(force: true))
+                                  : null;
                               if (media != null) {
                                 media!.bootstrap(force: true);
                                 final rankId = mioRankCategory(
@@ -103,7 +436,10 @@ class ModernHomeView extends StatelessWidget {
                                   media!.loadRanking(rankId, refresh: true);
                                 }
                               }
-                              await controller.refresh();
+                              await Future.wait([
+                                controller.refresh(),
+                                ?animeRefresh,
+                              ]);
                             },
                             child: NotificationListener<ScrollNotification>(
                               onNotification: (notification) {
@@ -197,18 +533,41 @@ class ModernHomeView extends StatelessWidget {
                                           _CategoryPending(
                                             feed: controller.feed,
                                           )
-                                        else if (items.isNotEmpty &&
-                                            controller.feed ==
-                                                HomeFeed.recommended)
+                                        else if (controller.feed ==
+                                                HomeFeed.recommended &&
+                                            (featured.any(
+                                                  (card) => card != null,
+                                                ) ||
+                                                media?.discovering == true ||
+                                                media?.loading.isNotEmpty ==
+                                                    true ||
+                                                anime?.loading == true))
                                           _RecommendationBento(
-                                            items: controller.featuredItems,
+                                            key: const ValueKey(
+                                              'home-primary-recommendations',
+                                            ),
+                                            items: featured,
                                             canShuffle:
                                                 items.length >
                                                 ModernHomeController
                                                     .featuredBatchSize,
-                                            onShuffle:
-                                                controller.shuffleFeatured,
-                                            onDetails: onDetails,
+                                            onShuffle: () {
+                                              _featuredRevision++;
+                                              if (sourceCards.isNotEmpty) {
+                                                anime!.shuffleFeatured();
+                                              } else {
+                                                controller.shuffleFeatured();
+                                              }
+                                              if (screenCards.isNotEmpty) {
+                                                media!.shuffleFeatured(
+                                                  MioKind.movie,
+                                                );
+                                                media!.shuffleFeatured(
+                                                  MioKind.series,
+                                                );
+                                              }
+                                            },
+                                            onDetails: (card) => card.onTap(),
                                           )
                                         else if (items.isNotEmpty)
                                           ModernFeatureCarousel(
@@ -216,19 +575,15 @@ class ModernHomeView extends StatelessWidget {
                                               'anime-feature-${controller.feed.name}',
                                             ),
                                             entries: [
-                                              for (final item in items.take(6))
+                                              for (final item
+                                                  in visibleHeroCards)
                                                 ModernFeatureEntry(
-                                                  id: '${item.id}',
-                                                  title: homeTitle(item),
-                                                  subtitle: {
-                                                    ...item.metaTags,
-                                                    ...item.tags.map(
-                                                      (tag) => tag.name,
-                                                    ),
-                                                  }.take(2).join(' · '),
-                                                  cover: homeCover(item),
+                                                  id: item.id,
+                                                  title: item.title,
+                                                  subtitle: item.subtitle,
+                                                  cover: item.cover,
                                                   imageType: 'bg',
-                                                  onTap: () => onDetails(item),
+                                                  onTap: item.onTap,
                                                 ),
                                             ],
                                           )
@@ -249,7 +604,8 @@ class ModernHomeView extends StatelessWidget {
                                                 '暂时没有可展示的番剧',
                                             retry: controller.refresh,
                                           ),
-                                        if (controller.error != null &&
+                                        if (sourceCards.isEmpty &&
+                                            controller.error != null &&
                                             items.isNotEmpty)
                                           Padding(
                                             padding: const EdgeInsets.only(
@@ -260,57 +616,28 @@ class ModernHomeView extends StatelessWidget {
                                               retry: controller.refresh,
                                             ),
                                           ),
-                                        if (recent.isNotEmpty) ...[
-                                          const SizedBox(height: 18),
-                                          _SectionHeading(
-                                            title: '继续观看',
-                                            subtitle: '',
-                                            actionLabel: '全部',
-                                            onAction: onHistory,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          LayoutBuilder(
-                                            builder: (context, bounds) =>
-                                                SizedBox(
-                                                  height:
-                                                      94 +
-                                                      32 *
-                                                          (scale - 1).clamp(
-                                                            0,
-                                                            3,
-                                                          ),
-                                                  child: ListView.separated(
-                                                    scrollDirection:
-                                                        Axis.horizontal,
-                                                    itemCount: recent.length,
-                                                    separatorBuilder: (_, _) =>
-                                                        const SizedBox(
-                                                          width: 12,
-                                                        ),
-                                                    itemBuilder: (_, index) =>
-                                                        _ContinueCard(
-                                                          history:
-                                                              recent[index],
-                                                          width: math.min(
-                                                            bounds.maxWidth -
-                                                                (recent.length >
-                                                                        1
-                                                                    ? 20
-                                                                    : 0),
-                                                            350,
-                                                          ),
-                                                          onTap: () => onResume(
-                                                            recent[index],
-                                                          ),
-                                                        ),
-                                                  ),
-                                                ),
-                                          ),
-                                        ],
+                                        recentSection!,
                                       ],
                                     ),
                                   ),
-                                  if (media != null &&
+                                  if (ranking != null &&
+                                      onRankDetails != null &&
+                                      mediaKind == null)
+                                    SliverToBoxAdapter(
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          20,
+                                          20,
+                                          20,
+                                          0,
+                                        ),
+                                        child: SdkRankSection(
+                                          controller: ranking!,
+                                          onDetails: onRankDetails!,
+                                        ),
+                                      ),
+                                    )
+                                  else if (media != null &&
                                       mediaKind == null &&
                                       mioRankCategory(
                                             media!,
@@ -347,22 +674,23 @@ class ModernHomeView extends StatelessWidget {
                                             ))
                                           _ChannelRail(
                                             id: channel.id,
-                                            title: channel.title,
-                                            items: channel.items,
-                                            controller: controller,
-                                            onDetails: onDetails,
-                                            onMore: () => _showChannelItems(
-                                              context,
+                                            title: _channelTitle(channel),
+                                            items: _channelCards(
                                               channel,
-                                              controller,
-                                              onDetails,
-                                            ),
+                                            ).take(20).toList(),
+                                            controller: controller,
+                                            onDetails: (card) => card.onTap(),
+                                            onMore: () =>
+                                                _openChannel(context, channel),
                                             loading:
                                                 channel.id == 'anime' &&
                                                 controller.loading,
                                             failed:
                                                 channel.id == 'anime' &&
-                                                controller.error != null,
+                                                controller.error != null &&
+                                                _sourceCards(
+                                                  _channelBucket(channel),
+                                                ).isEmpty,
                                             emptyMessage: channel.id == 'anime'
                                                 ? '暂无动漫内容'
                                                 : '暂无${channel.title}内容',
@@ -376,15 +704,13 @@ class ModernHomeView extends StatelessWidget {
                                           _ChannelRail(
                                             id: channel.id,
                                             title: channel.title,
-                                            items: channel.items,
-                                            controller: controller,
-                                            onDetails: onDetails,
-                                            onMore: () => _showChannelItems(
-                                              context,
+                                            items: _channelCards(
                                               channel,
-                                              controller,
-                                              onDetails,
-                                            ),
+                                            ).take(20).toList(),
+                                            controller: controller,
+                                            onDetails: (card) => card.onTap(),
+                                            onMore: () =>
+                                                _openChannel(context, channel),
                                           ),
                                       if (!controller.feed.isGeneralCategory &&
                                           !controller
@@ -404,8 +730,14 @@ class ModernHomeView extends StatelessWidget {
                                             items: items,
                                             loading: controller.loading,
                                             controller: controller,
-                                            onDetails: onDetails,
-                                            onMore: () => onBrowse(
+                                            onDetails: (card) => card.onTap(),
+                                            onMore: () => _openOrBrowse(
+                                              context,
+                                              HomeChannel(
+                                                'main',
+                                                '${controller.feed.label}精选',
+                                                controller.items,
+                                              ),
                                               switch (controller.feed) {
                                                 HomeFeed.chinese => '中国',
                                                 HomeFeed.japanese => '日本',
@@ -418,25 +750,59 @@ class ModernHomeView extends StatelessWidget {
                                             .hasContentSource) ...[
                                           _ChannelRail(
                                             id: 'chinese',
-                                            onMore: () => onBrowse('中国'),
+                                            onMore: () => _openOrBrowse(
+                                              context,
+                                              HomeChannel(
+                                                'chinese',
+                                                '国漫剧场',
+                                                controller.catalog.chinese,
+                                              ),
+                                              '中国',
+                                            ),
                                             title: '国漫剧场',
-                                            items: controller.catalog.chinese,
+                                            items: _channelCards(
+                                              HomeChannel(
+                                                'chinese',
+                                                '国漫剧场',
+                                                controller.catalog.chinese,
+                                              ),
+                                            ).take(20).toList(),
                                             controller: controller,
-                                            onDetails: onDetails,
+                                            onDetails: (card) => card.onTap(),
                                             loading: controller.catalogLoading,
-                                            failed: controller.catalog.failed
-                                                .contains('chinese'),
+                                            failed:
+                                                controller.catalog.failed
+                                                    .contains('chinese') &&
+                                                _sourceCards('chinese').isEmpty,
                                           ),
                                           _ChannelRail(
                                             id: 'japanese',
-                                            onMore: () => onBrowse('日本'),
+                                            onMore: () => _openOrBrowse(
+                                              context,
+                                              HomeChannel(
+                                                'japanese',
+                                                '日漫精选',
+                                                controller.catalog.japanese,
+                                              ),
+                                              '日本',
+                                            ),
                                             title: '日漫精选',
-                                            items: controller.catalog.japanese,
+                                            items: _channelCards(
+                                              HomeChannel(
+                                                'japanese',
+                                                '日漫精选',
+                                                controller.catalog.japanese,
+                                              ),
+                                            ).take(20).toList(),
                                             controller: controller,
-                                            onDetails: onDetails,
+                                            onDetails: (card) => card.onTap(),
                                             loading: controller.catalogLoading,
-                                            failed: controller.catalog.failed
-                                                .contains('japanese'),
+                                            failed:
+                                                controller.catalog.failed
+                                                    .contains('japanese') &&
+                                                _sourceCards(
+                                                  'japanese',
+                                                ).isEmpty,
                                           ),
                                         ],
                                       ],
@@ -830,9 +1196,9 @@ class _ChannelRail extends StatelessWidget {
     this.emptyMessage = '暂时没有番剧',
   });
   final String id, title;
-  final List<BangumiItem> items;
+  final List<HomeAnimeCard> items;
   final ModernHomeController controller;
-  final ValueChanged<BangumiItem> onDetails;
+  final ValueChanged<HomeAnimeCard> onDetails;
   final VoidCallback onMore;
   final bool loading, failed;
   final String emptyMessage;
@@ -952,8 +1318,14 @@ Future<void> _showChannelItems(
   BuildContext context,
   HomeChannel channel,
   ModernHomeController controller,
-  ValueChanged<BangumiItem> onDetails,
-) => showModalBottomSheet<void>(
+  ValueChanged<BangumiItem> onDetails, {
+  List<HomeAnimeCard> Function()? readCards,
+  Listenable? sourceUpdates,
+  Future<void> Function()? sourceLoadMore,
+  bool Function()? sourceHasMore,
+  bool Function()? sourceLoading,
+  bool Function()? sourceFailed,
+}) => showModalBottomSheet<void>(
   context: context,
   useRootNavigator: true,
   isScrollControlled: true,
@@ -1000,7 +1372,7 @@ Future<void> _showChannelItems(
                   final width =
                       (bounds.maxWidth - 40 - 12 * (columns - 1)) / columns;
                   return ListenableBuilder(
-                    listenable: controller,
+                    listenable: Listenable.merge([controller, ?sourceUpdates]),
                     builder: (context, _) {
                       final visibleItems =
                           channel.id == 'anime' &&
@@ -1011,33 +1383,62 @@ Future<void> _showChannelItems(
                           channel.id == 'anime' &&
                           controller.feed.isGeneralCategory &&
                           controller.loading;
+                      final cards =
+                          readCards?.call() ??
+                          [
+                            for (final item in visibleItems)
+                              HomeAnimeCard.metadata(
+                                item,
+                                controller,
+                                () => onDetails(item),
+                              ),
+                          ];
                       return ScrollConfiguration(
                         behavior: const _HomeScrollBehavior(),
-                        child: GridView.builder(
-                          controller: scrollController,
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                          itemCount:
-                              visibleItems.length + (pending ? columns : 0),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 16,
-                                mainAxisExtent: width * 1.42 + 48 * scale,
-                              ),
-                          itemBuilder: (context, index) =>
-                              index >= visibleItems.length
-                              ? const ContentSkeleton(
-                                  child: SkeletonPosterCard(),
-                                )
-                              : _PosterCard(
-                                  item: visibleItems[index],
-                                  controller: controller,
-                                  onTap: () {
-                                    Navigator.of(sheetContext).pop();
-                                    onDetails(visibleItems[index]);
-                                  },
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            final legacyMore =
+                                channel.id == 'anime' &&
+                                controller.feed.isGeneralCategory &&
+                                controller.hasMore;
+                            if (isNearEndScroll(notification) &&
+                                !controller.loading &&
+                                sourceLoading?.call() != true &&
+                                (!legacyMore || controller.error == null) &&
+                                sourceFailed?.call() != true) {
+                              if (legacyMore) unawaited(controller.loadMore());
+                              if (sourceHasMore?.call() == true) {
+                                unawaited(sourceLoadMore?.call());
+                              }
+                            }
+                            return false;
+                          },
+                          child: GridView.builder(
+                            controller: scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                            itemCount: cards.length + (pending ? columns : 0),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columns,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 16,
+                                  mainAxisExtent: width * 1.42 + 48 * scale,
                                 ),
+                            itemBuilder: (context, index) =>
+                                index >= cards.length
+                                ? const ContentSkeleton(
+                                    child: SkeletonPosterCard(),
+                                  )
+                                : _PosterCard(
+                                    item: cards[index],
+                                    controller: controller,
+                                    onTap: () {
+                                      Navigator.of(sheetContext).pop();
+                                      cards[index].onTap();
+                                    },
+                                  ),
+                          ),
                         ),
                       );
                     },
@@ -1045,21 +1446,39 @@ Future<void> _showChannelItems(
                 },
               ),
             ),
-            if (channel.id == 'anime' && controller.feed.isGeneralCategory)
+            if (channel.id == 'anime' && controller.feed.isGeneralCategory ||
+                sourceLoadMore != null)
               ListenableBuilder(
-                listenable: controller,
-                builder: (context, _) => TextButton(
-                  onPressed: controller.hasMore && !controller.loading
-                      ? controller.loadMore
-                      : null,
-                  child: Text(
-                    controller.loading
-                        ? ''
-                        : controller.hasMore
-                        ? '加载更多'
-                        : '已显示当前全部内容',
-                  ),
-                ),
+                listenable: Listenable.merge([controller, ?sourceUpdates]),
+                builder: (context, _) {
+                  final legacyMore =
+                      channel.id == 'anime' &&
+                      controller.feed.isGeneralCategory &&
+                      controller.hasMore;
+                  final sourceMore = sourceHasMore?.call() == true;
+                  final pending =
+                      controller.loading || sourceLoading?.call() == true;
+                  final failed =
+                      legacyMore && controller.error != null ||
+                      sourceFailed?.call() == true;
+                  return TextButton(
+                    onPressed: !pending && (legacyMore || sourceMore)
+                        ? () {
+                            if (legacyMore) controller.loadMore();
+                            if (sourceMore) sourceLoadMore?.call();
+                          }
+                        : null,
+                    child: Text(
+                      pending
+                          ? '加载中…'
+                          : failed
+                          ? '加载失败，点击重试'
+                          : legacyMore || sourceMore
+                          ? '加载更多'
+                          : '已显示当前全部内容',
+                    ),
+                  );
+                },
               ),
           ],
         ),
@@ -1133,15 +1552,16 @@ class _SearchEntry extends StatelessWidget {
 
 class _RecommendationBento extends StatelessWidget {
   const _RecommendationBento({
+    super.key,
     required this.items,
     required this.canShuffle,
     required this.onShuffle,
     required this.onDetails,
   });
-  final List<BangumiItem> items;
+  final List<HomeAnimeCard?> items;
   final bool canShuffle;
   final VoidCallback onShuffle;
-  final ValueChanged<BangumiItem> onDetails;
+  final ValueChanged<HomeAnimeCard> onDetails;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -1157,39 +1577,35 @@ class _RecommendationBento extends StatelessWidget {
         children: [
           SizedBox(
             height: rowHeight * rows + 10 * (rows - 1),
-            child: AnimatedSwitcher(
-              duration: MediaQuery.disableAnimationsOf(context)
-                  ? Duration.zero
-                  : const Duration(milliseconds: 220),
-              child: Column(
-                key: ValueKey(items.map((i) => i.id).join('-')),
-                children: [
-                  for (var row = 0; row < rows; row++) ...[
-                    if (row > 0) const SizedBox(height: 10),
-                    SizedBox(
-                      height: rowHeight,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (var column = 0; column < columns; column++) ...[
-                            if (column > 0) const SizedBox(width: 10),
-                            Expanded(
-                              child: row * columns + column < items.length
-                                  ? _BentoCard(
-                                      item: items[row * columns + column],
-                                      onTap: () => onDetails(
-                                        items[row * columns + column],
-                                      ),
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                          ],
+            child: Column(
+              children: [
+                for (var row = 0; row < rows; row++) ...[
+                  if (row > 0) const SizedBox(height: 10),
+                  SizedBox(
+                    height: rowHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var column = 0; column < columns; column++) ...[
+                          if (column > 0) const SizedBox(width: 10),
+                          Expanded(
+                            child:
+                                row * columns + column < items.length &&
+                                    items[row * columns + column] != null
+                                ? _BentoCard(
+                                    item: items[row * columns + column]!,
+                                    onTap: () => onDetails(
+                                      items[row * columns + column]!,
+                                    ),
+                                  )
+                                : const _BentoPlaceholder(),
+                          ),
                         ],
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
           const SizedBox(height: 10),
@@ -1215,9 +1631,25 @@ class _RecommendationBento extends StatelessWidget {
   );
 }
 
+class _BentoPlaceholder extends StatelessWidget {
+  const _BentoPlaceholder();
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '推荐内容加载中',
+    child: Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: const Center(child: Icon(Icons.movie_outlined, size: 22)),
+    ),
+  );
+}
+
 class _BentoCard extends StatefulWidget {
   const _BentoCard({required this.item, required this.onTap});
-  final BangumiItem item;
+  final HomeAnimeCard item;
   final VoidCallback onTap;
   @override
   State<_BentoCard> createState() => _BentoCardState();
@@ -1234,7 +1666,7 @@ class _BentoCardState extends State<_BentoCard> {
           : const Duration(milliseconds: 240),
       curve: Curves.easeOutCubic,
       child: NetworkImgLayer(
-        src: homeCover(widget.item),
+        src: widget.item.cover,
         width: width,
         height: height,
         type: 'bg',
@@ -1275,7 +1707,7 @@ class _BentoCardState extends State<_BentoCard> {
     final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return Semantics(
       button: true,
-      label: '查看推荐 ${homeTitle(widget.item)}',
+      label: '查看推荐 ${widget.item.title}',
       child: Material(
         color: colors.surfaceContainerLow,
         shape: RoundedRectangleBorder(
@@ -1334,7 +1766,7 @@ class _BentoCardState extends State<_BentoCard> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    homeTitle(widget.item),
+                                    widget.item.title,
                                     maxLines: scale > 1.3 ? 2 : 3,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -1425,6 +1857,76 @@ class _SectionHeading extends StatelessWidget {
         child: Text(actionLabel, style: const TextStyle(fontSize: 12)),
       ),
     ],
+  );
+}
+
+class _HistorySection extends StatelessWidget {
+  const _HistorySection({
+    required this.controller,
+    required this.onHistory,
+    required this.onResume,
+  });
+  final ModernHomeController controller;
+  final VoidCallback onHistory;
+  final ValueChanged<History> onResume;
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([
+      controller.historyUpdates,
+      SdkLibraryStore.shared,
+    ]),
+    builder: (context, _) {
+      final recent = groupPersonalHistory(
+        controller.recent,
+        SdkLibraryStore.shared.histories,
+      ).expand((group) => group.entries).take(10).toList();
+      if (recent.isEmpty) return const SizedBox.shrink();
+      final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 18),
+          _SectionHeading(
+            title: '继续观看',
+            subtitle: '',
+            actionLabel: '全部',
+            onAction: onHistory,
+          ),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, bounds) => SizedBox(
+              height: 94 + 32 * (scale - 1).clamp(0, 3),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: recent.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                itemBuilder: (_, index) => recent[index].sdk != null
+                    ? SizedBox(
+                        width: math.min(
+                          bounds.maxWidth - (recent.length > 1 ? 20 : 0),
+                          350,
+                        ),
+                        child: SdkLibraryTile(
+                          record: recent[index].sdk!,
+                          compact: true,
+                          onOpen: () =>
+                              openSdkLibraryRecord(context, recent[index].sdk!),
+                        ),
+                      )
+                    : _ContinueCard(
+                        history: recent[index].history!,
+                        width: math.min(
+                          bounds.maxWidth - (recent.length > 1 ? 20 : 0),
+                          350,
+                        ),
+                        onTap: () => onResume(recent[index].history!),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
   );
 }
 
@@ -1527,7 +2029,7 @@ class _PosterCard extends StatefulWidget {
     required this.controller,
     required this.onTap,
   });
-  final BangumiItem item;
+  final HomeAnimeCard item;
   final ModernHomeController controller;
   final VoidCallback onTap;
   @override
@@ -1550,17 +2052,31 @@ class _PosterCardState extends State<_PosterCard> {
 
   void _requestSchedule() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.controller.ensureSchedule(widget.item.id);
+      final metadata = widget.item.metadata;
+      if (mounted && metadata != null) {
+        widget.controller.ensureSchedule(metadata.id);
+      }
     });
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => widget.item.metadata == null
+      ? _buildCard(context)
+      : ListenableBuilder(
+          listenable: widget.controller.scheduleChanges(
+            widget.item.metadata!.id,
+          ),
+          builder: (context, _) => _buildCard(context),
+        );
+
+  Widget _buildCard(BuildContext context) {
     final item = widget.item;
-    final airing = widget.controller.scheduleLabel(item);
+    final airing = item.metadata == null
+        ? item.status
+        : widget.controller.scheduleLabel(item.metadata!);
     return Semantics(
       label:
-          '查看 ${homeTitle(item)}，评分 ${item.ratingScore > 0 ? item.ratingScore.toStringAsFixed(1) : '暂无'}，$airing',
+          '查看 ${item.title}，评分 ${item.ratingScore > 0 ? item.ratingScore.toStringAsFixed(1) : '暂无'}，$airing',
       button: true,
       excludeSemantics: true,
       onTap: widget.onTap,
@@ -1594,7 +2110,7 @@ class _PosterCardState extends State<_PosterCard> {
                                 : const Duration(milliseconds: 240),
                             curve: Curves.easeOutCubic,
                             child: NetworkImgLayer(
-                              src: homeCover(item),
+                              src: item.cover,
                               width: bounds.maxWidth,
                               height: bounds.maxWidth * 1.42,
                               type: 'bg',
@@ -1680,7 +2196,7 @@ class _PosterCardState extends State<_PosterCard> {
               ),
               const SizedBox(height: 8),
               Text(
-                homeTitle(item),
+                item.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(

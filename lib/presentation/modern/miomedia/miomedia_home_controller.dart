@@ -25,6 +25,10 @@ class MioHomeController extends ChangeNotifier {
   final Set<String> rankLoading = {}, rankFailed = {};
   final Map<String, CancelToken> _rankRequests = {};
   final Map<MioKind, int> pages = {};
+  // 记录真正成功的分类目录，不能用全站发现结果或其他分类的旧页码充当影视证据。
+  final Map<MioKind, String> loadedCategoryIds = {};
+  int catalogRevision = 0;
+  final Map<MioKind, int> loadedRevisions = {};
   final Map<MioKind, String> genreSelections = {};
   final Map<MioKind, int> featuredOffsets = {};
   final Set<MioKind> loading = {}, failed = {}, more = {};
@@ -32,6 +36,8 @@ class MioHomeController extends ChangeNotifier {
   final Map<MioKind, CancelToken> _requests = {};
   CancelToken? _discovery;
   Future<void>? _bootstrap;
+  Completer<void> _firstCatalog = Completer<void>();
+  Future<void> get firstCatalogReady => _firstCatalog.future;
   bool discovering = false, discoveryFailed = false, _disposed = false;
   final Set<String> _known = {};
   int _generation = 0;
@@ -158,6 +164,8 @@ class MioHomeController extends ChangeNotifier {
   Future<void> bootstrap({bool force = false}) {
     if (_bootstrap != null) return _bootstrap!;
     if (!force && categoryIds.isNotEmpty) return Future.value();
+    if (force) catalogRevision++;
+    if (_firstCatalog.isCompleted) _firstCatalog = Completer<void>();
     return _bootstrap = _discover().whenComplete(() => _bootstrap = null);
   }
 
@@ -201,12 +209,24 @@ class MioHomeController extends ChangeNotifier {
     final cancel = _discovery = CancelToken();
     notifyListeners();
     var successes = 0;
+    final started = <MioKind, String>{};
+    void startKnownCategories() {
+      for (final kind in const [MioKind.movie, MioKind.series]) {
+        final id = categoryIds[kind];
+        if (id != null && started[kind] != id && !loading.contains(kind)) {
+          started[kind] = id;
+          unawaited(load(kind, reset: true));
+        }
+      }
+    }
+
     String? catalogFailure, configFailure;
     Future<void> catalog() async {
       try {
         final result = await service.catalog(size: 50, cancel: cancel);
         if (_disposed || generation != _generation) return;
         _ingest(result.items);
+        startKnownCategories();
         successes++;
         notifyListeners();
       } catch (error) {
@@ -237,6 +257,7 @@ class MioHomeController extends ChangeNotifier {
         }
         if (_disposed || generation != _generation) return;
         _ingest(videos);
+        startKnownCategories();
         successes++;
         notifyListeners();
       } catch (error) {
@@ -258,11 +279,14 @@ class MioHomeController extends ChangeNotifier {
       }
       discovering = false;
       discoveryFailed = true;
+      if (!_firstCatalog.isCompleted) _firstCatalog.complete();
       notifyListeners();
       return;
     }
     for (final kind in List.of(categoryIds.keys)) {
-      unawaited(load(kind, reset: true));
+      if (started[kind] != categoryIds[kind]) {
+        unawaited(load(kind, reset: true));
+      }
     }
     // 默认首页和热搜可能只有动漫。只查缺失类的首屏，分类仍由真实元数据决定。
     // 两个发现任务各自等待其目录加载，避免挤满 Python 的四个运行名额。
@@ -296,6 +320,7 @@ class MioHomeController extends ChangeNotifier {
     if (_disposed || generation != _generation) return;
     discovering = false;
     discoveryFailed = successes == 0;
+    if (!_firstCatalog.isCompleted) _firstCatalog.complete();
     notifyListeners();
   }
 
@@ -320,7 +345,11 @@ class MioHomeController extends ChangeNotifier {
         page: page,
         cancel: cancel,
       );
-      if (_disposed || generation != _generation || cancel.isCancelled) return;
+      if (_disposed ||
+          generation != _generation ||
+          cancel.isCancelled ||
+          categoryIds[kind] != id)
+        return;
       final previous = reset
           ? <String, MioVideo>{}
           : {for (final v in items[kind] ?? <MioVideo>[]) v.identity: v};
@@ -331,6 +360,11 @@ class MioHomeController extends ChangeNotifier {
       }
       items[kind] = previous.values.toList();
       pages[kind] = page;
+      loadedCategoryIds[kind] = id;
+      loadedRevisions[kind] = catalogRevision;
+      if (const [MioKind.movie, MioKind.series].contains(kind) &&
+          !_firstCatalog.isCompleted)
+        _firstCatalog.complete();
       if (result.hasMore) {
         more.add(kind);
       } else {
@@ -346,6 +380,8 @@ class MioHomeController extends ChangeNotifier {
         loading.remove(kind);
         _requests.remove(kind);
         notifyListeners();
+        // 分类发现可将泛分类升级为明确分类；旧请求结束后补取新目录。
+        if (categoryIds[kind] != id) unawaited(load(kind, reset: true));
       }
     }
   }
@@ -353,6 +389,7 @@ class MioHomeController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    if (!_firstCatalog.isCompleted) _firstCatalog.complete();
     _generation++;
     _discovery?.cancel();
     for (final cancel in _requests.values) {

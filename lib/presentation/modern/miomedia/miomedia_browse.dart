@@ -5,10 +5,12 @@ import 'package:flutter/gestures.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
+import 'package:kazumi/services/source/sdk_playback_models.dart';
 import '../home/home_theme.dart';
 import '../home/modern_home_controller.dart';
 import '../settings/modern_back_button.dart';
 import '../widgets/modern_section_mark.dart';
+import '../widgets/near_end_scroll.dart';
 import 'miomedia_home_controller.dart';
 
 class MioHomeSections extends StatelessWidget {
@@ -219,20 +221,36 @@ class MioPoster extends StatelessWidget {
     required this.video,
     required this.onTap,
     this.rank,
+    this.providerName,
+    this.identity,
+    this.statusLabel,
+    this.rankIsSequence = false,
   });
-  final MioVideo video;
+  final SdkVideo video;
   final VoidCallback onTap;
   final int? rank;
+  final String? providerName, identity, statusLabel;
+  final bool rankIsSequence;
+  String get metadata => [
+    if (providerName?.isNotEmpty == true) providerName!,
+    _metadata(video),
+  ].where((text) => text.isNotEmpty).join(' · ');
 
   @override
   Widget build(BuildContext context) => Semantics(
     label:
-        '${rank == null ? '' : '第$rank名，'}查看 ${video.title}，${_metadata(video)}',
+        '${rank == null
+            ? ''
+            : rankIsSequence
+            ? '展示序号$rank，'
+            : '第$rank名，'}查看 ${video.title}，$metadata',
     button: true,
     excludeSemantics: true,
     onTap: onTap,
     child: InkWell(
-      key: ValueKey('mio-poster-${video.id}'),
+      key: ValueKey(
+        identity == null ? 'mio-poster-${video.id}' : 'sdk-poster-$identity',
+      ),
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Column(
@@ -314,7 +332,7 @@ class MioPoster extends StatelessWidget {
                       left: 6,
                       right: 6,
                       child: Text(
-                        _status(video),
+                        statusLabel ?? _status(video),
                         maxLines: 1,
                         textAlign: TextAlign.right,
                         overflow: TextOverflow.ellipsis,
@@ -344,7 +362,7 @@ class MioPoster extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            _metadata(video),
+            metadata,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -359,19 +377,25 @@ class MioPoster extends StatelessWidget {
   );
 }
 
-String _metadata(MioVideo video) {
+String _metadata(SdkVideo video) {
   final fields = [
     video.year,
     video.area,
   ].where((value) => value.trim().isNotEmpty && value != '0').toList();
-  return fields.isEmpty ? video.kind.label : fields.join(' · ');
+  return fields.isEmpty
+      ? (video is MioVideo ? video.kind.label : video.categoryName)
+      : fields.join(' · ');
 }
 
-String _status(MioVideo video) => switch (video.kind) {
-  MioKind.movie => '电影',
-  MioKind.variety => video.episodeCount > 0 ? '${video.episodeCount}期' : '综艺',
-  _ => video.episodeCount > 0 ? '${video.episodeCount}集' : video.kind.label,
-};
+String _status(SdkVideo video) => video is! MioVideo
+    ? ''
+    : switch (video.kind) {
+        MioKind.movie => '电影',
+        MioKind.variety =>
+          video.episodeCount > 0 ? '${video.episodeCount}期' : '综艺',
+        _ =>
+          video.episodeCount > 0 ? '${video.episodeCount}集' : video.kind.label,
+      };
 
 /// 分类页与查看更多共用尺寸，文字放大后自动减少列数。
 class MioPosterGrid extends StatelessWidget {
@@ -525,7 +549,10 @@ class _MioBrowsePageState extends State<MioBrowsePage> {
   Widget build(BuildContext context) => ModernHomeScope(
     child: Scaffold(
       appBar: AppBar(
-        leading: const ModernBackButton(),
+        // 此页由 MaterialPageRoute 打开，返回同一 Navigator 的页面栈。
+        leading: ModernBackButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: Text(
           widget.kind?.label ?? '影视搜索',
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
@@ -587,31 +614,60 @@ class _MioBrowsePageState extends State<MioBrowsePage> {
                         ),
                       )
                     : LayoutBuilder(
-                        builder: (context, constraints) => ListView(
-                          children: [
-                            MioPosterGrid(
-                              items: items,
-                              onDetails: widget.onDetails,
+                        builder: (context, constraints) =>
+                            NotificationListener<ScrollNotification>(
+                              onNotification: (notification) {
+                                if (isNearEndScroll(notification) &&
+                                    !_loading &&
+                                    _more &&
+                                    _error == null) {
+                                  _load(reset: false);
+                                }
+                                return false;
+                              },
+                              child: CustomScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                slivers: [
+                                  // 后续页仍按相同尺寸排版，但离屏海报不再整批构建/取图。
+                                  SliverGrid.builder(
+                                    key: const ValueKey('mio-poster-grid'),
+                                    gridDelegate: mioPosterGridDelegate(
+                                      context,
+                                      constraints.maxWidth,
+                                    ),
+                                    itemCount: items.length,
+                                    itemBuilder: (context, index) => MioPoster(
+                                      video: items[index],
+                                      onTap: () =>
+                                          widget.onDetails(items[index]),
+                                    ),
+                                  ),
+                                  if (_loading)
+                                    SliverToBoxAdapter(
+                                      child: SkeletonPosters(
+                                        horizontal: false,
+                                        count: 3,
+                                        gridDelegate: mioPosterGridDelegate(
+                                          context,
+                                          constraints.maxWidth,
+                                        ),
+                                      ),
+                                    ),
+                                  if (_more)
+                                    SliverToBoxAdapter(
+                                      child: TextButton(
+                                        onPressed: _loading
+                                            ? null
+                                            : () => _load(reset: false),
+                                        child: const Text('加载更多'),
+                                      ),
+                                    ),
+                                  const SliverToBoxAdapter(
+                                    child: SizedBox(height: 24),
+                                  ),
+                                ],
+                              ),
                             ),
-                            if (_loading)
-                              SkeletonPosters(
-                                horizontal: false,
-                                count: 3,
-                                gridDelegate: mioPosterGridDelegate(
-                                  context,
-                                  constraints.maxWidth,
-                                ),
-                              ),
-                            if (_more)
-                              TextButton(
-                                onPressed: _loading
-                                    ? null
-                                    : () => _load(reset: false),
-                                child: const Text('加载更多'),
-                              ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
                       ),
               ),
             ],
