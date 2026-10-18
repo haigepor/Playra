@@ -14,7 +14,11 @@ python -B -X utf8 tool/source_runtime/import_lumina.py --verify
 
 导入器只允许`config.py/profile.py`环境绑定差异，其他算法与上游摘要逐字节一致；可提交的`vendor/lumina-manifest.json`仅包含摘要、大小和平台，不包含host、设备指纹或密钥。运行时在各宿主私有目录生成并复用32位十六进制指纹，禁止把开发机identity打包给所有设备。源码SDK和vendor算法不得提交到公共Git。
 
-Android通过`stageLuminaJni`将arm64/x86_64原形引擎分别安装为`lib/<abi>/liblumafuse.so`；`stageEmbeddedPython`仅打包Python模块与`fuse_image.bin.gz`，不打包桌面DLL/so/dylib。Chaquopy仅提取`vendor.lumina._fuse`以支持真实文件路径，库从只读`nativeLibraryDir`加载，解压镜像进入私有缓存。ARM32保留旧来源，不引入Unicorn或伪造后端。
+Android通过`stageLuminaJni`将arm64/x86_64原形引擎分别安装为`lib/<abi>/liblumafuse.so`，同时将新版 SDK 原样提供的官方 `libcore.so` 安装到 `lib/arm64-v8a/`。**实际官方库只有 ELF AArch64**，不把它复制到 x86_64 或 ARM32；导入器检查三个 Android 库的 ELF ABI，拒绝错误架构。导入收据 `integrationVersion=2` 包含 `_soloader/__init__.py` 与库摘要；旧 v1 收据只能用于校验后升级，不能作为新版输入验收。
+
+`stageEmbeddedPython`仅打包Python模块、`_soloader` 加载器与`fuse_image.bin.gz`，不打包桌面DLL/so/dylib，也不重复把官方库塞入Python资产。Chaquopy仍仅提取`vendor.lumina._fuse`以支持镜像真实文件路径。宿主设置`LUMINA_ENGINE_PATH=<nativeLibraryDir>/liblumafuse.so`、`LUMINA_SOLOADER_PATH=<nativeLibraryDir>/libcore.so`，官方库运行文件目录在应用私有缓存，`LUMINA_DEVICE_ID`与已有持久设备指纹一致。库从系统解出的只读`nativeLibraryDir`加载，无电脑服务、adb桥或动态下载依赖。
+
+请求侧认证/信封继续使用 `_fuse`；响应解密默认由 SDK 优先走进程内 `_soloader`，加载或调用失败由原 SDK 回退。x86_64 没有对应官方 `libcore.so`，仍可使用其原生 `_fuse`；ARM32保留旧来源，不引入Unicorn或伪造后端。当前官方库 LOAD 对齐为 4096 字节，尚不能声明通过 16 KB 页大小验收；需要交付方提供兼容产物并实机检查。见[本次直载更新与验收](../verification/lumina-android-soloader-20261017.zh.md)。
 
 iOS当前不登记或展示Lumina，保留旧动漫来源；本轮暂停本地/远端Lumina研究，已有影视远端配置不代表Lumina能力。历史方案及验收边界见[三端接入与验收](../verification/lumina-sdk-20261016.zh.md)。现有公开CI尚未恢复Lumina输入；未恢复前不能宣称干净云构建就绪。
 

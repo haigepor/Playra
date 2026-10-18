@@ -9,7 +9,7 @@ import re
 BASE = Path(__file__).resolve().parent / 'vendor'
 DEFAULT_TARGET = BASE / 'lumina'
 DEFAULT_MANIFEST = BASE / 'lumina-manifest.json'
-REQUIRED_FILES = (
+PREVIOUS_REQUIRED_FILES = (
     '__init__.py', 'aes_cbc.py', 'auth.py', 'block.py', 'client.py', 'codec.py',
     'config.py', 'envelope.py', 'play.py', 'profile.py', 'rsaio.py',
     '_fuse/__init__.py', '_fuse/assets/fuse_core.dll',
@@ -20,20 +20,29 @@ REQUIRED_FILES = (
     '_fuse/assets/liblumafuse_macos_arm64.dylib.gz',
     '_fuse/assets/fuse_image.bin.gz',
 )
+REQUIRED_FILES = PREVIOUS_REQUIRED_FILES + (
+    '_soloader/__init__.py', '_soloader/assets/libcore.so',
+)
 ALLOWED_BINDINGS = {'config.py', 'profile.py'}
+ANDROID_MACHINES = {
+    '_fuse/assets/liblumafuse_android_arm64.so': 183,
+    '_fuse/assets/liblumafuse_android_x64.so': 62,
+    '_soloader/assets/libcore.so': 183,
+}
 
 
 def _digest(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
-def verify(*, target=DEFAULT_TARGET, manifest_path=DEFAULT_MANIFEST):
+def verify(*, target=DEFAULT_TARGET, manifest_path=DEFAULT_MANIFEST, allow_previous=False):
     target, manifest_path = Path(target).resolve(), Path(manifest_path).resolve()
     try:
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         files = manifest['files']
+        expected = PREVIOUS_REQUIRED_FILES if allow_previous and manifest.get('integrationVersion') == 1 else REQUIRED_FILES
         if manifest.get('schemaVersion') != 1 or not isinstance(files, list) or \
-                {row['file'] for row in files} != set(REQUIRED_FILES) or len(files) != len(REQUIRED_FILES):
+                {row['file'] for row in files} != set(expected) or len(files) != len(expected):
             raise ValueError()
         for row in files:
             path = target / row['file']
@@ -58,6 +67,10 @@ def install(source, *, host=None, target=DEFAULT_TARGET, manifest_path=DEFAULT_M
     output, files = {}, []
     for name in REQUIRED_FILES:
         raw = (source / name).read_bytes()
+        # ABI 以 ELF 头为准，不能把 ARM64 官方库当成 x86_64 库打包。
+        if name in ANDROID_MACHINES and (len(raw) < 64 or raw[:6] != b'\x7fELF\x02\x01' or
+                                         int.from_bytes(raw[18:20], 'little') != ANDROID_MACHINES[name]):
+            raise ValueError('SDK_NATIVE_ABI_INVALID')
         imported = raw
         if name == 'config.py' and host is not None:
             text = raw.decode('utf-8')
@@ -72,7 +85,7 @@ def install(source, *, host=None, target=DEFAULT_TARGET, manifest_path=DEFAULT_M
                       'size': len(imported)})
     if target.exists() and manifest_path.exists():
         # 不覆盖已被修改的私有算法副本；先由维护者查明来源差异。
-        verify(target=target, manifest_path=manifest_path)
+        verify(target=target, manifest_path=manifest_path, allow_previous=True)
     elif target.exists() and any(target.iterdir()):
         raise ValueError('SDK_UNVERIFIED_TARGET')
     target.mkdir(parents=True, exist_ok=True)
@@ -83,12 +96,15 @@ def install(source, *, host=None, target=DEFAULT_TARGET, manifest_path=DEFAULT_M
         temporary.write_bytes(raw)
         os.replace(temporary, destination)
     manifest = {
-        'schemaVersion': 1, 'sdk': 'lumina', 'integrationVersion': 1,
+        'schemaVersion': 1, 'sdk': 'lumina', 'integrationVersion': 2,
         'allowedBindingFiles': sorted(ALLOWED_BINDINGS),
         'runtimeBindings': ['profile.DEVICE_FP'],
         'hostBound': host is not None,
         'platforms': ['windows-x64', 'linux-x64', 'linux-arm64', 'macos-arm64', 'android-arm64', 'android-x64'],
         'optionalBackendsIncluded': False,
+        # 随包官方库经 ELF 核对仅有 ARM64；x86_64 继续 SDK 自带引擎。
+        'responseDecryption': {'preferred': 'soloader', 'nativeAbis': ['arm64-v8a'],
+                               'fallback': 'sdk-default'},
         'files': files,
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)

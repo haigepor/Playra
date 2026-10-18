@@ -247,7 +247,7 @@ Lumina的`playFormat/part`与画质分别处理：原始请求只有videoId/play
 
 响应只包含规范化公开内容/媒体；config只表示可用性，不下发内部配置。每线程一个复用Client，认证缓存按SDK原90秒窗口，nonce每请求随机。设备指纹保存在宿主私有目录中，一次生成持久复用，不接受客户端指定host/设备指纹/脚本。直链headers包含空UA时必须保留，不能用随机UA或Web默认UA覆盖。
 
-平台：Web/桌面服务端使用受支持的`_fuse`；Android仅arm64/x86_64登记Lumina、从只读JNI库加载；ARM32不接入，保留旧来源。按用户最新范围，iOS不登记或展示Lumina，已有影视远端地址也不隐式启用；旧动漫来源继续原路径，不启动本地Python。包内无`_native`，零依赖约束下不安装`_emu`所需Unicorn。具体输入与证据见[接入验收](../verification/lumina-sdk-20261016.zh.md)和[优化分析](../analysis/lumina-sdk-optimization-20261016.zh.md)。
+平台：Web/桌面服务端使用受支持的`_fuse`；Android仅arm64/x86_64登记Lumina、从只读JNI库加载。2026-10-17 更新原 SDK 的 `_soloader`：ARM64 响应解密优先在应用同一进程直载 `nativeLibraryDir/libcore.so`，请求认证仍用 `_fuse`；x86_64 因未提供对应官方库继续原生 `_fuse`。运行文件放应用私有目录，官方库与请求认证共享同一个持久设备指纹，回退顺序使用 SDK 原实现，不增加设备桥或算法改写。ARM32不接入，保留旧来源。按用户最新范围，iOS不登记或展示Lumina，已有影视远端地址也不隐式启用；旧动漫来源继续原路径，不启动本地Python。包内无`_native`，零依赖约束下不安装`_emu`所需Unicorn。具体输入与证据见[接入验收](../verification/lumina-sdk-20261016.zh.md)、[优化分析](../analysis/lumina-sdk-optimization-20261016.zh.md)和[Android 直载更新](../verification/lumina-android-soloader-20261017.zh.md)。
 
 首页只转换公开内容数据到既有推荐卡/轮播/海报轨，继续沿用新页面tokens和信息层级，不因SDK接入增加品牌大面板。展示模型必须保留真实provider/contentId及详情回调，不能为复用UI制造Bangumi ID。轮播实际作品名字段`vname`由Python归一为title，不用SDK名称冒充作品。
 

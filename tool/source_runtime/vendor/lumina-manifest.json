@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sdk": "lumina",
-  "integrationVersion": 1,
+  "integrationVersion": 2,
   "allowedBindingFiles": [
     "config.py",
     "profile.py"
@@ -19,6 +19,13 @@
     "android-x64"
   ],
   "optionalBackendsIncluded": false,
+  "responseDecryption": {
+    "preferred": "soloader",
+    "nativeAbis": [
+      "arm64-v8a"
+    ],
+    "fallback": "sdk-default"
+  },
   "files": [
     {
       "file": "__init__.py",
@@ -40,9 +47,9 @@
     },
     {
       "file": "block.py",
-      "upstreamSha256": "e033a729d5601d33bfe326efbf6444534cc140eca7b4bc5442a82633cde3f687",
-      "sha256": "e033a729d5601d33bfe326efbf6444534cc140eca7b4bc5442a82633cde3f687",
-      "size": 16837
+      "upstreamSha256": "da489b937d193afb7a10167e467195b8f30742b6532cc62db8da99e2dcf68bb9",
+      "sha256": "da489b937d193afb7a10167e467195b8f30742b6532cc62db8da99e2dcf68bb9",
+      "size": 17365
     },
     {
       "file": "client.py",
@@ -64,9 +71,9 @@
     },
     {
       "file": "envelope.py",
-      "upstreamSha256": "5e48138091bccc2f5851b501e6dc81b30c9eff67e5a82f13f9f9a45d91c28b52",
-      "sha256": "5e48138091bccc2f5851b501e6dc81b30c9eff67e5a82f13f9f9a45d91c28b52",
-      "size": 6538
+      "upstreamSha256": "184b19aa42a9e4b233a30a30cf2aa3a12dfb74b24b8214b135c04cfc633bf729",
+      "sha256": "184b19aa42a9e4b233a30a30cf2aa3a12dfb74b24b8214b135c04cfc633bf729",
+      "size": 8233
     },
     {
       "file": "play.py",
@@ -88,9 +95,9 @@
     },
     {
       "file": "_fuse/__init__.py",
-      "upstreamSha256": "7b22d4ed3d20efbbe92a0b3aefa43d63d7097776f30f69530130dcc83329e7a7",
-      "sha256": "7b22d4ed3d20efbbe92a0b3aefa43d63d7097776f30f69530130dcc83329e7a7",
-      "size": 18506
+      "upstreamSha256": "b93e5f4b1d2481a24c33c658c6460d6769ecab06f971398dd1c450143f775f3e",
+      "sha256": "b93e5f4b1d2481a24c33c658c6460d6769ecab06f971398dd1c450143f775f3e",
+      "size": 19498
     },
     {
       "file": "_fuse/assets/fuse_core.dll",
@@ -133,6 +140,18 @@
       "upstreamSha256": "184b5c35bce4fca3cc111fe924d594c55b143e2da2062e6789ac4f57a3606bfc",
       "sha256": "184b5c35bce4fca3cc111fe924d594c55b143e2da2062e6789ac4f57a3606bfc",
       "size": 3719655
+    },
+    {
+      "file": "_soloader/__init__.py",
+      "upstreamSha256": "e48200aa09c9d6cccde034539b48b0239a5de70ce2dabe62b03ea77f81973180",
+      "sha256": "e48200aa09c9d6cccde034539b48b0239a5de70ce2dabe62b03ea77f81973180",
+      "size": 15712
+    },
+    {
+      "file": "_soloader/assets/libcore.so",
+      "upstreamSha256": "26727c7b68308d3055860a71aa0c217380319ba22bc99cfb425c12e3d4e84f17",
+      "sha256": "26727c7b68308d3055860a71aa0c217380319ba22bc99cfb425c12e3d4e84f17",
+      "size": 6839376
     }
   ]
 }

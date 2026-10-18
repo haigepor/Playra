@@ -314,6 +314,8 @@ class LuminaSdk:
                         raise RuntimeFailure('IDENTITY_CONFLICT', 500)
                     # 仅绑定 profile 的宿主设备值；不更改认证或密码实现。
                     self._profile.DEVICE_FP = self._fingerprint
+                    # 直载官方库的 init 与请求认证共用同一个持久身份，禁止沿用 SDK 示例值。
+                    os.environ['LUMINA_DEVICE_ID'] = self._fingerprint
                     _PROFILE_BINDING = binding
             self._ready = True
         finally:
@@ -324,8 +326,11 @@ class LuminaSdk:
             with _BIND_LOCK:
                 self.cache_directory.mkdir(parents=True, exist_ok=True)
                 os.environ['LUMINA_RT_CACHE'] = str(self.cache_directory)
+                os.environ['LUMINA_SOLOADER_FILES'] = str(self.cache_directory / 'soloader')
                 if self.engine_directory:
                     os.environ['LUMINA_ENGINE_PATH'] = str(self.engine_directory / 'liblumafuse.so')
+                    # APK 原生库仅从系统解出的只读目录加载；不搜索 /data/local/tmp。
+                    os.environ['LUMINA_SOLOADER_PATH'] = str(self.engine_directory / 'libcore.so')
                 config = importlib.import_module('vendor.lumina.config')
                 self._profile = importlib.import_module('vendor.lumina.profile')
                 sdk_client = importlib.import_module('vendor.lumina.client')

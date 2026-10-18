@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 import platform
 import sys
+from types import SimpleNamespace
 
 from adapters import RuntimeContext, RuntimeFailure
 from dispatch import operation
@@ -284,6 +285,31 @@ class LuminaTest(unittest.TestCase):
         self.assertEqual(runtime.registry['lumina'].sdk.engine_directory, Path(self.directory.name))
         self.assertFalse(runtime.registry['lumina'].sdk.identity_path.exists())
 
+    def test_native_loader_uses_read_only_library_and_private_persistent_identity(self):
+        sdk = LuminaSdk(Path(self.directory.name) / 'native' / 'device.json',
+                        engine_directory=Path(self.directory.name) / 'readonly-lib')
+        profile = SimpleNamespace()
+        modules = {
+            'vendor.lumina.config': SimpleNamespace(API_HOST='api.example', API_PORT=27990),
+            'vendor.lumina.profile': profile,
+            'vendor.lumina.client': SimpleNamespace(Client=FakeClient),
+            'vendor.lumina.play': FakePlay,
+            'vendor.lumina._fuse': SimpleNamespace(available=lambda: True),
+        }
+        with patch.dict('os.environ', {}, clear=True), \
+                patch.object(lumina_adapter, '_PROFILE_BINDING', None), \
+                patch('lumina_adapter.importlib.import_module', side_effect=modules.__getitem__):
+            sdk._initialize(RuntimeContext(1000))
+            self.assertEqual(Path(lumina_adapter.os.environ['LUMINA_SOLOADER_PATH']),
+                             sdk.engine_directory / 'libcore.so')
+            self.assertEqual(Path(lumina_adapter.os.environ['LUMINA_SOLOADER_FILES']),
+                             sdk.cache_directory / 'soloader')
+            fingerprint = json.loads(sdk.identity_path.read_text(encoding='utf-8'))['deviceFingerprint']
+            self.assertEqual(lumina_adapter.os.environ['LUMINA_DEVICE_ID'], fingerprint)
+            self.assertEqual(profile.DEVICE_FP, fingerprint)
+            self.assertNotIn('LUMINA_SOLOADER', lumina_adapter.os.environ)
+            self.assertNotIn('LUMINA_DEVICE', lumina_adapter.os.environ)
+
     def test_dns_to_private_target_is_rejected_before_any_connection(self):
         address = (2, 1, 6, '', ('127.0.0.1', 80))
         with patch('lumina_adapter.socket.getaddrinfo', return_value=[address]), patch('lumina_adapter.socket.socket') as connect:
@@ -352,12 +378,17 @@ class ImportLuminaTest(unittest.TestCase):
         self.root = Path(self.directory.name)
 
     def package(self):
-        from import_lumina import REQUIRED_FILES
+        from import_lumina import REQUIRED_FILES, ANDROID_MACHINES
         source = self.root / 'source'
         for name in REQUIRED_FILES:
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b'# original\n' if path.suffix == '.py' else b'binary-asset')
+            if name in ANDROID_MACHINES:
+                header = bytearray(64)
+                header[:6] = b'\x7fELF\x02\x01'
+                header[18:20] = ANDROID_MACHINES[name].to_bytes(2, 'little')
+                path.write_bytes(header)
         (source / 'config.py').write_text("import os\nAPI_HOST = os.environ.get('LUMINA_API_HOST', '<HOST>')\nAPI_PORT = int(os.environ.get('LUMINA_API_PORT', '27990'))\n", encoding='utf-8')
         return source
 
@@ -371,6 +402,16 @@ class ImportLuminaTest(unittest.TestCase):
         self.assertNotIn('43.145.33.254', manifest.read_text(encoding='utf-8'))
         self.assertTrue(verify(target=target, manifest_path=manifest))
         self.assertIn("'<HOST>'", (source / 'config.py').read_text(encoding='utf-8'))
+
+    def test_import_includes_original_in_process_loader_and_arm64_library(self):
+        from import_lumina import install
+        source = self.package()
+        target, manifest = self.root / 'vendor', self.root / 'manifest.json'
+        result = install(source, target=target, manifest_path=manifest)
+        for name in ('_soloader/__init__.py', '_soloader/assets/libcore.so'):
+            self.assertEqual((target / name).read_bytes(), (source / name).read_bytes())
+        self.assertEqual(result['responseDecryption'], {'preferred': 'soloader', 'nativeAbis': ['arm64-v8a'],
+                                                       'fallback': 'sdk-default'})
 
     def test_tampered_algorithm_or_missing_image_is_not_a_valid_sdk(self):
         from import_lumina import install, verify
@@ -391,6 +432,41 @@ class ImportLuminaTest(unittest.TestCase):
         (source / 'client.py').unlink()
         target = self.root / 'vendor'
         with self.assertRaisesRegex(ValueError, 'SDK_INPUT_INCOMPLETE'):
+            install(source, target=target, manifest_path=self.root / 'manifest.json')
+        self.assertFalse(target.exists())
+
+    def test_verified_previous_receipt_can_upgrade_but_cannot_pass_as_current(self):
+        from import_lumina import install, verify, PREVIOUS_REQUIRED_FILES
+        source = self.package()
+        target, manifest = self.root / 'vendor', self.root / 'manifest.json'
+        receipt = install(source, target=target, manifest_path=manifest)
+        receipt['integrationVersion'] = 1
+        receipt['files'] = [row for row in receipt['files'] if row['file'] in PREVIOUS_REQUIRED_FILES]
+        manifest.write_text(json.dumps(receipt), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'SDK_INTEGRITY_ERROR'):
+            verify(target=target, manifest_path=manifest)
+        install(source, target=target, manifest_path=manifest)
+        self.assertTrue(verify(target=target, manifest_path=manifest))
+
+    def test_missing_official_library_fails_before_replacing_existing_input(self):
+        from import_lumina import install, verify
+        source = self.package()
+        target, manifest = self.root / 'vendor', self.root / 'manifest.json'
+        install(source, target=target, manifest_path=manifest)
+        (source / '_soloader/assets/libcore.so').unlink()
+        with self.assertRaisesRegex(ValueError, 'SDK_INPUT_INCOMPLETE'):
+            install(source, target=target, manifest_path=manifest)
+        self.assertTrue(verify(target=target, manifest_path=manifest))
+
+    def test_wrong_native_library_abi_is_rejected_before_creating_target(self):
+        from import_lumina import install
+        source = self.package()
+        wrong = bytearray(64)
+        wrong[:6] = b'\x7fELF\x02\x01'
+        wrong[18:20] = (62).to_bytes(2, 'little')
+        (source / '_soloader/assets/libcore.so').write_bytes(wrong)
+        target = self.root / 'vendor'
+        with self.assertRaisesRegex(ValueError, 'SDK_NATIVE_ABI_INVALID'):
             install(source, target=target, manifest_path=self.root / 'manifest.json')
         self.assertFalse(target.exists())
 

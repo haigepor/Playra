@@ -107,11 +107,19 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
         }
         // 官方 Kazumi 规则由 Dart 引擎执行；历史四源模块可选保留，不再要求私有输入。
         def luminaSdk = file("../../tool/source_runtime/vendor/lumina")
-        if (!["__init__.py", "client.py", "block.py", "auth.py", "envelope.py", "play.py", "profile.py", "config.py", "_fuse/__init__.py", "_fuse/assets/fuse_image.bin.gz"].every { new File(luminaSdk, it).isFile() }) {
+        def luminaRequired = ["__init__.py", "aes_cbc.py", "auth.py", "block.py", "client.py", "codec.py",
+                              "config.py", "envelope.py", "play.py", "profile.py", "rsaio.py",
+                              "_fuse/__init__.py", "_fuse/assets/fuse_image.bin.gz",
+                              "_fuse/assets/liblumafuse_android_arm64.so", "_fuse/assets/liblumafuse_android_x64.so",
+                              "_soloader/__init__.py", "_soloader/assets/libcore.so"]
+        if (!luminaRequired.every { new File(luminaSdk, it).isFile() }) {
             throw new GradleException("Missing Lumina SDK: run tool/source_runtime/import_lumina.py; see docs/release/build-inputs.zh.md")
         }
         // 导入收据与原SDK摘要一致，才能把对应算法和资源打入应用。
         def manifest = new groovy.json.JsonSlurper().parse(file("../../tool/source_runtime/vendor/lumina-manifest.json"))
+        if (manifest.integrationVersion != 2 || !manifest.files.collect { it.file }.containsAll(luminaRequired)) {
+            throw new GradleException("Lumina SDK loader receipt is outdated: run import_lumina.py")
+        }
         manifest.files.each { row ->
             def input = new File(luminaSdk, row.file)
             if (!input.isFile() || input.length() != row.size ||
@@ -134,11 +142,17 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
         // M6 的固定查表资源由原样 SDK 读取，不能只打包 Python 模块。
         include "vendor/miomedia/bf_tables.bin"
         include "lumina_adapter.py", "vendor/lumina/*.py", "vendor/lumina/_fuse/__init__.py"
+        include "vendor/lumina/_soloader/__init__.py"
         include "vendor/lumina/_fuse/assets/fuse_image.bin.gz"
     }
     into(embeddedPythonDir)
 }
 def stageLuminaJni = tasks.register("stageLuminaJni", Sync) {
+    dependsOn(stageEmbeddedPython)
+    // 官方 libcore.so 实测为 ELF AArch64，不得误装到 x86_64/ARM32。
+    from("../../tool/source_runtime/vendor/lumina/_soloader/assets/libcore.so") {
+        into "arm64-v8a"
+    }
     from("../../tool/source_runtime/vendor/lumina/_fuse/assets/liblumafuse_android_arm64.so") {
         into "arm64-v8a"
         rename { "liblumafuse.so" }
