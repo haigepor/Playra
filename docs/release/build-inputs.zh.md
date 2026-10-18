@@ -1,8 +1,8 @@
 # Playra 构建输入
 
-更新：2026-10-15。新增来源的交付要求见[统一 SDK 接入规范](../development/source-sdk-onboarding.zh.md)。Android 包通过 Chaquopy 内置 Python 内容 SDK，不依赖电脑上的 Python 服务。Web 需要算法服务及同源网关。
+更新：2026-10-16。新增来源的交付要求见[统一 SDK 接入规范](../development/source-sdk-onboarding.zh.md)。Android 包通过 Chaquopy 内置 Python 内容 SDK，不依赖电脑上的 Python 服务。Web 的私有 SDK 需要算法服务及同源网关。
 
-当前构建要求 **MioMedia、AniFive、Lumina 三套私有输入**；常规运行适配器为`miomedia`、`anifive-a/b/c/d`与`lumina`，ARM32不登记Lumina。三个vendor目录均被忽略，干净克隆必须分别恢复；Mio的CI导出不能替代其他两套输入。
+当前 Android/Web 启动检查要求 **MioMedia、Lumina 两套私有输入**，ARM32不登记Lumina。默认动漫已恢复原 16 条官方规则，归入“动漫 · Kazumi”，不需要 AniFive Python SDK；Web 解析仍需 Node 同源网关与 Chromium。AniFive 输入仅供保留下来的旧规则兼容使用，不再是默认构建前置条件。私有vendor目录均被忽略，Mio的CI导出不能替代Lumina输入。恢复与实测记录见[Kazumi 接入验收](../verification/kazumi-rules-restoration-20261016.zh.md)。
 
 ## Lumina 私有输入
 
@@ -18,7 +18,7 @@ Android通过`stageLuminaJni`将arm64/x86_64原形引擎分别安装为`lib/<abi
 
 iOS当前不登记或展示Lumina，保留旧动漫来源；本轮暂停本地/远端Lumina研究，已有影视远端配置不代表Lumina能力。历史方案及验收边界见[三端接入与验收](../verification/lumina-sdk-20261016.zh.md)。现有公开CI尚未恢复Lumina输入；未恢复前不能宣称干净云构建就绪。
 
-## AniFive 四源输入
+## AniFive 四源输入（旧规则可选兼容）
 
 ```powershell
 python -B -X utf8 tool/source_runtime/import_anifive.py "C:/path/to/sdk/python/anifive"
@@ -26,7 +26,7 @@ python -B -X utf8 tool/source_runtime/import_anifive.py "C:/path/to/sdk/python/a
 
 参数必须指向 SDK 的 Python 包目录，不是仓库根目录。导入到 `tool/source_runtime/vendor/anifive/`，生成可提交的 `vendor/anifive-manifest.json`，记录原始及导入后文件 SHA256。原 SDK 目录不修改，项目副本通过导入器应用请求级传输注入、截断处理、证书校验及导入兼容补丁。
 
-必需模块包括 `__init__.py/client.py/transport.py/profile.py/source_a.py/source_b.py/source_c.py/source_d.py/selector.py/codec.py/config.py/clarity.py`。Android 的 `stageEmbeddedPython` 校验这些文件并打包 `vendor/anifive/*.py`、`anifive_adapter.py`、`anifive_transport.py`、`dispatch.py` 等运行依赖。缺输入会明确使 Android 构建失败。
+旧 AniFive 规则所需模块包括 `__init__.py/client.py/transport.py/profile.py/source_a.py/source_b.py/source_c.py/source_d.py/selector.py/codec.py/config.py/clarity.py`。Android 的 `stageEmbeddedPython` 在输入存在时打包 `vendor/anifive/*.py`，保留 `anifive_adapter.py`、`anifive_transport.py`、`dispatch.py` 等兼容代码；缺 AniFive 输入不再使默认构建失败，使用旧规则时仍会明确报告 SDK 不可用。
 
 当前导入收据的上游标识为 `dc13fdb`，导入器尚未自动验证输入仓库提交；维护者必须核对实际 SDK 版本及收据摘要。新版 SDK 不应在未核对补丁适用性的情况下直接覆盖现有输入。
 

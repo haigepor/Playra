@@ -6,8 +6,13 @@ import 'package:kazumi/services/source/source_sdk_group.dart';
 
 void main() {
   Plugin bundled(String file) => Plugin.fromJson(
-    jsonDecode(File('assets/plugins/$file.json').readAsStringSync())
-        as Map<String, dynamic>,
+    Map<String, dynamic>.from(
+      (jsonDecode(
+                File('assets/migrations/kazumi-v1.json').readAsStringSync(),
+              )['previousRules']
+              as List)
+          .singleWhere((p) => p['name'] == file),
+    ),
   );
   test('four managed adapters share one SDK without changing provider IDs', () {
     final rules = ['DM84', 'MXdm', 'akianime', 'moonci'].map(bundled).toList();

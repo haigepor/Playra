@@ -144,8 +144,15 @@ class ApiRuleStrategy {
     RestrictedJsonPath.validate(config.listPath);
     RestrictedJsonPath.validate(config.namePath);
     RestrictedJsonPath.validate(config.sourcePath);
-    if (config.coverPath.isNotEmpty)
+    if (config.coverPath.isNotEmpty) {
       RestrictedJsonPath.validate(config.coverPath);
+    }
+    // 与 Kazumi API 9 保持一致；模板缺少身份占位符时不能生成固定的错误作品。
+    // https://github.com/Predidit/Kazumi/blob/025dcb5c2f62db881382c72f191d08b49a9feb41/lib/services/plugin/api_rule_strategy.dart
+    if (config.sourceTemplate.isNotEmpty &&
+        !config.sourceTemplate.contains('@source')) {
+      throw const ApiRuleFormatException('详情页地址模板必须引用 @source');
+    }
   }
 
   RuleSearchParseResult parseSearch(String raw, ApiSearchConfig config) {
@@ -177,7 +184,12 @@ class ApiRuleStrategy {
         results.add(
           SearchItem(
             name: name,
-            src: source,
+            src: config.sourceTemplate.isEmpty
+                ? source
+                : config.sourceTemplate.replaceAll(
+                    '@source',
+                    Uri.encodeComponent(source),
+                  ),
             coverUrl:
                 coverUri != null &&
                     ['http', 'https'].contains(coverUri.scheme) &&

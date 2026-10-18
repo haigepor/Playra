@@ -36,7 +36,7 @@ void main() {
     },
   );
   test(
-    'first-use registry loads four bundled anime adapters without installation',
+    'first-use registry loads sixteen official anime rules without installation',
     () async {
       final providers = await loadContentProviders(const []);
       addTearDown(() {
@@ -45,12 +45,24 @@ void main() {
         }
       });
       final rules = providers.whereType<RuleContentProvider>().toList();
-      expect(rules, hasLength(4));
+      expect(rules, hasLength(16));
       expect(rules.map((p) => p.id).toSet(), {
         'dm84',
         'mxdm',
         'akianime',
         'moonci',
+        '7sefun',
+        'aafun',
+        'age',
+        'baimao',
+        'dalvdm',
+        'ezdmw',
+        'girigirilove',
+        'mgnacg',
+        'mutefun',
+        'sorani',
+        'xfdmneo',
+        'xfdmnext',
       });
       expect(
         rules.every(

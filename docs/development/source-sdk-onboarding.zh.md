@@ -1,15 +1,16 @@
 # Playra 统一 SDK 接入规范
 
-版本：1.8；更新：2026-10-16；适用：新增 SDK、内容 HTTP API、动漫规则和资料源。本文是唯一接入入口；[接入记录模板](templates/source-sdk-checklist.zh.md)是每次交付的必填附件。历史分析说明背景，不代替本文或当前源码。
+版本：1.9；更新：2026-10-16；适用：新增 SDK、内容 HTTP API、动漫规则和资料源。本文是唯一接入入口；[接入记录模板](templates/source-sdk-checklist.zh.md)是每次交付的必填附件。历史分析说明背景，不代替本文或当前源码。
 
 本文中的“必须”为新增接入的验收条件；“当前实现”为代码现状；“待补齐”为尚未实现或尚无验证证据的事项。规范更新不表示对应业务代码已自动升级。
 
 ## 1. 当前接入盘点与架构结论
 
-按 SDK 家族计，当前有 **Lumina、MioMedia、AniFive 三套 SDK**；支持Lumina的平台通常有 **6 个**运行适配器，Android ARM32与当前iOS不登记Lumina，保留原5个来源适配器。HTTP 注册表另有 `template` 占位，不能计入可播放来源。Bangumi是资料提供方，不计入播放SDK。
+当前默认播放家族为 **Kazumi 官方规则、Lumina、MioMedia**。Kazumi 是规则引擎分组，无 Python adapterId；AniFive A/B/C/D 适配器保留给用户修改过的旧规则，不再承载默认动漫资产。Android ARM32与当前iOS不登记Lumina。HTTP 注册表另有 `template` 占位，不能计入可播放来源。Bangumi是资料提供方，不计入播放SDK。
 
 | 家族 / 来源 | Python adapterId | Flutter 业务身份 | 当前路径与能力 |
 |---|---|---|---|
+| Kazumi 原 16 条 | 无 | `kazumi` 分组，规则保持原站身份 | 官方 XPath / API 9；目录顺序、真实播放页、普通或简易解析 |
 | MioMedia | `miomedia` | `miomedia` | `ContentSearchProvider` + `SdkPlaybackProvider`；11 个受限 SDK 操作 |
 | Lumina | `lumina` | `lumina` | 动漫优先内容/搜索/独立详情；7个受限操作，真实字符串part |
 | AniFive A / DM84 | `anifive-a` | 默认 `dm84` | 动漫规则；search / episodes / resolve |
@@ -19,7 +20,7 @@
 | 模板 | `template` | 不登记业务来源 | `implemented=false`，无能力 |
 | Bangumi | 无 | `bangumi-metadata` | 动漫资料、真实作品身份与封面；`canPlay=false` |
 
-内置动漫资产现为 4 个 JSON，替换原 16 条未修改的内置规则；用户改过的规则、自定义规则可以继续存在，因此安装后的总来源数不保证等于 4。
+内置动漫资产现恢复原 16 个 JSON，替换未修改的旧 AniFive 四源；用户改过的规则、自定义规则继续保留，因此安装后的总来源数不保证等于 16。Kazumi 自动播放按 **akianime → mutefun → giriGiriLove** 主备顺序选择，其他 13 条仅保留手动入口；缓存或响应速度不能让备用来源越过尚未检查的主来源。每个来源的搜索/目录准备最多 8 秒，失败或不满足画质条件后继续下一个来源，同次自动播放最多尝试这三个来源各一次。仍要求首帧后实际解码高度至少 1080，拒绝已知不足 10 秒的片段；低清和未知画质可手动播放。该限制不扩展到 Lumina/MioMedia，也不代表每个站点都提供 1080p。见[原 16 条恢复记录](../verification/kazumi-rules-restoration-20261016.zh.md)和[自动主备顺序验收](../verification/kazumi-auto-priority-20261017.zh.md)。
 
 当前三条边界必须保留：**供应商 Adapter 执行协议，公共服务负责模型和选择策略，平台桥负责传输与打包**。页面不执行签名、解密、设备注册，也不根据供应商类名分支创建独立播放器。复用架构并不等于所有 SDK 共用一个设备身份、CookieJar 或缓存。
 
@@ -27,7 +28,7 @@
 
 | 来源形态 | 必须使用 | 登记位置 / 参考 |
 |---|---|---|
-| 动漫站 HTML、JSON API，或能转换成搜索/目录/解析的动漫 SDK | `Plugin` → `SourceService` / `RuleEngine` → `RuleContentProvider`，继续使用真实 Bangumi 身份 | `assets/plugins/`、`contentProviders()`；参考四源资产与 `anifive_adapter.py` |
+| 动漫站 HTML、JSON API，或能转换成搜索/目录/解析的动漫 SDK | `Plugin` → `SourceService` / `RuleEngine` → `RuleContentProvider`，继续使用真实 Bangumi 身份 | `assets/plugins/`、`contentProviders()`；参考官方 Kazumi 规则资产；Python 仅在规则明确使用运行时桥时需要 |
 | 影视、漫剧、剧集 SDK / 专用内容 API | 专属 Service + `ContentSearchProvider` + `SdkPlaybackProvider` → 共享 `SdkDetailPage` | `contentProviders()`；参考 `miomedia/` |
 | 提供完整原生内容目录的动漫 SDK | 同上，保留独立SDK作品身份；显式priority决定内容优先级 | 参考 `lumina/`；不伪造Bangumi ID |
 | 仅资料、不提供媒体 | `ContentSearchProvider`，保持 `canPlay=false` | 参考 `BangumiContentProvider` |

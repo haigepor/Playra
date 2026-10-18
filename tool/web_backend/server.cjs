@@ -11,6 +11,11 @@ const { captcha } = require('./captcha.cjs');
 const { createRuntimeBridge } = require('./runtime.cjs');
 const { serveStatic } = require('./static_assets.cjs');
 
+// 保留 Node 默认根并加载系统受信任根；仍验证证书和主机名，不接受自签名例外。
+const trustedCa = typeof tls.getCACertificates === 'function'
+  ? [...tls.getCACertificates('default'), ...tls.getCACertificates('system')]
+  : undefined;
+
 // 开发预览可复用同一代理，正式 Web 默认仍服务 build/web。
 const root = process.env.KAZUMI_WEB_ROOT
   ? path.resolve(process.env.KAZUMI_WEB_ROOT)
@@ -97,6 +102,7 @@ async function upstreamRequest(target, method, headers = {}, bootstrap = false) 
   filtered['accept-encoding'] = 'identity';
   const options = { method, hostname: host, port: url.port || (url.protocol === 'https:' ? 443 : 80),
     path: url.pathname + url.search, headers: filtered, agent: false,
+    ...(url.protocol === 'https:' && trustedCa ? { ca: trustedCa } : {}),
     lookup: (_host, _options, cb) => _options.all ?
       cb(null, [{ address: address.address, family: address.family }]) :
       cb(null, address.address, address.family) };
@@ -118,7 +124,7 @@ async function upstreamRequest(target, method, headers = {}, bootstrap = false) 
         connect.end();
       });
       const agent = new https.Agent({ keepAlive: false });
-      agent.createConnection = () => tls.connect({ socket, servername: host });
+      agent.createConnection = () => tls.connect({ socket, servername: host, ...(trustedCa ? { ca: trustedCa } : {}) });
       options.agent = agent;
     } else {
       options.hostname = gateway.hostname;

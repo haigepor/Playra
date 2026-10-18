@@ -1,85 +1,39 @@
 {
   "api": "8",
   "type": "anime",
-  "sourceId": "moonci",
   "name": "moonci",
-  "version": "3.1.0",
+  "version": "1.0",
   "muliSources": true,
-  "useWebview": false,
+  "useWebview": true,
   "useNativePlayer": true,
   "usePost": false,
   "useLegacyParser": false,
   "adBlocker": false,
   "userAgent": "",
   "baseURL": "https://www.moonci.com/",
-  "searchURL": "",
-  "searchList": "",
-  "searchName": "",
-  "searchResult": "",
-  "chapterRoads": "",
-  "chapterResult": "",
+  "searchURL": "https://www.moonci.com/search/-------------.html?wd=@keyword",
+  "searchList": "//ul[contains(@class, 'hl-one-list')]/li[contains(@class, 'hl-list-item')]",
+  "searchName": ".//div[contains(@class, 'hl-item-title')]/a",
+  "searchResult": ".//div[contains(@class, 'hl-item-title')]/a",
+  "chapterRoads": "//div[contains(@class, 'hl-play-source')]//ul[contains(@class, 'hl-plays-list')]",
+  "chapterResult": ".//a[contains(@href, '/play/')]",
   "referer": "",
-  "searchMode": "api",
-  "chapterMode": "api",
-  "searchApiConfig": {
-    "request": {
-      "method": "GET",
-      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-d/search",
-      "query": {
-        "q": "@keyword",
-        "page": "@page",
-        "pageSize": "@pageSize"
-      }
-    },
-    "listPath": "$.data[*]",
-    "namePath": "$.name",
-    "sourcePath": "$.url",
-    "coverPath": "$.cover"
-  },
-  "chapterApiConfig": {
-    "request": {
-      "method": "GET",
-      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-d/episodes",
-      "query": {
-        "source": "@source"
-      }
-    },
-    "format": "nested",
-    "roadsPath": "$.data.roads[*]",
-    "roadNamePath": "$.name",
-    "episodesPath": "$.episodes[*]",
-    "episodeNamePath": "$.name",
-    "episodeUrlPath": "$.url",
-    "roadIdPath": "$.id"
+  "searchMode": "xpath",
+  "chapterMode": "xpath",
+  "antiCrawlerConfig": {
+    "enabled": false,
+    "captchaType": 1,
+    "captchaImage": "",
+    "captchaInput": "",
+    "captchaButton": "",
+    "captchaDetectType": 1,
+    "captchaDetectValue": "",
+    "captchaScript": ""
   },
   "sourceConfig": {
-    "domains": [
-      "anime"
-    ],
-    "searchPagination": {
-      "enabled": true,
-      "totalPath": "$.total",
-      "hasMorePath": "$.hasMore"
-    },
-    "resolveApi": {
-      "request": {
-        "method": "POST",
-        "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-d/resolve",
-        "bodyType": "json",
-        "body": {
-          "episodeUrl": "@episodeUrl"
-        }
-      },
-      "urlPath": "$.data.url",
-      "headersPath": "$.data.headers",
-      "formatPath": "$.data.format",
-      "expiresAtPath": "$.data.expiresAt",
-      "headerPolicyPath": "$.data.headerPolicy"
-    },
-    "contentGroups": [
-      "anime"
-    ],
-    "managedBy": "playra-anifive",
-    "bundleVersion": 1
+    "managedBy": "playra-kazumi",
+    "officialName": "moonci",
+    "repository": "https://github.com/Predidit/KazumiRules",
+    "revision": "135ef2c2ef2a09f6fbde0f73957403b2c03bfe00"
   }
 }

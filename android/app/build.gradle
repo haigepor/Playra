@@ -105,10 +105,7 @@ def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
         if (!required.every { new File(sdkDir, it).isFile() }) {
             throw new GradleException("Missing private SDK input: docs/release/build-inputs.zh.md")
         }
-        def animeSdk = file("../../tool/source_runtime/vendor/anifive")
-        if (!["__init__.py", "client.py", "transport.py", "profile.py", "source_a.py", "source_b.py", "source_c.py", "source_d.py", "codec.py", "selector.py", "config.py", "clarity.py"].every { new File(animeSdk, it).isFile() }) {
-            throw new GradleException("Missing AniFive SDK: run tool/source_runtime/import_anifive.py")
-        }
+        // 官方 Kazumi 规则由 Dart 引擎执行；历史四源模块可选保留，不再要求私有输入。
         def luminaSdk = file("../../tool/source_runtime/vendor/lumina")
         if (!["__init__.py", "client.py", "block.py", "auth.py", "envelope.py", "play.py", "profile.py", "config.py", "_fuse/__init__.py", "_fuse/assets/fuse_image.bin.gz"].every { new File(luminaSdk, it).isFile() }) {
             throw new GradleException("Missing Lumina SDK: run tool/source_runtime/import_lumina.py; see docs/release/build-inputs.zh.md")

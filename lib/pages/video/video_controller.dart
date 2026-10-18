@@ -18,6 +18,7 @@ import 'package:kazumi/services/source/source_models.dart';
 import 'package:kazumi/services/source/source_service.dart';
 import 'package:kazumi/services/source/source_candidates.dart';
 import 'package:kazumi/services/source/source_sdk_group.dart';
+import 'package:kazumi/services/source/anime_playback_quality.dart';
 import 'package:kazumi/services/source/source_policy.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
@@ -569,16 +570,24 @@ abstract class _VideoPageController with Store implements Disposable {
     var url = urlItem;
     var attempts = 0;
     final tried = <String>{};
+    final triedProviders = <String>{};
     List<PlaybackCandidate>? alternatives;
     var discovered = false;
     while (session.isActive &&
         !cancel.isCancelled &&
         budget.elapsed < maxTime &&
         attempts < 3) {
-      attempts++;
+      final allowed =
+          !automaticSource || automaticPlaybackPriority(currentPlugin) != null;
+      if (allowed) {
+        attempts++;
+        triedProviders.add(currentPlugin.providerId);
+      }
       final key = '${currentPlugin.providerId}|${ref.pageUrl}';
       tried.add(key);
-      for (var retry = 0; retry < (automaticSource ? 2 : 1); retry++) {
+      final retryLimit =
+          automaticSource && playbackSdkId(currentPlugin) != 'kazumi' ? 2 : 1;
+      for (var retry = 0; allowed && retry < retryLimit; retry++) {
         _loading = true;
         _errorMessage = null;
         final success = await _resolveWithVideoSourceService(
@@ -608,14 +617,37 @@ abstract class _VideoPageController with Store implements Disposable {
       }
       final number = regularEpisodeNumber(resolvedEpisode.displayTitle);
       if (number == null) break;
-      final plugins = samePlaybackSdk(
-        currentPlugin,
-        inject<PluginsController>().pluginList,
+      final plugins = automaticPlaybackSources(
+        samePlaybackSdk(currentPlugin, inject<PluginsController>().pluginList),
       );
+      if (playbackSdkId(currentPlugin) == 'kazumi') {
+        // 下一个主来源即使尚未缓存，也应先于已缓存的备用站进行准备。
+        final choice = await SourceCandidates.shared
+            .selectEpisode(
+              bangumiItem,
+              plugins
+                  .where((p) => !triedProviders.contains(p.providerId))
+                  .toList(),
+              number,
+              cancel,
+            )
+            .timeout(
+              maxTime - budget.elapsed,
+              onTimeout: () {
+                cancel.cancel('deadline');
+                return null;
+              },
+            );
+        if (session.isStale) return;
+        if (choice == null) break;
+        alternatives = [choice.candidate];
+      }
       alternatives ??= SourceCandidates.shared.cached(bangumiItem, plugins);
       final hasAlternative = alternatives.any(
         (candidate) =>
             candidate.matched &&
+            (playbackSdkId(candidate.plugin) != 'kazumi' ||
+                !triedProviders.contains(candidate.plugin.providerId)) &&
             !SourcePolicy.shared.coolingDown(
               candidate.plugin.providerId,
               candidate.plugin.version,
@@ -660,6 +692,9 @@ abstract class _VideoPageController with Store implements Disposable {
       ({int road, int episode})? target;
       for (final candidate in alternatives) {
         if (!candidate.matched ||
+            // 三次预算按来源分配，避免主站的多条线路挤掉两个后备来源。
+            (playbackSdkId(candidate.plugin) == 'kazumi' &&
+                triedProviders.contains(candidate.plugin.providerId)) ||
             SourcePolicy.shared.coolingDown(
               candidate.plugin.providerId,
               candidate.plugin.version,
@@ -984,13 +1019,49 @@ abstract class _VideoPageController with Store implements Disposable {
     var firstFrameTimedOut = false;
     bool currentAttempt() =>
         session.isActive && attemptVersion == _attemptVersion;
+    final require1080 =
+        automaticSource && playbackSdkId(attemptedPlugin) == 'kazumi';
+    String? qualityFailure;
+    var qualityAccepted = false;
+    Future<bool> acceptAutomaticQuality() async {
+      if (!require1080 || qualityAccepted) return true;
+      // 首帧 Future 可能早于尺寸流；给当前媒体三秒回报，取消/换集立即失效。
+      for (var i = 0; i < 15 && currentAttempt(); i++) {
+        final state = playerController.playback.mediaPlayer?.state;
+        if ((state?.width ?? 0) > 0 && (state?.height ?? 0) > 0) break;
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+      if (!currentAttempt()) return false;
+      final state = playerController.playback.mediaPlayer?.state;
+      qualityFailure = automaticAnimeQualityError(
+        width: state?.width,
+        height: state?.height,
+        duration: state?.duration,
+      );
+      if (qualityFailure == null) {
+        qualityAccepted = true;
+        return true;
+      }
+      firstFrameTimedOut = false;
+      _mediaFailure = switch (qualityFailure) {
+        'QUALITY_BELOW_MINIMUM' => '当前线路实际分辨率低于 1080p，可手动选择播放',
+        'MEDIA_TOO_SHORT' => '当前线路返回短片段，无法确认是正片，可手动选择播放',
+        _ => '当前线路无法确认达到 1080p，可手动选择播放',
+      };
+      return false;
+    }
+
     void markActiveRoute() {
       if (session.isStale || attemptVersion != _attemptVersion) return;
       activeProviderId = currentPlugin.providerId;
       activeContentRef = src;
       final road = roadList[resolvedEpisode.roadIndex];
       activeRoadId = road.id.isEmpty ? '${resolvedEpisode.roadIndex}' : road.id;
-      activeRouteLabel = '${currentPlugin.name} / ${road.name}';
+      final state = playerController.playback.mediaPlayer?.state;
+      final dimensions = (state?.width ?? 0) > 0 && (state?.height ?? 0) > 0
+          ? ' · ${state!.width}×${state.height}'
+          : '';
+      activeRouteLabel = '${currentPlugin.name} / ${road.name}$dimensions';
       playingEpisode = VideoEpisodeSelection(
         episode: resolvedEpisode.listIndex,
         road: resolvedEpisode.roadIndex,
@@ -1115,7 +1186,7 @@ abstract class _VideoPageController with Store implements Disposable {
             .videoController
             ?.waitUntilFirstFrameRendered;
         var rendered = firstFrame == null;
-        if (rendered) markActiveRoute();
+        if (rendered && await acceptAutomaticQuality()) markActiveRoute();
         var waited = Duration.zero;
         var hasPlayed = false;
         final resolveMs = measured.elapsedMilliseconds;
@@ -1165,8 +1236,17 @@ abstract class _VideoPageController with Store implements Disposable {
           unawaited(
             firstFrame
                 .then<void>((_) async {
-                  rendered = true;
                   timer.cancel();
+                  if (!await acceptAutomaticQuality()) {
+                    rendered = true;
+                    if (currentAttempt() && !_loading) {
+                      unawaited(
+                        retryPlayback(playerController, mediaError: true),
+                      );
+                    }
+                    return;
+                  }
+                  rendered = true;
                   if (currentAttempt() &&
                       (_mediaFailure == null || firstFrameTimedOut)) {
                     // 超时不是播放器终止：仅当前媒体迟到出画时撤掉过期错误。
@@ -1222,10 +1302,17 @@ abstract class _VideoPageController with Store implements Disposable {
         if (_mediaFailure != null ||
             (!rendered && measured.elapsed >= budgetRemaining)) {
           _firstFrameTimer?.cancel();
-          throw const SourceException('MEDIA_ERROR', '视频加载失败或首帧等待超时');
+          throw SourceException(
+            qualityFailure ?? 'MEDIA_ERROR',
+            qualityFailure == null ? '视频加载失败或首帧等待超时' : _mediaFailure!,
+          );
         }
       }
       if (session.isActive && initialized) {
+        if (!await acceptAutomaticQuality()) {
+          if (!currentAttempt()) return false;
+          throw SourceException(qualityFailure!, _mediaFailure!);
+        }
         await restoreMatchingProgress();
         if (!currentAttempt()) return false;
         if (_mediaFailure != null) {
@@ -1254,7 +1341,15 @@ abstract class _VideoPageController with Store implements Disposable {
       if (session.isStale) {
         return false;
       }
-      if (e is SourceException && e.code == 'MEDIA_ERROR') {
+      if (e is SourceException &&
+          const [
+            'QUALITY_BELOW_MINIMUM',
+            'QUALITY_UNCONFIRMED',
+          ].contains(e.code)) {
+        _failLoading(e.message);
+        await playerController.stop();
+        if (!currentAttempt()) return false;
+      } else if (e is SourceException && e.code == 'MEDIA_ERROR') {
         _failLoading(
           firstFrameTimedOut ? '视频首帧等待超时，请重试或换源' : '已取得视频地址，但媒体加载失败，请重试或换源',
         );

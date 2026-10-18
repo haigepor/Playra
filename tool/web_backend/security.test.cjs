@@ -29,3 +29,17 @@ test('AniFive D media permits its maintained HTTPS port only on the exact public
   await assert.rejects(validateTarget('https://example.com:8088/media', lookup));
   await assert.rejects(validateTarget('https://play.xfvod.pro:8088/media', async () => [{ address: '127.0.0.1', family: 4 }]));
 });
+
+test('official AGE default parser allows its exact HTTPS port without opening arbitrary ports', async () => {
+  const lookup = async () => [{ address: '1.1.1.1', family: 4 }];
+  assert.equal((await validateTarget('https://jx.wuzhoupai.com:8443/vip/', lookup)).url.port, '8443');
+  await assert.rejects(validateTarget('https://example.com:8443/vip/', lookup));
+  await assert.rejects(validateTarget('https://jx.wuzhoupai.com:8443/vip/', async () => [{ address: '127.0.0.1', family: 4 }]));
+});
+test('official AGE parser static assets permit only the observed CDN HTTPS port', async () => {
+  const lookup = async () => [{ address: '8.8.8.8', family: 4 }];
+  await validateTarget('https://xcdn.khfed.com:8443/jx/20230723ver/Play/play.min.js', lookup);
+  await assert.rejects(validateTarget('https://other.khfed.com:8443/a.js', lookup));
+  await assert.rejects(validateTarget('http://xcdn.khfed.com:8443/a.js', lookup));
+  await assert.rejects(validateTarget('https://xcdn.khfed.com:8443/a.js', async () => [{ address: '127.0.0.1', family: 4 }]));
+});

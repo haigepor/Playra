@@ -40,9 +40,7 @@ try {
     throw "服务 $ServiceName 启动失败，请检查 $logs"
   }
   if ($RuntimePort) {
-    if (-not (Test-Path 'tool/source_runtime/vendor/anifive/client.py')) {
-      throw '请先用 tool/source_runtime/import_anifive.py 导入四源 SDK，详见四源接入文档。'
-    }
+    # Kazumi 十六规则使用既有 Dart/XPath/API 引擎，不依赖 AniFive 私有输入。
     $python = if ($env:PLAYRA_BUILD_PYTHON) { $env:PLAYRA_BUILD_PYTHON } else { (Get-Command python.exe).Source }
     if (-not (Test-Path 'tool/source_runtime/vendor/lumina/client.py')) {
       throw '请先用 tool/source_runtime/import_lumina.py 显式导入并配置 Lumina，详见 docs/release/build-inputs.zh.md。'

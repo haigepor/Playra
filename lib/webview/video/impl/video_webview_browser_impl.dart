@@ -25,14 +25,18 @@ class VideoWebviewBrowserImpl extends VideoWebviewController {
     _request = request;
     videoLoadingEventController.add(true);
     // 先返回以便调用方安装事件订阅，防止立即解析完成时丢失广播事件。
-    unawaited(_resolve(url, request));
+    unawaited(_resolve(url, useLegacyParser, request));
   }
 
-  Future<void> _resolve(String url, CancelToken request) async {
+  Future<void> _resolve(
+    String url,
+    bool useLegacyParser,
+    CancelToken request,
+  ) async {
     try {
       final response = await _client.post<Map<String, dynamic>>(
         Uri.base.resolve('/api/parse').toString(),
-        data: {'url': url},
+        data: {'url': url, 'useLegacyParser': useLegacyParser},
         options: Options(
           headers: {'X-Kazumi-Request': '1'},
           receiveTimeout: const Duration(seconds: 45),
@@ -48,6 +52,19 @@ class VideoWebviewBrowserImpl extends VideoWebviewController {
       videoLoadingEventController.add(false);
       notifyVideoSourceResolved(
         source,
+        // 浏览器实际媒体请求的公开上下文优先于规则根地址，避免 CDN 防盗链 403。
+        headers: {
+          for (final entry
+              in (response.data?['headers'] as Map? ?? const {}).entries)
+            if (entry.key is String &&
+                entry.value is String &&
+                const [
+                  'referer',
+                  'user-agent',
+                  'origin',
+                ].contains((entry.key as String).toLowerCase()))
+              (entry.key as String).toLowerCase(): entry.value as String,
+        },
         format: Uri.parse(source).path.toLowerCase().endsWith('.m3u8')
             ? VideoSourceFormat.hls
             : VideoSourceFormat.auto,

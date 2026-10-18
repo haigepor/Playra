@@ -2,6 +2,7 @@
 String playbackSourceName(String id, String fallback, {bool anime = false}) =>
     switch (id) {
       'lumina' => '动漫 · Lumina',
+      'kazumi' => '动漫 · Kazumi',
       'anifive' => '动漫 · AniFive',
       'miomedia' => anime ? '动漫备用 · MioMedia' : '影视 · MioMedia',
       _ => fallback,

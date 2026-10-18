@@ -16,6 +16,8 @@ test('real upstream transport preserves an explicitly empty SDK User-Agent', asy
   const context = {
     require: (name) => {
       if (name === 'node:http' || name === 'node:https') return transport;
+      if (name === 'node:tls') return { ...localRequire(name),
+        getCACertificates: kind => kind === 'system' ? ['system-root'] : ['node-root'] };
       if (name === './security.cjs') return {
         ...localRequire(name),
         validateTarget: async (target) => ({ url: new URL(target), address: { address: '8.8.8.8', family: 4 } }),
@@ -32,6 +34,8 @@ test('real upstream transport preserves an explicitly empty SDK User-Agent', asy
   });
   assert.equal(requests[0].headers['user-agent'], '');
   assert.equal(requests[0].headers.referer, 'https://source.example/');
+  assert.deepEqual(Array.from(requests[0].ca || []), ['node-root', 'system-root']);
+  assert.notEqual(requests[0].rejectUnauthorized, false);
   await upstream('https://media.example/other.m3u8', 'GET', {});
   assert.match(requests[1].headers['user-agent'], /Kazumi-Web/);
 });

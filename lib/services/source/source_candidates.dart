@@ -6,6 +6,7 @@ import 'package:kazumi/pages/video/video_playback_args.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart';
 import 'source_policy.dart';
+import 'source_sdk_group.dart';
 
 String normalizeWorkTitle(String value) => value.toLowerCase().replaceAll(
   RegExp(r'[\s\p{P}\p{S}]', unicode: true),
@@ -208,6 +209,10 @@ class SourceCandidates {
         })
         .toList();
     result.sort((a, b) {
+      final priority = (automaticPlaybackPriority(a.plugin) ?? 100).compareTo(
+        automaticPlaybackPriority(b.plugin) ?? 100,
+      );
+      if (priority != 0) return priority;
       final score = SourcePolicy.shared
           .score(a.plugin.providerId, a.plugin.version)
           .compareTo(
@@ -353,7 +358,7 @@ class SourceCandidates {
     return cached(work, plugins);
   }
 
-  /// 按历史首帧表现优先调度；首个确认同作品同集的候选即可交给播放会话。
+  /// Kazumi 按固定主备顺序准备，其他分组继续按历史首帧表现优先调度。
   /// 不等待全部规则超时，也不将源列表位置当成资料接口的集号。
   Future<AutomaticEpisodeChoice?> selectEpisode(
     BangumiItem work,
@@ -388,12 +393,60 @@ class SourceCandidates {
       return null;
     }
 
-    final cachedChoice = choose(cached(work, plugins));
+    final sources = automaticPlaybackSources(eligible(plugins, work));
+    if (sources.any((p) => playbackSdkId(p) == 'kazumi')) {
+      // Kazumi 先查主来源再查备用，缓存命中或响应速度不能让备用抢先。
+      // 每站准备最多八秒，使三个来源仍落在页面三十秒的总准备预算内。
+      for (final plugin in sources) {
+        if (cancelToken.isCancelled) return null;
+        if (SourcePolicy.shared.coolingDown(plugin.providerId, plugin.version))
+          continue;
+        final cachedChoice = choose(cached(work, [plugin]));
+        if (cachedChoice != null) return cachedChoice;
+        final sourceCancel = RuleCancelToken();
+        unawaited(
+          cancelToken.whenCancel.then(
+            (_) => sourceCancel.cancel('selection cancelled'),
+          ),
+        );
+        Future<AutomaticEpisodeChoice?> prepareSource() async {
+          final results = await searchMatches(
+            work,
+            plugin,
+            cancelToken: sourceCancel,
+          );
+          if (sourceCancel.isCancelled) return null;
+          final candidates = await prepare(
+            work,
+            plugin,
+            results,
+            cancelToken: sourceCancel,
+          );
+          return sourceCancel.isCancelled ? null : choose(candidates);
+        }
+
+        try {
+          final choice = await Future.any([
+            prepareSource(),
+            cancelToken.whenCancel.then<AutomaticEpisodeChoice?>((_) => null),
+          ]).timeout(const Duration(seconds: 8), onTimeout: () => null);
+          if (cancelToken.isCancelled) return null;
+          if (choice != null) return choice;
+        } catch (_) {
+          // 单站搜索/目录失败继续下一个优先来源，实际出画仍由播放器确认。
+        } finally {
+          sourceCancel.cancel('source preparation finished');
+        }
+      }
+      return null;
+    }
+
+    final cachedChoice = choose(cached(work, sources));
     if (cachedChoice != null || cancelToken.isCancelled) return cachedChoice;
     final ready = Completer<AutomaticEpisodeChoice?>();
     final discovery = discover(
       work,
-      plugins,
+      sources,
       cancelToken,
       onPrepared: (items) {
         final choice = choose(items);

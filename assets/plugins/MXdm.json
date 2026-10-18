@@ -1,85 +1,26 @@
 {
-  "api": "8",
+  "api": "5",
   "type": "anime",
-  "sourceId": "mxdm",
   "name": "MXdm",
-  "version": "3.1.0",
+  "version": "2.4",
   "muliSources": true,
-  "useWebview": false,
+  "useWebview": true,
   "useNativePlayer": true,
   "usePost": false,
   "useLegacyParser": false,
-  "adBlocker": false,
+  "adBlocker": true,
   "userAgent": "",
   "baseURL": "https://www.dcc3.com",
-  "searchURL": "",
-  "searchList": "",
-  "searchName": "",
-  "searchResult": "",
-  "chapterRoads": "",
-  "chapterResult": "",
-  "referer": "",
-  "searchMode": "api",
-  "chapterMode": "api",
-  "searchApiConfig": {
-    "request": {
-      "method": "GET",
-      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-b/search",
-      "query": {
-        "q": "@keyword",
-        "page": "@page",
-        "pageSize": "@pageSize"
-      }
-    },
-    "listPath": "$.data[*]",
-    "namePath": "$.name",
-    "sourcePath": "$.url",
-    "coverPath": "$.cover"
-  },
-  "chapterApiConfig": {
-    "request": {
-      "method": "GET",
-      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-b/episodes",
-      "query": {
-        "source": "@source"
-      }
-    },
-    "format": "nested",
-    "roadsPath": "$.data.roads[*]",
-    "roadNamePath": "$.name",
-    "episodesPath": "$.episodes[*]",
-    "episodeNamePath": "$.name",
-    "episodeUrlPath": "$.url",
-    "roadIdPath": "$.id"
-  },
+  "searchURL": "https://www.dcc3.com/search/?wd=@keyword",
+  "searchList": "//div[contains(@class, 'search')]/ul/li",
+  "searchName": "//h3/a",
+  "searchResult": "//h3/a",
+  "chapterRoads": "//div[@class='playlist']/div[@class='row']/ul",
+  "chapterResult": "//li/a",
   "sourceConfig": {
-    "domains": [
-      "anime"
-    ],
-    "searchPagination": {
-      "enabled": true,
-      "totalPath": "$.total",
-      "hasMorePath": "$.hasMore"
-    },
-    "resolveApi": {
-      "request": {
-        "method": "POST",
-        "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-b/resolve",
-        "bodyType": "json",
-        "body": {
-          "episodeUrl": "@episodeUrl"
-        }
-      },
-      "urlPath": "$.data.url",
-      "headersPath": "$.data.headers",
-      "formatPath": "$.data.format",
-      "expiresAtPath": "$.data.expiresAt",
-      "headerPolicyPath": "$.data.headerPolicy"
-    },
-    "contentGroups": [
-      "anime"
-    ],
-    "managedBy": "playra-anifive",
-    "bundleVersion": 1
+    "managedBy": "playra-kazumi",
+    "officialName": "MXdm",
+    "repository": "https://github.com/Predidit/KazumiRules",
+    "revision": "135ef2c2ef2a09f6fbde0f73957403b2c03bfe00"
   }
 }

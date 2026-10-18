@@ -23,7 +23,9 @@ async function validateTarget(raw, lookup = dns.lookup) {
   const host = url.hostname.replace(/^\[|\]$/g, '');
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
       (url.port && !['80', '443'].includes(url.port) &&
-        !(url.protocol === 'https:' && host === 'play.xfvod.pro' && url.port === '8088')) || host === 'localhost' ||
+        !(url.protocol === 'https:' && (
+          host === 'play.xfvod.pro' && url.port === '8088' ||
+          ['jx.wuzhoupai.com', 'xcdn.khfed.com'].includes(host) && url.port === '8443'))) || host === 'localhost' ||
       host.endsWith('.localhost') || host.endsWith('.local')) throw new Error('目标地址不允许');
   const addresses = net.isIP(host) ? [{ address: host, family: net.isIP(host) }] :
     await lookup(host, { all: true });

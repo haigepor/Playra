@@ -104,7 +104,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         selectedSdkId ??
         (hasPlayback && !video.isOfflineMode
             ? playbackSdkId(video.currentPlugin)
-            : 'anifive');
+            : 'kazumi');
     return sourceGroups.where((g) => g.id == id).firstOrNull ??
         sourceGroups.firstOrNull;
   }
@@ -653,7 +653,10 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               : '${automatic ? "自动 · " : "手动 · "}${video.currentPlugin.name} / ${road.name}',
           detail:
               automaticSourceError ??
-              (video.activeRouteLabel != null && (video.loading || !sameGroup)
+              (group?.id == 'kazumi'
+                  ? '自动：akianime → mutefun → giriGiriLove；仅实测 ≥1080p，其他来源可手动选择'
+                  : video.activeRouteLabel != null &&
+                        (video.loading || !sameGroup)
                   ? '当前播放：${video.activeRouteLabel}'
                   : null),
           lineCount: count == 0 && road != null ? video.roadList.length : count,
@@ -704,7 +707,9 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               onClose: () => Navigator.of(sheetContext).pop(),
               automaticOption: SdkLineOption(
                 title: '自动选择',
-                subtitle: '仅在 ${group.name} 内优选',
+                subtitle: group.id == 'kazumi'
+                    ? 'akianime → mutefun → giriGiriLove · 实测 ≥1080p'
+                    : '仅在 ${group.name} 内优选',
                 automatic: true,
                 selected: !hasPlayback || video.automaticSource,
                 onTap: () {

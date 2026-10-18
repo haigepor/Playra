@@ -12,12 +12,13 @@ void main() {
               as List)
           .map((e) => Plugin.fromJson(Map<String, dynamic>.from(e)))
           .toList();
-  final bundled = Directory('assets/plugins')
-      .listSync()
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.json'))
-      .map((f) => Plugin.fromJson(jsonDecode(f.readAsStringSync())))
-      .toList();
+  final bundled =
+      (jsonDecode(
+                File('assets/migrations/kazumi-v1.json').readAsStringSync(),
+              )['previousRules']
+              as List)
+          .map((p) => Plugin.fromJson(Map<String, dynamic>.from(p)))
+          .toList();
 
   test('fresh install has four anime sources and migration is idempotent', () {
     expect(bundled, hasLength(4));

@@ -1,0 +1,450 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "name": "7sefun",
+      "version": "1.3",
+      "upstreamSha256": "43228a94fcae885185b7f29977a764d520bf6650d283f4abec428f8bc03344c3",
+      "ruleSha256": "2f05d1c1b33bf743ee5ff8e1032f39fee019dbad170315542595a8fb9d0df6d6"
+    },
+    {
+      "name": "aafun",
+      "version": "1.2",
+      "upstreamSha256": "4fe917a871f7e89af5ef7ceaa65df29150f245bae157a2112456a042e62e1e31",
+      "ruleSha256": "8616b908fab2340a79b2eced6fefc62cdd3a92bf408a245dc05c39baf8326505"
+    },
+    {
+      "name": "AGE",
+      "version": "1.5",
+      "upstreamSha256": "a38a6662dcf542b50d0fe5d7d26c44594ab73042d8574ad9a067548a6b457076",
+      "ruleSha256": "fddbf860329911f2941013f0352e8d4ad2adfae4d276f0f5f70329a39241b444"
+    },
+    {
+      "name": "akianime",
+      "version": "1.4",
+      "upstreamSha256": "1c6f89f777b7434e2623d8e1e32d52a7668efab5b9512423084178f379cfeb11",
+      "ruleSha256": "afc80e2255e9336a26b8ba75797f1109eccb5b235ccc347d3a586b2811890507"
+    },
+    {
+      "name": "baimao",
+      "version": "1.0",
+      "upstreamSha256": "785dd7c120634096470119f2b9bf7e3832ef09a2a4165d2f847b0956a16f9032",
+      "ruleSha256": "f3960e082db699ea063e8e4d23d904b7fd65987d58ccb9a1ee485e83dd016b68"
+    },
+    {
+      "name": "dalvdm",
+      "version": "1.2",
+      "upstreamSha256": "e89dfff73e057302a2d7b510c7335f0eacab9f0d4e31a1ad51fe27035ba87ace",
+      "ruleSha256": "1b891f2e616f0f3d28e4d20cda2387df2991a9c7f8ba70465c09f1f2795dda87"
+    },
+    {
+      "name": "DM84",
+      "version": "1.4",
+      "upstreamSha256": "4fed81571de82cc91fe23ce0034da9641cc64e91e2e8c432ddb2444f3419813c",
+      "ruleSha256": "da92d3cf3c7209ad707de79d68ae0fd391f016971fe250ea6237e38295cc4fa8"
+    },
+    {
+      "name": "ezdmw",
+      "version": "1.2",
+      "upstreamSha256": "a6b0aace9a11d6c6fd41279922195a3334ce279a896b1295a9e7a1ebfebe1fd9",
+      "ruleSha256": "b54d3d3ee6f80a83878c8ccbaa5fa6f440299b704ce4406df1e42d12b393f890"
+    },
+    {
+      "name": "giriGiriLove",
+      "version": "2.5",
+      "upstreamSha256": "4d7b4a32c68fcbf27ac1b2dd719408dd960067e5c40599ba90a33c05e2a8e01b",
+      "ruleSha256": "a78e66ba823870bee930b8d8e6e52e0f2917eb90eb572a41953f0b533db6fcab"
+    },
+    {
+      "name": "mgnacg",
+      "version": "1.2",
+      "upstreamSha256": "d05577fa17b4ec0c2bb625c5c37596eaca2aebaf1563b5d70bab2546b80a7c9b",
+      "ruleSha256": "bd4fd6daed5f8d3e282c8ce0c4d74d8f689f0d8586ea7e7c97eeb652f8a434b8"
+    },
+    {
+      "name": "moonci",
+      "version": "1.0",
+      "upstreamSha256": "b742eb4b9c76754cf0ca80b28ebe355319d52d12a973a0b4d499ccf8d0eef6d0",
+      "ruleSha256": "17efdc810938389bba7c45309bdf21e2ecebd3513c4996ee89713f48114039ad"
+    },
+    {
+      "name": "mutefun",
+      "version": "1.4",
+      "upstreamSha256": "2d5c68c7ce80c91af3593663158655e8499897011741cdd99f76f8050676a025",
+      "ruleSha256": "22baf190400d9947a3e7eb02a2e2cac754117708b655373b528dad18815e0eb8"
+    },
+    {
+      "name": "MXdm",
+      "version": "2.4",
+      "upstreamSha256": "61d0e4d505828125fadba4ef4b6cca6196d1dd8e2ef870b37817a885a2d4c4f7",
+      "ruleSha256": "caa0dc0b82496a6a3adcdd30fe50a669315007d0ad337e0414f4ab2bcc9a8ad5"
+    },
+    {
+      "name": "sorani",
+      "version": "1.0",
+      "upstreamSha256": "6a07fd92f0262e48365996e0c6e21c5b246ff24024a22e0a6826e24a6b4e82cd",
+      "ruleSha256": "a1853853bc4cce46e5885b52e0e6c939d184caa213f31c0e34de524ea0858aa1"
+    },
+    {
+      "name": "xfdmneo",
+      "version": "1.1",
+      "upstreamSha256": "fa84edbaba7024fb60abe70a754201e05faec9f69e6b8aef86fb5b47bc24e0c0",
+      "ruleSha256": "a60c3152490147096d0d71f45e1208fe49aa39de24e46f33459701237c672b87"
+    },
+    {
+      "name": "xfdmnext",
+      "version": "1.1",
+      "upstreamSha256": "44aedb07ba77c822835f2f3e09fe18eeda82ee46cb3c69624fe39cca0db5c176",
+      "ruleSha256": "612e969132581d5466d9e45063cd039d297e36e0c23a6836e01a21be96787586"
+    }
+  ],
+  "previousRules": [
+    {
+      "api": "8",
+      "type": "anime",
+      "sourceId": "akianime",
+      "name": "akianime",
+      "version": "3.1.0",
+      "muliSources": true,
+      "useWebview": false,
+      "useNativePlayer": true,
+      "usePost": false,
+      "useLegacyParser": false,
+      "adBlocker": false,
+      "userAgent": "",
+      "baseURL": "https://www.akianime.cc/",
+      "searchURL": "",
+      "searchList": "",
+      "searchName": "",
+      "searchResult": "",
+      "chapterRoads": "",
+      "chapterResult": "",
+      "referer": "",
+      "searchMode": "api",
+      "chapterMode": "api",
+      "searchApiConfig": {
+        "request": {
+          "method": "GET",
+          "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-c/search",
+          "query": {
+            "q": "@keyword",
+            "page": "@page",
+            "pageSize": "@pageSize"
+          }
+        },
+        "listPath": "$.data[*]",
+        "namePath": "$.name",
+        "sourcePath": "$.url",
+        "coverPath": "$.cover"
+      },
+      "chapterApiConfig": {
+        "request": {
+          "method": "GET",
+          "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-c/episodes",
+          "query": {
+            "source": "@source"
+          }
+        },
+        "format": "nested",
+        "roadsPath": "$.data.roads[*]",
+        "roadNamePath": "$.name",
+        "episodesPath": "$.episodes[*]",
+        "episodeNamePath": "$.name",
+        "episodeUrlPath": "$.url",
+        "roadIdPath": "$.id"
+      },
+      "sourceConfig": {
+        "domains": [
+          "anime"
+        ],
+        "searchPagination": {
+          "enabled": true,
+          "totalPath": "$.total",
+          "hasMorePath": "$.hasMore"
+        },
+        "resolveApi": {
+          "request": {
+            "method": "POST",
+            "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-c/resolve",
+            "bodyType": "json",
+            "body": {
+              "episodeUrl": "@episodeUrl"
+            }
+          },
+          "urlPath": "$.data.url",
+          "headersPath": "$.data.headers",
+          "formatPath": "$.data.format",
+          "expiresAtPath": "$.data.expiresAt",
+          "headerPolicyPath": "$.data.headerPolicy"
+        },
+        "contentGroups": [
+          "anime"
+        ],
+        "managedBy": "playra-anifive",
+        "bundleVersion": 1
+      }
+    },
+    {
+      "api": "8",
+      "type": "anime",
+      "sourceId": "dm84",
+      "name": "DM84",
+      "version": "3.1.0",
+      "muliSources": true,
+      "useWebview": false,
+      "useNativePlayer": true,
+      "usePost": false,
+      "useLegacyParser": false,
+      "adBlocker": false,
+      "userAgent": "",
+      "baseURL": "https://dmbus.cc/",
+      "searchURL": "",
+      "searchList": "",
+      "searchName": "",
+      "searchResult": "",
+      "chapterRoads": "",
+      "chapterResult": "",
+      "referer": "",
+      "searchMode": "api",
+      "chapterMode": "api",
+      "searchApiConfig": {
+        "request": {
+          "method": "GET",
+          "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/search",
+          "query": {
+            "q": "@keyword",
+            "page": "@page",
+            "pageSize": "@pageSize"
+          }
+        },
+        "listPath": "$.data[*]",
+        "namePath": "$.name",
+        "sourcePath": "$.url",
+        "coverPath": "$.cover"
+      },
+      "chapterApiConfig": {
+        "request": {
+          "method": "GET",
+          "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/episodes",
+          "query": {
+            "source": "@source"
+          }
+        },
+        "format": "nested",
+        "roadsPath": "$.data.roads[*]",
+        "roadNamePath": "$.name",
+        "episodesPath": "$.episodes[*]",
+        "episodeNamePath": "$.name",
+        "episodeUrlPath": "$.url",
+        "roadIdPath": "$.id"
+      },
+      "sourceConfig": {
+        "domains": [
+          "anime"
+        ],
+        "searchPagination": {
+          "enabled": true,
+          "totalPath": "$.total",
+          "hasMorePath": "$.hasMore"
+        },
+        "resolveApi": {
+          "request": {
+            "method": "POST",
+            "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/resolve",
+            "bodyType": "json",
+            "body": {
+              "episodeUrl": "@episodeUrl"
+            }
+          },
+          "urlPath": "$.data.url",
+          "headersPath": "$.data.headers",
+          "formatPath": "$.data.format",
+          "expiresAtPath": "$.data.expiresAt",
+          "headerPolicyPath": "$.data.headerPolicy"
+        },
+        "contentGroups": [
+          "anime"
+        ],
+        "managedBy": "playra-anifive",
+        "bundleVersion": 1,
+        "catalog": {
+          "entrySelector": "a.title[href], a.video-wrapper[href]",
+          "detailPathPattern": "/(?:v|voddetail)/",
+          "priority": 0
+        }
+      }
+    },
+    {
+      "api": "8",
+      "type": "anime",
+      "sourceId": "moonci",
+      "name": "moonci",
+      "version": "3.1.0",
+      "muliSources": true,
+      "useWebview": false,
+      "useNativePlayer": true,
+      "usePost": false,
+      "useLegacyParser": false,
+      "adBlocker": false,
+      "userAgent": "",
+      "baseURL": "https://www.moonci.com/",
+      "searchURL": "",
+      "searchList": "",
+      "searchName": "",
+      "searchResult": "",
+      "chapterRoads": "",
+      "chapterResult": "",
+      "referer": "",
+      "searchMode": "api",
+      "chapterMode": "api",
+      "searchApiConfig": {
+        "request": {
+          "method": "GET",
+          "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-d/search",
+          "query": {
+            "q": "@keyword",
+            "page": "@page",
+            "pageSize": "@pageSize"
+          }
+        },
+        "listPath": "$.data[*]",
+        "namePath": "$.name",
+        "sourcePath": "$.url",
+        "coverPath": "$.cover"
+      },
+      "chapterApiConfig": {
+        "request": {
+          "method": "GET",
+          "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-d/episodes",
+          "query": {
+            "source": "@source"
+          }
+        },
+        "format": "nested",
+        "roadsPath": "$.data.roads[*]",
+        "roadNamePath": "$.name",
+        "episodesPath": "$.episodes[*]",
+        "episodeNamePath": "$.name",
+        "episodeUrlPath": "$.url",
+        "roadIdPath": "$.id"
+      },
+      "sourceConfig": {
+        "domains": [
+          "anime"
+        ],
+        "searchPagination": {
+          "enabled": true,
+          "totalPath": "$.total",
+          "hasMorePath": "$.hasMore"
+        },
+        "resolveApi": {
+          "request": {
+            "method": "POST",
+            "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-d/resolve",
+            "bodyType": "json",
+            "body": {
+              "episodeUrl": "@episodeUrl"
+            }
+          },
+          "urlPath": "$.data.url",
+          "headersPath": "$.data.headers",
+          "formatPath": "$.data.format",
+          "expiresAtPath": "$.data.expiresAt",
+          "headerPolicyPath": "$.data.headerPolicy"
+        },
+        "contentGroups": [
+          "anime"
+        ],
+        "managedBy": "playra-anifive",
+        "bundleVersion": 1
+      }
+    },
+    {
+      "api": "8",
+      "type": "anime",
+      "sourceId": "mxdm",
+      "name": "MXdm",
+      "version": "3.1.0",
+      "muliSources": true,
+      "useWebview": false,
+      "useNativePlayer": true,
+      "usePost": false,
+      "useLegacyParser": false,
+      "adBlocker": false,
+      "userAgent": "",
+      "baseURL": "https://www.dcc3.com",
+      "searchURL": "",
+      "searchList": "",
+      "searchName": "",
+      "searchResult": "",
+      "chapterRoads": "",
+      "chapterResult": "",
+      "referer": "",
+      "searchMode": "api",
+      "chapterMode": "api",
+      "searchApiConfig": {
+        "request": {
+          "method": "GET",
+          "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-b/search",
+          "query": {
+            "q": "@keyword",
+            "page": "@page",
+            "pageSize": "@pageSize"
+          }
+        },
+        "listPath": "$.data[*]",
+        "namePath": "$.name",
+        "sourcePath": "$.url",
+        "coverPath": "$.cover"
+      },
+      "chapterApiConfig": {
+        "request": {
+          "method": "GET",
+          "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-b/episodes",
+          "query": {
+            "source": "@source"
+          }
+        },
+        "format": "nested",
+        "roadsPath": "$.data.roads[*]",
+        "roadNamePath": "$.name",
+        "episodesPath": "$.episodes[*]",
+        "episodeNamePath": "$.name",
+        "episodeUrlPath": "$.url",
+        "roadIdPath": "$.id"
+      },
+      "sourceConfig": {
+        "domains": [
+          "anime"
+        ],
+        "searchPagination": {
+          "enabled": true,
+          "totalPath": "$.total",
+          "hasMorePath": "$.hasMore"
+        },
+        "resolveApi": {
+          "request": {
+            "method": "POST",
+            "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-b/resolve",
+            "bodyType": "json",
+            "body": {
+              "episodeUrl": "@episodeUrl"
+            }
+          },
+          "urlPath": "$.data.url",
+          "headersPath": "$.data.headers",
+          "formatPath": "$.data.format",
+          "expiresAtPath": "$.data.expiresAt",
+          "headerPolicyPath": "$.data.headerPolicy"
+        },
+        "contentGroups": [
+          "anime"
+        ],
+        "managedBy": "playra-anifive",
+        "bundleVersion": 1
+      }
+    }
+  ],
+  "repository": "https://github.com/Predidit/KazumiRules",
+  "revision": "135ef2c2ef2a09f6fbde0f73957403b2c03bfe00"
+}

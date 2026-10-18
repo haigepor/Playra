@@ -1175,6 +1175,8 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
       listPath: valueOf(searchApiListPathController),
       namePath: valueOf(searchApiNamePathController),
       sourcePath: valueOf(searchApiSourcePathController),
+      // 表单未改动的官方详情模板仍需保留，避免保存后只剩作品 ID。
+      sourceTemplate: widget.plugin.searchApiConfig.sourceTemplate,
     );
     if (!shouldValidate) return config;
     if (config.request.url.isEmpty) {

@@ -92,6 +92,11 @@ Future<void> main() async {
         jsonEncode({
           'url': 'https://fixture.example/media.m3u8',
           'format': 'hls',
+          'headers': {
+            'referer': 'https://fixture.example/player/frame',
+            'user-agent': 'actual-browser-agent',
+            'cookie': 'must-not-forward',
+          },
         }),
       );
     } else if (request.uri.path == '/api/captcha') {
@@ -357,6 +362,12 @@ Future<void> main() async {
     final playlist = await client.get<String>(
       mediaPath,
       options: Options(responseType: ResponseType.plain),
+    );
+    verify(
+      seenHeaders.last['referer'] == 'https://fixture.example/player/frame' &&
+          seenHeaders.last['user-agent'] == 'actual-browser-agent' &&
+          seenHeaders.last['cookie'] != 'must-not-forward',
+      'parser media context reaches proxy without arbitrary credentials',
     );
     verify(
       playlist.data!.contains('/api/v1/media/') &&

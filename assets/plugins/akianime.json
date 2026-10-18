@@ -1,85 +1,24 @@
 {
-  "api": "8",
+  "api": "4",
   "type": "anime",
-  "sourceId": "akianime",
   "name": "akianime",
-  "version": "3.1.0",
+  "version": "1.4",
   "muliSources": true,
-  "useWebview": false,
+  "useWebview": true,
   "useNativePlayer": true,
-  "usePost": false,
   "useLegacyParser": false,
-  "adBlocker": false,
   "userAgent": "",
   "baseURL": "https://www.akianime.cc/",
-  "searchURL": "",
-  "searchList": "",
-  "searchName": "",
-  "searchResult": "",
-  "chapterRoads": "",
-  "chapterResult": "",
-  "referer": "",
-  "searchMode": "api",
-  "chapterMode": "api",
-  "searchApiConfig": {
-    "request": {
-      "method": "GET",
-      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-c/search",
-      "query": {
-        "q": "@keyword",
-        "page": "@page",
-        "pageSize": "@pageSize"
-      }
-    },
-    "listPath": "$.data[*]",
-    "namePath": "$.name",
-    "sourcePath": "$.url",
-    "coverPath": "$.cover"
-  },
-  "chapterApiConfig": {
-    "request": {
-      "method": "GET",
-      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-c/episodes",
-      "query": {
-        "source": "@source"
-      }
-    },
-    "format": "nested",
-    "roadsPath": "$.data.roads[*]",
-    "roadNamePath": "$.name",
-    "episodesPath": "$.episodes[*]",
-    "episodeNamePath": "$.name",
-    "episodeUrlPath": "$.url",
-    "roadIdPath": "$.id"
-  },
+  "searchURL": "https://www.akianime.cc/bgmsearch/-------------.html?wd=@keyword",
+  "searchList": "//div[@class='vod-detail style-detail cor4 search-list']",
+  "searchName": "//div/div[2]/a/h3",
+  "searchResult": "//div/div[2]/div/div[1]/a",
+  "chapterRoads": "//ul[@class='anthology-list-play size']",
+  "chapterResult": "//li/a",
   "sourceConfig": {
-    "domains": [
-      "anime"
-    ],
-    "searchPagination": {
-      "enabled": true,
-      "totalPath": "$.total",
-      "hasMorePath": "$.hasMore"
-    },
-    "resolveApi": {
-      "request": {
-        "method": "POST",
-        "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-c/resolve",
-        "bodyType": "json",
-        "body": {
-          "episodeUrl": "@episodeUrl"
-        }
-      },
-      "urlPath": "$.data.url",
-      "headersPath": "$.data.headers",
-      "formatPath": "$.data.format",
-      "expiresAtPath": "$.data.expiresAt",
-      "headerPolicyPath": "$.data.headerPolicy"
-    },
-    "contentGroups": [
-      "anime"
-    ],
-    "managedBy": "playra-anifive",
-    "bundleVersion": 1
+    "managedBy": "playra-kazumi",
+    "officialName": "akianime",
+    "repository": "https://github.com/Predidit/KazumiRules",
+    "revision": "135ef2c2ef2a09f6fbde0f73957403b2c03bfe00"
   }
 }

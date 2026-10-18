@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,12 +42,13 @@ class _Frame extends Fake implements VideoController {
 }
 
 class _Playback extends Fake implements PlayerPlaybackController {
+  Player? measuredPlayer;
   @override
   void Function(String)? onMediaError;
   @override
   VideoController? videoController;
   @override
-  Player? get mediaPlayer => null;
+  Player? get mediaPlayer => measuredPlayer;
   @override
   bool get autoPlay => true;
   @override
@@ -55,6 +57,12 @@ class _Playback extends Fake implements PlayerPlaybackController {
   Duration get playerDuration => const Duration(minutes: 24);
   @override
   Duration get playerPosition => Duration.zero;
+}
+
+class _MeasuredPlayer extends Fake implements Player {
+  _MeasuredPlayer(this.state);
+  @override
+  final PlayerState state;
 }
 
 class _Danmaku extends Fake implements PlayerDanmakuController {
@@ -201,6 +209,96 @@ void main() {
   }
 
   tearDown(() => video.dispose());
+
+  void kazumi({required bool automatic, int? width, int? height}) {
+    video.currentPlugin = Plugin.fromJson(
+      jsonDecode(
+        File('assets/plugins/akianime.json').readAsStringSync(encoding: utf8),
+      ),
+    );
+    video.automaticSource = automatic;
+    // 特别篇不能跨站猜集号，失败应停留在本次清晰度结论。
+    video.roadList
+      ..clear()
+      ..add(
+        Road(id: '2', name: '官方首线', data: ['/episode/sp'], identifier: ['特别篇']),
+      );
+    (player.playback as _Playback).measuredPlayer = _MeasuredPlayer(
+      PlayerState(width: width, height: height),
+    );
+  }
+
+  testWidgets('Kazumi automatic rejects a three second Full HD placeholder', (
+    tester,
+  ) async {
+    kazumi(automatic: true, width: 1920, height: 1080);
+    (player.playback as _Playback).measuredPlayer = _MeasuredPlayer(
+      PlayerState(
+        width: 1920,
+        height: 1080,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+    await start(tester, 1);
+    player.frames.single.rendered.complete();
+    await tester.pump();
+    await advance(tester, 1);
+    expect(video.playingEpisode, isNull);
+    expect(video.errorMessage, contains('短片段'));
+  });
+
+  testWidgets('Kazumi automatic rejects a real 720p first frame', (
+    tester,
+  ) async {
+    kazumi(automatic: true, width: 1280, height: 720);
+    await start(tester, 1);
+    player.frames.single.rendered.complete();
+    await tester.pump();
+    await advance(tester, 1);
+    expect(video.playingEpisode, isNull);
+    expect(video.errorMessage, contains('1080p'));
+    expect(video.activeRouteLabel, isNull);
+  });
+
+  testWidgets('Kazumi automatic cannot treat missing dimensions as 1080p', (
+    tester,
+  ) async {
+    kazumi(automatic: true);
+    await start(tester, 1);
+    player.frames.single.rendered.complete();
+    await tester.pump();
+    await advance(tester, 4);
+    expect(video.playingEpisode, isNull);
+    expect(video.errorMessage, contains('无法确认达到 1080p'));
+  });
+
+  testWidgets(
+    'Kazumi manual still accepts low quality without changing its line lock',
+    (tester) async {
+      kazumi(automatic: false, width: 1280, height: 720);
+      await start(tester, 1);
+      player.frames.single.rendered.complete();
+      await tester.pump();
+      await advance(tester, 1);
+      expect(video.playingEpisode, isNotNull);
+      expect(video.automaticSource, isFalse);
+      expect(video.activeRouteLabel, contains('1280×720'));
+    },
+  );
+
+  testWidgets(
+    'Kazumi automatic accepts verified Full HD and displays actual dimensions',
+    (tester) async {
+      kazumi(automatic: true, width: 1920, height: 1080);
+      await start(tester, 1);
+      player.frames.single.rendered.complete();
+      await tester.pump();
+      await advance(tester, 1);
+      expect(video.playingEpisode, isNotNull);
+      expect(video.errorMessage, isNull);
+      expect(video.activeRouteLabel, contains('1920×1080'));
+    },
+  );
 
   testWidgets(
     'native media is still starting before the shared 25 second deadline',

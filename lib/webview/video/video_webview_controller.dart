@@ -11,7 +11,12 @@ import 'package:kazumi/webview/video/impl/video_webview_apple_impl.dart';
 import 'package:kazumi/services/platform/webview_feature_service.dart';
 import 'package:kazumi/services/video_source/video_source_format.dart';
 
-typedef VideoParserEvent = ({String url, int offset, VideoSourceFormat format});
+typedef VideoParserEvent = ({
+  String url,
+  int offset,
+  VideoSourceFormat format,
+  Map<String, String> headers,
+});
 
 abstract class VideoWebviewController<T> {
   // WebView controller.
@@ -57,8 +62,14 @@ abstract class VideoWebviewController<T> {
   void notifyVideoSourceResolved(
     String url, {
     VideoSourceFormat format = VideoSourceFormat.auto,
+    Map<String, String> headers = const {},
   }) {
-    _videoParserEventController.add((url: url, offset: offset, format: format));
+    _videoParserEventController.add((
+      url: url,
+      offset: offset,
+      format: format,
+      headers: headers,
+    ));
   }
 
   void disposeEventControllers() {

@@ -136,12 +136,12 @@ abstract class _PluginsController with Store {
         '${kIsWeb ? 'web' : defaultTargetPlatform.name}|${MeteredNetworkService.isMetered ? 'mobile' : 'local'}';
     SourcePolicy.shared.persist = (json) =>
         policyFile.writeAsString(json).then((_) {});
-    await _migrateBundledAnime(policyFile);
+    await _migrateBundledKazumi(policyFile);
   }
 
-  Future<void> _migrateBundledAnime(File policyFile) async {
+  Future<void> _migrateBundledKazumi(File policyFile) async {
     final directory = newPluginDirectory!.path;
-    final marker = File('$directory/anifive-v1.complete');
+    final marker = File('$directory/kazumi-v1.complete');
     final migrated = await marker.exists();
     final snapshot =
         jsonDecode(
@@ -149,6 +149,14 @@ abstract class _PluginsController with Store {
             )
             as Map;
     final legacy = (snapshot['legacyRules'] as List)
+        .map((e) => Plugin.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    final receipt =
+        jsonDecode(
+              await rootBundle.loadString('assets/migrations/kazumi-v1.json'),
+            )
+            as Map;
+    final previousBundled = (receipt['previousRules'] as List)
         .map((e) => Plugin.fromJson(Map<String, dynamic>.from(e)))
         .toList();
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
@@ -161,29 +169,28 @@ abstract class _PluginsController with Store {
       );
     }
     if (migrated) {
-      // 受管来源随应用资产更新，始终保留本地 ID/名称及独立来源策略。
+      // 受管来源随应用资产更新；不重新添加用户已删除的规则。
       await _mutateAndPersist(() {
         for (var i = 0; i < pluginList.length; i++) {
           final current = pluginList[i];
-          if (!isManagedAnime(current)) continue;
-          final next = bundled.where((p) =>
-              p.searchApiConfig.request.url == current.searchApiConfig.request.url).firstOrNull;
+          if (!isManagedKazumi(current)) continue;
+          final next = bundled
+              .where((p) => managedKazumiName(p) == managedKazumiName(current))
+              .firstOrNull;
           if (next == null || next.version == current.version) continue;
           pluginList[i] = Plugin.fromJson(next.toJson())
             ..sourceId = current.providerId
             ..name = current.name;
         }
-      }, errorMessage: '四源内置更新保存失败，已恢复内存快照');
+      }, errorMessage: '官方规则更新保存失败，已恢复内存快照');
       return;
     }
-    final backup = File('$directory/plugins.before-anifive-v1.json');
+    final backup = File('$directory/plugins.before-kazumi-v1.json');
     // 首次快照永久保留；崩溃重试不得把迁移后的内容覆盖到备份。
     if (!await backup.exists()) {
       await backup.writeAsString(jsonEncode(_pluginListToJson()), flush: true);
     }
-    final policyBackup = File(
-      '$directory/source-policy.before-anifive-v1.json',
-    );
+    final policyBackup = File('$directory/source-policy.before-kazumi-v1.json');
     if (await policyFile.exists() && !await policyBackup.exists()) {
       await policyBackup.writeAsString(
         await policyFile.readAsString(),
@@ -191,12 +198,16 @@ abstract class _PluginsController with Store {
       );
     }
     await _mutateAndPersist(() {
-      final next = migrateBundledAnime(pluginList.toList(), legacy, bundled);
+      final next = migrateBundledKazumi(
+        pluginList.toList(),
+        legacy,
+        previousBundled,
+        bundled,
+      );
       pluginList
         ..clear()
         ..addAll(next);
-    }, errorMessage: '四源规则迁移保存失败，已恢复内存快照');
-    await SourcePolicy.shared.inheritPreference('aafun', 'moonci');
+    }, errorMessage: '官方十六规则迁移保存失败，已恢复内存快照');
     await marker.writeAsString('1', flush: true);
   }
 
@@ -469,7 +480,8 @@ abstract class _PluginsController with Store {
     var pluginStatus = PluginCatalogItemStatus.install;
     for (Plugin plugin in pluginList) {
       if (pluginNameKey(pluginHTTPItem.name) == pluginNameKey(plugin.name)) {
-        if (isManagedAnime(plugin)) return PluginCatalogItemStatus.installed;
+        if (isManagedAnime(plugin) || isManagedKazumi(plugin))
+          return PluginCatalogItemStatus.installed;
         if (_remoteIsNewer(plugin.version, pluginHTTPItem.version)) {
           pluginStatus = PluginCatalogItemStatus.update;
         } else {
@@ -482,7 +494,8 @@ abstract class _PluginsController with Store {
   }
 
   PluginUpdateAvailability pluginUpdateStatus(Plugin plugin) {
-    if (isManagedAnime(plugin)) return PluginUpdateAvailability.latest;
+    if (isManagedAnime(plugin) || isManagedKazumi(plugin))
+      return PluginUpdateAvailability.latest;
     if (_pluginCatalogRefreshedAt == null) {
       return PluginUpdateAvailability.unknown;
     }
@@ -521,7 +534,9 @@ abstract class _PluginsController with Store {
 
   Future<_PluginUpdateAttempt> _preparePluginUpdate(String name) async {
     if (pluginList.any(
-      (p) => pluginNameKey(p.name) == pluginNameKey(name) && isManagedAnime(p),
+      (p) =>
+          pluginNameKey(p.name) == pluginNameKey(name) &&
+          (isManagedAnime(p) || isManagedKazumi(p)),
     )) {
       return (result: PluginUpdateResult.notNewer, plugin: null);
     }

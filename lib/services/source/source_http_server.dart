@@ -762,6 +762,22 @@ class SourceHttpServer {
             userAgent: headers['user-agent'],
             referer: headers['referer'],
           );
+          // 嗅探到的媒体可能来自跨站 iframe，使用实际请求上下文而非站点根地址。
+          final parsedHeaders = parsed['headers'];
+          if (parsedHeaders is Map) {
+            for (final entry in parsedHeaders.entries) {
+              if (entry.key is String &&
+                  entry.value is String &&
+                  const [
+                    'referer',
+                    'user-agent',
+                    'origin',
+                  ].contains((entry.key as String).toLowerCase())) {
+                mediaHeaders[(entry.key as String).toLowerCase()] =
+                    entry.value as String;
+              }
+            }
+          }
           return {
             'url': _mediaUrl(media, mediaHeaders),
             'format':

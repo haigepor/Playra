@@ -1,4 +1,5 @@
 import 'package:kazumi/app_brand.dart';
+import 'package:kazumi/plugins/api_rule_config.dart';
 import 'package:flutter/services.dart' show appBuildName;
 
 class ApiEndpoints {
@@ -6,7 +7,7 @@ class ApiEndpoints {
   static const String version = appBuildName ?? '0.0.0';
 
   /// 规则API级别
-  static const int apiLevel = 8;
+  static const int apiLevel = supportedRuleApiLevel;
 
   /// 项目主页
   static const String projectUrl = AppBrand.repositoryUrl;

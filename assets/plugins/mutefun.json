@@ -1,0 +1,42 @@
+{
+  "api": "9",
+  "type": "anime",
+  "name": "mutefun",
+  "version": "1.4",
+  "muliSources": true,
+  "useWebview": true,
+  "useNativePlayer": true,
+  "usePost": false,
+  "useLegacyParser": false,
+  "adBlocker": false,
+  "userAgent": "",
+  "baseURL": "https://www.2kdm.com/voddetail/",
+  "searchMode": "api",
+  "chapterMode": "xpath",
+  "searchApiConfig": {
+    "request": {
+      "method": "GET",
+      "url": "https://www.2kdm.com/index.php/ajax/suggest",
+      "query": {
+        "mid": "1",
+        "wd": "@keyword"
+      }
+    },
+    "listPath": "$.list[*]",
+    "namePath": "$.name",
+    "sourcePath": "$.id"
+  },
+  "searchURL": "",
+  "searchList": "",
+  "searchName": "",
+  "searchResult": "",
+  "chapterRoads": "//div[contains(@class,'module-play-list-content')]",
+  "chapterResult": ".//a[contains(@class,'module-play-list-link')]",
+  "referer": "",
+  "sourceConfig": {
+    "managedBy": "playra-kazumi",
+    "officialName": "mutefun",
+    "repository": "https://github.com/Predidit/KazumiRules",
+    "revision": "135ef2c2ef2a09f6fbde0f73957403b2c03bfe00"
+  }
+}

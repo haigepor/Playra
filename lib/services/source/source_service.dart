@@ -28,7 +28,10 @@ class SourceDefinition {
     final data = jsonDecode(jsonEncode(json)) as Map<String, dynamic>;
     final name = data['name'] as String? ?? '';
     final api = int.tryParse(data['api']?.toString() ?? '1');
-    if (name.trim().isEmpty || api == null || api < 1 || api > 8) {
+    if (name.trim().isEmpty ||
+        api == null ||
+        api < 1 ||
+        api > supportedRuleApiLevel) {
       throw const SourceException('INVALID_RULE', '规则名称或协议级别无效');
     }
     Map<String, dynamic> map(String key) =>

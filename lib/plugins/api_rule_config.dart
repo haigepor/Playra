@@ -1,3 +1,5 @@
+const supportedRuleApiLevel = 9;
+
 class RuleMode {
   static const String xpath = 'xpath';
   static const String api = 'api';
@@ -76,13 +78,18 @@ class ApiSearchConfig {
   String sourcePath;
   String coverPath;
 
+  /// 官方 API 9：将真实作品 ID 放入详情页模板，不以列表位置代替。
+  final String sourceTemplate;
+
   ApiSearchConfig({
     ApiRequestConfig? request,
     this.listPath = r'$.data[*]',
     this.namePath = r'$.name',
     this.sourcePath = r'$.url',
     this.coverPath = '',
-  }) : request = request ?? ApiRequestConfig();
+    String sourceTemplate = '',
+  }) : request = request ?? ApiRequestConfig(),
+       sourceTemplate = sourceTemplate.trim();
 
   factory ApiSearchConfig.fromJson(Map<String, dynamic> json) {
     return ApiSearchConfig(
@@ -91,6 +98,7 @@ class ApiSearchConfig {
       namePath: json['namePath'] as String? ?? r'$.name',
       sourcePath: json['sourcePath'] as String? ?? r'$.url',
       coverPath: json['coverPath'] as String? ?? '',
+      sourceTemplate: json['sourceTemplate'] as String? ?? '',
     );
   }
 
@@ -100,6 +108,7 @@ class ApiSearchConfig {
     'namePath': namePath,
     'sourcePath': sourcePath,
     if (coverPath.isNotEmpty) 'coverPath': coverPath,
+    if (sourceTemplate.isNotEmpty) 'sourceTemplate': sourceTemplate,
   };
 }
 

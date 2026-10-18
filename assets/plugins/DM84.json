@@ -1,90 +1,24 @@
 {
-  "api": "8",
+  "api": "5",
   "type": "anime",
-  "sourceId": "dm84",
   "name": "DM84",
-  "version": "3.1.0",
+  "version": "1.4",
   "muliSources": true,
-  "useWebview": false,
+  "useWebview": true,
   "useNativePlayer": true,
-  "usePost": false,
-  "useLegacyParser": false,
-  "adBlocker": false,
   "userAgent": "",
+  "adBlocker": true,
   "baseURL": "https://dmbus.cc/",
-  "searchURL": "",
-  "searchList": "",
-  "searchName": "",
-  "searchResult": "",
-  "chapterRoads": "",
-  "chapterResult": "",
-  "referer": "",
-  "searchMode": "api",
-  "chapterMode": "api",
-  "searchApiConfig": {
-    "request": {
-      "method": "GET",
-      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/search",
-      "query": {
-        "q": "@keyword",
-        "page": "@page",
-        "pageSize": "@pageSize"
-      }
-    },
-    "listPath": "$.data[*]",
-    "namePath": "$.name",
-    "sourcePath": "$.url",
-    "coverPath": "$.cover"
-  },
-  "chapterApiConfig": {
-    "request": {
-      "method": "GET",
-      "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/episodes",
-      "query": {
-        "source": "@source"
-      }
-    },
-    "format": "nested",
-    "roadsPath": "$.data.roads[*]",
-    "roadNamePath": "$.name",
-    "episodesPath": "$.episodes[*]",
-    "episodeNamePath": "$.name",
-    "episodeUrlPath": "$.url",
-    "roadIdPath": "$.id"
-  },
+  "searchURL": "https://dmbus.cc/s----------.html?wd=@keyword",
+  "searchList": "//div/div[3]/ul/li",
+  "searchName": "//div/a[2]",
+  "searchResult": "//div/a[2]",
+  "chapterRoads": "//div/div[4]/div/ul",
+  "chapterResult": "//li/a",
   "sourceConfig": {
-    "domains": [
-      "anime"
-    ],
-    "searchPagination": {
-      "enabled": true,
-      "totalPath": "$.total",
-      "hasMorePath": "$.hasMore"
-    },
-    "resolveApi": {
-      "request": {
-        "method": "POST",
-        "url": "https://source-runtime.playra.invalid/v1/adapters/anifive-a/resolve",
-        "bodyType": "json",
-        "body": {
-          "episodeUrl": "@episodeUrl"
-        }
-      },
-      "urlPath": "$.data.url",
-      "headersPath": "$.data.headers",
-      "formatPath": "$.data.format",
-      "expiresAtPath": "$.data.expiresAt",
-      "headerPolicyPath": "$.data.headerPolicy"
-    },
-    "contentGroups": [
-      "anime"
-    ],
-    "managedBy": "playra-anifive",
-    "bundleVersion": 1,
-    "catalog": {
-      "entrySelector": "a.title[href], a.video-wrapper[href]",
-      "detailPathPattern": "/(?:v|voddetail)/",
-      "priority": 0
-    }
+    "managedBy": "playra-kazumi",
+    "officialName": "DM84",
+    "repository": "https://github.com/Predidit/KazumiRules",
+    "revision": "135ef2c2ef2a09f6fbde0f73957403b2c03bfe00"
   }
 }
