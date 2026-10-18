@@ -164,7 +164,68 @@ msix_config:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
+    # 设计源图留在仓库；仅将运行素材打包，排除未使用的排名母版。
+    - assets/images/danmaku_off.svg
+    - assets/images/danmaku_setting.svg
+    - assets/images/forward_80.png
+    - assets/images/loading.png
+    - assets/images/modern-about-orbit.svg
+    - assets/images/modern-calendar-decoration.svg
+    - assets/images/modern-calendar-empty.svg
+    - assets/images/modern-calendar-header-art.png
+    - assets/images/modern-card-paper-corner.svg
+    - assets/images/modern-cinema-header-art.png
+    - assets/images/modern-discover-decoration.svg
+    - assets/images/modern-download-empty.svg
+    - assets/images/modern-feature-orbit.svg
+    - assets/images/modern-history-art.png
+    - assets/images/modern-home-empty-feed.svg
+    - assets/images/modern-home-empty-watch.svg
+    - assets/images/modern-home-mark.svg
+    - assets/images/modern-home-screen.svg
+    - assets/images/modern-image-search-empty.svg
+    - assets/images/modern-library-decoration.svg
+    - assets/images/modern-library-empty.svg
+    - assets/images/modern-library-header-art.png
+    - assets/images/modern-offline-art.png
+    - assets/images/modern-onboarding-decoration.svg
+    - assets/images/modern-player-detail-decoration.svg
+    - assets/images/modern-player-empty-discussion.svg
+    - assets/images/modern-player-empty-source.svg
+    - assets/images/modern-player-placeholder.svg
+    - assets/images/modern-player-playing-mark.svg
+    - assets/images/modern-player-poster-placeholder.svg
+    - assets/images/modern-profile-decoration.svg
+    - assets/images/modern-profile-empty.svg
+    - assets/images/modern-profile-header-art.png
+    - assets/images/modern-rank-first.svg
+    - assets/images/modern-rank-second.svg
+    - assets/images/modern-rank-third.svg
+    - assets/images/modern-recommendation-lines.svg
+    - assets/images/modern-search-empty.svg
+    - assets/images/modern-section-curated.svg
+    - assets/images/modern-section-ranking.svg
+    - assets/images/modern-section-resume.svg
+    - assets/images/modern-source-candidates.svg
+    - assets/images/modern-sync-art.png
+    - assets/images/modern-utility-collection.svg
+    - assets/images/modern-utility-completed.svg
+    - assets/images/modern-utility-devices.svg
+    - assets/images/modern-utility-downloading.svg
+    - assets/images/modern-utility-failed.svg
+    - assets/images/modern-utility-history.svg
+    - assets/images/modern-utility-offline.svg
+    - assets/images/modern-utility-paused.svg
+    - assets/images/modern-utility-pending.svg
+    - assets/images/modern-utility-resolving.svg
+    - assets/images/modern-utility-rules.svg
+    - assets/images/modern-utility-sdk.svg
+    - assets/images/modern-utility-synchronization.svg
+    - assets/images/modern-work-info.svg
+    - assets/images/noface.jpeg
+    - assets/images/sdk-auto.svg
+    - assets/images/sdk-orbit.svg
+    - assets/images/sdk-route.svg
     - assets/plugins/
     - assets/migrations/
     - assets/shaders/

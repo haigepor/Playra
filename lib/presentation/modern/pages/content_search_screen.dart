@@ -125,65 +125,71 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                 kind: ModernPageArtKind.discover,
                 child: AnimatedBuilder(
                   animation: session,
-                  builder: (context, _) => Column(
-                    children: [
-                      _searchHeader(context),
-                      Expanded(
-                        child: !submitted
-                            ? const Center(
-                                child: SingleChildScrollView(
-                                  child: SecondaryEmptyState(
-                                    title: '找到下一部想看的作品',
-                                    description: '选择频道，输入名称开始搜索',
-                                  ),
-                                ),
-                              )
-                            : CustomScrollView(
-                                key: const ValueKey('content-search-results'),
-                                keyboardDismissBehavior:
-                                    ScrollViewKeyboardDismissBehavior.onDrag,
-                                slivers: [
-                                  SliverToBoxAdapter(child: _progress(context)),
-                                  if (session.works.isEmpty)
-                                    SliverFillRemaining(
-                                      hasScrollBody: false,
-                                      child: _empty(),
-                                    )
-                                  else ...[
-                                    SliverPadding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        16,
-                                        4,
-                                        16,
-                                        12,
-                                      ),
-                                      sliver: SliverList.builder(
-                                        itemCount: session.works.length,
-                                        itemBuilder: (context, index) =>
-                                            _resultTile(
-                                              context,
-                                              session.works[index],
-                                            ),
-                                      ),
+                  builder: (context, _) {
+                    // 一次重建只排序一次，滚动创建卡片时复用同一结果快照。
+                    final works = session.works;
+                    return Column(
+                      children: [
+                        _searchHeader(context),
+                        Expanded(
+                          child: !submitted
+                              ? const Center(
+                                  child: SingleChildScrollView(
+                                    child: SecondaryEmptyState(
+                                      title: '找到下一部想看的作品',
+                                      description: '选择频道，输入名称开始搜索',
                                     ),
-                                    if (session.hasMore)
-                                      SliverToBoxAdapter(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: ShadButton.outline(
-                                            onPressed: session.searching
-                                                ? null
-                                                : session.loadMore,
-                                            child: const Text('加载更多'),
-                                          ),
+                                  ),
+                                )
+                              : CustomScrollView(
+                                  key: const ValueKey('content-search-results'),
+                                  keyboardDismissBehavior:
+                                      ScrollViewKeyboardDismissBehavior.onDrag,
+                                  slivers: [
+                                    SliverToBoxAdapter(
+                                      child: _progress(context),
+                                    ),
+                                    if (works.isEmpty)
+                                      SliverFillRemaining(
+                                        hasScrollBody: false,
+                                        child: _empty(),
+                                      )
+                                    else ...[
+                                      SliverPadding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          4,
+                                          16,
+                                          12,
+                                        ),
+                                        sliver: SliverList.builder(
+                                          itemCount: works.length,
+                                          itemBuilder: (context, index) =>
+                                              _resultTile(
+                                                context,
+                                                works[index],
+                                              ),
                                         ),
                                       ),
+                                      if (session.hasMore)
+                                        SliverToBoxAdapter(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: ShadButton.outline(
+                                              onPressed: session.searching
+                                                  ? null
+                                                  : session.loadMore,
+                                              child: const Text('加载更多'),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ],
-                                ],
-                              ),
-                      ),
-                    ],
-                  ),
+                                ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

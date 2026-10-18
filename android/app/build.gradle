@@ -29,6 +29,23 @@ if (releaseKeyFile.exists()) {
     releaseKeyFile.withReader('UTF-8') { releaseKeyProperties.load(it) }
 }
 
+// Flutter 的 target-platform 同步到原生筛选，Chaquopy 才会按相同架构生成 Python 资产。
+def flutterAbiByPlatform = [
+    "android-arm": "armeabi-v7a",
+    "android-arm64": "arm64-v8a",
+    "android-x64": "x86_64"
+]
+def targetPlatformsForApk = project.hasProperty("target-platform")
+    ? project.property("target-platform").toString().split(",", -1).toList()
+    : flutterAbiByPlatform.keySet().toList()
+def targetAbisForApk = targetPlatformsForApk.collect { platform ->
+    def abi = flutterAbiByPlatform[platform]
+    if (abi == null) {
+        throw new GradleException("Unsupported Flutter target-platform: ${platform}")
+    }
+    abi
+}.unique()
+
 android {
     namespace "com.example.kazumi"
     compileSdk flutter.compileSdkVersion
@@ -65,7 +82,9 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         ndk {
-            abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
+            // Flutter 插件预填了默认 ABI；必须先清空，不能把单架构请求追加为三架构。
+            abiFilters.clear()
+            abiFilters.addAll(targetAbisForApk)
         }
     }
 

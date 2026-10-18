@@ -5,9 +5,19 @@ param(
   [string]$JavaHome = $env:JAVA_HOME,
   [string]$DartDefineFromFile,
   [string]$RuntimeUrl,
-  [switch]$RuntimeAllowHttp
+  [switch]$RuntimeAllowHttp,
+  [Alias('Profile')]
+  [switch]$ProfileBuild,
+  [ValidateSet('android-arm', 'android-arm64', 'android-x64')]
+  [string[]]$TargetPlatform
 )
 $ErrorActionPreference = 'Stop'
+if ($Release -and $ProfileBuild) {
+  throw 'Release and Profile cannot be used together'
+}
+if ($Device -and $TargetPlatform) {
+  throw 'TargetPlatform applies only to APK builds; Device runs detect the architecture automatically'
+}
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
   . (Join-Path $PSScriptRoot 'use-dev-env.ps1') -AndroidSdk $AndroidSdk -JavaHome $JavaHome
@@ -102,9 +112,15 @@ try {
       $defineArguments += "--dart-define-from-file=$generatedDefines"
     }
   }
-  if ($Device) { & $flutter run -d $Device @defineArguments }
-  elseif ($Release) { & $flutter build apk --release @defineArguments }
-  else { & $flutter build apk --debug @defineArguments }
+  # 运行和打包共用明确模式，避免指定设备后静默退回 debug。
+  $modeArgument = if ($Release) { '--release' } elseif ($ProfileBuild) { '--profile' } else { '--debug' }
+  if ($Device) {
+    & $flutter run -d $Device $modeArgument @defineArguments
+  } else {
+    $apkArguments = @()
+    if ($TargetPlatform) { $apkArguments += "--target-platform=$($TargetPlatform -join ',')" }
+    & $flutter build apk $modeArgument @apkArguments @defineArguments
+  }
   if ($LASTEXITCODE -ne 0) { throw 'Android build or run failed' }
 } finally {
   if ($generatedDefines -and (Test-Path -LiteralPath $generatedDefines)) {

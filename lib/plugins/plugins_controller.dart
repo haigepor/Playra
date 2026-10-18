@@ -170,7 +170,8 @@ abstract class _PluginsController with Store {
     }
     if (migrated) {
       // 受管来源随应用资产更新；不重新添加用户已删除的规则。
-      await _mutateAndPersist(() {
+      await _mutations.run(() async {
+        final updates = <int, Plugin>{};
         for (var i = 0; i < pluginList.length; i++) {
           final current = pluginList[i];
           if (!isManagedKazumi(current)) continue;
@@ -178,11 +179,18 @@ abstract class _PluginsController with Store {
               .where((p) => managedKazumiName(p) == managedKazumiName(current))
               .firstOrNull;
           if (next == null || next.version == current.version) continue;
-          pluginList[i] = Plugin.fromJson(next.toJson())
+          updates[i] = Plugin.fromJson(next.toJson())
             ..sourceId = current.providerId
             ..name = current.name;
         }
-      }, errorMessage: '官方规则更新保存失败，已恢复内存快照');
+        // 在原有串行事务内判断，版本未变时不编码、刷盘或重发规则变更。
+        if (updates.isEmpty) return;
+        await _mutateAndPersistNow(() {
+          for (final entry in updates.entries) {
+            pluginList[entry.key] = entry.value;
+          }
+        }, errorMessage: '官方规则更新保存失败，已恢复内存快照');
+      });
       return;
     }
     final backup = File('$directory/plugins.before-kazumi-v1.json');
