@@ -159,6 +159,7 @@ class ApiRuleStrategy {
     validateSearchConfig(config);
     final document = decodeResponse(raw);
     final nodes = RestrictedJsonPath.read(document, config.listPath);
+    final template = config.sourceTemplate;
     final results = <SearchItem>[];
     final fragments = <String>[];
     final diagnostics = <String>[];
@@ -184,9 +185,9 @@ class ApiRuleStrategy {
         results.add(
           SearchItem(
             name: name,
-            src: config.sourceTemplate.isEmpty
+            src: template.isEmpty
                 ? source
-                : config.sourceTemplate.replaceAll(
+                : template.replaceAll(
                     '@source',
                     Uri.encodeComponent(source),
                   ),

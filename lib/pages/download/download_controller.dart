@@ -151,6 +151,13 @@ abstract class _DownloadController with Store {
     }
     _repository.updateEpisode(recordKey, episodeNumber, episode);
 
+    // 下载目录在实际开始下载时才创建，排队或暂停后恢复的剧集统一在完成时缓存弹幕
+    if (episode.status == DownloadStatus.completed &&
+        GStorage.getSetting(SettingsKeys.downloadDanmaku)) {
+      _fetchAndCacheDanmakuAsync(
+          recordKey, record.bangumiId, episodeNumber);
+    }
+
     final key = '${recordKey}_$episodeNumber';
 
     final isFinalState =

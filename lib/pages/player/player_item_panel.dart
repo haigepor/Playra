@@ -922,7 +922,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       RemotePlay()
                           .castVideo(
                             playerController.videoUrl,
-                            videoPageController.playbackReferer,
+                            title: playerController.mediaTitle,
                           )
                           .whenComplete(() {
                             if (mounted && needRestart) {

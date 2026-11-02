@@ -1,7 +1,7 @@
 name: kazumi
 description: "Playra media discovery and playback application."
 publish_to: "none"
-version: 2.3.8+20308
+version: 2.4.2+20402
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
@@ -28,7 +28,7 @@ dependencies:
   cached_network_image: ^3.4.1
   octo_image: ^2.1.0
   flutter_cache_manager: ^3.4.1
-  ech_http: ^0.2.1
+  ech_http: ^0.2.3
   http: ^1.6.0
   web: ^1.1.1
   image: ^4.8.0
@@ -58,7 +58,7 @@ dependencies:
   canvas_danmaku: ^0.3.3
   webdav_client: ^1.2.2
   tray_manager: ^0.5.0
-  dlna_dart: ^0.0.8
+  dlna_dart: ^0.1.1
   logger: ^2.6.2
   flutter_rating_bar: ^4.0.1
   scrollview_observer: ^1.22.0
@@ -160,6 +160,7 @@ msix_config:
   sign_msix: false
   install_certificate: false
   build_windows: false
+  protocol_activation: kazumi
 
 flutter:
   uses-material-design: true

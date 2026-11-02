@@ -1,6 +1,7 @@
 import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:flutter/material.dart';
+import 'package:kazumi/services/platform/app_exit.dart';
 import 'package:kazumi/presentation/interface_style.dart';
 import 'package:kazumi/services/platform/platform_paths.dart';
 
@@ -46,9 +47,7 @@ class StorageErrorPage extends StatelessWidget {
               errMsg: '当前存储位置：\n$path\n\n可在退出后删除该目录以重置本地存储，此操作会清除本地数据。',
               actions: [
                 StateActionButton(
-                  onPressed: () {
-                    exit(0);
-                  },
+                  onPressed: AppExit.quit,
                   text: '退出程序',
                   icon: Icons.close_rounded,
                 ),

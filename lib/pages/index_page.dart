@@ -20,6 +20,7 @@ class IndexPage extends StatefulWidget {
 }
 
 class _IndexPageState extends State<IndexPage> with WidgetsBindingObserver {
+
   @override
   Widget build(BuildContext context) {
     // 状态机必须位于样式选择之外，切换导航外观时保留当前标签与 outlet。
