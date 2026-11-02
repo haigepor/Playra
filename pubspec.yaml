@@ -114,6 +114,8 @@ dependency_overrides:
   # 本地修复 ech_http 0.2.1 的 MSVC 证书字符串编译限制。
   ech_http:
     path: third_party/ech_http
+  flutter_inappwebview_android:
+    path: third_party/flutter_inappwebview_android
 
 dev_dependencies:
   plugin_platform_interface: ^2.1.8

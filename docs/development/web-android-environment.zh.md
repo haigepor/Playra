@@ -29,13 +29,16 @@
 | Python | CPython 3.11.15；`.tooling/python/cpython-3.11.15-windows-x86_64-none` |
 | Node.js / npm | Node 22.23.3；`.tooling/node/node-v22.23.3-win-x64`；npm 随 Node 提供 |
 | JDK | Temurin 17.0.20.1；`.tooling/java/jdk-17.0.20.1+1` |
-| Android | SDK Platform 36、Build Tools 36.0.0、NDK 28.2.13676358、CMake 3.22.1、Ninja；本机位于 `D:/Android/Sdk` |
-| Gradle / AGP / Kotlin | 项目 wrapper 8.14.5、AGP 8.11.1、Kotlin 2.2.21 |
+| Android | SDK Platform 37.0、Build Tools 36.0.0、NDK 28.2.13676358、CMake 3.22.1、Ninja；本机位于 `D:/Android/Sdk` |
+| Gradle / AGP / Kotlin | 项目 wrapper 9.3.1、AGP 9.1.1、Kotlin / Compose 编译器 2.4.10 |
+| 原生液态玻璃 | 官方 Backdrop 2.0.1、Shapes 1.2.1、Compose 1.12.0；底部导航完整透镜效果需要 Android 13 / API 33 及以上 |
 | 内置 Python | Chaquopy 17.0.0、Python 3.11；与构建机 Python 主次版本一致 |
 | Web 解析浏览器 | Playwright 1.62.1 对应 Chromium、Headless Shell、FFmpeg、Winldd；`.tooling/playwright-browsers` |
 | MioMedia | 原 SDK 的 12 个核心文件加 `_native/__init__.py`，共 13 个运行输入；Windows DLL 不进入 Android 包 |
 
 以上是本机的已安装版本，不是对所有新机器的存在性保证。Flutter、Android 插件、NDK 和 npm 包仍以仓库配置与锁文件为准，不能各自更新到最新版本后跳过兼容检查。
+
+Android 的编译 SDK 由 `android/build.gradle` 的 `playraCompileSdk` 统一管理。官方玻璃依赖要求 API 37；新环境可通过 Android CLI 执行 `android --sdk <SDK目录> sdk install platforms/android-37.0` 安装平台。现有 Flutter 插件继续使用项目内的旧 Kotlin / DSL 兼容模式；WebView 1.1.3 的构建兼容补丁见 `third_party/flutter_inappwebview_android/PLAYRA-PATCH.md`。
 
 Windows 主机单元测试中的原生 C/C++ 构建还会使用本机已注册的 MSVC/Windows SDK；本机 MSVC 位于 `C:/VSBuildTools2022`。Windows 系统组件沿用系统安装，项目工具、包与缓存放在 D 盘。Android 交叉编译使用配置的 Android SDK/NDK。新设备只做 Web/Android 开发时，环境脚本在当前进程关闭桌面平台生成，避免 `pub get` 为桌面插件请求符号链接权限。
 

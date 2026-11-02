@@ -1,3 +1,5 @@
+ext.playraCompileSdk = 37
+
 allprojects {
     repositories {
         google()
@@ -8,6 +10,11 @@ allprojects {
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    pluginManager.withPlugin("com.android.library") {
+        extensions.getByName("androidComponents").finalizeDsl { androidDsl ->
+            androidDsl.compileSdk = rootProject.playraCompileSdk
+        }
+    }
 }
 subprojects {
     project.evaluationDependsOn(':app')
