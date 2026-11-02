@@ -41,6 +41,19 @@ async function restoreBuffer(buffer) {
   }
   await verify();
 }
+
+// 私有输入包含响应私钥，仓库公开，所以分发包是 openssl 兼容的 AES-256-CBC
+// （口令经 PBKDF2 派生，随机盐写在 "Salted__" 头里）。口令只存于 Actions secrets。
+function decryptBundle(bytes) {
+  const passphrase = process.env.PLAYRA_LUMINA_INPUT_PASSPHRASE;
+  if (!passphrase) throw Error('Encrypted input requires PLAYRA_LUMINA_INPUT_PASSPHRASE');
+  if (bytes.length < 32 || bytes.subarray(0, 8).toString('latin1') !== 'Salted__') throw Error('Invalid encrypted input');
+  const salt = bytes.subarray(8, 16);
+  const derived = crypto.pbkdf2Sync(passphrase, salt, 200000, 48, 'sha256');
+  const decipher = crypto.createDecipheriv('aes-256-cbc', derived.subarray(0, 32), derived.subarray(32, 48));
+  return Buffer.concat([decipher.update(bytes.subarray(16)), decipher.final()]);
+}
+
 async function main(args) {
   switch (args[0]) {
     case 'verify': await verify(); break;
@@ -59,11 +72,15 @@ async function main(args) {
       if (!url || !/^[a-f0-9]{64}$/.test(expected || '')) throw Error('Configure PLAYRA_LUMINA_NATIVE_INPUT_URL and PLAYRA_LUMINA_NATIVE_INPUT_SHA256');
       const uri = new URL(url);
       if (uri.protocol !== 'https:' || uri.username || uri.password) throw Error('Input bundle requires HTTPS');
-      const response = await fetch(uri, { redirect: 'error', signal: AbortSignal.timeout(60000) });
+      // 发布资产会 302 到 objects.githubusercontent.com；只允许 HTTPS 跳转，
+      // 内容完整性最终由 SHA-256 兜底。
+      const response = await fetch(uri, { redirect: 'follow', signal: AbortSignal.timeout(120000) });
       if (!response.ok) throw Error('Input bundle download failed');
+      if (new URL(response.url).protocol !== 'https:') throw Error('Input bundle downgraded to plaintext');
       const chunks = []; let size = 0;
       for await (const chunk of response.body) { size += chunk.length; if (size > 32 * 1024 * 1024) throw Error('Input bundle too large'); chunks.push(chunk); }
-      const bytes = Buffer.concat(chunks);
+      let bytes = Buffer.concat(chunks);
+      if (process.env.PLAYRA_LUMINA_INPUT_PASSPHRASE) bytes = decryptBundle(bytes);
       if (digest(bytes) !== expected) throw Error('Input bundle checksum mismatch');
       await restoreBuffer(bytes); break;
     }
@@ -71,4 +88,4 @@ async function main(args) {
   }
 }
 if (require.main === module) main(process.argv.slice(2)).catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { verify, restoreBuffer };
+module.exports = { verify, restoreBuffer, decryptBundle };
