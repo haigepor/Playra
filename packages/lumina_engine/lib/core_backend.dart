@@ -45,6 +45,20 @@ class CoreResponseBackend implements LuminaResponseBackend {
   CoreResponseBackend._();
   static bool get supported =>
       Platform.isAndroid && Abi.current() == Abi.androidArm64;
+
+  /// 通道常量缺失时不要尝试原生加速：init 抛出的类型错误会打死整个 worker，
+  /// 而 auto 模式本可安静回落到 _fuse。profile 精简版据此跳过 core。
+  static bool configured(Map<String, dynamic> profile) {
+    bool hex16(Object? value) =>
+        value is String && RegExp(r'^[0-9a-fA-F]{32}$').hasMatch(value);
+    final tcp = profile['_CORE_TCP'];
+    return hex16(profile['_CORE_CHANNEL_KEY']) &&
+        hex16(profile['_CORE_CHANNEL_IV']) &&
+        tcp is String &&
+        tcp.isNotEmpty &&
+        tcp.length <= 128 &&
+        tcp.contains(':');
+  }
   late final String version;
   static CoreResponseBackend open(
     Map<String, dynamic> profile,
@@ -53,6 +67,8 @@ class CoreResponseBackend implements LuminaResponseBackend {
   ) {
     if (!supported)
       throw const ResponseBackendFailure('CORE_UNSUPPORTED', terminal: true);
+    if (!configured(profile))
+      throw const ResponseBackendFailure('CORE_CONFIG');
     try {
       if (_abiVersion() != 1)
         throw const ResponseBackendFailure('CORE_ABI', terminal: true);

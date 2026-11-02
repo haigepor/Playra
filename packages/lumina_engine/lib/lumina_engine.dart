@@ -91,6 +91,11 @@ class LuminaEngine {
   }
   late final String version;
   final void Function(String stage, int micros)? trace;
+
+  /// Cb 生成器在约 1944 块之后会 abort 或挂死宿主进程（不是抛异常，接不住）。
+  /// 服务端分页上限（列表 ≤25 / 搜索 ≤30 / 评论 ≤50）保证正常响应远低于此；
+  /// 超限时由调用方在进入原生层之前拒绝。
+  static const maxBlocks = 1900;
   final _calibrations =
       <String, ({Uint8List c, Uint8List constants, Uint8List tweaks})>{};
   int _calibrationBytes = 0;
@@ -144,6 +149,7 @@ class LuminaEngine {
         cipher.length % 16 != 0 ||
         cipher.length > 2 * 1024 * 1024)
       throw const FormatException('Cipher length');
+    if (cipher.length ~/ 16 > maxBlocks) throw StateError('ENGINE_BLOCK_LIMIT');
     final cacheKey = base64Encode(key);
     var calibration = _calibrations.remove(cacheKey);
     if (calibration != null) {

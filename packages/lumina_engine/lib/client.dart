@@ -32,6 +32,13 @@ class LuminaFailure implements Exception {
 
 const maxResponseBytes = 2 * 1024 * 1024;
 
+/// 解析器响应的 AES 密钥可能落后于 play 响应下发的 Lua 值（服务端轮换不同步，
+/// 2026-11-02 实测有约四分钟错位窗口）。解码失败时按「当前 Lua → 历史值」回退。
+const _resolverFallbackKeys = <(String, String)>[
+  ('mjxhdyjgbyjaxcsx', 'quqgpueglvxrexar'),
+  ('klwlqptyjkzlnkqp', 'dnprtsbqhiwccgqf'),
+];
+
 /// 单 worker 内复用连接；异步网络可并行，全部同步 C 调用天然串行。
 class LuminaClient {
   LuminaClient(
@@ -136,6 +143,10 @@ class LuminaClient {
           if (p0.length < 256) throw const LuminaFailure('DECRYPT_ERROR');
           final result = _responses.decode(raw, path, _remainingBudget(), () {
             _remainingBudget();
+            // 便携引擎的 Cb 生成器在 ~1944 块后会 abort 宿主进程（不可捕获），
+            // 服务端分页上限保证正常响应远低于此；超限直接报错而不是杀掉 App。
+            if (cipher.length ~/ 16 > LuminaEngine.maxBlocks)
+              throw const LuminaFailure('RESPONSE_TOO_LARGE');
             final key = responseKey.decrypt(p0.sublist(0, 256));
             return engine.decrypt(key, cipher);
           });
@@ -350,21 +361,74 @@ class LuminaClient {
     }
   }
 
+  /// 播放链路两种 source：
+  /// - **直链型**（电影/单片）：url 本身就是 CDN 地址，原样返回，不碰解析器；
+  /// - **不透明串型**（`a|b|c|d`，剧集）：play → Lua 签名 → 解析器链。
+  ///
+  /// 两种瞬态按同参数重试一次：`510423 播放遇到问题`（服务端状态），
+  /// 以及解析器密钥轮换造成的解码失败（见 [_resolverFallbackKeys]）。
   Future<Map<String, dynamic>> _play(Map<String, dynamic> p) async {
-    dynamic entries = _data(
-      await _api(
+    Object? failure;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) {
+        _remainingBudget();
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+      }
+      _remainingBudget();
+      final reply = await _api(
         '/app/video/play',
         query: {'id': p['videoId'], 'play': p['playFormat'], 'part': p['part']},
         post: true,
-      ),
-    );
-    if (entries is Map) entries = entries['data'];
-    if (entries is! List || entries.isEmpty)
-      return {'status': 'unavailable', 'error': 'NO_PLAYBACK_SOURCE'};
-    final entry = entries.first as Map;
-    final source = entry['url'];
-    if (source is! String || source.isEmpty || source.length > 16384)
-      throw const LuminaFailure('PARSE_ERROR');
+      );
+      if (reply['code'] != 20000) {
+        failure = const LuminaFailure('BUSINESS_REJECTED');
+        if (reply['code'] == 510423) continue;
+        throw failure;
+      }
+      dynamic entries = reply['data'];
+      if (entries is Map) entries = entries['data'];
+      if (entries is! List || entries.isEmpty)
+        return {'status': 'unavailable', 'error': 'NO_PLAYBACK_SOURCE'};
+      final entry = entries.first;
+      if (entry is! Map) throw const LuminaFailure('PARSE_ERROR');
+      final source = entry['url'];
+      if (source is! String || source.isEmpty || source.length > 16384)
+        throw const LuminaFailure('PARSE_ERROR');
+      if (source.startsWith('http')) {
+        final media = _directMedia(entry, source);
+        return {
+          'status': 'ready',
+          'kind': 'direct',
+          'media': media,
+          'medias': [media],
+        };
+      }
+      try {
+        return {...await _resolveSource(p, entry, source), 'kind': 'resolver'};
+      } catch (error) {
+        failure = error;
+      }
+    }
+    throw failure is LuminaFailure
+        ? failure
+        : const LuminaFailure('RESOLVER_PARSE_ERROR');
+  }
+
+  Map<String, dynamic> _directMedia(Map entry, String source) {
+    final uri = validatePublicUri(source);
+    return {
+      'url': source,
+      'headers': _streamHeaders(uri),
+      'name': '${entry['play_zh'] ?? ''} ${entry['part'] ?? ''}'.trim(),
+      'format': uri.path.endsWith('.m3u8') ? 'hls' : 'mp4',
+    };
+  }
+
+  Future<Map<String, dynamic>> _resolveSource(
+    Map<String, dynamic> p,
+    Map entry,
+    String source,
+  ) async {
     final script = entry['parse'] as String? ?? '';
     String param(String field, String fallback) =>
         RegExp('$field\\s*=\\s*"([^"]+)"').firstMatch(script)?.group(1) ??
@@ -381,7 +445,13 @@ class LuminaClient {
             )
             .firstOrNull ??
         profile['PARSER_URL'] as String;
-    final salt = param('salt', profile['PARSER_SALT']),
+    final salt = param(
+          'salt',
+          // 新脚本不再下发 salt 字段，改成 sign() 里的字面量：
+          //   return utils.md5(data .. "kvdenozcjy" .. ts)
+          RegExp(r'\.\.\s*"([^"]+)"\s*\.\.').firstMatch(script)?.group(1) ??
+              profile['PARSER_SALT'],
+        ),
         aesKey = param('aes_key', profile['PARSER_AES_KEY']),
         iv = param('aes_iv', profile['PARSER_AES_IV']);
     final ts = DateTime.now().millisecondsSinceEpoch;
@@ -395,7 +465,12 @@ class LuminaClient {
     });
     final parsed = _timed(
       'resolver_parse',
-      () => parseResolver(utf8.decode(raw), aesKey, iv),
+      () => parseResolver(
+        utf8.decode(raw),
+        aesKey,
+        iv,
+        fallbacks: _resolverFallbackKeys,
+      ),
     );
     final links = directLinks(parsed);
     return links.isEmpty
@@ -646,7 +721,12 @@ Map<String, dynamic> normalize(
   };
 }
 
-Map<String, dynamic> parseResolver(String text, String key, String iv) {
+Map<String, dynamic> parseResolver(
+  String text,
+  String key,
+  String iv, {
+  List<(String, String)> fallbacks = const [],
+}) {
   final s = text.trim();
   try {
     final j = jsonDecode(s);
@@ -657,9 +737,11 @@ Map<String, dynamic> parseResolver(String text, String key, String iv) {
   final candidates = <List<int>>[];
   if (s.length % 32 == 0 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(s))
     candidates.add(hexBytes(s));
+  // 标准表优先：解析器实际给的就是标准 base64；自定义表对同一串也能「成功」
+  // 解出等长垃圾，只是解不出明文，放后面照样覆盖。
   for (final decode in [
-    uncb64,
     (String v) => base64Decode(base64.normalize(v)),
+    uncb64,
   ]) {
     try {
       candidates.add(decode(s));
@@ -667,16 +749,24 @@ Map<String, dynamic> parseResolver(String text, String key, String iv) {
       /* next encoding */
     }
   }
-  for (final bytes in candidates) {
-    try {
-      final j = jsonDecode(
-        utf8.decode(
-          Aes128(utf8.encode(key)).cbcDecrypt(bytes, utf8.encode(iv)),
-        ),
-      );
-      if (j is Map<String, dynamic>) return j;
-    } catch (_) {
-      /* next candidate */
+  final keys = <(String, String)>[(key, iv)];
+  for (final pair in fallbacks) {
+    if (!keys.contains(pair)) keys.add(pair);
+  }
+  for (final (candidateKey, candidateIv) in keys) {
+    for (final bytes in candidates) {
+      try {
+        final j = jsonDecode(
+          utf8.decode(
+            Aes128(
+              utf8.encode(candidateKey),
+            ).cbcDecrypt(bytes, utf8.encode(candidateIv)),
+          ),
+        );
+        if (j is Map<String, dynamic>) return j;
+      } catch (_) {
+        /* next key or encoding */
+      }
     }
   }
   throw const LuminaFailure('RESOLVER_PARSE_ERROR');
@@ -706,7 +796,23 @@ Map<String, dynamic> _media(dynamic row) {
   if (row is! Map) throw const LuminaFailure('INVALID_MEDIA');
   final url = '${row['m3u8FileDomain'] ?? ''}${row['addr'] ?? ''}',
       uri = validatePublicUri(url);
-  var referer = url;
+  final format = _text(row['format']);
+  return {
+    'url': url,
+    'headers': _streamHeaders(uri),
+    'name': '${row['desc'] ?? ''} ${row['title'] ?? ''}'.trim(),
+    'format': ['mp4', 'm3u8', 'hls'].contains(format)
+        ? format
+        : uri.path.endsWith('.m3u8')
+        ? 'hls'
+        : 'auto',
+    if (row['vcodec'] != null) 'vcodec': _text(row['vcodec'], 40),
+  };
+}
+
+/// 播放器请求头：与 referer 默认取地址本身；已知 CDN 按站点要求换 referer。
+Map<String, String> _streamHeaders(Uri uri) {
+  var referer = uri.toString();
   for (final entry in {
     'aliyuncs.com': 'https://www.piccopilot.com',
     'toutiaovod.com': '',
@@ -719,16 +825,5 @@ Map<String, dynamic> _media(dynamic row) {
       break;
     }
   }
-  final format = _text(row['format']);
-  return {
-    'url': url,
-    'headers': {'User-Agent': '', 'Referer': referer},
-    'name': '${row['desc'] ?? ''} ${row['title'] ?? ''}'.trim(),
-    'format': ['mp4', 'm3u8', 'hls'].contains(format)
-        ? format
-        : uri.path.endsWith('.m3u8')
-        ? 'hls'
-        : 'auto',
-    if (row['vcodec'] != null) 'vcodec': _text(row['vcodec'], 40),
-  };
+  return {'User-Agent': '', 'Referer': referer};
 }

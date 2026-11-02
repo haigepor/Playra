@@ -1,6 +1,6 @@
 {
-  "sdkCommit": "88109b2",
-  "integrationVersion": 2,
+  "sdkCommit": "d3d7d93",
+  "integrationVersion": 3,
   "files": {
     "fuse_core.dll": "294c98277efba7aba154b5fd2a583f59c3e964edaebbacf6875bf30c42fbcff3",
     "liblumafuse_android_arm64.so": "31485cd855b4a3947e281e2b63e7d05af7177d5ef1c238270f12fee242ac9f52",
@@ -9,7 +9,7 @@
   },
   "assets": {
     "fuse_image.bin.gz": "184b5c35bce4fca3cc111fe924d594c55b143e2da2062e6789ac4f57a3606bfc",
-    "profile.json": "81fafe710f7fe2386ceb9f922d8850c5fc964141df2adab58617a49f8c4bec6f"
+    "profile.json": "1247afd6f607e9d2e0cbd777298b1b8f70a4ff1657db19c1fff6e192f08f4f57"
   },
   "imageSha256": "bb7167ac717ae050dd4d80aaf251d271f8fd7f975ece945aecb592736a1984db"
 }
