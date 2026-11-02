@@ -165,7 +165,7 @@ void main() {
     },
   );
   testWidgets(
-    'recommended and popular entries preserve four content tabs and anime filters',
+    'recommended and popular entries retain only anime navigation',
     (tester) async {
       final controller = ModernHomeController(
         loadFeed: (feed, _) async =>
@@ -179,8 +179,8 @@ void main() {
       expect(find.byKey(const ValueKey('home-load-more')), findsNothing);
       final selector = find.byKey(const ValueKey('home-feed-selector'));
       final tabBar = tester.widget<TabBar>(selector);
-      expect(tabBar.tabs.length, 6);
-      for (final label in ['推荐', '热门', '动漫', '影视', '漫剧', '剧集']) {
+      expect(tabBar.tabs.length, 3);
+      for (final label in ['推荐', '热门', '动漫']) {
         expect(
           find.descendant(of: selector, matching: find.text(label)),
           findsOneWidget,
@@ -207,9 +207,6 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('home-feed-recommended')));
       await tester.pumpAndSettle();
       expect(controller.feed, HomeFeed.recommended);
-      await tester.tap(find.byKey(const ValueKey('home-feed-comicDrama')));
-      await tester.pumpAndSettle();
-      expect(controller.feed, HomeFeed.comicDrama);
       controller.selectFeed(HomeFeed.season);
       await tester.pumpAndSettle();
       expect(tabBar.controller!.index, 2);

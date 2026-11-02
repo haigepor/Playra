@@ -8,7 +8,6 @@ const { Readable } = require('node:stream');
 const { validateTarget, resolveStaticPath } = require('./security.cjs');
 const { parseVideo } = require('./parser.cjs');
 const { captcha } = require('./captcha.cjs');
-const { createRuntimeBridge } = require('./runtime.cjs');
 const { serveStatic } = require('./static_assets.cjs');
 
 // 保留 Node 默认根并加载系统受信任根；仍验证证书和主机名，不接受自签名例外。
@@ -23,10 +22,6 @@ const root = process.env.KAZUMI_WEB_ROOT
 const port = Number(process.env.KAZUMI_WEB_PORT || 8930);
 const sourceApiPort = Number(process.env.KAZUMI_SOURCE_API_PORT || 8940);
 const bangumiEchPort = Number(process.env.PLAYRA_BANGUMI_ECH_PORT || 0);
-const runtimeBridge = createRuntimeBridge({
-  port: process.env.PLAYRA_SOURCE_RUNTIME_PORT
-    ? Number(process.env.PLAYRA_SOURCE_RUNTIME_PORT) : undefined,
-});
 const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript',
   '.json': 'application/json', '.wasm': 'application/wasm', '.css': 'text/css',
@@ -267,7 +262,8 @@ const server = http.createServer(async (req, res) => {
     verifyOrigin(req);
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (url.pathname.startsWith('/api/runtime/')) {
-      await runtimeBridge(req, res, url); return;
+      res.writeHead(410, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({error:{code:'SOURCE_REMOVED'}})); return;
     }
     if (url.pathname.startsWith('/api/v1/')) {
       // 固定本机业务服务，保持 Web 同源；不允许客户端指定转发目标。

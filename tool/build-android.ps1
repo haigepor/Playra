@@ -4,8 +4,6 @@ param(
   [string]$AndroidSdk = $env:ANDROID_HOME,
   [string]$JavaHome = $env:JAVA_HOME,
   [string]$DartDefineFromFile,
-  [string]$RuntimeUrl,
-  [switch]$RuntimeAllowHttp,
   [Alias('Profile')]
   [switch]$ProfileBuild,
   [ValidateSet('android-arm', 'android-arm64', 'android-x64')]
@@ -83,19 +81,6 @@ try {
       Where-Object { $_ }) -join ' '
   }
   $defineArguments = @()
-  if ($RuntimeUrl) {
-    $runtimeUri = $null
-    if (-not [Uri]::TryCreate($RuntimeUrl, [UriKind]::Absolute, [ref]$runtimeUri) -or
-        $runtimeUri.Scheme -notin @('https', 'http') -or $runtimeUri.UserInfo -or
-        $runtimeUri.Query -or $runtimeUri.Fragment -or
-        ($runtimeUri.Scheme -eq 'http' -and -not $RuntimeAllowHttp)) {
-      throw '运行地址须为 HTTPS 基址；开发 HTTP 需要 -RuntimeAllowHttp，地址不能含凭据或查询参数'
-    }
-    $defineArguments += "--dart-define=PLAYRA_SOURCE_RUNTIME_URL=$RuntimeUrl"
-  }
-  if ($RuntimeAllowHttp) {
-    $defineArguments += '--dart-define=PLAYRA_SOURCE_RUNTIME_ALLOW_HTTP=true'
-  }
   if ($DartDefineFromFile) {
     $definePath = (Resolve-Path -LiteralPath $DartDefineFromFile).Path
     $defineArguments += "--dart-define-from-file=$definePath"

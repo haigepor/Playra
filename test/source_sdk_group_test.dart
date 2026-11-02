@@ -19,7 +19,7 @@ void main() {
     final groups = PlaybackSourceGroup.fromPlugins(rules);
     expect(groups, hasLength(1));
     expect(groups.single.id, 'anifive');
-    expect(groups.single.name, '动漫 · AniFive');
+    expect(groups.single.name, '已移除来源（记录保留）');
     expect(groups.single.plugins.map((p) => p.providerId), [
       'dm84',
       'mxdm',

@@ -21,9 +21,11 @@ param([string]$AndroidSdk, [string]$JavaHome)
   $java = Resolve-ProjectPath $(if ($JavaOverride) { $JavaOverride } else { $config.javaHome })
   $flutterHome = Resolve-ProjectPath $(if ($config.flutterHome) { $config.flutterHome } else { '.tooling\flutter' })
   $flutter = Join-Path $flutterHome 'bin'
-  $python = Resolve-ProjectPath $config.python
+  # Python 仅供通用发布工具使用，不再作为应用或 Lumina 构建的前置依赖。
+  $python = if ($config.python) { Resolve-ProjectPath $config.python } else { $null }
+  if ($python -and -not (Test-Path -LiteralPath $python -PathType Leaf)) { $python = $null }
   $node = Resolve-ProjectPath $config.nodeHome
-  foreach ($file in @((Join-Path $flutter 'flutter.bat'), $python,
+  foreach ($file in @((Join-Path $flutter 'flutter.bat'),
     (Join-Path $node 'node.exe'), (Join-Path $java 'bin\java.exe'),
     (Join-Path $android 'platform-tools\adb.exe'),
     (Join-Path $android 'cmake\3.22.1\bin\cmake.exe'))) {
@@ -54,7 +56,8 @@ param([string]$AndroidSdk, [string]$JavaHome)
   $env:ANDROID_HOME = [IO.Path]::GetFullPath($android)
   $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
   $env:JAVA_HOME = [IO.Path]::GetFullPath($java)
-  $env:PLAYRA_BUILD_PYTHON = [IO.Path]::GetFullPath($python)
+  if ($python) { $env:PLAYRA_BUILD_PYTHON = [IO.Path]::GetFullPath($python) }
+  else { [Environment]::SetEnvironmentVariable('PLAYRA_BUILD_PYTHON', [NullString]::Value, 'Process') }
   $env:PLAYRA_FLUTTER_HOME = $flutterHome
   $env:PYTHONUTF8 = '1'
   $env:PYTHONDONTWRITEBYTECODE = '1'
@@ -77,11 +80,13 @@ param([string]$AndroidSdk, [string]$JavaHome)
     $env:CHROME_EXECUTABLE = $browser
   }
   $prepend = @((Join-Path $root '.tooling\bin'), $flutter,
-    (Split-Path -Parent $python), (Join-Path (Split-Path -Parent $python) 'Scripts'),
     $node, (Join-Path $root '.tooling\uv'), (Join-Path $env:JAVA_HOME 'bin'),
     (Join-Path $env:ANDROID_HOME 'platform-tools'),
     (Join-Path $env:ANDROID_HOME 'cmdline-tools\latest\bin'),
     (Join-Path $env:ANDROID_HOME 'cmake\3.22.1\bin'))
+  if ($python) {
+    $prepend += @((Split-Path -Parent $python), (Join-Path (Split-Path -Parent $python) 'Scripts'))
+  }
   $env:Path = (@($prepend) + @($env:Path -split ';' | Where-Object {
     $_ -and $prepend -notcontains $_
   })) -join ';'

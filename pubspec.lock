@@ -991,6 +991,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.24"
+  lumina_engine:
+    dependency: "direct main"
+    description:
+      path: "packages/lumina_engine"
+      relative: true
+    source: path
+    version: "0.1.0"
   macos_secure_bookmarks:
     dependency: "direct main"
     description:

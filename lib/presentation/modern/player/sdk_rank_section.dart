@@ -3,7 +3,7 @@ import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/services/source/sdk_rank_controller.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/lumina/lumina_models.dart';
-import '../miomedia/miomedia_browse.dart';
+import 'sdk_poster.dart';
 import '../widgets/modern_section_mark.dart';
 
 /// 保留原榜单的标题和横向海报布局，只替换为两端真实内容。
@@ -101,7 +101,7 @@ class SdkRankSection extends StatelessWidget {
                       return SizedBox(
                         key: ValueKey('sdk-rank-${entry.identity}'),
                         width: width,
-                        child: MioPoster(
+                        child: SdkPoster(
                           video: video,
                           identity: entry.identity,
                           providerName: entry.providerName,

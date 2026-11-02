@@ -14,11 +14,6 @@ import 'package:kazumi/modules/history/history_module.dart';
 import 'home_theme.dart';
 import 'modern_home_controller.dart';
 import 'home_content_algorithm.dart';
-import '../miomedia/miomedia_home_controller.dart';
-import '../miomedia/miomedia_browse.dart';
-import '../miomedia/miomedia_category_view.dart';
-import '../miomedia/miomedia_rank_view.dart';
-import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 import 'package:kazumi/services/source/lumina/lumina_home_controller.dart';
 import 'package:kazumi/services/source/lumina/lumina_models.dart';
 import 'package:kazumi/services/source/sdk_rank_controller.dart';
@@ -53,8 +48,6 @@ class ModernHomeView extends StatefulWidget {
     required this.onToggleTheme,
     required this.onDetails,
     required this.onResume,
-    this.media,
-    this.onMediaDetails,
     this.anime,
     this.onAnimeDetails,
     this.onAnimeBanner,
@@ -64,8 +57,6 @@ class ModernHomeView extends StatefulWidget {
     this.refreshAnime,
   });
   final ModernHomeController controller;
-  final MioHomeController? media;
-  final ValueChanged<MioVideo>? onMediaDetails;
   final LuminaHomeController? anime;
   final ValueChanged<LuminaVideo>? onAnimeDetails;
   final ValueChanged<LuminaBanner>? onAnimeBanner;
@@ -84,9 +75,7 @@ class ModernHomeView extends StatefulWidget {
 
 class _ModernHomeViewState extends State<ModernHomeView> {
   ModernHomeController get controller => widget.controller;
-  MioHomeController? get media => widget.media;
   LuminaHomeController? get anime => widget.anime;
-  ValueChanged<MioVideo>? get onMediaDetails => widget.onMediaDetails;
   ValueChanged<LuminaVideo>? get onAnimeDetails => widget.onAnimeDetails;
   ValueChanged<LuminaBanner>? get onAnimeBanner => widget.onAnimeBanner;
   SdkRankController? get ranking => widget.ranking;
@@ -104,8 +93,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
   int _revision = -1, _featuredRevision = 0;
 
   late HomeFrameUpdates _contentUpdates;
-  HomeFrameUpdates _listenContent() =>
-      HomeFrameUpdates([controller, ?media, ?anime]);
+  HomeFrameUpdates _listenContent() => HomeFrameUpdates([controller, ?anime]);
 
   @override
   void initState() {
@@ -116,9 +104,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
   @override
   void didUpdateWidget(covariant ModernHomeView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != controller ||
-        oldWidget.media != media ||
-        oldWidget.anime != anime) {
+    if (oldWidget.controller != controller || oldWidget.anime != anime) {
       _contentUpdates.dispose();
       _contentUpdates = _listenContent();
     }
@@ -178,50 +164,6 @@ class _ModernHomeViewState extends State<ModernHomeView> {
     'season' || 'season-more' || 'region-new' => 'season',
     _ => animeBucket,
   };
-  List<HomeAnimeCard> _screenCards({bool featured = false, MioKind? onlyKind}) {
-    final controller = media, onDetails = onMediaDetails;
-    if (controller == null || onDetails == null) return const [];
-    final pools = <List<MioVideo>>[];
-    for (final kind in const [MioKind.movie, MioKind.series]) {
-      if (onlyKind != null && kind != onlyKind) continue;
-      final category = controller.categoryIds[kind];
-      // 只有成功读取当前分类 catalog 才进入影视池，全站发现结果和旧分类页码不作证据。
-      if (category == null ||
-          category == '0' ||
-          (controller.loadedRevisions[kind] ?? 0) !=
-              controller.catalogRevision ||
-          controller.loadedCategoryIds[kind] != category) {
-        continue;
-      }
-      final videos = (controller.items[kind] ?? <MioVideo>[])
-          .where((video) => video.kind == kind && video.categoryId == category)
-          .toList();
-      final offset = featured ? controller.featuredOffsets[kind] ?? 0 : 0;
-      pools.add(
-        videos.isEmpty
-            ? videos
-            : List.generate(
-                videos.length,
-                (index) => videos[(offset + index) % videos.length],
-              ),
-      );
-    }
-    final result = <HomeAnimeCard>[];
-    final longest = pools.fold<int>(
-      0,
-      (value, pool) => pool.length > value ? pool.length : value,
-    );
-    for (var index = 0; index < longest; index++) {
-      for (final pool in pools) {
-        if (index < pool.length) {
-          final video = pool[index];
-          result.add(HomeAnimeCard.mio(video, () => onDetails(video)));
-        }
-      }
-    }
-    return result;
-  }
-
   List<HomeAnimeCard> _channelCards(HomeChannel channel) {
     final animeCards = _stableAnime(
       'channel-${channel.id}',
@@ -233,51 +175,23 @@ class _ModernHomeViewState extends State<ModernHomeView> {
       ),
       _channelBucket(channel),
     );
-    return _session.append(
-      'channel-mix-${channel.id}',
-      channel.id == 'anime' && controller.feed.isGeneralCategory
-          ? mixHomeContent(animeCards, _screenCards())
-          : animeCards,
-    );
+    return _session.append('channel-${channel.id}', animeCards);
   }
 
-  String _channelTitle(HomeChannel channel) =>
-      channel.id == 'anime' &&
-          controller.feed.isGeneralCategory &&
-          media != null
-      ? (controller.feed == HomeFeed.popular ? '热门推荐' : '为你推荐')
-      : channel.title;
+  String _channelTitle(HomeChannel channel) => channel.title;
   void _openChannel(BuildContext context, HomeChannel channel) {
     final bucket = _channelBucket(channel);
-    final mixed = channel.id == 'anime' && controller.feed.isGeneralCategory;
-    final screenKinds = mixed && media != null
-        ? const [MioKind.movie, MioKind.series]
-        : const <MioKind>[];
     _showChannelItems(
       context,
-      HomeChannel(channel.id, _channelTitle(channel), channel.allItems),
+      channel,
       controller,
       onDetails,
       readCards: () => _channelCards(channel),
-      sourceUpdates: Listenable.merge([?anime, ?media]),
-      sourceLoadMore: anime == null && screenKinds.isEmpty
-          ? null
-          : () async {
-              await Future.wait<void>([
-                if (anime != null) anime!.loadMoreIn(bucket),
-                for (final kind in screenKinds)
-                  if (media!.more.contains(kind)) media!.load(kind),
-              ]);
-            },
-      sourceHasMore: () =>
-          anime?.hasMoreIn(bucket) == true ||
-          screenKinds.any((kind) => media!.more.contains(kind)),
-      sourceLoading: () =>
-          anime?.loadingIn(bucket) == true ||
-          screenKinds.any((kind) => media!.loading.contains(kind)),
-      sourceFailed: () =>
-          anime?.pageFailedIn(bucket) == true ||
-          screenKinds.any((kind) => media!.failed.contains(kind)),
+      sourceUpdates: anime,
+      sourceLoadMore: anime == null ? null : () => anime!.loadMoreIn(bucket),
+      sourceHasMore: () => anime?.hasMoreIn(bucket) == true,
+      sourceLoading: () => anime?.loadingIn(bucket) == true,
+      sourceFailed: () => anime?.pageFailedIn(bucket) == true,
     );
   }
 
@@ -315,16 +229,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                       sourceCards,
                       _legacyCards(controller.items),
                     );
-                    final screenCards = controller.feed.isGeneralCategory
-                        ? _screenCards()
-                        : <HomeAnimeCard>[];
-                    final items = _session.append(
-                      'mixed-items',
-                      controller.feed.isGeneralCategory
-                          ? mixHomeContent(animeItems, screenCards)
-                          : animeItems,
-                    );
-                    final mediaKind = mioKindForHomeFeed(controller.feed);
+                    final items = _session.append('items', animeItems);
                     final showAnime =
                         anime != null &&
                         (controller.feed.isAnimeCategory ||
@@ -348,15 +253,9 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                     );
                     final featured = HomeDisplaySession.featured(
                       animeFeatured,
-                      _session.append(
-                        'movies-$_featuredRevision',
-                        _screenCards(featured: true, onlyKind: MioKind.movie),
-                      ),
-                      _session.append(
-                        'series-$_featuredRevision',
-                        _screenCards(featured: true, onlyKind: MioKind.series),
-                      ),
-                      mixed: controller.feed.isGeneralCategory && media != null,
+                      const [],
+                      const [],
+                      mixed: false,
                     );
                     final heroCards = <HomeAnimeCard>[];
                     if (animeBucket == 'all' && onAnimeBanner != null) {
@@ -390,12 +289,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                       }
                     }
                     final visibleHeroCards = _session
-                        .append(
-                          'hero',
-                          controller.feed.isGeneralCategory
-                              ? mixHomeContent(heroCards, screenCards, limit: 6)
-                              : heroCards.take(6).toList(),
-                        )
+                        .append('hero', heroCards.take(6).toList())
                         .take(6)
                         .toList();
                     // 固定导航独立于内容滚动，子分类展开仍可平滑改变内容区高度。
@@ -406,13 +300,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                           child: Column(
                             children: [
                               _FeedSelector(controller: controller),
-                              if (media != null && mediaKind != null)
-                                MioGenreFilters(
-                                  controller: media!,
-                                  kind: mediaKind,
-                                )
-                              else
-                                _AnimeFilters(controller: controller),
+                              _AnimeFilters(controller: controller),
                             ],
                           ),
                         ),
@@ -426,16 +314,6 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                   ? (refreshAnime?.call() ??
                                         anime?.bootstrap(force: true))
                                   : null;
-                              if (media != null) {
-                                media!.bootstrap(force: true);
-                                final rankId = mioRankCategory(
-                                  media!,
-                                  controller.feed,
-                                );
-                                if (rankId != null) {
-                                  media!.loadRanking(rankId, refresh: true);
-                                }
-                              }
                               await Future.wait([
                                 controller.refresh(),
                                 ?animeRefresh,
@@ -444,21 +322,14 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                             child: NotificationListener<ScrollNotification>(
                               onNotification: (notification) {
                                 // 只在尾部继续向下滚动时取下一页，横向栏目和刷新不触发。
-                                if (media != null &&
-                                    mediaKind != null &&
-                                    notification.depth == 0 &&
+                                if (notification.depth == 0 &&
                                     notification.metrics.axis ==
                                         Axis.vertical &&
                                     notification.metrics.extentAfter < 480 &&
-                                    ((notification
-                                                is ScrollUpdateNotification &&
-                                            (notification.scrollDelta ?? 0) >
-                                                0) ||
-                                        (notification
-                                                is OverscrollNotification &&
-                                            notification.overscroll > 0)) &&
-                                    !media!.failed.contains(mediaKind)) {
-                                  media!.load(mediaKind);
+                                    notification is ScrollUpdateNotification &&
+                                    (notification.scrollDelta ?? 0) > 0 &&
+                                    anime?.pageFailedIn(animeBucket) != true) {
+                                  anime?.loadMoreIn(animeBucket);
                                 }
                                 return false;
                               },
@@ -514,33 +385,11 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                           ],
                                         ),
                                         const SizedBox(height: 14),
-                                        if (media != null &&
-                                            mediaKind != null &&
-                                            onMediaDetails != null)
-                                          MioFeaturedCard(
-                                            controller: media!,
-                                            kind: mediaKind,
-                                            onDetails: onMediaDetails!,
-                                          )
-                                        // 影视聚合栏目由电影/综艺接口呈现，不借用动漫推荐的空状态和重试。
-                                        else if (media != null &&
-                                            controller.feed == HomeFeed.screen)
-                                          const SizedBox.shrink()
-                                        else if (!controller
-                                                .feed
-                                                .hasContentSource &&
-                                            media == null)
-                                          _CategoryPending(
-                                            feed: controller.feed,
-                                          )
-                                        else if (controller.feed ==
+                                        if (controller.feed ==
                                                 HomeFeed.recommended &&
                                             (featured.any(
                                                   (card) => card != null,
                                                 ) ||
-                                                media?.discovering == true ||
-                                                media?.loading.isNotEmpty ==
-                                                    true ||
                                                 anime?.loading == true))
                                           _RecommendationBento(
                                             key: const ValueKey(
@@ -557,14 +406,6 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                                 anime!.shuffleFeatured();
                                               } else {
                                                 controller.shuffleFeatured();
-                                              }
-                                              if (screenCards.isNotEmpty) {
-                                                media!.shuffleFeatured(
-                                                  MioKind.movie,
-                                                );
-                                                media!.shuffleFeatured(
-                                                  MioKind.series,
-                                                );
                                               }
                                             },
                                             onDetails: (card) => card.onTap(),
@@ -620,9 +461,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                       ],
                                     ),
                                   ),
-                                  if (ranking != null &&
-                                      onRankDetails != null &&
-                                      mediaKind == null)
+                                  if (ranking != null && onRankDetails != null)
                                     SliverToBoxAdapter(
                                       child: Padding(
                                         padding: const EdgeInsets.fromLTRB(
@@ -636,32 +475,6 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                           onDetails: onRankDetails!,
                                         ),
                                       ),
-                                    )
-                                  else if (media != null &&
-                                      mediaKind == null &&
-                                      mioRankCategory(
-                                            media!,
-                                            controller.feed,
-                                          ) !=
-                                          null &&
-                                      onMediaDetails != null)
-                                    SliverToBoxAdapter(
-                                      child: Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          20,
-                                          20,
-                                          20,
-                                          0,
-                                        ),
-                                        child: MioRankSection(
-                                          controller: media!,
-                                          categoryId: mioRankCategory(
-                                            media!,
-                                            controller.feed,
-                                          ),
-                                          onDetails: onMediaDetails!,
-                                        ),
-                                      ),
                                     ),
                                   SliverList.list(
                                     children: [
@@ -669,7 +482,6 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                         for (final channel
                                             in controller.channels.where(
                                               (channel) =>
-                                                  media == null ||
                                                   channel.id == 'anime',
                                             ))
                                           _ChannelRail(
@@ -808,26 +620,8 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                       ],
                                       if (controller.feed.hasContentSource)
                                         const SizedBox(height: 24),
-                                      if (media != null &&
-                                          onMediaDetails != null &&
-                                          (controller.feed.isGeneralCategory ||
-                                              controller.feed ==
-                                                  HomeFeed.screen))
-                                        MioHomeSections(
-                                          controller: media!,
-                                          feed: controller.feed,
-                                          onDetails: onMediaDetails!,
-                                        ),
                                     ],
                                   ),
-                                  if (media != null &&
-                                      mediaKind != null &&
-                                      onMediaDetails != null)
-                                    MioCategorySliver(
-                                      controller: media!,
-                                      kind: mediaKind,
-                                      onDetails: onMediaDetails!,
-                                    ),
                                 ],
                               ),
                             ),
@@ -860,7 +654,7 @@ class _FeedSelectorState extends State<_FeedSelector>
   static const categories = [
     HomeFeed.recommended,
     HomeFeed.popular,
-    ...HomeFeed.primaryCategories,
+    HomeFeed.anime,
   ];
   late final TabController _tabs;
 
@@ -1141,43 +935,6 @@ class _AnimeFiltersState extends State<_AnimeFilters> {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _CategoryPending extends StatelessWidget {
-  const _CategoryPending({required this.feed});
-  final HomeFeed feed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 44),
-      child: Column(
-        children: [
-          Icon(
-            switch (feed) {
-              HomeFeed.movies => Icons.movie_outlined,
-              HomeFeed.television => Icons.live_tv_outlined,
-              HomeFeed.variety => Icons.mic_none_outlined,
-              _ => Icons.auto_stories_outlined,
-            },
-            size: 30,
-            color: colors.primary,
-          ),
-          const SizedBox(height: 14),
-          Text(
-            '${feed.label}频道',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '内容即将上线',
-            style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
-          ),
-        ],
       ),
     );
   }
@@ -1503,7 +1260,7 @@ class _SearchEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     container: true,
-    label: '搜索动漫、影视或关键词',
+    label: '搜索动漫或关键词',
     button: true,
     onTap: onSearch,
     child: ExcludeSemantics(
@@ -1531,7 +1288,7 @@ class _SearchEntry extends StatelessWidget {
                   const SizedBox(width: 7),
                   Expanded(
                     child: Text(
-                      '搜索动漫、影视或关键词',
+                      '搜索动漫或关键词',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

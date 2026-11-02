@@ -3,7 +3,6 @@ import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/services/source/content_search.dart'
     show contentTitleKey, ContentGroup;
 import 'package:kazumi/services/source/lumina/lumina_models.dart';
-import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 import 'modern_home_controller.dart';
 
 /// 首页展示快照不承担作品身份转换；点击始终交回原始资料或 SDK 入口。
@@ -59,22 +58,7 @@ class HomeAnimeCard {
   final BangumiItem? metadata;
   final VoidCallback onTap;
   final ContentGroup group;
-  factory HomeAnimeCard.mio(MioVideo video, VoidCallback onTap) =>
-      HomeAnimeCard(
-        id: video.identity,
-        title: video.title,
-        cover: video.cover,
-        onTap: onTap,
-        ratingScore: video.score,
-        subtitle: video.subtitle,
-        status: video.kind == MioKind.series && video.episodeCount > 0
-            ? '更新至 ${video.episodeCount} 集'
-            : video.categoryName,
-        year: int.tryParse(video.year),
-        group: video.kind == MioKind.series
-            ? ContentGroup.series
-            : ContentGroup.screen,
-      );
+
 }
 
 /// 综合推荐按内容类型保留位置，避免动漫列表较长时把已成功的影视挤出首屏。

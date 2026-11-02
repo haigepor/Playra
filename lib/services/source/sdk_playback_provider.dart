@@ -10,6 +10,9 @@ abstract class SdkPlaybackProvider {
   String get automaticQualityLabel => '自动（最高画质）';
   // 默认沿用最高已知分辨率；供应商可声明固定的画质偏好，不改线路身份。
   int qualityPreference(SdkQuality quality) => quality.height ?? 0;
+
+  /// 媒体已拒绝或打开失败时丢弃短效材料；默认来源没有会话材料缓存。
+  void invalidatePlayback(String id, String code, SdkEpisode episode) {}
   Future<SdkVideo> detail(String id, {CancelToken? cancel});
   Future<List<SdkEpisode>> episodes(
     String id,

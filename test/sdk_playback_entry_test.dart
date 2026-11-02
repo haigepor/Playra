@@ -150,7 +150,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(ChoiceChip, '影视 · MioMedia'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, '已移除来源（记录保留）'), findsOneWidget);
       final other = find.widgetWithText(ChoiceChip, 'sdk_other');
       await tester.ensureVisible(other);
       await tester.pumpAndSettle();

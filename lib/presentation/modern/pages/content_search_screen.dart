@@ -56,6 +56,9 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         : Future.value();
     input = TextEditingController(text: widget.initialKeyword);
     group = widget.initialGroup;
+    if (group != null &&
+        !session.providers.any((p) => p.groups.contains(group)))
+      group = null;
     if (widget.initialKeyword.isNotEmpty) unawaited(_search());
   }
 
@@ -217,8 +220,12 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
 
   Widget _groupFilters(BuildContext context) {
     final c = Theme.of(context).colorScheme;
-    final groups = <ContentGroup?>[null, ...ContentGroup.values];
-    // 常规字号下五项可在 320px 内并排；大字体时横向滚动，不截断频道名称。
+    final available = session.providers.expand((p) => p.groups).toSet();
+    final groups = <ContentGroup?>[
+      null,
+      ...ContentGroup.values.where(available.contains),
+    ];
+    // 只呈现已登记来源覆盖的分类；退役 SDK 不留下空入口。
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(

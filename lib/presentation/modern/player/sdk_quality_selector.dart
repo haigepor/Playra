@@ -11,11 +11,15 @@ class SdkQualitySelector extends StatelessWidget {
     this.selectedCode,
     this.status = 'ready',
     this.busy = false,
+    this.showStatus = true,
+    this.onRetry,
   });
   final List<SdkQuality> qualities;
   final String automaticLabel, status;
   final String? selectedCode;
   final bool busy;
+  final bool showStatus;
+  final VoidCallback? onRetry;
   final ValueChanged<String?>? onSelected;
 
   @override
@@ -36,33 +40,49 @@ class SdkQualitySelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 6,
-          runSpacing: 2,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.only(top: 10, right: 10),
               child: Text('画质', style: theme.textTheme.labelLarge),
             ),
-            // 无可选档位时仅展示事实，不用无效的单选按钮占一整行。
-            if (known.isNotEmpty || selectedCode != null)
-              ChoiceChip(
-                key: const ValueKey('sdk-quality-auto'),
-                label: Text(automaticLabel),
-                selected: selectedCode == null,
-                onSelected: onSelected == null
-                    ? null
-                    : (_) => onSelected!(null),
+            Expanded(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  // 自动偏好的完整说明保留在提示中，避免长标签把档位挤到下一行。
+                  if (known.isNotEmpty || selectedCode != null)
+                    Tooltip(
+                      message: automaticLabel,
+                      child: ChoiceChip(
+                        key: const ValueKey('sdk-quality-auto'),
+                        label: const Text('自动'),
+                        selected: selectedCode == null,
+                        onSelected: onSelected == null
+                            ? null
+                            : (_) => onSelected!(null),
+                      ),
+                    ),
+                  for (final quality in known)
+                    ChoiceChip(
+                      key: ValueKey('sdk-quality-${quality.code}'),
+                      label: Text(quality.choiceLabel),
+                      selected: selectedCode == quality.code,
+                      onSelected: onSelected == null
+                          ? null
+                          : (_) => onSelected!(quality.code),
+                    ),
+                ],
               ),
-            for (final quality in known)
-              ChoiceChip(
-                key: ValueKey('sdk-quality-${quality.code}'),
-                label: Text(quality.choiceLabel),
-                selected: selectedCode == quality.code,
-                onSelected: onSelected == null
-                    ? null
-                    : (_) => onSelected!(quality.code),
+            ),
+            if (onRetry != null && (status == 'failed' || status == 'timeout'))
+              IconButton(
+                onPressed: onRetry,
+                tooltip: '重新获取画质',
+                icon: const Icon(Icons.refresh_rounded, size: 16),
               ),
           ],
         ),
@@ -76,7 +96,7 @@ class SdkQualitySelector extends StatelessWidget {
               ),
             ),
           ),
-        if (message != null)
+        if (message != null && showStatus)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(

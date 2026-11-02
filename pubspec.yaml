@@ -19,6 +19,8 @@ dependencies:
   dio: ^5.11.0
   cookie_jar: ^4.0.9
   crypto: ^3.0.6
+  lumina_engine:
+    path: packages/lumina_engine
   connectivity_plus: ^6.0.5
 
   path_provider: ^2.1.5
@@ -165,6 +167,11 @@ msix_config:
 flutter:
   uses-material-design: true
   assets:
+    - path: assets/lumina_private/profile.json
+      platforms: [android, windows]
+    - path: assets/lumina_private/fuse_image.bin.gz
+      platforms: [android, windows]
+    - packages/lumina_engine/inputs.json
     # 设计源图留在仓库；仅将运行素材打包，排除未使用的排名母版。
     - assets/images/danmaku_off.svg
     - assets/images/danmaku_setting.svg

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../runtime/source_runtime.dart';
+import 'lumina_executor.dart';
 import '../source_models.dart' show SourceException;
 import 'lumina_models.dart';
 export 'lumina_models.dart';
@@ -12,11 +12,8 @@ typedef LuminaRequest =
     );
 
 class LuminaService {
-  LuminaService({LuminaRequest? request, SourceRuntimeClient? runtime})
-    : _request = request,
-      _runtime = runtime ?? (request == null ? SourceRuntimeClient() : null);
-  final LuminaRequest? _request;
-  final SourceRuntimeClient? _runtime;
+  LuminaService({LuminaRequest? request}) : _request = request ?? executeLumina;
+  final LuminaRequest _request;
   final _details = <String, ({DateTime at, LuminaVideo video})>{};
   final _catalogs =
       <String, ({DateTime at, int size, Map<String, dynamic> data})>{};
@@ -26,13 +23,7 @@ class LuminaService {
     Map<String, dynamic> payload, {
     CancelToken? cancel,
   }) async {
-    final result =
-        await (_request?.call(operation, payload, cancel) ??
-            _runtime!.callLumina(
-              operation,
-              payload: payload,
-              cancelToken: cancel,
-            ));
+    final result = await _request(operation, payload, cancel);
     if (cancel?.isCancelled == true) {
       throw const SourceException('CANCELLED', '请求已取消');
     }
@@ -164,6 +155,5 @@ class LuminaService {
   void dispose() {
     _details.clear();
     _catalogs.clear();
-    _runtime?.dispose();
   }
 }

@@ -10,7 +10,6 @@ import shutil
 import struct
 import subprocess
 import tarfile
-from urllib.parse import urlsplit
 import zipfile
 
 TARGETS = {
@@ -51,19 +50,6 @@ def flutter_version(text):
         raise ValueError("Expected a pinned Flutter SDK version")
     return match.group(1)
 
-
-def runtime_define(value):
-    if not value:
-        return []
-    parsed = urlsplit(value)
-    # Do not print this value: the configured service endpoint can be private.
-    if (parsed.scheme != "https" or not parsed.hostname or parsed.username or
-            parsed.password or parsed.query or parsed.fragment or
-            not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::[0-9]{1,5})?(?:/[A-Za-z0-9._~%/-]*)?", value)):
-        raise ValueError("Runtime endpoint must be an HTTPS base URL without credentials")
-    if parsed.port is not None and not 1 <= parsed.port <= 65535:
-        raise ValueError("Invalid runtime endpoint port")
-    return ["--dart-define=PLAYRA_SOURCE_RUNTIME_URL=" + value]
 
 
 def macho_arches(data):
@@ -208,7 +194,7 @@ def package(root, platform):
                "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
                "size_bytes": target.stat().st_size, "flutter_version": sdk["frameworkVersion"],
                "dart_version": sdk["dartSdkVersion"], "run_id": os.environ.get("GITHUB_RUN_ID"),
-               "runtime_configured": bool(os.environ.get("PLAYRA_SOURCE_RUNTIME_URL")), **details}
+               "content_engine": "dart-c-lumina", **details}
     if platform in ("ios", "macos"):
         receipt["xcode"] = subprocess.check_output(["xcodebuild", "-version"], text=True).strip()
     target.with_suffix(target.suffix + ".json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
@@ -245,7 +231,6 @@ def main():
             command.append("--no-codesign")
         if platform == "web":
             command.append("--no-wasm-dry-run")
-        command.extend(runtime_define(os.environ.get("PLAYRA_SOURCE_RUNTIME_URL", "")))
         # Do not echo command arguments: a runtime endpoint may be a private input.
         result = subprocess.run(command)
         if result.returncode:

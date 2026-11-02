@@ -61,10 +61,9 @@ android/build/reports/problems/
 **/macos/Podfile.lock
 .vscode/private-folder-alias.json
 
-# Private SDK input includes configuration and sensitive self-test vectors.
-/tool/source_runtime/vendor/miomedia/
-/tool/source_runtime/vendor/anifive/
-/tool/source_runtime/vendor/lumina/
+# Private native SDK binaries and protocol profile.
+/packages/lumina_engine/native/
+/assets/lumina_private/
 .env
 .env.*
 !.env.example

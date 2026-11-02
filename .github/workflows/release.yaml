@@ -50,12 +50,16 @@ jobs:
         with:
           node-version: '22'
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
+      - name: Restore pinned Lumina native input
+        env:
+          PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
+          PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
+        run: node tool/lumina-native-input.cjs restore
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
+      - run: node --test tool/lumina-native-input.test.cjs
       - run: flutter test
-      - run: python -m unittest discover -s tool -p test_miomedia_sdk_input.py
       - run: python -m unittest discover -s tool -p test_cloud_build.py
-      - run: node --test tool/web_backend/runtime.test.cjs
   cloud:
     needs: [plan, quality]
     if: needs.plan.outputs.cloud == 'true'
@@ -66,12 +70,14 @@ jobs:
     timeout-minutes: 45
     env:
       PLAYRA_BUILD_PLATFORM: ${{ matrix.platform }}
-      PLAYRA_SOURCE_RUNTIME_URL: ${{ secrets.PLAYRA_SOURCE_RUNTIME_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Select Apple toolchain
         if: runner.os == 'macOS'
         run: |
@@ -89,6 +95,11 @@ jobs:
           channel: stable
           flutter-version: ${{ needs.plan.outputs.flutter_version }}
           cache: true
+      - name: Restore pinned Lumina native input
+        env:
+          PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
+          PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
+        run: node tool/lumina-native-input.cjs restore
       - run: flutter pub get
       - name: Validate Windows archive support
         if: matrix.platform == 'windows'
@@ -128,6 +139,9 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -151,11 +165,6 @@ jobs:
           if os.environ['BUILD_REF_TYPE'] == 'tag':
               assert os.environ['BUILD_REF_NAME'] == 'playra/v' + version, 'Playra tag/version mismatch'
           PY
-      - name: Import private SDK
-        env:
-          MIOMEDIA_SDK_BUNDLE_1: ${{ secrets.MIOMEDIA_SDK_BUNDLE_1 }}
-          MIOMEDIA_SDK_BUNDLE_2: ${{ secrets.MIOMEDIA_SDK_BUNDLE_2 }}
-        run: python tool/miomedia_sdk_input.py import-env
       - name: Configure release signing
         env:
           KEYSTORE_DATA: ${{ secrets.PLAYRA_ANDROID_KEYSTORE }}
@@ -177,14 +186,12 @@ jobs:
           Path('android/key.properties').write_text(''.join(k + '=' + escape(v) + '\n' for k, v in properties.items()))
           PY
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
+      - name: Restore pinned Lumina native input
+        env:
+          PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
+          PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
+        run: node tool/lumina-native-input.cjs restore
       - run: flutter pub get
-      - run: python -m unittest discover -s tool -p test_miomedia_sdk_input.py
-      - run: python -m unittest discover -p 'test_*.py'
-        working-directory: tool/source_runtime
-      - run: python selftest.py
-        working-directory: tool/source_runtime/vendor/miomedia
-      - run: python -m miomedia.selftest
-        working-directory: tool/source_runtime/vendor
       - name: Build Android
         run: flutter build apk --release --dart-define=PLAYRA_DIAGNOSTICS=false
       - name: Build Web

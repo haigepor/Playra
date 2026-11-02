@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:kazumi/app_brand.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -25,11 +27,12 @@ import 'package:kazumi/services/source/prepared_playback.dart';
 import 'package:kazumi/services/source/source_display_names.dart';
 import 'package:kazumi/services/source/sdk_playback_resume.dart';
 import 'package:kazumi/services/source/source_models.dart' show SourceException;
-import '../miomedia/miomedia_playing_mark.dart';
+import '../player/playing_mark.dart';
 import '../player/player_theme.dart';
 import '../settings/modern_back_button.dart';
 import '../player/sdk_source_widgets.dart';
 import '../player/sdk_quality_selector.dart';
+import '../player/sdk_playback_notice.dart';
 import 'package:kazumi/services/storage/sdk_library_store.dart';
 import 'package:kazumi/modules/collect/collect_type.dart';
 
@@ -121,6 +124,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
   bool _preparingOnly = false;
   PreparedPlayback? _prepared;
   Future<void>? _preparationFuture;
+  Stopwatch? _initialResolution;
 
   SdkLineCandidate? get _qualityCandidate {
     final target = _requestedEpisode;
@@ -250,6 +254,9 @@ class _SdkDetailPageState extends State<SdkDetailPage>
     Duration resumeDuration = Duration.zero,
     bool? resumePlaying,
   }) async {
+    _initialResolution = AppBuildPolicy.developerTools
+        ? (Stopwatch()..start())
+        : null;
     final initialResume = _initialResume;
     _initialResume = null;
     retainedEpisode ??= _requestedEpisode ?? initialResume?.episode;
@@ -512,6 +519,14 @@ class _SdkDetailPageState extends State<SdkDetailPage>
   Future<void> selectEpisode(SdkEpisode episode) =>
       _hasPlayIntent ? play(episode) : prepare(episode);
 
+  void _retryPlayback() {
+    final target = _requestedEpisode;
+    if (target == null || target.code != line?.code) return;
+    unawaited(
+      _hasPlayIntent ? play(target, preservePlayback: true) : prepare(target),
+    );
+  }
+
   Future<void> selectQuality(String? code) async {
     final target = _requestedEpisode;
     if (target == null || line?.code != target.code) return;
@@ -566,6 +581,23 @@ class _SdkDetailPageState extends State<SdkDetailPage>
     final cancel = _playCancel = CancelToken();
     final generation = ++_playGeneration;
     final prepared = _prepared;
+    final resolveClock = Stopwatch()..start();
+    var materialAttempt = 0;
+    void traceMaterials() {
+      if (AppBuildPolicy.developerTools) {
+        final initial = _initialResolution;
+        if (initial != null) {
+          debugPrint(
+            'PLAYRA_LUMINA ${jsonEncode({'stage': 'initial_line_ready', 'ms': initial.elapsedMilliseconds})}',
+          );
+          _initialResolution = null;
+        }
+        debugPrint(
+          'PLAYRA_LUMINA ${jsonEncode({'stage': 'line_ready', 'ms': resolveClock.elapsedMilliseconds, 'generation': generation, 'attempt': ++materialAttempt, 'openMedia': openMedia, 'quality': _manualQualityCode ?? 'auto'})}',
+        );
+      }
+    }
+
     setState(() {
       _requestedEpisode = episode;
       playingLoading = true;
@@ -612,6 +644,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
               onAttempt: onAttempt,
               prepared: prepared,
               open: (target, media, attemptCancel) {
+                traceMaterials();
                 // 同集换画质在提交新媒体前读取最新进度，避免解析期间发生倒退。
                 if (preservePlayback && !capturedAtCommit) {
                   capturedAtCommit = true;
@@ -631,6 +664,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                   media,
                   generation,
                   attemptCancel,
+                  selectionClock: resolveClock,
                   resumeAt: positionToRestore,
                   resumeDuration: durationToRestore,
                   resumePlaying: playingToRestore,
@@ -648,6 +682,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
       if (!mounted || generation != _playGeneration || cancel.isCancelled) {
         return;
       }
+      if (!openMedia && result.status == 'prepared') traceMaterials();
       if (result.status == 'ready') {
         _activeSdkId = service.id;
         _activeLineCode = line?.code;
@@ -661,6 +696,8 @@ class _SdkDetailPageState extends State<SdkDetailPage>
           'identity_mismatch' => '播放资源与所选剧集不匹配',
           'invalid_media' => '播放资源地址无效',
           _ => switch (result.errorCode) {
+            'CORE_REPLY' || 'DECRYPT_ERROR' || 'PARSE_ERROR' => '播放响应解析失败，请重试。',
+            'CORE_TIMEOUT' => '播放响应解密超时，请重试。',
             'CLIENT_PARSE_INVALID_RESPONSE' => '该线路解析接口返回了无效数据，请重试或切换线路。',
             'CLIENT_PARSE_NETWORK' || 'TIMEOUT' => '解析请求超时或网络异常，请重试或切换线路。',
             'MEDIA_LOAD_FAILED' => '已取得视频地址，但媒体加载失败，请重试或切换线路。',
@@ -710,6 +747,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
     Map media,
     int generation,
     CancelToken cancel, {
+    Stopwatch? selectionClock,
     Duration resumeAt = Duration.zero,
     Duration resumeDuration = Duration.zero,
     bool? resumePlaying,
@@ -795,6 +833,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
           VideoEpisodeSelection(episode: index + 1, road: 0),
         );
       }
+      final mediaClock = Stopwatch()..start();
       final player = await _mediaSession.open(
         media['url'] as String,
         headers,
@@ -819,6 +858,25 @@ class _SdkDetailPageState extends State<SdkDetailPage>
         _player = player;
         _videoController = _mediaSession.controller;
       });
+      if (AppBuildPolicy.developerTools && service.id == 'lumina') {
+        final firstFrame =
+            _mediaSession.controller?.waitUntilFirstFrameRendered;
+        if (firstFrame != null) {
+          // Android 库也会在尺寸更新时完成此 Future；该值仅作代理，可见画面另用屏幕采样核验。
+          unawaited(
+            firstFrame
+                .timeout(const Duration(seconds: 25))
+                .then((_) {
+                  if (current() && identical(_player, player)) {
+                    debugPrint(
+                      'PLAYRA_LUMINA ${jsonEncode({'stage': 'video_first_frame', 'ms': mediaClock.elapsedMilliseconds, 'selectionMs': selectionClock?.elapsedMilliseconds, 'quality': _manualQualityCode ?? 'auto', 'generation': generation})}',
+                    );
+                  }
+                })
+                .catchError((Object _) {}),
+          );
+        }
+      }
       // 先绑定已安装媒体的身份，允许晚出画时仍保存正确作品与分集。
       _recordEpisode = episode;
       _recordVideo = video;
@@ -958,107 +1016,146 @@ class _SdkDetailPageState extends State<SdkDetailPage>
           ),
         if (_storageError != null)
           Text(_storageError!, style: TextStyle(color: colors.error)),
-        PlaybackSourcePanel(
-          trailing: PopupMenuButton<int>(
-            tooltip: '设置收藏状态',
-            enabled: !_collectBusy,
-            initialValue:
-                _library.get(service.id, source.contentId)?.collectionType ?? 0,
-            onSelected: (type) => unawaited(_collect(type)),
-            itemBuilder: (_) => [
-              for (final type in CollectType.values)
-                PopupMenuItem(
-                  value: type.value,
-                  child: Text(type == CollectType.none ? '取消收藏' : type.label),
-                ),
-            ],
-            child: Semantics(
-              container: true,
-              button: true,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 12,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.bookmark_border_rounded, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      CollectType.fromValue(
-                            _library
-                                    .get(service.id, source.contentId)
-                                    ?.collectionType ??
-                                0,
-                          ).isCollected
-                          ? CollectType.fromValue(
-                              _library
-                                  .get(service.id, source.contentId)!
-                                  .collectionType,
-                            ).label
-                          : '收藏',
-                    ),
+        Container(
+          key: const ValueKey('sdk-playback-settings'),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PlaybackSourcePanel(
+                embedded: true,
+                title: '播放设置',
+                trailing: PopupMenuButton<int>(
+                  tooltip: '设置收藏状态',
+                  enabled: !_collectBusy,
+                  initialValue:
+                      _library
+                          .get(service.id, source.contentId)
+                          ?.collectionType ??
+                      0,
+                  onSelected: (type) => unawaited(_collect(type)),
+                  itemBuilder: (_) => [
+                    for (final type in CollectType.values)
+                      PopupMenuItem(
+                        value: type.value,
+                        child: Text(
+                          type == CollectType.none ? '取消收藏' : type.label,
+                        ),
+                      ),
                   ],
+                  child: Semantics(
+                    container: true,
+                    button: true,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.bookmark_border_rounded, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            CollectType.fromValue(
+                                  _library
+                                          .get(service.id, source.contentId)
+                                          ?.collectionType ??
+                                      0,
+                                ).isCollected
+                                ? CollectType.fromValue(
+                                    _library
+                                        .get(service.id, source.contentId)!
+                                        .collectionType,
+                                  ).label
+                                : '收藏',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
+                selectorKey: const ValueKey('sdk-line-selector'),
+                groups: [
+                  if (widget.entry.sources.length == 1)
+                    Text(
+                      playbackSourceName(
+                        service.id,
+                        service.name,
+                        anime: video.isAnime,
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    for (final binding in widget.entry.sources)
+                      PlaybackSdkChip(
+                        name: playbackSourceName(
+                          binding.provider.id,
+                          binding.provider.name,
+                          anime: video.isAnime,
+                        ),
+                        selected: binding.provider.id == service.id,
+                        onSelected: () {
+                          if (binding.provider.id != service.id) {
+                            unawaited(switchSource(binding));
+                          }
+                        },
+                      ),
+                ],
+                automatic: automatic,
+                summary: '${automatic ? "自动 · " : "手动 · "}$lineSummary',
+                // 旧媒体在新线路准备失败时会保留；其分辨率不能冒充新线路的结果。
+                detail:
+                    decodedResolution != null &&
+                        _installedSdkId == service.id &&
+                        _installedLineCode == line?.code &&
+                        playingIdentity == _requestedEpisode?.identityKey
+                    ? '$decodedResolution · 实际分辨率'
+                    : selectedQuality == null
+                    ? null
+                    : '${selectedQuality!.choiceLabel}${selectedQuality!.height == null ? "" : " · 来源声明"}',
+                lineCount: video.lines.length,
+                onShowLines: video.lines.isEmpty
+                    ? null
+                    : () => showLines(context),
               ),
-            ),
+              if (service.supportsQualities &&
+                  episodes.isNotEmpty &&
+                  _requestedEpisode != null &&
+                  _requestedEpisode?.code == line?.code) ...[
+                Divider(height: 12, color: colors.outlineVariant),
+                SdkQualitySelector(
+                  qualities: [...?_qualityCandidate?.qualities]
+                    ..sort(
+                      (a, b) => service
+                          .qualityPreference(b)
+                          .compareTo(service.qualityPreference(a)),
+                    ),
+                  automaticLabel: service.automaticQualityLabel,
+                  selectedCode: _manualQualityCode,
+                  status: switch (_qualityCandidate?.status) {
+                    'timeout' || 'failed' => _qualityCandidate!.status,
+                    'loading' => 'loading',
+                    _ => _qualityCandidate?.qualityStatus ?? 'loading',
+                  },
+                  busy: playingLoading,
+                  showStatus: playMessage == null,
+                  onRetry: playingLoading || playMessage != null
+                      ? null
+                      : _retryPlayback,
+                  onSelected: (code) => unawaited(selectQuality(code)),
+                ),
+              ],
+            ],
           ),
-          selectorKey: const ValueKey('sdk-line-selector'),
-          groups: [
-            for (final binding in widget.entry.sources)
-              PlaybackSdkChip(
-                name: playbackSourceName(
-                  binding.provider.id,
-                  binding.provider.name,
-                  anime: video.isAnime,
-                ),
-                selected: binding.provider.id == service.id,
-                onSelected: () {
-                  if (binding.provider.id != service.id) {
-                    unawaited(switchSource(binding));
-                  }
-                },
-              ),
-          ],
-          automatic: automatic,
-          summary: '${automatic ? "自动 · " : "手动 · "}$lineSummary',
-          // 旧媒体在新线路准备失败时会保留；其分辨率不能冒充新线路的结果。
-          detail:
-              decodedResolution != null &&
-                  _installedSdkId == service.id &&
-                  _installedLineCode == line?.code &&
-                  playingIdentity == _requestedEpisode?.identityKey
-              ? '$decodedResolution · 实际分辨率'
-              : selectedQuality == null
-              ? null
-              : '${selectedQuality!.label}${selectedQuality!.height == null ? "" : " · 来源声明"}',
-          lineCount: video.lines.length,
-          onShowLines: video.lines.isEmpty ? null : () => showLines(context),
         ),
-        if (service.supportsQualities &&
-            episodes.isNotEmpty &&
-            _requestedEpisode != null &&
-            _requestedEpisode?.code == line?.code) ...[
-          const SizedBox(height: 8),
-          SdkQualitySelector(
-            qualities: [...?_qualityCandidate?.qualities]
-              ..sort(
-                (a, b) => service
-                    .qualityPreference(b)
-                    .compareTo(service.qualityPreference(a)),
-              ),
-            automaticLabel: service.automaticQualityLabel,
-            selectedCode: _manualQualityCode,
-            status: switch (_qualityCandidate?.status) {
-              'timeout' || 'failed' => _qualityCandidate!.status,
-              'loading' => 'loading',
-              _ => _qualityCandidate?.qualityStatus ?? 'loading',
-            },
-            busy: playingLoading,
-            onSelected: (code) => unawaited(selectQuality(code)),
-          ),
-        ],
         if (video.lines.isEmpty && !detailLoading && detailError == null)
           const Padding(
             padding: EdgeInsets.only(top: 8),
@@ -1663,7 +1760,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                           ],
                         ),
                       if (playMessage != null)
-                        _MioPlaybackNotice(
+                        SdkPlaybackNotice(
                           message: playMessage!,
                           onSwitch: video.lines.length < 2
                               ? null
@@ -2032,12 +2129,12 @@ class _SdkEpisodeButton extends StatelessWidget {
         children: [
           if (selected) ...[
             if (activity == null)
-              MioPlayingMark(active: false, color: colors.primary)
+              PlayingMark(active: false, color: colors.primary)
             else
               ValueListenableBuilder<bool>(
                 valueListenable: activity!,
                 builder: (_, active, _) =>
-                    MioPlayingMark(active: active, color: colors.primary),
+                    PlayingMark(active: active, color: colors.primary),
               ),
             const SizedBox(width: 4),
           ],
@@ -2050,77 +2147,6 @@ class _SdkEpisodeButton extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MioPlaybackNotice extends StatelessWidget {
-  const _MioPlaybackNotice({
-    required this.message,
-    this.onRetry,
-    this.onSwitch,
-  });
-  final String message;
-  final VoidCallback? onRetry;
-  final VoidCallback? onSwitch;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      key: const ValueKey('miomedia-playback-notice'),
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.outlineVariant),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final actions = Wrap(
-            spacing: 4,
-            children: [
-              if (onRetry != null)
-                TextButton(
-                  onPressed: onRetry,
-                  child: const Text('重试', style: TextStyle(fontSize: 12)),
-                ),
-              if (onSwitch != null)
-                TextButton(
-                  onPressed: onSwitch,
-                  child: const Text('切换线路', style: TextStyle(fontSize: 12)),
-                ),
-            ],
-          );
-          final messageRow = Row(
-            children: [
-              Icon(Icons.info_outline_rounded, size: 18, color: colors.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.5,
-                    color: colors.onSurface,
-                  ),
-                ),
-              ),
-              if (constraints.maxWidth >= 420) actions,
-            ],
-          );
-          return constraints.maxWidth >= 420
-              ? messageRow
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    messageRow,
-                    Align(alignment: Alignment.centerRight, child: actions),
-                  ],
-                );
-        },
       ),
     );
   }

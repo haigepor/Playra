@@ -1,14 +1,9 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'content_search.dart';
-import 'miomedia/miomedia_service.dart';
-import 'miomedia/miomedia_playback_provider.dart';
-import 'sdk_playback_provider.dart';
 import 'source_service.dart';
 import 'source_models.dart';
 import 'source_playback_service.dart';
@@ -21,34 +16,18 @@ import 'package:kazumi/services/platform/lumina_support.dart';
 /// 维护者接入新来源只需登记 Adapter；没有实现的来源不加入执行集合。
 List<ContentSearchProvider> contentProviders(
   Iterable<Plugin> rules, {
-  MioMediaService? mio,
   LuminaService? lumina,
   bool includeMetadata = true,
 }) => [
   if (luminaSupported) LuminaContentProvider(lumina ?? LuminaService()),
   if (includeMetadata) BangumiContentProvider(),
-  MioContentProvider(mio ?? MioMediaService()),
-  for (final rule in rules)
-    if (rule.enabled && RuleContentProvider(rule).groups.isNotEmpty)
-      RuleContentProvider(rule),
 ];
 
-/// 首次启动/开发预览尚未安装规则时只读内置规则，不覆盖禁用或自定义列表。
+/// 搜索入口只登记 Lumina 与 Bangumi；已安装规则保留给原有播放流程。
 Future<List<ContentSearchProvider>> loadContentProviders(
   Iterable<Plugin> rules,
 ) async {
-  final selected = rules.toList();
-  if (selected.isEmpty) {
-    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-    for (final path in manifest.listAssets().where(
-      (p) => p.startsWith('assets/plugins/') && p.endsWith('.json'),
-    )) {
-      selected.add(
-        Plugin.fromJson(jsonDecode(await rootBundle.loadString(path))),
-      );
-    }
-  }
-  return contentProviders(selected);
+  return contentProviders(rules);
 }
 
 class RuleContentProvider extends ContentSearchProvider {
@@ -164,141 +143,6 @@ class RuleContentProvider extends ContentSearchProvider {
       await resolver.dispose();
     }
   }
-}
-
-class MioContentProvider extends ContentSearchProvider {
-  MioContentProvider(this.service);
-  final MioMediaService service;
-  final _entries = <String, MioVideo>{};
-  MioVideo? entry(ContentHit hit) =>
-      hit.providerId == id ? _entries[hit.contentId] : null;
-  @override
-  String get id => 'miomedia';
-  @override
-  String get name => 'miomedia';
-  // 同类动漫由原生动漫来源优先；影视 SDK 的动漫只能作为后备候选。
-  @override
-  int get priority => -100;
-  late final _sdkPlayback = MioSdkPlaybackProvider(service);
-  @override
-  SdkPlaybackProvider get sdkPlayback => _sdkPlayback;
-  // 保留 SDK 已有内容；后续专属来源通过登记加入，不复制 SDK。
-  @override
-  Set<ContentGroup> get groups => {
-    ContentGroup.anime,
-    ContentGroup.screen,
-    ContentGroup.comicDrama,
-    ContentGroup.series,
-  };
-  @override
-  bool get canPlay => true;
-  @override
-  Future<ContentSearchPage> search(
-    ContentQuery query,
-    int page,
-    CancelToken cancel,
-  ) async {
-    final result = await service.search(
-      query.keyword,
-      page: page,
-      cancel: cancel,
-    );
-    final items = <ContentHit>[];
-    for (final video in result.items) {
-      final group = ContentGroup.fromKind(video.kind.name);
-      if (query.group != null && query.group != group) {
-        continue;
-      }
-      items.add(
-        ContentHit(
-          providerId: id,
-          contentId: video.id,
-          title: video.title,
-          cover: video.cover,
-          group: group,
-          year: int.tryParse(video.year),
-          region: video.area,
-        ),
-      );
-      _entries[video.id] = video;
-    }
-    return ContentSearchPage(items, hasMore: result.hasMore);
-  }
-
-  @override
-  Future<List<ContentLine>> lines(ContentHit hit, CancelToken cancel) async {
-    final video = await service.detail(hit.contentId, cancel: cancel);
-    return [
-      for (final line in video.lines)
-        ContentLine(line.code, line.label, const []),
-    ];
-  }
-
-  @override
-  Future<List<ContentEpisode>> episodes(
-    ContentHit hit,
-    ContentLine line,
-    CancelToken cancel,
-  ) async => [
-    for (final e in await service.episodes(
-      hit.contentId,
-      line.id,
-      cancel: cancel,
-    ))
-      ContentEpisode('${e.number}', e.label, number: e.number),
-  ];
-  @override
-  Future<SourceResolvedMedia> resolve(
-    ContentHit hit,
-    ContentLine line,
-    ContentEpisode episode,
-    CancelToken cancel,
-  ) async {
-    final number = episode.number;
-    if (number == null) {
-      throw const SourceException('INVALID_REFERENCE', '缺少来源剧集编号');
-    }
-    final data = await service.play(
-      hit.contentId,
-      line.id,
-      number,
-      cancel: cancel,
-    );
-    if (data['status'] == 'ad_required') {
-      throw const SourceException('AD_REQUIRED', '来源要求广告验证，请重试或选择其他来源');
-    }
-    if (data['status'] != 'ready') {
-      throw const SourceException('PLAYBACK_UNAVAILABLE', '来源暂未提供播放材料');
-    }
-    final selected = data['selection'], media = data['media'];
-    if (selected is! Map ||
-        selected['videoId'] != hit.contentId ||
-        selected['code'] != line.id ||
-        selected['episodeNum'] != number) {
-      throw const SourceException('IDENTITY_MISMATCH', '播放材料与所选作品或剧集不符');
-    }
-    final uri = media is Map && media['url'] is String
-        ? Uri.tryParse(media['url'])
-        : null;
-    if (uri == null ||
-        !['http', 'https'].contains(uri.scheme) ||
-        uri.host.isEmpty ||
-        uri.userInfo.isNotEmpty) {
-      throw const SourceException('PARSE_ERROR', '来源媒体地址无效');
-    }
-    return SourceResolvedMedia(
-      url: uri.toString(),
-      headers: {
-        if (media is Map && media['headers'] is Map)
-          for (final entry in (media['headers'] as Map).entries)
-            if (entry.key is String && entry.value is String)
-              entry.key as String: entry.value as String,
-      },
-    );
-  }
-
-  @override
-  void dispose() => service.dispose();
 }
 
 class BangumiContentProvider extends ContentSearchProvider {

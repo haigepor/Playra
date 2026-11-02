@@ -75,7 +75,7 @@ class SdkLibraryRecord {
   String get key => jsonEncode([providerId, contentId]);
   String get sourceName => switch (providerId) {
     'lumina' => '动漫 · Lumina',
-    'miomedia' => isAnime ? '动漫备用 · MioMedia' : '影视 · MioMedia',
+    'miomedia' || 'anifive' => '已移除来源（记录保留）',
     _ => providerId,
   };
   String get progressLabel => lastWatch == null

@@ -222,7 +222,8 @@ void main() {
       await _tap(tester, find.text('线路B'));
       expect(find.text('手动 · 线路B'), findsOneWidget);
       expect(find.text('该线路暂未提供可播放地址，可重试或切换线路。'), findsOneWidget);
-      await _tap(tester, find.widgetWithText(TextButton, '切换线路'));
+      await _tap(tester, find.byTooltip('更多恢复操作'));
+      await _tap(tester, find.text('切换线路'));
       expect(find.text('线路A'), findsOneWidget);
       expect(find.text('手动 · 线路B'), findsOneWidget);
       expect(tester.takeException(), isNull);

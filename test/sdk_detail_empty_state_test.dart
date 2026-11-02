@@ -2,30 +2,30 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/presentation/modern/pages/sdk_player_detail_page.dart';
-import 'package:kazumi/services/source/miomedia/miomedia_playback_provider.dart';
-import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
+import 'package:kazumi/services/source/lumina/lumina_playback_provider.dart';
+import 'package:kazumi/services/source/lumina/lumina_service.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 
 Map<String, dynamic> _emptyDetail() => {
   'data': {
     'video': {
       'id': '2018',
-      'title': '空线路电影',
+      'title': '空线路动漫',
       'categoryName': '电影大全',
       'player': <Object>[],
     },
   },
 };
 
-Future<void> _mount(WidgetTester tester, MioMediaService service) =>
+Future<void> _mount(WidgetTester tester, LuminaService service) =>
     tester.pumpWidget(
       MaterialApp(
         home: SdkDetailPage(
           entry: SdkPlaybackEntry(
-            title: '空线路电影',
+            title: '空线路动漫',
             sources: [
               SdkSourceBinding(
-                provider: MioSdkPlaybackProvider(service),
+                provider: LuminaPlaybackProvider(service),
                 contentId: '2018',
               ),
             ],
@@ -40,7 +40,7 @@ void main() {
     (tester) async {
       final response = Completer<Map<String, dynamic>>();
       final calls = <String>[];
-      final service = MioMediaService(
+      final service = LuminaService(
         request: (operation, payload, cancel) {
           calls.add(operation);
           return response.future;
@@ -81,7 +81,7 @@ void main() {
     'detail failure is distinct from empty and retry can finish empty',
     (tester) async {
       final calls = <String>[];
-      final service = MioMediaService(
+      final service = LuminaService(
         request: (operation, payload, cancel) async {
           calls.add(operation);
           if (calls.length == 1) throw StateError('offline');

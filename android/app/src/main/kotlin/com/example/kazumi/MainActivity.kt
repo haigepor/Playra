@@ -38,7 +38,6 @@ class MainActivity: AudioServiceActivity() {
     private var pipChannel: MethodChannel? = null
     private var downloadDirectoryChannel: MethodChannel? = null
     private var downloadDirectoryHandler: DownloadDirectoryHandler? = null
-    private var sourceRuntimeBridge: SourceRuntimeBridge? = null
 
     private var pipIsPlaying = false
     private var pipDanmakuEnabled = false
@@ -77,8 +76,6 @@ class MainActivity: AudioServiceActivity() {
     }
 
     override fun onDestroy() {
-        sourceRuntimeBridge?.dispose()
-        sourceRuntimeBridge = null
         downloadDirectoryChannel?.setMethodCallHandler(null)
         downloadDirectoryChannel = null
         downloadDirectoryHandler?.dispose()
@@ -110,8 +107,6 @@ class MainActivity: AudioServiceActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        sourceRuntimeBridge?.dispose()
-        sourceRuntimeBridge = SourceRuntimeBridge(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         downloadDirectoryHandler = DownloadDirectoryHandler(this)
         downloadDirectoryChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger, DownloadDirectoryHandler.CHANNEL

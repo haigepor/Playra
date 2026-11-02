@@ -4,7 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 import 'package:kazumi/modules/bangumi/episode_item.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
-import '../miomedia/miomedia_playing_mark.dart';
+import '../player/playing_mark.dart';
 
 Future<T?> showModernPlayerSheet<T>(BuildContext context, Widget child) {
   final media = MediaQuery.of(context);
@@ -114,7 +114,7 @@ class PlayerEpisodeButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (selected) ...[
-              MioPlayingMark(active: playing, color: c.primary),
+              PlayingMark(active: playing, color: c.primary),
               const SizedBox(width: 5),
             ],
             Flexible(

@@ -1,60 +1,44 @@
 # Playra 构建输入
 
-更新：2026-10-16。新增来源的交付要求见[统一 SDK 接入规范](../development/source-sdk-onboarding.zh.md)。Android 包通过 Chaquopy 内置 Python 内容 SDK，不依赖电脑上的 Python 服务。Web 的私有 SDK 需要算法服务及同源网关。
+更新：2026-10-19。当前只重新接入 Lumina，应用运行链使用 Dart + C。MioMedia、AniFive、Chaquopy、Python SDK、设备桥和旧算法 HTTP 宿主已退役。通用发布工具 `cloud_build.py` 仍是开发工具，不会进入应用包。
 
-当前 Android/Web 启动检查要求 **MioMedia、Lumina 两套私有输入**，ARM32不登记Lumina。默认动漫已恢复原 16 条官方规则，归入“动漫 · Kazumi”，不需要 AniFive Python SDK；Web 解析仍需 Node 同源网关与 Chromium。AniFive 输入仅供保留下来的旧规则兼容使用，不再是默认构建前置条件。私有vendor目录均被忽略，Mio的CI导出不能替代Lumina输入。恢复与实测记录见[Kazumi 接入验收](../verification/kazumi-rules-restoration-20261016.zh.md)。
+## Lumina 原生私有输入
 
-## Lumina 私有输入
-
-```powershell
-# source必须指向lumina包；实际分配host由维护者显式填写，不使用出厂占位符。
-python -B -X utf8 tool/source_runtime/import_lumina.py C:/path/to/sdk/python/lumina --host <assigned-host>
-python -B -X utf8 tool/source_runtime/import_lumina.py --verify
-```
-
-导入器只允许`config.py/profile.py`环境绑定差异，其他算法与上游摘要逐字节一致；可提交的`vendor/lumina-manifest.json`仅包含摘要、大小和平台，不包含host、设备指纹或密钥。运行时在各宿主私有目录生成并复用32位十六进制指纹，禁止把开发机identity打包给所有设备。源码SDK和vendor算法不得提交到公共Git。
-
-Android通过`stageLuminaJni`将arm64/x86_64原形引擎分别安装为`lib/<abi>/liblumafuse.so`，同时将新版 SDK 原样提供的官方 `libcore.so` 安装到 `lib/arm64-v8a/`。**实际官方库只有 ELF AArch64**，不把它复制到 x86_64 或 ARM32；导入器检查三个 Android 库的 ELF ABI，拒绝错误架构。导入收据 `integrationVersion=2` 包含 `_soloader/__init__.py` 与库摘要；旧 v1 收据只能用于校验后升级，不能作为新版输入验收。
-
-`stageEmbeddedPython`仅打包Python模块、`_soloader` 加载器与`fuse_image.bin.gz`，不打包桌面DLL/so/dylib，也不重复把官方库塞入Python资产。Chaquopy仍仅提取`vendor.lumina._fuse`以支持镜像真实文件路径。宿主设置`LUMINA_ENGINE_PATH=<nativeLibraryDir>/liblumafuse.so`、`LUMINA_SOLOADER_PATH=<nativeLibraryDir>/libcore.so`，官方库运行文件目录在应用私有缓存，`LUMINA_DEVICE_ID`与已有持久设备指纹一致。库从系统解出的只读`nativeLibraryDir`加载，无电脑服务、adb桥或动态下载依赖。
-
-请求侧认证/信封继续使用 `_fuse`；响应解密默认由 SDK 优先走进程内 `_soloader`，加载或调用失败由原 SDK 回退。x86_64 没有对应官方 `libcore.so`，仍可使用其原生 `_fuse`；ARM32保留旧来源，不引入Unicorn或伪造后端。当前官方库 LOAD 对齐为 4096 字节，尚不能声明通过 16 KB 页大小验收；需要交付方提供兼容产物并实机检查。见[本次直载更新与验收](../verification/lumina-android-soloader-20261017.zh.md)。
-
-iOS当前不登记或展示Lumina，保留旧动漫来源；本轮暂停本地/远端Lumina研究，已有影视远端配置不代表Lumina能力。历史方案及验收边界见[三端接入与验收](../verification/lumina-sdk-20261016.zh.md)。现有公开CI尚未恢复Lumina输入；未恢复前不能宣称干净云构建就绪。
-
-## AniFive 四源输入（旧规则可选兼容）
+受版本控制的清单为 `packages/lumina_engine/inputs.json`，当前接入版本为 2。私有文件在忽略目录 `packages/lumina_engine/native/` 与 `assets/lumina_private/`，包括三个平台 `_fuse` 引擎、官方 ARM64 `libcore`、压缩镜像和通道/协议配置；不导入 Python 模块。设备指纹不得放入 profile，每次安装沿用或生成独立持久身份。
 
 ```powershell
-python -B -X utf8 tool/source_runtime/import_anifive.py "C:/path/to/sdk/python/anifive"
+node tool/lumina-native-input.cjs verify
+node tool/lumina-native-input.cjs export D:/private/lumina-native-input.gz
+node tool/lumina-native-input.cjs restore D:/private/lumina-native-input.gz
 ```
 
-参数必须指向 SDK 的 Python 包目录，不是仓库根目录。导入到 `tool/source_runtime/vendor/anifive/`，生成可提交的 `vendor/anifive-manifest.json`，记录原始及导入后文件 SHA256。原 SDK 目录不修改，项目副本通过导入器应用请求级传输注入、截断处理、证书校验及导入兼容补丁。
+导出文件是私有构建输入，不能提交 Git、上传公开附件或粘贴到日志。恢复只接受清单中的固定文件名，所有文件先通过 SHA-256 校验再写入。构建 hook 再次校验目标原生库和数据资产摘要。镜像解压后也校验摘要；应用只从 Flutter 打包的原生库加载代码。
 
-旧 AniFive 规则所需模块包括 `__init__.py/client.py/transport.py/profile.py/source_a.py/source_b.py/source_c.py/source_d.py/selector.py/codec.py/config.py/clarity.py`。Android 的 `stageEmbeddedPython` 在输入存在时打包 `vendor/anifive/*.py`，保留 `anifive_adapter.py`、`anifive_transport.py`、`dispatch.py` 等兼容代码；缺 AniFive 输入不再使默认构建失败，使用旧规则时仍会明确报告 SDK 不可用。
+CI 已改为 Node 恢复，须由维护者配置 `PLAYRA_LUMINA_NATIVE_INPUT_URL`（HTTPS 私有输入下载地址）和 `PLAYRA_LUMINA_NATIVE_INPUT_SHA256`（导出工具输出的压缩包摘要）。代码已接线不代表远端 Secrets 已配置或云构建已通过。缺少输入时明确失败，不回退其他 SDK。
 
-当前导入收据的上游标识为 `dc13fdb`，导入器尚未自动验证输入仓库提交；维护者必须核对实际 SDK 版本及收据摘要。新版 SDK 不应在未核对补丁适用性的情况下直接覆盖现有输入。
+ARM64 当前优先使用同进程 C 响应加速器；x86_64/Windows 和原生故障回退使用 `_fuse`。原生调用超时后隔离到进程重启；业务拒绝不切换解码器。供应商库仍为 4 KiB LOAD 对齐，不能据雷电结果宣称 16 KiB 设备合规。新版私有包、复现命令、性能和回滚证据见 [ARM64 接入验收](../verification/lumina-arm64-core-20261019.zh.md)。
 
-**CI 尚未完成 AniFive 输入恢复。** 当前 `.github/workflows/release.yaml` 只调用 Mio `import-env`，没有 AniFive 导入步骤。新增 CI 输入须单独设计存储/恢复/完整性校验，完成干净环境构建后才可标记发布就绪；不要创建尚不存在的 Secret 名称作为既有要求，也不要把 vendor 包上传成公开构建附件。
+本轮可用目标为 Android arm64、Android x86_64 和 Windows x64。ARM32、iOS、Linux、macOS 和 Web 的基础应用可独立保留，当前不登记 Lumina。iOS 缺少交付方引擎；Linux/macOS 二进制兼容性尚未在对应宿主验收；Web 后续应接 Dart Native BFF 或 WASM，不能恢复 Python 服务。详见 [原生引擎边界](../../packages/lumina_engine/README.md)。
 
-## MioMedia 输入与既有 CI
+私有 profile 与镜像只对 Android/Windows 打包，使用 Flutter 的 [按平台声明资产](https://docs.flutter.dev/tools/pubspec#assets-field) 机制；Web 发布目录不应出现这些私有文件。
 
-SDK 原始模块含内部配置和自检向量，整个 `tool/source_runtime/vendor/miomedia/` 作为私有构建输入忽略，密码算法不作修改。干净克隆后先准备 SDK：
+## 构建与验收
 
 ```powershell
-python tool/miomedia_sdk_input.py sync --sdk-directory C:/path/to/sdk/python/miomedia
-python tool/miomedia_sdk_input.py check
+./tool/build-android.ps1 -Release -TargetPlatform android-x64
+./tool/build-android.ps1 -Release -TargetPlatform android-arm64
+# 独立原生链路验收包，结束后必须恢复正式 main.dart 包。
+flutter build apk --release --target-platform android-x64 --target tool/lumina_android_smoke.dart --dart-define=PLAYRA_DIAGNOSTICS=true
 ```
 
-SDK 自检分别在模块目录运行 `python selftest.py`，在 vendor 父目录运行 `python -m miomedia.selftest`。播放模块应为 12/12。
+Flutter 构建与测试应串行执行，避免共享的插件注册表被不同模式重写。只保留一个原生 worker；取消请求丢弃迟到结果，不表示已经中止 C 调用。诊断仅输出阶段、耗时、后端、固定错误码，不输出密钥、鉴权头、报文或完整播放地址。
 
-核心输入为原有 12 个文件，包括 `bf_tables.bin`。新版 `suite.py` 引用 `_native` 时，还必须包含原 SDK 的 `_native/__init__.py`，此时同步与导出共 13 个文件。同步工具会拒绝缺少这个桥的输入。`fast.dll` 等原生加速库可选；Web 服务和 Android 均可使用原 SDK 的纯 Python 回退，Android 打包不包含 Windows DLL。输入检查通过仅证明文件及语法有效，仍需运行上述两种自检。
+正式版默认 `PLAYRA_DIAGNOSTICS=false`。本地测试包沿用现有测试签名，覆盖安装保留数据；不等同正式签名发布。Android ID、Dart package、播放器通道与数据目录保持原值。
 
-本机 D 盘开发环境、缓存位置与激活方式见 [Web/Android 开发环境](../development/web-android-environment.zh.md)。
+正式 Android 签名仍需要 `PLAYRA_ANDROID_KEYSTORE`（Base64）、`PLAYRA_ANDROID_STORE_PASSWORD`、`PLAYRA_ANDROID_KEY_PASSWORD`、`PLAYRA_ANDROID_KEY_ALIAS`。构建任务及版本约束见 [平台构建](build-platforms.zh.md)。不会自动发布或创建 Release。
 
-CI 使用 `python tool/miomedia_sdk_input.py export` 生成两份忽略的输入文件，分别存入仓库 Actions Secrets `MIOMEDIA_SDK_BUNDLE_1` 与 `MIOMEDIA_SDK_BUNDLE_2`，不提交文件、不粘贴内容到日志。使用两份是因为当前编码后约 61 KB，超过单份 Secret 48 KB 限制。[GitHub Secrets 文档](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+## 备份与旧数据
 
-正式 Android/Web 构建仍接受 `playra/v*`，校验 tag 版本与 pubspec 一致。另有手动的独立 iOS/Web/macOS/Linux/Windows 构建入口，详见 [平台构建](build-platforms.zh.md)。附件不自动创建 GitHub Release。Android 签名所需 Secrets：`PLAYRA_ANDROID_KEYSTORE`（Base64）、`PLAYRA_ANDROID_STORE_PASSWORD`、`PLAYRA_ANDROID_KEY_PASSWORD`、`PLAYRA_ANDROID_KEY_ALIAS`。缺少私有 SDK 或正式签名配置时 Android CI 明确失败；独立 unsigned iOS job 不依赖这些输入。不得上传私有 SDK 输入附件。
+本次执行前备份在 `D:/project/Playra-backups/lumina-reset-20261019-113222/`，包括工作区快照、私有 SDK 参考、原安装 APK、差异和摘要清单。应用私有数据保留原位；未卸载、未清除应用数据。旧来源收藏与进度继续可读，显示“已移除来源（记录保留）”，不按片名转换为 Lumina 身份。
 
-本地测试包沿用当前测试签名，可覆盖现有测试安装并保留数据；它不等同正式签名发布。正式版默认 `PLAYRA_DIAGNOSTICS=false`；如需诊断测试包，显式传入 `--dart-define=PLAYRA_DIAGNOSTICS=true`。
-
-底层 Android ID、Dart package、MethodChannel 与数据路径暂保留历史值以保证升级兼容。系统显示名、网页标题和应用文案统一为 Playra。应用关于页面隐藏外部源码入口；源码中的许可与原作者署名保留。
+旧 Python 接入与性能报告属于历史记录，不能据此判断当前 APK 的后端、速度或平台能力。
