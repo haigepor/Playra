@@ -92,14 +92,137 @@ request budget PASS
 三个文件 `git stash` 回 HEAD（清单与私有输入保持新值），三个用例**同样失败**。
 故与本次协议同步无关，属 2.4.2 合并后的 UI 回归。
 
-## 5. 已知限制 / 待办
+## 5. 正式 APK 构建与真机验收（2026-11-03）
 
-- Android 真机/模拟器安装 APK 后的七操作与播放验收（本次 CI 出包后补）。
-- 与原生 App 的同口径速度对比（需区分直连/代理，并扣除 frida RPC 基线）。
-- core 加速后端（arm64 供应商 `libcore`）需真机验证；本次本地只覆盖 fuse 路径。
-- 三个预存 UI 用例待单独修。
+### 5.1 构建产物
 
-## 6. 复现
+| 项 | 值 |
+|---|---|
+| CI run | `41479106377`（workflow `Playra platform build`，`workflow_dispatch`，head `8c94a30a`，conclusion `success`） |
+| 构建输入 | 加密私有输入包（release asset，AES-256-CBC/PBKDF2 200k）+ 7 个 secrets |
+| 产物 | `Playra-build` artifact 120,090,605 B → `Playra_android.apk` 89,610,711 B |
+| APK sha256 | `4c944f690525a12b33e6b23705ccdd3d1cb325e3ccd42dbda70ab5c80048705e` |
+| 版本 | `com.predidit.kazumi` versionName `2.4.2` / versionCode `20402` |
+| 签名 | `CN=Playra, OU=Local Build, O=Playra`，证书 sha256 `1e974a5a…64649f44`（release key，非 debug） |
+| 内嵌 SDK | `inputs.json`: `sdkCommit=d3d7d93`, `integrationVersion=3` |
+
+### 5.2 内嵌资产完整性（`unzip` 后逐文件 sha256 与清单比对）
+
+| APK 内路径 | 结果 |
+|---|---|
+| `lib/arm64-v8a/liblumafuse.so` | OK `31485cd8…` |
+| `lib/x86_64/liblumafuse.so` | OK `fefdd5da…` |
+| `lib/arm64-v8a/liblumina_core_vendor.so` | OK `26727c7b…` |
+| `assets/flutter_assets/assets/lumina_private/fuse_image.bin.gz` | OK `184b5c35…` |
+| `assets/flutter_assets/assets/lumina_private/profile.json` | OK `1247afd6…` |
+
+5/5 与 `inputs.json` 一致 —— CI 注入的私有输入就是本地验证过的那一份，没有串包。
+
+### 5.3 真机 UI 走查（Honor LLD-AL20 / arm64-v8a / Android 9 / Magisk root）
+
+安装用 CI 产物覆盖安装 2.3.8 失败（`INSTALL_FAILED_UPDATE_INCOMPATIBLE`，签名不同），
+先用 root 备份应用数据（`/sdcard/playra-data-backup.tgz`，15,419,856 B，
+sha256 `dcd33bea…f9c6`），卸载后安装 2.4.2。
+
+实测链路（截图存 `playra-local/frida/`，本仓库不入库）：
+
+1. 引导页 → 首页：真实 Lumina 目录（精选推荐「药屋少女的呢喃 第三季」、推荐·日漫、推荐·国漫）；
+2. 首卡进入详情：`播放设置 动漫·Lumina`、线路 3、画质 自动/4K/1080p、选集 5 集；
+3. 起播成功：视频画面 + 字幕「魔女无法说谎」+「上次看到 第1集 · 0:02」，
+   播放设置行显示 **`3840×2160 · 实际分辨率`**（4K 直链探针生效）。
+
+即：目录/详情/播放/取流四条链路在正式 APK 内可用，不是只有 host 侧能跑。
+
+### 5.4 host 七操作（同一份代码，`dart run bin/live.dart`）
+
+| 操作 | 结果 | ms |
+|---|---|---|
+| config | pass | 350 |
+| channels | pass | 250 |
+| banners | pass | 476 |
+| catalog | pass | 623 |
+| search | pass | 189 |
+| detail | pass | 198 |
+| play | pass | 2748（mediaProbe: HTTP 206 / 6944 B / mp4=true） |
+
+## 6. 与原 App 同口径速度对比（2026-11-03）
+
+### 6.1 测量口径
+
+- 同一台设备（`37KRX18825013759`）、同一个 frida 脚本 `frida/measure_v2.js`、
+  同一次冷启动式旅程（首页 → 首卡详情 → 起播）。对照 App：囧次元 `1.5.8.0`（versionCode 88）。
+- 计时点是引擎调用本身：在 `libcore.so` / `liblumina_core_vendor.so` 的 `call` 导出上
+  `Date.now()` 取差值，**不含 Dart 侧 JSON 解析与 HTTP**；输入长度在调用返回后扫描
+  （避开把字符串扫描算进耗时）。
+- 两个包的引擎库是同一份供应商库（Playra 侧改名为 `liblumina_core_vendor.so`，
+  sha256 与本仓库交付的 `libcore_android_arm64.so` 一致），因此差异只剩宿主侧调用方式。
+
+### 6.2 结果
+
+| 指标 | 囧次元 App | Playra 2.4.2 APK | 说明 |
+|---|---|---|---|
+| 解密调用次数 | 118 | 8 | App 更"碎"：大量 556 B 小包 |
+| 解密总耗时 | 17,590 ms | 8,159 ms | 同一次用户旅程 |
+| 中位耗时 | 38 ms | 415 ms | 分布不同，中位不可直接比 |
+| 最大耗时 | 5,480 ms | 5,590 ms | 均在冷启首调 |
+| 输入密文总量 | 289.1 KB | 117.0 KB | — |
+| 归一化吞吐 | 60.84 ms/KB | 69.71 ms/KB | Playra 慢 14.6% |
+| 冷启首调 | 5,470 / 5,480 ms @576 / 664 B | 5,590 ms @5,312 B | 引擎初始化 + 标定，两宿主同现象 |
+| 稳态 21–27 KiB | 421 / 457 / 468 ms | 514 / 625 / 693 ms | Playra 1.22–1.48× |
+
+分层看（原始逐调用记录折算成 ms/KiB，只取 ≥16 KiB 的大包）：
+
+| 宿主 | 样本（载荷 KiB → ms = ms/KiB） |
+|---|---|
+| 囧次元 App | 19.4→185=9.5、20.2→196=9.7、33.6→395=11.7、18.2→351=19.3、21.8→421=19.3、24.7→457=18.5、26.0→468=18.0、17.2→398=23.1 |
+| Playra 2.4.2 | 16.0→315=19.7、21.2→514=24.3、25.8→625=24.2、25.5→693=27.2 |
+
+- App 呈**双峰**：~9.5–11.7 ms/KiB 的快档 3 笔，~18.0–23.1 ms/KiB 的慢档 5 笔；
+- Playra 只有单峰 19.7–27.2 ms/KiB —— 慢档与 App 慢档重叠，**没有快档**。
+
+快档成因未定，最可能是同会话内重复 K 命中已有标定（[HYP]，见 §6.4 验证动作）。
+两者都不含首次冷启那笔 5.5 s。
+
+### 6.3 结论
+
+1. **单次解密吞吐两边同量级**（60.8 vs 69.7 ms/KB，差 15%）；Playra 没有"引擎变慢"的结构性问题。
+2. **整段旅程的解密总耗时 Playra 更低**（8.2 s vs 17.6 s），原因不是更快，而是**调用次数与载荷量更少**
+   （8 次 / 117 KB vs 118 次 / 289 KB）——Playra 的目录接口按页取，App 一次拉全。
+3. **冷启动 ~5.5 s 是共同现象**（引擎初始化 + 首包标定），不属于 Playra 特有回归；
+   首屏体感应扣除这一笔再比。
+4. 稳态下同尺寸载荷（21–27 KiB）Playra 慢 1.2–1.5×；差距集中在"App 有快档、Playra 没有"。这是唯一需要继续追的差异。
+
+### 6.4 差异归因（[HYP]，附验证动作）
+
+- **[HYP] 调用契约不同**：抓到的入参形状两边不一致 —— Playra `call(a0,a1)` 的 `a1` 是 6 字节控制块
+  （`01 7B …`），且 `a0` 前 24 字节跨 8 次调用完全固定（会话级头）；囧次元 `a1` 仅 1 字节、`a0` 每次不同。
+  两者走的不是同一个入口/参数组合，逐字节不可等同。
+  → 验证：把 `a1` 前 32 B 完整打印（`readHead(a[1],32)` 改为带 hex 输出），对照 `action` 语义。
+- **[HYP] 宿主侧重复工作**：Playra 可能在 Dart 层对同一响应做两次解密（路由探测 + 正式解密）。
+  本次未观测到 `lumafuse` 调用，暂不支持该假设。
+  → 验证：同时挂 `lumafuse_decrypt`，统计每次 HTTP 响应触发的原生调用次数。
+- **[HYP] 测量顺序偏差**：App 先跑、Playra 后跑，机身温度/CPU 调度可能系统性偏向后跑的 Playra。
+  → 验证：交替顺序各跑 3 轮取中位（最便宜的证伪实验，建议先做）。
+
+### 6.5 未采集项（NOT RUN）
+
+- **Playra 的网络相**：本轮 `http` 事件为 0（`conns` 有 2，`req` 有累计，`resp` 无）。
+  原因是 Flutter/Dart 在 Android 上读 socket 走 `read()`，而钩子集只有 `recv/recvfrom/__recvfrom_chk`；
+  囧次元 App 走 `recv`，所以那边有 16 条 episode。
+  → 下一命令：在 `measure_v2.js` 的接收钩子列表加入 `'read'`（`onEnter` 取 `fd/buf/len`，`onLeave` 取返回值），
+  重跑同一旅程；成功判据是 Playra 侧 `http` 事件 ≥ 4 且 `resp > 0`。
+- 两边的网络相（RTT/首字节）本次都不作为结论：App 侧 16 条 episode 有分片合并噪声，
+  只用于确认"请求确实打到了 `43.145.33.254:27990`"。
+
+## 7. 剩余限制
+
+- 三个预存 UI 用例（`browse_auto_load` / `content_skeleton` / `modern_profile`）仍失败，
+  已证与协议层无关（engine 三文件回退 A/B），CI 里不阻塞发布。
+- core 加速后端只在上述一台 arm64 真机验证；x86_64 模拟器路径未跑。
+- 速度对比是单轮测量，未做交替多轮；§6.4 三条假设都还没验证。
+- Playra 侧网络相未采集（§6.5）。
+
+## 8. 复现
 
 ```bash
 # 私有输入（本机）
@@ -109,3 +232,12 @@ cd packages/lumina_engine && dart run bin/check.dart <fixture.json> <profile.jso
 # 真连七操作
 cd packages/lumina_engine && dart run bin/live.dart <profile.json> <image.bin> <report.json>
 ```
+
+设备侧测量（脚本在仓库外的 `playra-local/`，避免把私钥/日志带进公开仓）：
+
+```bash
+python measure_run.py --package com.predidit.kazumi --script frida/measure_v2.js \
+    --out frida/pr_journey.jsonl --duration 120 --taps frida/taps_pr.json
+```
+
+本报告的逐调用数据（不含密文）见 `docs/analysis/measurements/lumina-speed-20261103.json`。
