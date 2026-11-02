@@ -241,6 +241,7 @@ class SdkPlaybackCoordinator {
         }
         _record(line, 30000);
         failureCode = 'MEDIA_LOAD_FAILED';
+        service.invalidatePlayback(videoId, line.code, episode);
       } catch (error) {
         if (cancelled()) return const SdkPlaybackOutcome('cancelled');
         failureCode = error is SourceException
@@ -463,6 +464,12 @@ class SdkPlaybackCoordinator {
       if (candidate.qualities.isEmpty) {
         if (qualityCode == null) {
           attempts.add((candidate: candidate, quality: null));
+        } else if (candidate.qualityStatus != 'ready') {
+          // 查询失败不代表档位不存在；将明确偏好交给实际解析校验，绝不静默降档。
+          attempts.add((
+            candidate: candidate,
+            quality: SdkQuality(qualityCode),
+          ));
         }
       } else {
         final codes = <String>{};
@@ -594,9 +601,15 @@ class SdkPlaybackCoordinator {
               media,
               attemptCancel,
             ).timeout(remaining());
-          } on SourceException catch (error) {
+          } catch (error) {
             // 短效地址拒绝时只在原同集同线路刷新一次，手动锁定范围不扩大。
-            if (error.code == 'EXPIRED' && refresh == 0 && !cancelled()) {
+            if (!cancelled()) {
+              service.invalidatePlayback(videoId, candidate.line.code, episode);
+            }
+            if (error is SourceException &&
+                error.code == 'EXPIRED' &&
+                refresh == 0 &&
+                !cancelled()) {
               continue;
             }
             rethrow;
@@ -617,6 +630,7 @@ class SdkPlaybackCoordinator {
             );
           }
           failure = 'MEDIA_LOAD_FAILED';
+          service.invalidatePlayback(videoId, candidate.line.code, episode);
           _record(candidate.line, 30000);
           break;
         }

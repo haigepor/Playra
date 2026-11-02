@@ -3,7 +3,7 @@ import plistlib
 import struct
 import unittest
 import zipfile
-from cloud_build import plan, runtime_define, verify_ios, macho_arches, flutter_version
+from cloud_build import plan, verify_ios, macho_arches, flutter_version
 
 
 def ipa(*, version="2.3.8", signed=False, simulator=False, unsafe=False, executable=None,
@@ -40,15 +40,6 @@ class CloudBuildTests(unittest.TestCase):
         self.assertTrue(plan("", "push")["android"])
         with self.assertRaises(ValueError):
             plan("ios; injected-command")
-
-    def test_endpoint_accepts_only_credential_free_https_base(self):
-        self.assertEqual(runtime_define(""), [])
-        self.assertEqual(runtime_define("https://example.test/v1/"),
-                         ["--dart-define=PLAYRA_SOURCE_RUNTIME_URL=https://example.test/v1/"])
-        for value in ["http://example.test", "https://user:secret@example.test", "https://example.test/?token=x",
-                      "https://example.test/#fragment", "https://example.test/;bad", "https://example.test:99999"]:
-            with self.subTest(value=value), self.assertRaises(ValueError):
-                runtime_define(value)
 
     def test_unsigned_device_ipa_reports_real_version_and_arm64(self):
         result = verify_ios(ipa(), "2.3.8", "20308")

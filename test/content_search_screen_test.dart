@@ -21,21 +21,22 @@ class ScreenProvider extends ContentSearchProvider {
 }
 
 void main() {
-  testWidgets('Android search requests ordinary text, never a password variant', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ContentSearchScreen(providers: [])),
-    );
-    await tester.tap(find.byKey(const ValueKey('content-search-input')));
-    await tester.pump();
-    final configuration = tester.testTextInput.setClientArgs!;
-    expect(configuration['obscureText'], isFalse);
-    expect(configuration['inputType']['name'], 'TextInputType.text');
-    // Android 将禁用建议映射为 visible-password，搜索输入不能使用该标记。
-    expect(configuration['enableSuggestions'], isTrue);
-    expect(configuration['inputAction'], 'TextInputAction.search');
-  });
+  testWidgets(
+    'Android search requests ordinary text, never a password variant',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: ContentSearchScreen(providers: [])),
+      );
+      await tester.tap(find.byKey(const ValueKey('content-search-input')));
+      await tester.pump();
+      final configuration = tester.testTextInput.setClientArgs!;
+      expect(configuration['obscureText'], isFalse);
+      expect(configuration['inputType']['name'], 'TextInputType.text');
+      // Android 将禁用建议映射为 visible-password，搜索输入不能使用该标记。
+      expect(configuration['enableSuggestions'], isTrue);
+      expect(configuration['inputAction'], 'TextInputAction.search');
+    },
+  );
   testWidgets('search progress scrolls away with results', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -221,7 +222,7 @@ void main() {
     },
   );
   testWidgets(
-    'four groups fit at 320px; a reserved group has a distinct empty state',
+    'registered groups fit at 320px and retired groups have no empty entry',
     (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
@@ -241,7 +242,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      for (final label in ['全部', '动漫', '影视', '漫剧', '剧集']) {
+      for (final label in ['全部', '动漫']) {
         final paragraph = tester.renderObject<RenderParagraph>(
           find.text(label),
         );
@@ -251,9 +252,9 @@ void main() {
           reason: '$label must not be clipped in the 320px channel bar',
         );
       }
-      await tester.tap(find.text('漫剧'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('来源尚未接入'), findsOneWidget);
+      for (final label in ['影视', '漫剧', '剧集']) {
+        expect(find.text(label), findsNothing);
+      }
       expect(tester.takeException(), isNull);
     },
   );

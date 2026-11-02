@@ -1,5 +1,5 @@
 param([int]$Port = 8931, [switch]$Build, [switch]$NoOpen,
-  [int]$RuntimePort = 8945, [int]$BangumiEchPort = 8946)
+  [int]$BangumiEchPort = 8946)
 $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
@@ -8,7 +8,6 @@ if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.jso
 $flutter = if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-environment.json')) {
   Join-Path $env:PLAYRA_FLUTTER_HOME 'bin\flutter.bat'
 } else { Join-Path $projectRoot '.tooling\flutter\bin\flutter.bat' }
-$savedRuntimePort = $env:PLAYRA_SOURCE_RUNTIME_PORT
 $savedEchPort = $env:PLAYRA_BANGUMI_ECH_PORT
 Push-Location -LiteralPath $projectRoot
 try {
@@ -39,17 +38,6 @@ try {
     }
     throw "服务 $ServiceName 启动失败，请检查 $logs"
   }
-  if ($RuntimePort) {
-    # Kazumi 十六规则使用既有 Dart/XPath/API 引擎，不依赖 AniFive 私有输入。
-    $python = if ($env:PLAYRA_BUILD_PYTHON) { $env:PLAYRA_BUILD_PYTHON } else { (Get-Command python.exe).Source }
-    if (-not (Test-Path 'tool/source_runtime/vendor/lumina/client.py')) {
-      throw '请先用 tool/source_runtime/import_lumina.py 显式导入并配置 Lumina，详见 docs/release/build-inputs.zh.md。'
-    }
-    & $python '-B' '-X' 'utf8' 'tool/source_runtime/import_lumina.py' '--verify'
-    if ($LASTEXITCODE -ne 0) { throw 'Lumina 私有输入完整性校验未通过' }
-    Ensure-LocalService $RuntimePort 'v1/health' 'playra-source-runtime' $python @('-B', '-X', 'utf8', 'tool/source_runtime/server.py', '--port', "$RuntimePort") 'runtime'
-    $env:PLAYRA_SOURCE_RUNTIME_PORT = "$RuntimePort"
-  }
   if ($BangumiEchPort) {
     $dart = Join-Path (Split-Path $flutter -Parent) 'cache\dart-sdk\bin\dart.exe'
     Ensure-LocalService $BangumiEchPort 'health' 'playra-bangumi-ech' $dart @('run', 'tool/bangumi_web_bridge.dart', "$BangumiEchPort") 'bangumi-ech'
@@ -58,11 +46,6 @@ try {
   $url = "http://127.0.0.1:$Port"
   $running = $false
   try { $running = (Invoke-RestMethod "$url/api/health" -TimeoutSec 2).status -eq 'ok' } catch {}
-  if ($running -and $RuntimePort) {
-    $runtimeReady = $false
-    try { $runtimeReady = (Invoke-RestMethod "$url/api/runtime/v1/health" -TimeoutSec 2).apiVersion -eq '1' } catch {}
-    if (-not $runtimeReady) { throw "当前 $Port 的 Web 服务尚未启用运行桥接，请停止该服务后按相同命令重启，或选择另一端口。" }
-  }
   if (-not $running) {
     $service = Start-Process -FilePath (Get-Command node.exe).Source -ArgumentList (Join-Path $projectRoot 'tool\web_backend\server.cjs') -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logs 'stdout.log') -RedirectStandardError (Join-Path $logs 'stderr.log')
     [System.IO.File]::WriteAllText((Join-Path $logs 'pid.txt'), "$($service.Id)", [System.Text.UTF8Encoding]::new($false))
@@ -77,5 +60,4 @@ try {
 } finally {
   Pop-Location
   [Environment]::SetEnvironmentVariable('PLAYRA_BANGUMI_ECH_PORT', $(if ($null -eq $savedEchPort) { [NullString]::Value } else { $savedEchPort }), 'Process')
-  [Environment]::SetEnvironmentVariable('PLAYRA_SOURCE_RUNTIME_PORT', $(if ($null -eq $savedRuntimePort) { [NullString]::Value } else { $savedRuntimePort }), 'Process')
 }

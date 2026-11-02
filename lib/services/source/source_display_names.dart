@@ -3,7 +3,7 @@ String playbackSourceName(String id, String fallback, {bool anime = false}) =>
     switch (id) {
       'lumina' => '动漫 · Lumina',
       'kazumi' => '动漫 · Kazumi',
-      'anifive' => '动漫 · AniFive',
-      'miomedia' => anime ? '动漫备用 · MioMedia' : '影视 · MioMedia',
+      'anifive' => '已移除来源（记录保留）',
+      'miomedia' => '已移除来源（记录保留）',
       _ => fallback,
     };

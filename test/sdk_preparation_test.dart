@@ -8,7 +8,7 @@ import 'package:kazumi/services/source/sdk_playback_models.dart';
 import 'package:kazumi/services/source/sdk_playback_provider.dart';
 import 'package:kazumi/services/source/sdk_playback_coordinator.dart';
 import 'package:kazumi/services/source/source_models.dart';
-import 'package:kazumi/presentation/modern/miomedia/miomedia_playing_mark.dart';
+import 'package:kazumi/presentation/modern/player/playing_mark.dart';
 
 class _Sdk extends SdkPlaybackProvider {
   @override
@@ -313,14 +313,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(sdk.resolved, [1, 2]);
     expect(
-      find.descendant(of: second, matching: find.byType(MioPlayingMark)),
+      find.descendant(of: second, matching: find.byType(PlayingMark)),
       findsOneWidget,
       reason: '旧请求完成后仍选中第2集',
     );
     expect(
       find.descendant(
         of: find.widgetWithText(OutlinedButton, '第1集'),
-        matching: find.byType(MioPlayingMark),
+        matching: find.byType(PlayingMark),
       ),
       findsNothing,
     );

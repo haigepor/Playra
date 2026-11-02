@@ -18,6 +18,8 @@ class PlaybackSourcePanel extends StatelessWidget {
     this.detail,
     this.selectorKey,
     this.trailing,
+    this.embedded = false,
+    this.title = '播放源',
   });
   final List<Widget> groups;
   final String summary;
@@ -27,6 +29,8 @@ class PlaybackSourcePanel extends StatelessWidget {
   final VoidCallback? onShowLines;
   final Key? selectorKey;
   final Widget? trailing;
+  final bool embedded;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +48,7 @@ class PlaybackSourcePanel extends StatelessWidget {
         Row(
           children: [
             Text(
-              '播放源',
+              title,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -54,23 +58,24 @@ class PlaybackSourcePanel extends StatelessWidget {
             if (trailing != null) trailing!,
           ],
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: embedded ? 4 : 6),
         Semantics(
           container: true,
           button: true,
           label: '播放线路',
           child: Material(
-            color: colors.surfaceContainerLow,
+            color: embedded ? Colors.transparent : colors.surfaceContainerLow,
             clipBehavior: Clip.antiAlias,
-            shape: controlShape,
+            shape: embedded ? const RoundedRectangleBorder() : controlShape,
             child: InkWell(
               key: selectorKey,
               onTap: onShowLines,
               customBorder: controlShape,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
+              child: Container(
+                constraints: BoxConstraints(minHeight: embedded ? 48 : 0),
+                padding: EdgeInsets.symmetric(
+                  horizontal: embedded ? 0 : 12,
+                  vertical: embedded ? 6 : 12,
                 ),
                 child: Row(
                   children: [

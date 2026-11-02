@@ -1,28 +1,27 @@
 # Playra 统一 SDK 接入规范
 
-版本：1.9；更新：2026-10-16；适用：新增 SDK、内容 HTTP API、动漫规则和资料源。本文是唯一接入入口；[接入记录模板](templates/source-sdk-checklist.zh.md)是每次交付的必填附件。历史分析说明背景，不代替本文或当前源码。
+版本：1.10；更新：2026-10-19；适用：新增 SDK、内容 HTTP API、动漫规则和资料源。本文是唯一接入入口；[接入记录模板](templates/source-sdk-checklist.zh.md)是每次交付的必填附件。历史分析说明背景，不代替本文或当前源码。
 
 本文中的“必须”为新增接入的验收条件；“当前实现”为代码现状；“待补齐”为尚未实现或尚无验证证据的事项。规范更新不表示对应业务代码已自动升级。
-
 ## 1. 当前接入盘点与架构结论
 
-当前默认播放家族为 **Kazumi 官方规则、Lumina、MioMedia**。Kazumi 是规则引擎分组，无 Python adapterId；AniFive A/B/C/D 适配器保留给用户修改过的旧规则，不再承载默认动漫资产。Android ARM32与当前iOS不登记Lumina。HTTP 注册表另有 `template` 占位，不能计入可播放来源。Bangumi是资料提供方，不计入播放SDK。
+当前只登记 **Lumina 动漫 SDK** 与 **Bangumi 资料提供方**。应用协议运行链为 Dart + C，不再通过 Python、Chaquopy、设备桥或旧 HTTP 算法宿主执行。MioMedia、AniFive 和旧 Lumina 的 vendor/导入器/宿主已从项目执行路径移除。
 
-| 家族 / 来源 | Python adapterId | Flutter 业务身份 | 当前路径与能力 |
-|---|---|---|---|
-| Kazumi 原 16 条 | 无 | `kazumi` 分组，规则保持原站身份 | 官方 XPath / API 9；目录顺序、真实播放页、普通或简易解析 |
-| MioMedia | `miomedia` | `miomedia` | `ContentSearchProvider` + `SdkPlaybackProvider`；11 个受限 SDK 操作 |
-| Lumina | `lumina` | `lumina` | 动漫优先内容/搜索/独立详情；7个受限操作，真实字符串part |
-| AniFive A / DM84 | `anifive-a` | 默认 `dm84` | 动漫规则；search / episodes / resolve |
-| AniFive B / MXdm | `anifive-b` | 默认 `mxdm` | 同上 |
-| AniFive C / akianime | `anifive-c` | 默认 `akianime` | 同上；目前只公开 SDK 实际支持的线路 2 |
-| AniFive D / moonci | `anifive-d` | 默认 `moonci` | 同上；兼容同站旧名 aafun 的历史 |
-| 模板 | `template` | 不登记业务来源 | `implemented=false`，无能力 |
-| Bangumi | 无 | `bangumi-metadata` | 动漫资料、真实作品身份与封面；`canPlay=false` |
+| 组件 | 当前职责 |
+|---|---|
+| LuminaService / LuminaPlaybackProvider | 保持七类业务操作、原始作品与集数身份、4K 优先和短时直链规则 |
+| Lumina Dart 执行器 | 每安装持久身份、资产校验、单个工作 isolate、初始化/排队/调用总预算及迟到结果隔离 |
+| lumina_engine | Dart 鉴权、RSA 信封、标准 AES/F 核、HTTP 连接复用、播放解析和数据转换；ARM64 响应优先走同进程 C，保留 `_fuse` 兼容路径 |
+| C 引擎和镜像 | SDK 原样提供的 `_fuse` 二进制及镜像，按摘要固定；只绑定已核验的七个 C 符号 |
+| Bangumi / 公共播放器 / 个人库 | 保留资料、播放能力、历史与收藏；不按片名改写旧来源身份 |
+| 普通规则引擎 | 保留已安装规则及原有 Bangumi 播放流程；不自动加入新版 SDK 搜索集合 |
 
-内置动漫资产现恢复原 16 个 JSON，替换未修改的旧 AniFive 四源；用户改过的规则、自定义规则继续保留，因此安装后的总来源数不保证等于 16。Kazumi 自动播放按 **akianime → mutefun → giriGiriLove** 主备顺序选择，其他 13 条仅保留手动入口；缓存或响应速度不能让备用来源越过尚未检查的主来源。每个来源的搜索/目录准备最多 8 秒，失败或不满足画质条件后继续下一个来源，同次自动播放最多尝试这三个来源各一次。仍要求首帧后实际解码高度至少 1080，拒绝已知不足 10 秒的片段；低清和未知画质可手动播放。该限制不扩展到 Lumina/MioMedia，也不代表每个站点都提供 1080p。见[原 16 条恢复记录](../verification/kazumi-rules-restoration-20261016.zh.md)和[自动主备顺序验收](../verification/kazumi-auto-priority-20261017.zh.md)。
+构建恢复和当前验收以 [原生构建输入](../release/build-inputs.zh.md)、[C ABI 与平台边界](../../packages/lumina_engine/README.md) 为准。旧来源记录保持可读并显示“已移除来源（记录保留）”；不清除 Hive 或应用数据。
 
-当前三条边界必须保留：**供应商 Adapter 执行协议，公共服务负责模型和选择策略，平台桥负责传输与打包**。页面不执行签名、解密、设备注册，也不根据供应商类名分支创建独立播放器。复用架构并不等于所有 SDK 共用一个设备身份、CookieJar 或缓存。
+官方 `api_decrypt` 需要完整路径和原编码查询串，不能删去播放的 `id/play/part`，否则会返回访问控制 300400/10032。进程内 C 后端的原生回调由有界适配层串行接收，超时后永久隔离到进程重启；Dart 取消不表示中止原生执行。详见 [ARM64 故障修复与验收](../verification/lumina-arm64-core-20261019.zh.md)。
+
+下文涉及旧 Python adapter、vendor、SourceRuntime 和旧 SDK 命令的部分仅作为历史设计资料保留，不能用于当前导入或构建。一般性的公共模型、真实身份、网络边界和播放器复用原则仍适用。
+
 
 ## 2. 新来源先选择一种业务接入路径
 

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'runtime/source_runtime.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:dio/dio.dart';
@@ -854,13 +853,6 @@ class SourceHttpServer {
 
 // 默认请求器只负责网络，XPath/JSONPath 始终由已有引擎执行。
 RuleEngine gatewayEngine(SourceGateway gateway) => RuleEngine(
-  requestExecutor: SourceRuntimeExecutor(
-    gateway,
-    runtime: SourceRuntimeClient(
-      endpoint: gateway.base.resolve('/api/runtime/v1/').toString(),
-      allowInsecure: true,
-      client: gateway.client,
-    ),
-  ),
+  requestExecutor: gateway,
   logFailures: false,
 );

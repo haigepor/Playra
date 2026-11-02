@@ -7,8 +7,6 @@ import 'package:kazumi/modules/collect/collect_type.dart';
 import 'package:kazumi/services/platform/lumina_support.dart';
 import 'package:kazumi/services/source/lumina/lumina_service.dart';
 import 'package:kazumi/services/source/lumina/lumina_playback_provider.dart';
-import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
-import 'package:kazumi/services/source/miomedia/miomedia_playback_provider.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/sdk_playback_provider.dart';
 import 'package:kazumi/services/storage/sdk_library_store.dart';
@@ -17,7 +15,6 @@ void openSdkLibraryRecord(BuildContext context, SdkLibraryRecord record) {
   // 只允许登记的平台SDK；历史记录不能指定任意模块或绕过平台限制。
   final SdkPlaybackProvider? provider = switch (record.providerId) {
     'lumina' when luminaSupported => LuminaPlaybackProvider(LuminaService()),
-    'miomedia' => MioSdkPlaybackProvider(MioMediaService()),
     _ => null,
   };
   if (provider == null) {

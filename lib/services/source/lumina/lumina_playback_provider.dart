@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../sdk_playback_models.dart';
 import '../sdk_playback_provider.dart';
+import '../prepared_playback.dart';
 import '../source_models.dart' show SourceException;
 import 'lumina_service.dart';
 
@@ -95,7 +96,7 @@ class LuminaPlaybackProvider extends SdkPlaybackProvider {
     if (result['status'] != 'ready') return const [];
     final items = _describe(result);
     _qualities[key] = (at: _now(), items: items);
-    // 预解析只在页面内短暂复用；消费后丢弃直链，失效重试必须重新取凭证。
+    // 同集所有画质共用原始解析时刻；切画质不能延长直链的有效期。
     _materials[key] = (at: _now(), result: result);
     if (_qualities.length > 16) _qualities.remove(_qualities.keys.first);
     if (_materials.length > 8) _materials.remove(_materials.keys.first);
@@ -122,6 +123,27 @@ class LuminaPlaybackProvider extends SdkPlaybackProvider {
   }
 
   @override
+  void invalidatePlayback(String id, String code, SdkEpisode episode) {
+    _materials.remove(_key(id, code, episode.identityKey));
+  }
+
+  PreparedPlayback _lifetime(
+    String videoId,
+    String code,
+    String part,
+    DateTime at,
+    Map media,
+  ) => PreparedPlayback(
+    providerId: id,
+    contentId: videoId,
+    lineCode: code,
+    episodeIdentity: part,
+    resolvedAt: at,
+    media: media,
+    ttl: const Duration(seconds: 27),
+  );
+
+  @override
   Future<Map<String, dynamic>> playEpisode(
     String id,
     String code,
@@ -136,13 +158,21 @@ class LuminaPlaybackProvider extends SdkPlaybackProvider {
     if (cancel?.isCancelled == true) {
       throw const SourceException('CANCELLED', '请求已取消');
     }
-    final key = _key(id, code, part), cached = _materials.remove(key);
-    final result =
-        cached != null &&
-            _now().difference(cached.at) < const Duration(seconds: 27)
-        ? cached.result
-        : await _resolve(id, code, episode, cancel);
-    if (result['status'] != 'ready') return result;
+    final key = _key(id, code, part);
+    var cached = _materials[key];
+    final now = _now();
+    if (cached == null ||
+        !_medias(cached.result).every(
+          (media) => _lifetime(id, code, part, cached!.at, media).isFresh(now),
+        )) {
+      _materials.remove(key);
+      final result = await _resolve(id, code, episode, cancel);
+      if (result['status'] != 'ready') return result;
+      cached = (at: _now(), result: result);
+      _materials[key] = cached;
+      if (_materials.length > 8) _materials.remove(_materials.keys.first);
+    }
+    final result = cached.result;
     final materials = _medias(result);
     if (materials.isEmpty) {
       return {'status': 'unavailable', 'error': 'INVALID_MEDIA'};
@@ -169,9 +199,21 @@ class LuminaPlaybackProvider extends SdkPlaybackProvider {
     if (selected == null) {
       return {'status': 'unavailable', 'error': 'QUALITY_UNAVAILABLE'};
     }
+    final ceiling = cached.at.add(const Duration(seconds: 27));
+    final upstreamExpiry = _lifetime(
+      id,
+      code,
+      part,
+      cached.at,
+      selected,
+    ).expiresAt;
+    final expiry = upstreamExpiry != null && upstreamExpiry.isBefore(ceiling)
+        ? upstreamExpiry
+        : ceiling;
     return {
       ...result,
-      'media': selected,
+      // 下游 PreparedPlayback 也必须继承原始有效期，不能在每次换档时续期。
+      'media': {...selected, 'expiresAt': expiry.toIso8601String()},
       'selection': {'videoId': id, 'code': code, 'episodeRef': part},
     };
   }

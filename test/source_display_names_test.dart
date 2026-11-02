@@ -6,12 +6,12 @@ void main() {
     'anime sources share a category and Mio anime is explicitly a fallback',
     () {
       expect(playbackSourceName('lumina', 'Lumina'), '动漫 · Lumina');
-      expect(playbackSourceName('anifive', 'AniFive'), '动漫 · AniFive');
+      expect(playbackSourceName('anifive', 'AniFive'), '已移除来源（记录保留）');
       expect(
         playbackSourceName('miomedia', 'miomedia', anime: true),
-        '动漫备用 · MioMedia',
+        '已移除来源（记录保留）',
       );
-      expect(playbackSourceName('miomedia', 'miomedia'), '影视 · MioMedia');
+      expect(playbackSourceName('miomedia', 'miomedia'), '已移除来源（记录保留）');
       expect(playbackSourceName('custom-id', '自定义站'), '自定义站');
     },
   );

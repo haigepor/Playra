@@ -23,10 +23,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Restore pinned Lumina native input
+        env:
+          PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
+          PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
+        run: node tool/lumina-native-input.cjs restore
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
+      - run: node --test tool/lumina-native-input.test.cjs
       - run: flutter test
-      - run: python -m unittest discover -s tool -p test_miomedia_sdk_input.py
       - run: python -m unittest discover -s tool -p test_cloud_build.py
-      - run: node --test tool/web_backend/runtime.test.cjs

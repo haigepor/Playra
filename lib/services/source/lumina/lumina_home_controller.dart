@@ -264,10 +264,9 @@ class LuminaHomeController extends ChangeNotifier {
         final channel = pending[cursor++];
         final cancel = _catalogRequests[channel.id] = CancelToken();
         try {
-          final page = await service.catalog(
-            channel.id,
-            size: pageSize,
-            cancel: cancel,
+          final page = await runZoned(
+            () => service.catalog(channel.id, size: pageSize, cancel: cancel),
+            zoneValues: {#luminaBackground: true},
           );
           if (_disposed ||
               cancel.isCancelled ||
@@ -277,7 +276,13 @@ class LuminaHomeController extends ChangeNotifier {
           channelItems[channel.id] = page.items;
           _channelPages[channel.id] = 1;
           _channelMore[channel.id] = page.hasMore;
-        } catch (_) {
+        } catch (error) {
+          // 调度器为前台让路不等于频道失效；下一轮重新等待空闲再取本频道。
+          if (error is SourceException &&
+              error.code == 'CANCELLED' &&
+              !cancel.isCancelled) {
+            cursor--;
+          }
           /* 单频道失败继续使用已加载内容和原有资料栏目。 */
         } finally {
           if (identical(_catalogRequests[channel.id], cancel)) {
@@ -288,7 +293,7 @@ class LuminaHomeController extends ChangeNotifier {
       }
     }
 
-    // 原生引擎内部串行；逐频道小页预热，给当前目录和用户操作留出预算。
+    // 预热经全局空闲调度；播放/详情进入时取消尚未执行的后台解密。
     await worker();
   }
 

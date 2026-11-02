@@ -2,7 +2,6 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    id "com.chaquo.python"
 }
 
 def localProperties = new Properties()
@@ -29,7 +28,7 @@ if (releaseKeyFile.exists()) {
     releaseKeyFile.withReader('UTF-8') { releaseKeyProperties.load(it) }
 }
 
-// Flutter 的 target-platform 同步到原生筛选，Chaquopy 才会按相同架构生成 Python 资产。
+// Flutter 的 target-platform 与 APK 原生库筛选保持一致。
 def flutterAbiByPlatform = [
     "android-arm": "armeabi-v7a",
     "android-arm64": "arm64-v8a",
@@ -45,8 +44,10 @@ def targetAbisForApk = targetPlatformsForApk.collect { platform ->
     }
     abi
 }.unique()
+def splitApkByAbi = (project.findProperty('split-per-abi') ?: 'false').toString().toBoolean()
 
 android {
+    buildFeatures { buildConfig = true }
     namespace "com.example.kazumi"
     compileSdk flutter.compileSdkVersion
     // Use the highest NDK required by the native plugins. Newer NDKs remain
@@ -64,12 +65,16 @@ android {
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
-        main.jniLibs.srcDir layout.buildDirectory.dir("luminaJni")
     }
 
     // Lumina 通过 nativeLibraryDir 加载只读引擎，不从可写缓存目录执行。
     packaging {
-        jniLibs { useLegacyPackaging = true }
+        jniLibs {
+            useLegacyPackaging = true
+            // 保持私有输入原始字节，使 APK 库摘要能直接对照导入收据。
+            keepDebugSymbols += ["**/liblumafuse.so"]
+            keepDebugSymbols += ["**/liblumina_core_vendor.so"]
+        }
     }
 
     defaultConfig {
@@ -84,7 +89,8 @@ android {
         ndk {
             // Flutter 插件预填了默认 ABI；必须先清空，不能把单架构请求追加为三架构。
             abiFilters.clear()
-            abiFilters.addAll(targetAbisForApk)
+            // 分 ABI 构建由 Flutter 的 splits 选择架构，AGP 不允许同时设置两套筛选。
+            if (!splitApkByAbi) abiFilters.addAll(targetAbisForApk)
         }
     }
 
@@ -112,108 +118,3 @@ flutter {
 }
 
 dependencies {}
-
-// 仅复制固定接入模块和标准库 SDK，不把诊断脚本/电脑身份打进 APK。
-def embeddedPythonDir = layout.buildDirectory.dir("embeddedPython")
-def stageEmbeddedPython = tasks.register("stageEmbeddedPython", Sync) {
-    doFirst {
-        def sdkDir = file("../../tool/source_runtime/vendor/miomedia")
-        def required = ["__init__.py", "block.py", "client.py", "config.py", "device.py",
-                        "playback.py", "profile.py", "selftest.py", "signature.py",
-                        "suite.py", "transport.py", "bf_tables.bin"]
-        if (!required.every { new File(sdkDir, it).isFile() }) {
-            throw new GradleException("Missing private SDK input: docs/release/build-inputs.zh.md")
-        }
-        // 官方 Kazumi 规则由 Dart 引擎执行；历史四源模块可选保留，不再要求私有输入。
-        def luminaSdk = file("../../tool/source_runtime/vendor/lumina")
-        def luminaRequired = ["__init__.py", "aes_cbc.py", "auth.py", "block.py", "client.py", "codec.py",
-                              "config.py", "envelope.py", "play.py", "profile.py", "rsaio.py",
-                              "_fuse/__init__.py", "_fuse/assets/fuse_image.bin.gz",
-                              "_fuse/assets/liblumafuse_android_arm64.so", "_fuse/assets/liblumafuse_android_x64.so",
-                              "_soloader/__init__.py", "_soloader/assets/libcore.so"]
-        if (!luminaRequired.every { new File(luminaSdk, it).isFile() }) {
-            throw new GradleException("Missing Lumina SDK: run tool/source_runtime/import_lumina.py; see docs/release/build-inputs.zh.md")
-        }
-        // 导入收据与原SDK摘要一致，才能把对应算法和资源打入应用。
-        def manifest = new groovy.json.JsonSlurper().parse(file("../../tool/source_runtime/vendor/lumina-manifest.json"))
-        if (manifest.integrationVersion != 2 || !manifest.files.collect { it.file }.containsAll(luminaRequired)) {
-            throw new GradleException("Lumina SDK loader receipt is outdated: run import_lumina.py")
-        }
-        manifest.files.each { row ->
-            def input = new File(luminaSdk, row.file)
-            if (!input.isFile() || input.length() != row.size ||
-                java.security.MessageDigest.getInstance("SHA-256").digest(input.bytes).encodeHex().toString() != row.sha256 ||
-                (!(row.file in ["config.py", "profile.py"]) && row.sha256 != row.upstreamSha256)) {
-                throw new GradleException("Lumina SDK integrity check failed")
-            }
-        }
-        // 此段仅检查既有 Mio 桥，不是为 Lumina 安装缺失后端。
-        if (new File(sdkDir, "suite.py").getText("UTF-8").contains("import _native") &&
-            !new File(sdkDir, "_native/__init__.py").isFile()) {
-            throw new GradleException("Missing private SDK accelerator bridge: _native/__init__.py")
-        }
-    }
-    from("../../tool/source_runtime") {
-        include "adapters.py", "miomedia_adapter.py", "miomedia_quality.py", "android_bridge.py"
-        include "dispatch.py", "anifive_adapter.py", "anifive_transport.py", "vendor/anifive/*.py"
-        include "vendor/__init__.py", "vendor/miomedia/*.py"
-        include "vendor/miomedia/_native/__init__.py"
-        // M6 的固定查表资源由原样 SDK 读取，不能只打包 Python 模块。
-        include "vendor/miomedia/bf_tables.bin"
-        include "lumina_adapter.py", "vendor/lumina/*.py", "vendor/lumina/_fuse/__init__.py"
-        include "vendor/lumina/_soloader/__init__.py"
-        include "vendor/lumina/_fuse/assets/fuse_image.bin.gz"
-    }
-    into(embeddedPythonDir)
-}
-def stageLuminaJni = tasks.register("stageLuminaJni", Sync) {
-    dependsOn(stageEmbeddedPython)
-    // 官方 libcore.so 实测为 ELF AArch64，不得误装到 x86_64/ARM32。
-    from("../../tool/source_runtime/vendor/lumina/_soloader/assets/libcore.so") {
-        into "arm64-v8a"
-    }
-    from("../../tool/source_runtime/vendor/lumina/_fuse/assets/liblumafuse_android_arm64.so") {
-        into "arm64-v8a"
-        rename { "liblumafuse.so" }
-    }
-    from("../../tool/source_runtime/vendor/lumina/_fuse/assets/liblumafuse_android_x64.so") {
-        into "x86_64"
-        rename { "liblumafuse.so" }
-    }
-    into layout.buildDirectory.dir("luminaJni")
-}
-chaquopy {
-    defaultConfig {
-        version = "3.11"
-        // SDK 用真实文件路径读取镜像；只提取需要文件系统的最深层包。
-        extractPackages("vendor.lumina._fuse")
-        def configuredPython = System.getenv("PLAYRA_BUILD_PYTHON")
-        if (configuredPython) { buildPython(configuredPython) }
-    }
-    sourceSets {
-        getByName("main") { srcDir(embeddedPythonDir.get().asFile) }
-    }
-}
-tasks.matching { it.name.startsWith("merge") && it.name.endsWith("PythonSources") }.configureEach {
-    dependsOn(stageEmbeddedPython)
-}
-tasks.named("preBuild").configure {
-    dependsOn(stageEmbeddedPython, stageLuminaJni)
-}
-
-// F-droid splits APKs by ABI, and requires different versionCode for each ABI.
-// For flutter version X.Y.Z, version code is X0Y0ZA, where A is the ABI code.
-// See:
-// * https://developer.android.com/build/gradle-tips
-// * https://developer.android.com/studio/build/configure-apk-splits
-// * https://gitlab.com/fdroid/fdroiddata/-/blob/master/metadata/im.nfc.nfsee.yml
-ext.abiCodes = ["armeabi-v7a": 1, "arm64-v8a": 2, "x86_64": 4]
-import com.android.build.OutputFile
-android.applicationVariants.all { variant ->
-    variant.outputs.each { output ->
-        def abiVersionCode = project.ext.abiCodes.get(output.getFilter(OutputFile.ABI))
-        if (abiVersionCode != null) {
-            output.versionCodeOverride = variant.versionCode * 10 + abiVersionCode
-        }
-    }
-}

@@ -9,8 +9,6 @@ import 'package:kazumi/services/source/lumina/lumina_home_controller.dart';
 import 'package:kazumi/presentation/modern/home/home_theme.dart';
 import 'package:kazumi/presentation/modern/home/modern_home_controller.dart';
 import 'package:kazumi/presentation/modern/home/modern_home_view.dart';
-import 'package:kazumi/presentation/modern/miomedia/miomedia_home_controller.dart';
-import 'package:kazumi/services/source/miomedia/miomedia_service.dart';
 
 class _Provider extends ContentSearchProvider {
   _Provider(this.id, this.result, {this.priority = 0});
@@ -138,68 +136,6 @@ void main() {
         '第1集',
         '第2集',
       ]);
-    },
-  );
-
-  testWidgets(
-    'a pending Lumina refresh never delays other homepage providers',
-    (tester) async {
-      final luminaRefresh = Completer<void>();
-      var legacyRefreshes = 0;
-      final mioOperations = <String>[];
-      final legacy = ModernHomeController(
-        readHistory: () => [],
-        loadFeed: (_, _) async {
-          legacyRefreshes++;
-          return [];
-        },
-      );
-      final mioService = MioMediaService(
-        request: (operation, _, _) async {
-          mioOperations.add(operation);
-          return {
-            'data': {
-              'videos': [],
-              'pageinfo': {'total': 0},
-            },
-          };
-        },
-      );
-      final mio = MioHomeController(mioService);
-      final anime = LuminaHomeController(
-        LuminaService(request: (_, _, _) async => {'data': {}}),
-      );
-      addTearDown(legacy.dispose);
-      addTearDown(mio.dispose);
-      addTearDown(mioService.dispose);
-      addTearDown(anime.dispose);
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ModernHomeView(
-            controller: legacy,
-            media: mio,
-            anime: anime,
-            refreshAnime: () => luminaRefresh.future,
-            onSearch: () {},
-            onCalendar: () {},
-            onBrowse: (_) {},
-            onHistory: () {},
-            onToggleTheme: () {},
-            onDetails: (_) {},
-            onResume: (_) {},
-          ),
-        ),
-      );
-      final refreshing = tester
-          .widget<RefreshIndicator>(find.byType(RefreshIndicator))
-          .onRefresh();
-      await tester.pump();
-      expect(legacyRefreshes, 1);
-      expect(mioOperations, contains('catalog'));
-      expect(luminaRefresh.isCompleted, isFalse);
-      luminaRefresh.complete();
-      await refreshing;
-      await tester.pumpAndSettle();
     },
   );
 

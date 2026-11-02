@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/services/source/sdk_playback_models.dart';
 import 'package:kazumi/services/source/sdk_playback_provider.dart';
 import 'package:kazumi/services/source/sdk_playback_coordinator.dart';
+import 'package:kazumi/services/source/source_models.dart';
 
 class TestSdk extends SdkPlaybackProvider {
   TestSdk({this.provider = 'other_sdk'});
@@ -21,6 +22,7 @@ class TestSdk extends SdkPlaybackProvider {
   final probes = <String>[];
   int active = 0, peak = 0;
   Completer<void>? exchangeGate;
+  Object? qualityFailure, playFailure;
   @override
   Future<SdkVideo> detail(String id, {CancelToken? cancel}) async =>
       SdkVideoData(
@@ -48,6 +50,7 @@ class TestSdk extends SdkPlaybackProvider {
     if (active > peak) peak = active;
     try {
       await held[code]?.future;
+      if (qualityFailure != null) throw qualityFailure!;
       return heights[code] ?? [];
     } finally {
       active--;
@@ -63,6 +66,7 @@ class TestSdk extends SdkPlaybackProvider {
     CancelToken? cancel,
   }) async {
     played.add('$code:${quality ?? "auto"}:$episode');
+    if (playFailure != null) throw playFailure!;
     await exchangeGate?.future;
     return {
       'status': failed.contains('$code:$quality') ? 'unavailable' : 'ready',
@@ -91,6 +95,44 @@ Future<SdkPlaybackOutcome> auto(
 );
 
 void main() {
+  test(
+    'failed quality lookup retries the explicit tier without claiming it is absent',
+    () async {
+      final sdk = TestSdk()
+        ..heights['first'] = []
+        ..qualityFailure = const SourceException('CORE_REPLY', 'decode failed');
+      final coordinator = SdkPlaybackCoordinator('work', sdk);
+      addTearDown(coordinator.dispose);
+      final result = await coordinator.preparePlayback(
+        anchor,
+        lines(sdk),
+        cancel: CancelToken(),
+        manual: true,
+        qualityCode: '2160p',
+        onAttempt: (_, _, _) {},
+      );
+      expect(result.status, 'prepared');
+      expect(sdk.played, ['first:2160p:1']);
+    },
+  );
+  test('a real response failure survives a failed quality lookup', () async {
+    final sdk = TestSdk()
+      ..heights['first'] = []
+      ..qualityFailure = const SourceException('CORE_REPLY', 'decode failed')
+      ..playFailure = const SourceException('CORE_REPLY', 'decode failed');
+    final coordinator = SdkPlaybackCoordinator('work', sdk);
+    addTearDown(coordinator.dispose);
+    final result = await coordinator.preparePlayback(
+      anchor,
+      lines(sdk),
+      cancel: CancelToken(),
+      manual: true,
+      qualityCode: '2160p',
+      onAttempt: (_, _, _) {},
+    );
+    expect(result.errorCode, 'CORE_REPLY');
+    expect(sdk.played, ['first:2160p:1']);
+  });
   test(
     'an explicit 1080p request never upgrades to 4K or unlocks its line',
     () async {
