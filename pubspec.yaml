@@ -168,6 +168,8 @@ msix_config:
 
 flutter:
   uses-material-design: true
+  shaders:
+    - assets/runtime_shaders/liquid_navigation.frag
   assets:
     - path: assets/lumina_private/profile.json
       platforms: [android, windows]

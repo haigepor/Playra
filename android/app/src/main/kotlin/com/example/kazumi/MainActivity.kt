@@ -38,6 +38,7 @@ class MainActivity: AudioServiceActivity() {
     private var pipChannel: MethodChannel? = null
     private var downloadDirectoryChannel: MethodChannel? = null
     private var downloadDirectoryHandler: DownloadDirectoryHandler? = null
+    private var liquidNavigation: LiquidNavigationHost? = null
 
     private var pipIsPlaying = false
     private var pipDanmakuEnabled = false
@@ -76,6 +77,8 @@ class MainActivity: AudioServiceActivity() {
     }
 
     override fun onDestroy() {
+        liquidNavigation?.dispose()
+        liquidNavigation = null
         downloadDirectoryChannel?.setMethodCallHandler(null)
         downloadDirectoryChannel = null
         downloadDirectoryHandler?.dispose()
@@ -85,6 +88,16 @@ class MainActivity: AudioServiceActivity() {
         // own stopSelf() never destroys a service started for playback.
         stopService(Intent(this, AudioService::class.java))
         super.onDestroy()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        liquidNavigation?.onResume()
+    }
+
+    override fun onPause() {
+        liquidNavigation?.onPause()
+        super.onPause()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -107,6 +120,10 @@ class MainActivity: AudioServiceActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        val glassChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.predidit.kazumi/liquid_navigation")
+        liquidNavigation = LiquidNavigationHost(this, glassChannel).also { host ->
+            glassChannel.setMethodCallHandler(host::handle)
+        }
         downloadDirectoryHandler = DownloadDirectoryHandler(this)
         downloadDirectoryChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger, DownloadDirectoryHandler.CHANNEL
