@@ -27,6 +27,7 @@ jobs:
         env:
           PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
           PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
+          PLAYRA_LUMINA_INPUT_PASSPHRASE: ${{ secrets.PLAYRA_LUMINA_INPUT_PASSPHRASE }}
         run: node tool/lumina-native-input.cjs restore
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
       - run: flutter pub get
