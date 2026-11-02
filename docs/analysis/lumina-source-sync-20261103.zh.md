@@ -145,6 +145,23 @@ sha256 `dcd33bea…f9c6`），卸载后安装 2.4.2。
 | detail | pass | 198 |
 | play | pass | 2748（mediaProbe: HTTP 206 / 6944 B / mp4=true） |
 
+### 5.5 直链分支（差异 #1）本轮 live 命中 0/16
+
+专门探针扫了当前全部 4 个频道（日漫/國漫/動漫電影/其他動漫）各取目录前 4 部：
+
+```
+vid=113463 kind=resolver url=https://v26.douyinvod.com/...
+vid=113526 kind=resolver url=https://sns-video-default.xhscdn.com/...
+...（16/16 全部 resolver，0 direct，0 failed）
+```
+
+`動漫電影` 频道当前条目也全部走解析器（解析结果落到 douyinvod / toutiaovod / xhscdn），
+10-19 交付包验证过的直链样本 `vid=217` 现已返回 `INVALID_ARGUMENT`（条目下架或改 id）。
+
+结论：**直链分支的实现存在（`source.startsWith('http')` → `kind=direct`），但当前服务端数据里
+没有可命中的直链型条目，因此本轮只有代码路径、没有 live 证据**。等直链型条目回归时需复验；
+在那之前它不影响现有播放（resolver 路径 16/16 正常出链）。
+
 ## 6. 与原 App 同口径速度对比（2026-11-03）
 
 ### 6.1 测量口径
@@ -221,6 +238,8 @@ sha256 `dcd33bea…f9c6`），卸载后安装 2.4.2。
 - core 加速后端只在上述一台 arm64 真机验证；x86_64 模拟器路径未跑。
 - 速度对比是单轮测量，未做交替多轮；§6.4 三条假设都还没验证。
 - Playra 侧网络相未采集（§6.5）。
+- 直链分支无 live 命中（§5.5）：当前 16/16 条目走解析器，`vid=217` 已失效；
+  该分支只有代码路径与人工审读，没有自动化用例。
 
 ## 8. 复现
 
