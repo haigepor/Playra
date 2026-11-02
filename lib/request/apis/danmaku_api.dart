@@ -1,75 +1,34 @@
-import 'package:kazumi/modules/danmaku/danmaku_ch_convert.dart';
+import 'package:kazumi/services/source/source_models.dart' show SourceException;
 import 'package:kazumi/modules/danmaku/danmaku_episode_response.dart';
 import 'package:kazumi/modules/danmaku/danmaku_module.dart';
 import 'package:kazumi/modules/danmaku/danmaku_search_response.dart';
-import 'package:kazumi/request/clients/danmaku_client.dart';
-import 'package:kazumi/request/config/api_endpoints.dart';
-import 'package:kazumi/services/logging/logger.dart';
-import 'package:kazumi/services/storage/storage.dart';
 
+/// 保留旧播放器调用边界；弹幕来源及其网络协议已经移除。
 class DanmakuApi {
-  static final DanmakuClient _client = DanmakuClient.instance;
-
   static Future<int> getDanDanBangumiIDByBgmBangumiID(int bgmBangumiID) async {
-    final path = ApiEndpoints.formatUrl(
-      ApiEndpoints.dandanAPIInfoByBgmBangumiId,
-      [bgmBangumiID],
-    );
-    final endPoint = ApiEndpoints.dandanAPIDomain + path;
-    final jsonData = await _client.get(endPoint);
-    return DanmakuEpisodeResponse.fromJson(jsonData).bangumiId;
+    throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   }
 
   static Future<DanmakuEpisodeResponse> getDanDanEpisodesByDanDanBangumiID(
     int bangumiID,
   ) async {
-    final path = ApiEndpoints.dandanAPIInfo + bangumiID.toString();
-    final endPoint = ApiEndpoints.dandanAPIDomain + path;
-    final jsonData = await _client.get(endPoint);
-    return DanmakuEpisodeResponse.fromJson(jsonData);
+    throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   }
 
-  // v2 episode search avoids the anime search's 25-result cap.
-  // Fetch full episode lists separately; search results can truncate them.
   static Future<DanmakuSearchResponse> searchAnimes(String title) async {
-    final endPoint =
-        ApiEndpoints.dandanAPIDomain + ApiEndpoints.dandanAPISearchEpisodes;
-    final jsonData = await _client.get(
-      endPoint,
-      queryParameters: {'anime': title, 'v2': 'true'},
-    );
-    return DanmakuSearchResponse.fromJson(jsonData);
+    throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   }
 
   static Future<List<DanmakuEntry>> getDanDanmaku(
     int bangumiID,
     int episode,
   ) async {
-    if (bangumiID == 0) {
-      return [];
-    }
-    // Automatic matching relies on an undocumented episode ID convention.
-    return _getComments('$bangumiID${episode.toString().padLeft(4, '0')}');
+    throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   }
 
-  static Future<List<DanmakuEntry>> getDanDanmakuByEpisodeID(int episodeID) =>
-      _getComments(episodeID.toString());
-
-  static Future<List<DanmakuEntry>> _getComments(String episodeID) async {
-    final endPoint =
-        '${ApiEndpoints.dandanAPIDomain}${ApiEndpoints.dandanAPIComment}$episodeID';
-    final conversion = DanmakuChConvert.fromValue(
-      GStorage.getSetting(SettingsKeys.danmakuChConvert),
-    );
-    KazumiLogger().i('Danmaku: final request URL $endPoint');
-    final jsonData = await _client.get(
-      endPoint,
-      queryParameters: {
-        'withRelated': 'true',
-        'chConvert': conversion.value.toString(),
-      },
-    );
-    final List<dynamic> comments = jsonData['comments'];
-    return [for (final comment in comments) DanmakuEntry.fromJson(comment)];
+  static Future<List<DanmakuEntry>> getDanDanmakuByEpisodeID(
+    int episodeID,
+  ) async {
+    throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   }
 }

@@ -41,12 +41,6 @@ const List<_SettingsGroup> _settingsGroups = [
         path: '/settings/player',
       ),
       _SettingsCategory(
-        label: '弹幕设置',
-        description: '弹幕来源与显示效果',
-        icon: Icons.subtitles_rounded,
-        path: '/settings/danmaku',
-      ),
-      _SettingsCategory(
         label: '操作设置',
         description: '播放器按键映射',
         icon: Icons.keyboard_rounded,
@@ -57,12 +51,6 @@ const List<_SettingsGroup> _settingsGroups = [
   _SettingsGroup(
     title: '资源',
     categories: [
-      _SettingsCategory(
-        label: '规则管理',
-        description: '番剧资源规则',
-        icon: Icons.extension_rounded,
-        path: '/settings/plugin',
-      ),
       _SettingsCategory(
         label: '下载设置',
         description: '并发数与弹幕缓存',

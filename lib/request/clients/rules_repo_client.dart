@@ -1,22 +1,12 @@
-import 'package:dio/dio.dart';
-import 'package:kazumi/request/core/dio_factory.dart';
-import 'package:kazumi/request/core/network_error_mapper.dart';
+import 'package:dio/dio.dart' show CancelToken;
+import 'package:kazumi/services/source/source_models.dart' show SourceException;
 
+/// 仅保留旧调用者的拒绝边界，不再创建网络客户端。
 class RulesRepoClient {
   RulesRepoClient._();
-
   static final RulesRepoClient instance = RulesRepoClient._();
-
-  Future<String> getText(String url, {CancelToken? cancelToken}) async {
-    try {
-      final response = await DioFactory.rulesRepoDio.get<String>(
-        url,
-        options: Options(responseType: ResponseType.plain),
-        cancelToken: cancelToken,
-      );
-      return response.data ?? '';
-    } on DioException catch (e) {
-      throw await NetworkErrorMapper.mapException(e);
-    }
-  }
+  Never _removed() =>
+      throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
+  Future<String> getText(String url, {CancelToken? cancelToken}) async =>
+      _removed();
 }

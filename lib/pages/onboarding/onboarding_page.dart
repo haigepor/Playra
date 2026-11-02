@@ -9,7 +9,6 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/pages/onboarding/steps/disclaimer_step.dart';
-import 'package:kazumi/pages/onboarding/steps/mirror_settings_step.dart';
 import 'package:kazumi/pages/onboarding/steps/update_source_step.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
@@ -48,15 +47,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final _steps = [
     _OnboardingStep.welcome,
     if (Platform.isAndroid) _OnboardingStep.updates,
-    _OnboardingStep.mirrors,
   ];
   int _currentIndex = 0;
   bool _agreed = false;
-  bool _installingBundled = false;
+  final bool _installingBundled = false;
   bool _busy = false;
   late bool _useGithubUpdate;
 
-  PluginsController get _pluginsController => widget.pluginsController;
   bool get _isLastStep => _currentIndex == _steps.length - 1;
 
   @override
@@ -80,7 +77,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         unawaited(GStorage.putSetting(SettingsKeys.autoUpdate, value));
       },
     ),
-    _OnboardingStep.mirrors => const MirrorSettingsStep(),
+    _OnboardingStep.mirrors => const SizedBox.shrink(),
   };
 
   String get _primaryLabel => !_agreed
@@ -119,25 +116,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<bool> _installBundledRules() async {
-    setState(() => _installingBundled = true);
-    try {
-      await _pluginsController.copyPluginsToExternalDirectory();
-    } catch (error, stackTrace) {
-      KazumiLogger().e(
-        'Plugin: failed to install bundled rules',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      if (!mounted) return false;
-      setState(() => _installingBundled = false);
-      KazumiDialog.showToast(context: context, message: '初始化规则失败');
-      return false;
-    }
-    if (!mounted) return false;
-    setState(() {
-      _agreed = true;
-      _installingBundled = false;
-    });
+    setState(() => _agreed = true);
     return true;
   }
 

@@ -7,14 +7,12 @@ import 'package:kazumi/bean/settings/theme_provider.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/pages/menu/route_visibility.dart';
-import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/repositories/history_repository.dart';
 import 'package:kazumi/services/player/history_playback_service.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
 import 'package:kazumi/services/storage/storage.dart';
 import '../home/modern_home_controller.dart';
-import '../home/home_catalog.dart';
 import '../home/modern_home_view.dart';
 import '../home/home_theme.dart';
 import 'package:kazumi/services/source/content_search.dart';
@@ -40,20 +38,13 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
   late final SdkRankController ranking;
   String? _rankingKey;
   bool _changingTheme = false;
-  Timer? _backgroundDeadline;
-  bool _backgroundStarted = false, _channelsWarmed = false;
+  bool _channelsWarmed = false;
 
   @override
   void initState() {
     super.initState();
     final repository = inject<IHistoryRepository>();
     controller = ModernHomeController(
-      loadProgressiveCatalog: (onUpdate) => HomeCatalog.load(
-        rules: inject<PluginsController>().pluginList,
-        force: false,
-        onUpdate: onUpdate,
-      ),
-      loadDetail: HomeCatalog.loadDetail,
       readHistory: repository.getAllHistories,
       historyChanges: repository.changes,
     );
@@ -69,16 +60,10 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
     final primary =
         anime?.bootstrap(warmOtherChannels: false) ?? Future<void>.value();
     unawaited(primary.then((_) => _startBackground()));
-    // 先提交动漫首屏，Bangumi 资料补全最多延后四秒。
-    _backgroundDeadline = Timer(const Duration(seconds: 4), _startBackground);
   }
 
   void _startBackground() {
     if (!mounted) return;
-    if (!_backgroundStarted) {
-      _backgroundStarted = true;
-      unawaited(controller.refreshCatalog());
-    }
     if (!_channelsWarmed && anime?.items.isNotEmpty == true) {
       _channelsWarmed = true;
       // 先提交主频道的真实首屏，再启动串行的小页预热。
@@ -180,7 +165,6 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
 
   @override
   void dispose() {
-    _backgroundDeadline?.cancel();
     controller.removeListener(_syncRanking);
     anime?.removeListener(_syncRanking);
     ranking.dispose();

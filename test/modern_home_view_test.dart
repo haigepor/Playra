@@ -1,11 +1,66 @@
+import 'package:kazumi/services/source/lumina/lumina_home_controller.dart';
+import 'package:kazumi/services/source/lumina/lumina_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/presentation/modern/home/modern_home_controller.dart';
 import 'package:kazumi/presentation/modern/home/modern_home_view.dart';
+import 'package:kazumi/presentation/modern/widgets/modern_feature_carousel.dart';
 import 'modern_home_controller_test.dart' show item;
 import 'package:kazumi/presentation/modern/home/home_catalog.dart';
+
+/// Layout fixtures now enter the same Lumina card path as production.
+class _FixtureLuminaHome extends LuminaHomeController {
+  _FixtureLuminaHome(this.controller) : super(LuminaService()) {
+    controller.addListener(sync);
+    sync();
+  }
+  final ModernHomeController controller;
+  void sync() {
+    channels = [
+      LuminaChannel.fromJson({'id': '1', 'name': '动漫'}),
+    ];
+    channelId = '1';
+    items = [
+      for (final item in controller.items)
+        LuminaVideo.fromJson({
+          'id': '${item.id}',
+          'title': item.nameCn,
+          'updatedTo': 2,
+        }),
+    ];
+    channelItems['1'] = items;
+    banners = [
+      for (final video in items)
+        LuminaBanner.fromJson({
+          'videoId': video.id,
+          'title': video.title,
+          'cover': 'https://images.example/${video.id}.jpg',
+        }),
+    ];
+    loading = controller.loading;
+    notifyListeners();
+  }
+
+  @override
+  List<LuminaChannel> browseChannels([String bucket = 'all']) => channels;
+  @override
+  bool hasMoreIn(String bucket) => controller.hasMore;
+  @override
+  bool loadingIn(String bucket) => controller.loading;
+  @override
+  Future<void> loadMoreIn(String bucket) => controller.loadMore();
+  @override
+  Future<void> bootstrap({bool force = false, bool warmOtherChannels = true}) =>
+      controller.refresh();
+  @override
+  void dispose() {
+    controller.removeListener(sync);
+    service.dispose();
+    super.dispose();
+  }
+}
 
 Future<void> mountHome(
   WidgetTester tester,
@@ -21,6 +76,8 @@ Future<void> mountHome(
   ValueChanged<History>? onResume,
   ValueChanged<int>? onDetails,
 }) async {
+  final anime = _FixtureLuminaHome(controller);
+  addTearDown(anime.dispose);
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -36,6 +93,9 @@ Future<void> mountHome(
       ),
       home: ModernHomeView(
         controller: controller,
+        anime: anime,
+        onAnimeDetails: (video) => onDetails?.call(int.parse(video.id)),
+        onAnimeBanner: (banner) => onDetails?.call(int.parse(banner.videoId)),
         onSearch: onSearch ?? () {},
         onCalendar: onCalendar ?? () {},
         onBrowse: onBrowse ?? (_) {},
@@ -66,21 +126,25 @@ void main() {
       addTearDown(controller.dispose);
       await controller.refresh();
       await mountHome(tester, controller, onBrowse: (tag) => opened = tag);
-      final rail = find.byKey(const PageStorageKey('home-channel-anime'));
-      final poster = find.byKey(const ValueKey('home-poster-0'));
-      final rating = tester.getTopLeft(
-        find.byKey(const ValueKey('home-rating-0')),
+      final rail = find.byKey(const PageStorageKey('home-channel-lumina:1'));
+      final poster = find.byKey(const ValueKey('home-poster-lumina:0'));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('home-rating-lumina:0')),
+          matching: find.text('暂无'),
+        ),
+        findsOneWidget,
       );
-      final airing = tester.getBottomRight(
-        find.byKey(const ValueKey('home-airing-0')),
+      expect(
+        tester
+            .getBottomRight(find.byKey(const ValueKey('home-airing-lumina:0')))
+            .dy,
+        greaterThan(tester.getTopLeft(poster).dy + 100),
       );
-      expect(rating, tester.getTopLeft(poster));
-      expect(airing.dy, greaterThan(rating.dy + 100));
-      expect(airing.dx, greaterThan(rating.dx + 80));
       final time = tester.widget<Text>(
-        find.byKey(const ValueKey('home-airing-0')),
+        find.byKey(const ValueKey('home-airing-lumina:0')),
       );
-      expect(time.data, '周六 | 21:05');
+      expect(time.data, '更新至 2 集');
       expect(time.style!.backgroundColor, isNull);
       expect(time.style!.shadows, isNull);
       expect(
@@ -92,13 +156,15 @@ void main() {
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await mouse.addPointer(location: Offset.zero);
       await mouse.moveTo(
-        tester.getCenter(find.byKey(const ValueKey('home-cover-scale-0'))),
+        tester.getCenter(
+          find.byKey(const ValueKey('home-cover-scale-lumina:0')),
+        ),
       );
       await tester.pumpAndSettle();
       expect(
         tester
             .widget<AnimatedScale>(
-              find.byKey(const ValueKey('home-cover-scale-0')),
+              find.byKey(const ValueKey('home-cover-scale-lumina:0')),
             )
             .scale,
         greaterThan(1),
@@ -108,7 +174,7 @@ void main() {
       expect(
         tester
             .widget<AnimatedScale>(
-              find.byKey(const ValueKey('home-cover-scale-0')),
+              find.byKey(const ValueKey('home-cover-scale-lumina:0')),
             )
             .scale,
         1,
@@ -127,7 +193,7 @@ void main() {
         greaterThan(before),
       );
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('home-more-anime')),
+        find.byKey(const ValueKey('home-more-lumina:1')),
         200,
         scrollable: find
             .descendant(
@@ -154,69 +220,68 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('home-more-anime')));
+      await tester.tap(find.byKey(const ValueKey('home-more-lumina:1')));
       await tester.pumpAndSettle();
       expect(find.byType(DraggableScrollableSheet), findsOneWidget);
-      expect(find.text('动漫推荐'), findsWidgets);
+      expect(find.text('推荐·动漫'), findsWidgets);
       expect(opened, isNull);
       expect(find.text('左右滑动'), findsNothing);
       expect(find.byKey(const ValueKey('home-load-more')), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
-  testWidgets(
-    'recommended and popular entries retain only anime navigation',
-    (tester) async {
-      final controller = ModernHomeController(
-        loadFeed: (feed, _) async =>
-            List.generate(24, (i) => item(i + feed.index * 100)),
-        readHistory: () => [],
-      );
-      addTearDown(controller.dispose);
-      await controller.refresh();
-      await mountHome(tester, controller);
-      expect(find.text('找到今天的心动番剧'), findsNothing);
-      expect(find.byKey(const ValueKey('home-load-more')), findsNothing);
-      final selector = find.byKey(const ValueKey('home-feed-selector'));
-      final tabBar = tester.widget<TabBar>(selector);
-      expect(tabBar.tabs.length, 3);
-      for (final label in ['推荐', '热门', '动漫']) {
-        expect(
-          find.descendant(of: selector, matching: find.text(label)),
-          findsOneWidget,
-        );
-      }
-      expect(tabBar.indicatorSize, TabBarIndicatorSize.label);
-      final indicator = tabBar.indicator! as UnderlineTabIndicator;
-      expect(indicator.borderSide.width, 3);
-      expect(indicator.insets, const EdgeInsets.symmetric(horizontal: 8));
-      final selectedLabel = tester.widget<Text>(
-        find.descendant(
-          of: find.byKey(const ValueKey('home-feed-anime')),
-          matching: find.byType(Text),
-        ),
-      );
-      expect(selectedLabel.style!.fontSize, 14);
-      await tester.drag(selector, const Offset(-250, 0));
-      await tester.pumpAndSettle();
-      expect(controller.feed, HomeFeed.recommended);
-      await tester.tap(find.byKey(const ValueKey('home-feed-popular')));
-      await tester.pumpAndSettle();
-      expect(controller.feed, HomeFeed.popular);
-      expect(tabBar.controller!.index, 1);
-      await tester.tap(find.byKey(const ValueKey('home-feed-recommended')));
-      await tester.pumpAndSettle();
-      expect(controller.feed, HomeFeed.recommended);
-      controller.selectFeed(HomeFeed.season);
-      await tester.pumpAndSettle();
-      expect(tabBar.controller!.index, 2);
+  testWidgets('recommended and popular entries retain only anime navigation', (
+    tester,
+  ) async {
+    final controller = ModernHomeController(
+      loadFeed: (feed, _) async =>
+          List.generate(24, (i) => item(i + feed.index * 100)),
+      readHistory: () => [],
+    );
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    await mountHome(tester, controller);
+    expect(find.text('找到今天的心动番剧'), findsNothing);
+    expect(find.byKey(const ValueKey('home-load-more')), findsNothing);
+    final selector = find.byKey(const ValueKey('home-feed-selector'));
+    final tabBar = tester.widget<TabBar>(selector);
+    expect(tabBar.tabs.length, 3);
+    for (final label in ['推荐', '热门', '动漫']) {
       expect(
-        find.byKey(const PageStorageKey('home-channel-main')),
+        find.descendant(of: selector, matching: find.text(label)),
         findsOneWidget,
       );
-      expect(tester.takeException(), isNull);
-    },
-  );
+    }
+    expect(tabBar.indicatorSize, TabBarIndicatorSize.label);
+    final indicator = tabBar.indicator! as UnderlineTabIndicator;
+    expect(indicator.borderSide.width, 3);
+    expect(indicator.insets, const EdgeInsets.symmetric(horizontal: 8));
+    final selectedLabel = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('home-feed-anime')),
+        matching: find.byType(Text),
+      ),
+    );
+    expect(selectedLabel.style!.fontSize, 14);
+    await tester.drag(selector, const Offset(-250, 0));
+    await tester.pumpAndSettle();
+    expect(controller.feed, HomeFeed.recommended);
+    await tester.tap(find.byKey(const ValueKey('home-feed-popular')));
+    await tester.pumpAndSettle();
+    expect(controller.feed, HomeFeed.popular);
+    expect(tabBar.controller!.index, 1);
+    await tester.tap(find.byKey(const ValueKey('home-feed-recommended')));
+    await tester.pumpAndSettle();
+    expect(controller.feed, HomeFeed.recommended);
+    controller.selectFeed(HomeFeed.season);
+    await tester.pumpAndSettle();
+    expect(tabBar.controller!.index, 2);
+    expect(
+      find.byKey(const PageStorageKey('home-channel-main')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
   for (final dark in [false, true]) {
     for (final size in [
       const Size(320, 700),
@@ -236,7 +301,7 @@ void main() {
         await controller.refresh();
         await mountHome(tester, controller, size: size, scale: 1.6, dark: dark);
         await tester.scrollUntilVisible(
-          find.byKey(const ValueKey('home-poster-0')),
+          find.byKey(const ValueKey('home-poster-lumina:0')),
           200,
           scrollable: find
               .descendant(
@@ -247,7 +312,10 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        expect(find.byKey(const ValueKey('home-poster-0')), findsWidgets);
+        expect(
+          find.byKey(const ValueKey('home-poster-lumina:0')),
+          findsWidgets,
+        );
       });
     }
   }
@@ -308,7 +376,10 @@ void main() {
       empty = false;
       await tester.tap(find.text('重试').first);
       await tester.pumpAndSettle();
-      expect(find.bySemanticsLabel(RegExp('查看推荐 番剧 1')), findsOneWidget);
+      final recommendation = tester.widget<ModernFeatureCarousel>(
+        find.byKey(const ValueKey('home-primary-recommendations')),
+      );
+      expect(recommendation.entries.single.title, '番剧 1');
       await tester.tap(find.byKey(const ValueKey('home-feed-anime')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('新番'));

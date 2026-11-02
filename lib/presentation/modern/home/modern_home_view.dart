@@ -146,10 +146,6 @@ class _ModernHomeViewState extends State<ModernHomeView> {
     HomeFeed.season => 'season',
     _ => 'all',
   };
-  List<HomeAnimeCard> _legacyCards(Iterable<BangumiItem> items) => [
-    for (final item in items)
-      HomeAnimeCard.metadata(item, controller, () => onDetails(item)),
-  ];
   List<HomeAnimeCard> _sourceCards([String? bucket]) => onAnimeDetails == null
       ? const []
       : [
@@ -158,6 +154,8 @@ class _ModernHomeViewState extends State<ModernHomeView> {
             HomeAnimeCard.lumina(video, () => onAnimeDetails!(video)),
         ];
   String _channelBucket(HomeChannel channel) => switch (channel.id) {
+    final id when id.startsWith('lumina:') =>
+      'channel:${id.substring('lumina:'.length)}',
     'chinese' => 'chinese',
     'japanese' => 'japanese',
     'anime-movies' => 'movies',
@@ -165,14 +163,13 @@ class _ModernHomeViewState extends State<ModernHomeView> {
     _ => animeBucket,
   };
   List<HomeAnimeCard> _channelCards(HomeChannel channel) {
+    if (channel.id.startsWith('lumina:')) {
+      return _sourceCards(_channelBucket(channel));
+    }
     final animeCards = _stableAnime(
       'channel-${channel.id}',
       _sourceCards(_channelBucket(channel)),
-      _legacyCards(
-        channel.id == 'anime' && controller.feed.isGeneralCategory
-            ? controller.items
-            : channel.allItems,
-      ),
+      const [],
       _channelBucket(channel),
     );
     return _session.append('channel-${channel.id}', animeCards);
@@ -205,16 +202,16 @@ class _ModernHomeViewState extends State<ModernHomeView> {
 
   @override
   Widget build(BuildContext context) => ModernHomeScope(
-    child: Builder(
-      builder: (context) => Scaffold(
+    child: LayoutBuilder(
+      builder: (context, bounds) => Scaffold(
         body: SafeArea(
           bottom: false,
           child: ModernPageArt(
             kind: ModernPageArtKind.discover,
-            contentMaxWidth: 760,
+            contentMaxWidth: 1120,
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
+                constraints: const BoxConstraints(maxWidth: 1120),
                 child: ListenableBuilder(
                   listenable: _contentUpdates,
                   child: _HistorySection(
@@ -227,7 +224,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                     final animeItems = _stableAnime(
                       'items',
                       sourceCards,
-                      _legacyCards(controller.items),
+                      const [],
                     );
                     final items = _session.append('items', animeItems);
                     final showAnime =
@@ -236,27 +233,6 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                             controller.feed.isGeneralCategory);
                     final sourcePool =
                         anime?.browseItems(animeBucket) ?? <LuminaVideo>[];
-                    final animeFeatured = _stableAnime(
-                      'featured-$_featuredRevision',
-                      onAnimeDetails == null
-                          ? const []
-                          : [
-                              for (final video
-                                  in anime?.featuredItems(sourcePool) ??
-                                      <LuminaVideo>[])
-                                HomeAnimeCard.lumina(
-                                  video,
-                                  () => onAnimeDetails!(video),
-                                ),
-                            ],
-                      _legacyCards(controller.featuredItems),
-                    );
-                    final featured = HomeDisplaySession.featured(
-                      animeFeatured,
-                      const [],
-                      const [],
-                      mixed: false,
-                    );
                     final heroCards = <HomeAnimeCard>[];
                     if (animeBucket == 'all' && onAnimeBanner != null) {
                       for (final banner in anime?.banners ?? <LuminaBanner>[]) {
@@ -266,10 +242,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                         final cover = banner.cover.isNotEmpty
                             ? banner.cover
                             : catalog?.cover ?? '';
-                        if (banner.title.trim().isEmpty ||
-                            cover.isEmpty ||
-                            catalog?.updatedTo == 0 &&
-                                catalog?.isEnd == false) {
+                        if (banner.title.trim().isEmpty) {
                           continue;
                         }
                         heroCards.add(
@@ -283,15 +256,29 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                         );
                       }
                     }
-                    for (final item in animeItems) {
-                      if (!heroCards.any((card) => card.id == item.id)) {
-                        heroCards.add(item);
-                      }
+                    if (animeBucket != 'all') {
+                      heroCards.addAll(animeItems);
                     }
-                    final visibleHeroCards = _session
-                        .append('hero', heroCards.take(6).toList())
-                        .take(6)
-                        .toList();
+                    final visibleHeroCards = heroCards;
+                    // 四卡布局依次翻阅来源轮播，不用目录前四项代替推荐。
+                    final featured = List<HomeAnimeCard?>.generate(
+                      4,
+                      (index) => index >= heroCards.length
+                          ? null
+                          : heroCards[(_featuredRevision * 4 + index) %
+                                heroCards.length],
+                    );
+                    final sourceChannels = [
+                      for (final channel
+                          in anime?.channels ?? <LuminaChannel>[])
+                        HomeChannel(
+                          'lumina:${channel.id}',
+                          '推荐·${channel.name}',
+                          const [],
+                        ),
+                    ];
+                    final compact =
+                        bounds.maxWidth < 600 || bounds.maxHeight < 500;
                     // 固定导航独立于内容滚动，子分类展开仍可平滑改变内容区高度。
                     return Column(
                       children: [
@@ -387,6 +374,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                         const SizedBox(height: 14),
                                         if (controller.feed ==
                                                 HomeFeed.recommended &&
+                                            !compact &&
                                             (featured.any(
                                                   (card) => card != null,
                                                 ) ||
@@ -396,24 +384,19 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                               'home-primary-recommendations',
                                             ),
                                             items: featured,
-                                            canShuffle:
-                                                items.length >
-                                                ModernHomeController
-                                                    .featuredBatchSize,
-                                            onShuffle: () {
-                                              _featuredRevision++;
-                                              if (sourceCards.isNotEmpty) {
-                                                anime!.shuffleFeatured();
-                                              } else {
-                                                controller.shuffleFeatured();
-                                              }
-                                            },
+                                            canShuffle: heroCards.length > 4,
+                                            onShuffle: () => setState(
+                                              () => _featuredRevision++,
+                                            ),
                                             onDetails: (card) => card.onTap(),
                                           )
-                                        else if (items.isNotEmpty)
+                                        else if (visibleHeroCards.isNotEmpty)
                                           ModernFeatureCarousel(
                                             key: ValueKey(
-                                              'anime-feature-${controller.feed.name}',
+                                              controller.feed ==
+                                                      HomeFeed.recommended
+                                                  ? 'home-primary-recommendations'
+                                                  : 'anime-feature-${controller.feed.name}',
                                             ),
                                             entries: [
                                               for (final item
@@ -428,7 +411,8 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                                 ),
                                             ],
                                           )
-                                        else if (controller.loading ||
+                                        else if (anime?.loading == true ||
+                                            controller.loading ||
                                             (!controller
                                                     .feed
                                                     .isGeneralCategory &&
@@ -438,11 +422,13 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                                 controller.feed ==
                                                 HomeFeed.recommended,
                                           )
-                                        else
+                                        else if (items.isEmpty)
                                           _EmptyFeed(
                                             message:
                                                 controller.error ??
-                                                '暂时没有可展示的番剧',
+                                                (anime == null
+                                                    ? '当前平台尚不支持 Lumina'
+                                                    : 'Lumina 暂无可展示的内容'),
                                             retry: controller.refresh,
                                           ),
                                         if (sourceCards.isEmpty &&
@@ -461,7 +447,9 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                       ],
                                     ),
                                   ),
-                                  if (ranking != null && onRankDetails != null)
+                                  if (!controller.feed.isGeneralCategory &&
+                                      ranking != null &&
+                                      onRankDetails != null)
                                     SliverToBoxAdapter(
                                       child: Padding(
                                         padding: const EdgeInsets.fromLTRB(
@@ -479,11 +467,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                   SliverList.list(
                                     children: [
                                       if (controller.feed.isGeneralCategory)
-                                        for (final channel
-                                            in controller.channels.where(
-                                              (channel) =>
-                                                  channel.id == 'anime',
-                                            ))
+                                        for (final channel in sourceChannels)
                                           _ChannelRail(
                                             id: channel.id,
                                             title: _channelTitle(channel),
@@ -495,17 +479,20 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                             onMore: () =>
                                                 _openChannel(context, channel),
                                             loading:
-                                                channel.id == 'anime' &&
-                                                controller.loading,
+                                                anime?.loadingIn(
+                                                  _channelBucket(channel),
+                                                ) ==
+                                                true,
                                             failed:
-                                                channel.id == 'anime' &&
-                                                controller.error != null &&
+                                                anime?.pageFailedIn(
+                                                      _channelBucket(channel),
+                                                    ) ==
+                                                    true &&
                                                 _sourceCards(
                                                   _channelBucket(channel),
                                                 ).isEmpty,
-                                            emptyMessage: channel.id == 'anime'
-                                                ? '暂无动漫内容'
-                                                : '暂无${channel.title}内容',
+                                            emptyMessage:
+                                                '暂无${channel.title}内容',
                                           )
                                       else if (controller
                                               .catalog
@@ -619,7 +606,13 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                         ],
                                       ],
                                       if (controller.feed.hasContentSource)
-                                        const SizedBox(height: 24),
+                                        SizedBox(
+                                          height:
+                                              24 +
+                                              MediaQuery.paddingOf(
+                                                context,
+                                              ).bottom,
+                                        ),
                                     ],
                                   ),
                                 ],
@@ -1086,158 +1079,171 @@ Future<void> _showChannelItems(
   context: context,
   useRootNavigator: true,
   isScrollControlled: true,
+  constraints: const BoxConstraints(maxWidth: 1120),
   backgroundColor: Theme.of(context).colorScheme.surface,
   showDragHandle: true,
-  builder: (sheetContext) => ModernHomeScope(
-    child: DraggableScrollableSheet(
-      initialChildSize: .82,
-      minChildSize: .4,
-      maxChildSize: .94,
-      expand: false,
-      builder: (context, scrollController) => SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      channel.title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+  builder: (sheetContext) => SizedBox(
+    width: MediaQuery.sizeOf(sheetContext).width >= 840
+        ? math.min(MediaQuery.sizeOf(sheetContext).width - 80, 1120)
+        : MediaQuery.sizeOf(sheetContext).width,
+    child: ModernHomeScope(
+      child: DraggableScrollableSheet(
+        initialChildSize: .82,
+        minChildSize: .4,
+        maxChildSize: .94,
+        expand: false,
+        builder: (context, scrollController) => SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 12, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        channel.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: '关闭',
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                    icon: const Icon(LucideIcons.x, size: 20),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, bounds) {
-                  final scale = MediaQuery.textScalerOf(context).scale(13) / 13;
-                  final columns = ((bounds.maxWidth - 40) / (116 * scale))
-                      .floor()
-                      .clamp(2, 6);
-                  final width =
-                      (bounds.maxWidth - 40 - 12 * (columns - 1)) / columns;
-                  return ListenableBuilder(
-                    listenable: Listenable.merge([controller, ?sourceUpdates]),
-                    builder: (context, _) {
-                      final visibleItems =
-                          channel.id == 'anime' &&
-                              controller.feed.isGeneralCategory
-                          ? controller.items
-                          : channel.allItems;
-                      final pending =
-                          channel.id == 'anime' &&
-                          controller.feed.isGeneralCategory &&
-                          controller.loading;
-                      final cards =
-                          readCards?.call() ??
-                          [
-                            for (final item in visibleItems)
-                              HomeAnimeCard.metadata(
-                                item,
-                                controller,
-                                () => onDetails(item),
-                              ),
-                          ];
-                      return ScrollConfiguration(
-                        behavior: const _HomeScrollBehavior(),
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: (notification) {
-                            final legacyMore =
-                                channel.id == 'anime' &&
-                                controller.feed.isGeneralCategory &&
-                                controller.hasMore;
-                            if (isNearEndScroll(notification) &&
-                                !controller.loading &&
-                                sourceLoading?.call() != true &&
-                                (!legacyMore || controller.error == null) &&
-                                sourceFailed?.call() != true) {
-                              if (legacyMore) unawaited(controller.loadMore());
-                              if (sourceHasMore?.call() == true) {
-                                unawaited(sourceLoadMore?.call());
-                              }
-                            }
-                            return false;
-                          },
-                          child: GridView.builder(
-                            controller: scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                            itemCount: cards.length + (pending ? columns : 0),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: columns,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 16,
-                                  mainAxisExtent: width * 1.42 + 48 * scale,
-                                ),
-                            itemBuilder: (context, index) =>
-                                index >= cards.length
-                                ? const ContentSkeleton(
-                                    child: SkeletonPosterCard(),
-                                  )
-                                : _PosterCard(
-                                    item: cards[index],
-                                    controller: controller,
-                                    onTap: () {
-                                      Navigator.of(sheetContext).pop();
-                                      cards[index].onTap();
-                                    },
-                                  ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            if (channel.id == 'anime' && controller.feed.isGeneralCategory ||
-                sourceLoadMore != null)
-              ListenableBuilder(
-                listenable: Listenable.merge([controller, ?sourceUpdates]),
-                builder: (context, _) {
-                  final legacyMore =
-                      channel.id == 'anime' &&
-                      controller.feed.isGeneralCategory &&
-                      controller.hasMore;
-                  final sourceMore = sourceHasMore?.call() == true;
-                  final pending =
-                      controller.loading || sourceLoading?.call() == true;
-                  final failed =
-                      legacyMore && controller.error != null ||
-                      sourceFailed?.call() == true;
-                  return TextButton(
-                    onPressed: !pending && (legacyMore || sourceMore)
-                        ? () {
-                            if (legacyMore) controller.loadMore();
-                            if (sourceMore) sourceLoadMore?.call();
-                          }
-                        : null,
-                    child: Text(
-                      pending
-                          ? '加载中…'
-                          : failed
-                          ? '加载失败，点击重试'
-                          : legacyMore || sourceMore
-                          ? '加载更多'
-                          : '已显示当前全部内容',
+                    IconButton(
+                      tooltip: '关闭',
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      icon: const Icon(LucideIcons.x, size: 20),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
-          ],
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, bounds) {
+                    final scale =
+                        MediaQuery.textScalerOf(context).scale(13) / 13;
+                    final columns = ((bounds.maxWidth - 40) / (116 * scale))
+                        .floor()
+                        .clamp(2, 6);
+                    final width =
+                        (bounds.maxWidth - 40 - 12 * (columns - 1)) / columns;
+                    return ListenableBuilder(
+                      listenable: Listenable.merge([
+                        controller,
+                        ?sourceUpdates,
+                      ]),
+                      builder: (context, _) {
+                        final visibleItems =
+                            channel.id == 'anime' &&
+                                controller.feed.isGeneralCategory
+                            ? controller.items
+                            : channel.allItems;
+                        final pending =
+                            sourceLoading?.call() == true ||
+                            channel.id == 'anime' &&
+                                controller.feed.isGeneralCategory &&
+                                controller.loading;
+                        final cards =
+                            readCards?.call() ??
+                            [
+                              for (final item in visibleItems)
+                                HomeAnimeCard.metadata(
+                                  item,
+                                  controller,
+                                  () => onDetails(item),
+                                ),
+                            ];
+                        return ScrollConfiguration(
+                          behavior: const _HomeScrollBehavior(),
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: (notification) {
+                              final legacyMore =
+                                  channel.id == 'anime' &&
+                                  controller.feed.isGeneralCategory &&
+                                  controller.hasMore;
+                              if (isNearEndScroll(notification) &&
+                                  !controller.loading &&
+                                  sourceLoading?.call() != true &&
+                                  (!legacyMore || controller.error == null) &&
+                                  sourceFailed?.call() != true) {
+                                if (legacyMore) {
+                                  unawaited(controller.loadMore());
+                                }
+                                if (sourceHasMore?.call() == true) {
+                                  unawaited(sourceLoadMore?.call());
+                                }
+                              }
+                              return false;
+                            },
+                            child: GridView.builder(
+                              controller: scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                              itemCount: cards.length + (pending ? columns : 0),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 16,
+                                    mainAxisExtent: width * 1.42 + 48 * scale,
+                                  ),
+                              itemBuilder: (context, index) =>
+                                  index >= cards.length
+                                  ? const ContentSkeleton(
+                                      child: SkeletonPosterCard(),
+                                    )
+                                  : _PosterCard(
+                                      item: cards[index],
+                                      controller: controller,
+                                      onTap: () {
+                                        Navigator.of(sheetContext).pop();
+                                        cards[index].onTap();
+                                      },
+                                    ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              if (channel.id == 'anime' && controller.feed.isGeneralCategory ||
+                  sourceLoadMore != null)
+                ListenableBuilder(
+                  listenable: Listenable.merge([controller, ?sourceUpdates]),
+                  builder: (context, _) {
+                    final legacyMore =
+                        channel.id == 'anime' &&
+                        controller.feed.isGeneralCategory &&
+                        controller.hasMore;
+                    final sourceMore = sourceHasMore?.call() == true;
+                    final pending =
+                        controller.loading || sourceLoading?.call() == true;
+                    final failed =
+                        legacyMore && controller.error != null ||
+                        sourceFailed?.call() == true;
+                    return TextButton(
+                      onPressed: !pending && (legacyMore || sourceMore)
+                          ? () {
+                              if (legacyMore) controller.loadMore();
+                              if (sourceMore) sourceLoadMore?.call();
+                            }
+                          : null,
+                      child: Text(
+                        pending
+                            ? '加载中…'
+                            : failed
+                            ? '加载失败，点击重试'
+                            : legacyMore || sourceMore
+                            ? '加载更多'
+                            : '已显示当前全部内容',
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     ),
@@ -1324,11 +1330,17 @@ class _RecommendationBento extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, bounds) {
       final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-      // 窄屏或大字体下改为单列，标题和评分不挤在窄缝里。
-      final columns = bounds.maxWidth >= 320 && scale <= 1.3 ? 2 : 1;
-      final rowHeight = columns == 1
+      final columns = bounds.maxWidth >= 960 && scale <= 1.3
+          ? 4
+          : bounds.maxWidth >= 480 * scale + 10
+          ? 2
+          : 1;
+      final rowHeight = columns == 1 || scale > 1.3
           ? 140.0 + 64 * (scale - 1).clamp(0, 3)
-          : ((bounds.maxWidth - 10) / 2 * .75).clamp(124.0, 152.0);
+          : ((bounds.maxWidth - 10 * (columns - 1)) / columns * .75).clamp(
+              124.0,
+              152.0,
+            );
       final rows = (items.length + columns - 1) ~/ columns;
       return Column(
         children: [

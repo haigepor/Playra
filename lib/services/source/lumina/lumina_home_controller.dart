@@ -27,6 +27,8 @@ class LuminaHomeController extends ChangeNotifier {
   List<LuminaChannel> browseChannels([String bucket = 'all']) => channels
       .where(
         (channel) => switch (bucket) {
+          final value when value.startsWith('channel:') =>
+            channel.id == value.substring('channel:'.length),
           'japanese' =>
             channel.name.contains('日本') || channel.name.contains('日漫'),
           'chinese' => ['国产', '國產', '国漫', '國漫'].any(channel.name.contains),
@@ -45,21 +47,12 @@ class LuminaHomeController extends ChangeNotifier {
     ];
     final result = <LuminaVideo>[];
     final seen = <String>{};
-    final longest = lists.fold<int>(
-      0,
-      (value, items) => items.length > value ? items.length : value,
-    );
-    // 跨频道只交错展示真实条目，不把推荐权重伪称热度排名。
-    for (var index = 0; index < longest; index++) {
-      for (final list in lists) {
-        if (index < list.length) {
-          final video = list[index];
-          if ((video.updatedTo == null ||
-                  video.updatedTo! > 0 ||
-                  video.isEnd) &&
-              seen.add(video.id)) {
-            result.add(video);
-          }
+    // 频道与栏内条目均沿用来源顺序，不按索引跨频道交错。
+    for (final list in lists) {
+      for (final video in list) {
+        if ((video.updatedTo == null || video.updatedTo! > 0 || video.isEnd) &&
+            seen.add(video.id)) {
+          result.add(video);
         }
       }
     }

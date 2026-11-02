@@ -3,16 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
-import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/source/content_providers.dart';
 import 'package:kazumi/services/source/content_search.dart';
 import '../secondary/secondary_theme.dart';
 import '../settings/modern_back_button.dart';
 import '../widgets/modern_page_art.dart';
-import 'package:kazumi/request/apis/bangumi_api.dart';
-import 'package:kazumi/modules/bangumi/bangumi_item.dart';
-import 'package:kazumi/pages/info/source_search_entry.dart';
-import 'package:kazumi/services/source/content_search_playback.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
@@ -45,33 +40,15 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
   @override
   void initState() {
     super.initState();
-    session = ContentSearchSession(
-      widget.providers ??
-          contentProviders(inject<PluginsController>().pluginList),
-    );
-    ready =
-        widget.providers == null &&
-            inject<PluginsController>().pluginList.isEmpty
-        ? _loadBundledRules()
-        : Future.value();
+    session = ContentSearchSession(widget.providers ?? contentProviders());
+    ready = Future.value();
     input = TextEditingController(text: widget.initialKeyword);
     group = widget.initialGroup;
     if (group != null &&
-        !session.providers.any((p) => p.groups.contains(group)))
+        !session.providers.any((p) => p.groups.contains(group))) {
       group = null;
-    if (widget.initialKeyword.isNotEmpty) unawaited(_search());
-  }
-
-  Future<void> _loadBundledRules() async {
-    final providers = await loadContentProviders(const []);
-    if (!mounted) {
-      for (final provider in providers) {
-        provider.dispose();
-      }
-      return;
     }
-    session.dispose();
-    setState(() => session = ContentSearchSession(providers));
+    if (widget.initialKeyword.isNotEmpty) unawaited(_search());
   }
 
   Future<void> _search() async {
@@ -111,13 +88,6 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
             fontSize: 20,
             fontWeight: FontWeight.w700,
           ),
-          actions: [
-            IconButton(
-              tooltip: '番组资料高级搜索',
-              icon: const Icon(LucideIcons.slidersHorizontal),
-              onPressed: () => context.pushNamed('/search/metadata'),
-            ),
-          ],
         ),
         body: SafeArea(
           top: false,
@@ -505,68 +475,11 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         await context.pushNamed('/info/', arguments: sdkEntry);
         return;
       }
-      if (work.primary.group != ContentGroup.anime) {
-        if (current()) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('没有可确认的 SDK 作品来源，请尝试更完整的名称或年份')),
-          );
-        }
-        return;
-      }
-      Object? entry;
-      for (final hit in work.hits) {
-        final provider = session.provider(hit.providerId);
-        if (provider is BangumiContentProvider) entry = provider.entry(hit);
-        if (entry != null) break;
-      }
-      if (entry == null && work.primary.group == ContentGroup.anime) {
-        // 规则只有标题/链接时自动匹配唯一真实身份，不创建假 ID 或确认弹窗。
-        final result = await BangumiApi.bangumiSearch(
-          work.title,
-          limit: 20,
-        ).timeout(const Duration(seconds: 20));
-        if (!mounted || !current()) return;
-        entry = uniqueAnimeMetadata(work.primary, result?.items ?? []);
-      }
-      if (!mounted || !current()) return;
-      if (entry == null) {
+      if (current()) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('未找到对应作品资料，请尝试更完整的名称')));
-        return;
+        ).showSnackBar(const SnackBar(content: Text('当前作品没有可用的 Lumina 入口')));
       }
-      Object destination = entry;
-      if (entry is BangumiItem) {
-        final candidate = await prepareSearchPlayback(
-          entry,
-          work,
-          session,
-          cancel,
-        );
-        if (!mounted || !current()) return;
-        if (candidate == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('来源目录预加载失败，请重试'),
-              action: SnackBarAction(
-                label: '重试',
-                onPressed: () => _openWork(work),
-              ),
-            ),
-          );
-          return;
-        }
-        cancel.cancel('ready');
-        destination = SourceSearchEntry(
-          item: entry,
-          playbackArgs: candidate.args(entry),
-          rules: session.providers.whereType<RuleContentProvider>().map(
-            (p) => p.plugin,
-          ),
-        );
-      }
-      if (!mounted || !current()) return;
-      await context.pushNamed('/info/', arguments: destination);
     } catch (_) {
       if (mounted && current()) {
         ScaffoldMessenger.of(

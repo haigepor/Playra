@@ -6,12 +6,9 @@ import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 import 'package:kazumi/pages/settings/sync/sync_settings_widgets.dart';
 import 'package:kazumi/services/storage/storage.dart';
-import 'package:kazumi/services/sync/bangumi_sync_service.dart';
 
 enum _SyncStatus {
-  unconnected('未连接', Icons.link_off_rounded),
   unconfigured('未配置', Icons.settings_outlined),
-  connecting('正在连接', Icons.sync_rounded),
   connectionError('连接异常', Icons.error_outline_rounded),
   enabled('已开启', Icons.check_circle_outline_rounded),
   disabled('已关闭', Icons.pause_circle_outline_rounded),
@@ -39,16 +36,8 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
   @override
   Widget build(BuildContext context) => SettingsDetailScaffold(
     title: const Text('同步设置'),
-    body: ListenableBuilder(
-      listenable: BangumiSyncService(),
-      builder: (context, _) {
-        final bangumi = BangumiSyncService();
-        final hasToken = GStorage.getSetting(
-          SettingsKeys.bangumiAccessToken,
-        ).trim().isNotEmpty;
-        final bangumiEnabled = GStorage.getSetting(
-          SettingsKeys.bangumiSyncEnable,
-        );
+    body: Builder(
+      builder: (context) {
         final hasServer = GStorage.getSetting(
           SettingsKeys.webDavURL,
         ).trim().isNotEmpty;
@@ -59,26 +48,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             GStorage.getSetting(SettingsKeys.webDavEnableDanmakuShield);
         final colors = Theme.of(context).colorScheme;
         final cards = [
-          _SyncServiceCard(
-            title: '追番同步',
-            service: 'Bangumi',
-            description: '与 Bangumi 保持相同的追番状态。',
-            content: '想看 · 在看 · 看过 · 搁置 · 抛弃',
-            icon: Icons.bookmarks_rounded,
-            color: colors.secondaryContainer,
-            onColor: colors.onSecondaryContainer,
-            status: bangumi.isConnecting
-                ? _SyncStatus.connecting
-                : bangumi.lastError != null
-                ? _SyncStatus.connectionError
-                : !hasToken
-                ? _SyncStatus.unconnected
-                : bangumiEnabled
-                ? _SyncStatus.enabled
-                : _SyncStatus.disabled,
-            action: hasToken ? '管理追番同步' : '连接 Bangumi',
-            onPressed: () => _open('/settings/bangumi/'),
-          ),
           _SyncServiceCard(
             title: '多设备同步',
             service: 'WebDAV',
@@ -103,26 +72,10 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             const SyncPageIntro(
               icon: Icons.sync_rounded,
               title: '让追番保持同步',
-              description: '选择需要的服务，也可以同时使用。',
+              description: '使用自己的 WebDAV 保存个人记录。',
               artwork: 'modern-sync-art',
             ),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final largeText =
-                    MediaQuery.textScalerOf(context).scale(16) > 22;
-                if (constraints.maxWidth >= 680 && !largeText) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: cards[0]),
-                      const SizedBox(width: 16),
-                      Expanded(child: cards[1]),
-                    ],
-                  );
-                }
-                return Column(spacing: 16, children: cards);
-              },
-            ),
+            ...cards,
           ],
         );
       },

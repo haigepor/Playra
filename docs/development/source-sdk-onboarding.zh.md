@@ -1,11 +1,14 @@
 # Playra 统一 SDK 接入规范
 
+> 当前仅保留 Lumina。Kazumi 规则、Bangumi、DanDanPlay、trace.moe 和旧供应商已从运行入口移除；不再安装站点规则或使用资料回退。旧来源 HTTP / 算法路由返回 SOURCE_REMOVED。下文与其他来源有关的流程仅供历史参考，不能用于当前接入。
+
+
 版本：1.10；更新：2026-10-19；适用：新增 SDK、内容 HTTP API、动漫规则和资料源。本文是唯一接入入口；[接入记录模板](templates/source-sdk-checklist.zh.md)是每次交付的必填附件。历史分析说明背景，不代替本文或当前源码。
 
 本文中的“必须”为新增接入的验收条件；“当前实现”为代码现状；“待补齐”为尚未实现或尚无验证证据的事项。规范更新不表示对应业务代码已自动升级。
 ## 1. 当前接入盘点与架构结论
 
-当前只登记 **Lumina 动漫 SDK** 与 **Bangumi 资料提供方**。应用协议运行链为 Dart + C，不再通过 Python、Chaquopy、设备桥或旧 HTTP 算法宿主执行。MioMedia、AniFive 和旧 Lumina 的 vendor/导入器/宿主已从项目执行路径移除。
+当前只登记 **Lumina 动漫 SDK**。应用协议运行链为 Dart + C，不再通过 Python、Chaquopy、设备桥或旧 HTTP 算法宿主执行。MioMedia、AniFive 和旧 Lumina 的 vendor/导入器/宿主已从项目执行路径移除。
 
 | 组件 | 当前职责 |
 |---|---|
@@ -13,8 +16,8 @@
 | Lumina Dart 执行器 | 每安装持久身份、资产校验、单个工作 isolate、初始化/排队/调用总预算及迟到结果隔离 |
 | lumina_engine | Dart 鉴权、RSA 信封、标准 AES/F 核、HTTP 连接复用、播放解析和数据转换；ARM64 响应优先走同进程 C，保留 `_fuse` 兼容路径 |
 | C 引擎和镜像 | SDK 原样提供的 `_fuse` 二进制及镜像，按摘要固定；只绑定已核验的七个 C 符号 |
-| Bangumi / 公共播放器 / 个人库 | 保留资料、播放能力、历史与收藏；不按片名改写旧来源身份 |
-| 普通规则引擎 | 保留已安装规则及原有 Bangumi 播放流程；不自动加入新版 SDK 搜索集合 |
+| 公共播放器 / 个人库 | 保留 Lumina 播放、历史与收藏；旧来源仅保留本地记录 |
+| 旧来源兼容 | 不再装载或执行站点规则，不请求 Bangumi、弹幕或识图服务；历史身份模型继续可读 |
 
 构建恢复和当前验收以 [原生构建输入](../release/build-inputs.zh.md)、[C ABI 与平台边界](../../packages/lumina_engine/README.md) 为准。旧来源记录保持可读并显示“已移除来源（记录保留）”；不清除 Hive 或应用数据。
 

@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="pubspec.yaml"><img src="https://img.shields.io/badge/Flutter-3.47.6-5267d9?style=flat-square" alt="Flutter 3.47.6"></a>
-  <img src="https://img.shields.io/badge/Android-内置_Python-202638?style=flat-square" alt="Android 内置 Python">
+  <img src="https://img.shields.io/badge/Android-Dart_%2B_C-202638?style=flat-square" alt="Android Dart + C">
   <img src="https://img.shields.io/badge/状态-开发中-202638?style=flat-square" alt="开发中">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-202638?style=flat-square" alt="GPL 3.0 许可证"></a>
 </p>
@@ -19,7 +19,7 @@
   <a href="#文档导航">项目文档</a>
 </p>
 
-**Playra 是我们自己的影音应用主线**，基于 [Kazumi](https://github.com/Predidit/Kazumi) 开源项目，使用 Flutter 构建番剧与影视发现、日历、追番、榜单和播放体验，并接入 MioMedia 与 AniFive 四源 SDK。
+**Playra 是我们自己的影音应用主线**，基于 [Kazumi](https://github.com/Predidit/Kazumi) 开源项目，使用 Flutter 构建番剧与影视发现、日历、追番、榜单和播放体验，当前仅接入 Lumina 动漫 SDK。
 
 `main` 保存 Playra 的功能、界面与发布改动；`kazumi-upstream` 保存官方原版，便于持续跟进上游。下载、运行和更新本项目时，请使用 **Playra main** 及本仓库的发布入口。
 
@@ -29,13 +29,13 @@
 
 | 模块 | 当前能力 |
 | --- | --- |
-| 发现与目录 | 番剧推荐与影视分类、搜索、筛选、真实分类榜单，独立加载和重试 |
-| 日历与追番 | 放送日历、季度浏览、追番状态和观看记录，统一紧凑深色界面 |
+| 发现与目录 | Lumina 动漫频道、目录、搜索、推荐与播放，独立加载和重试 |
+| 日历与追番 | 本地收藏与观看记录；旧日历来源已移除 |
 | 播放与选集 | 资料与播放一体页、线路选择、自适应选集、分段/排序与当前集状态 |
-| 内容运行时 | Android 内置 Python SDK；Web 使用同源内容服务与媒体网关 |
+| 内容运行时 | Android / Windows 使用 Lumina Dart + C；Web 暂无 Lumina 执行器 |
 | 我的与设置 | 历史、下载、规则、同步、外观和播放设置，保留既有数据兼容 |
 
-Bangumi 番剧与 MioMedia 影视保持各自的作品身份和业务能力。已接入的功能与开发计划以源码和[项目文档](#文档导航)为准。
+首页、搜索和作品播放只使用 Lumina，不再回退 Bangumi 或站点规则。Bangumi、KazumiRules、DanDanPlay、trace.moe、MioMedia 和 AniFive 的接入已移除；旧历史、收藏和下载记录保留，旧在线来源不再执行。已接入的功能与开发计划以源码和[项目文档](#文档导航)为准。
 
 ## 界面预览
 
@@ -54,19 +54,16 @@ Bangumi 番剧与 MioMedia 影视保持各自的作品身份和业务能力。�
 | 环境 | 要求 |
 | --- | --- |
 | Flutter / Dart | 使用 [pubspec.yaml](pubspec.yaml) 声明的版本；当前 Flutter 3.47.6、Dart ≥3.10.0 且 <4.0.0 |
-| Python | 3.11+，用于 SDK 输入工具与 Web 内容服务 |
-| Android | Android SDK、JDK 17；应用内 Python 由 Chaquopy 打包 |
+| Android | Android SDK、JDK 17；Lumina 引擎由原生资产打包 |
 | Web | Node.js；当前 CI 使用 Node.js 22，依赖见 [Web 后端](tool/web_backend/package.json) |
 
-MioMedia 与 AniFive SDK 属于私有构建输入，公开仓库不包含完整模块和数据资源。构建前需要分别准备输入；操作、完整性要求和当前 CI 缺口见[构建输入说明](docs/release/build-inputs.zh.md)。后续新增来源统一遵循[SDK 接入规范](docs/development/source-sdk-onboarding.zh.md)，并填写[接入验收模板](docs/development/templates/source-sdk-checklist.zh.md)。
+Lumina 原生引擎与私有资产属于构建输入，准备和完整性校验见[构建输入说明](docs/release/build-inputs.zh.md)。当前只在 Android ARM64/x64 和 Windows x64 启用；其他平台显示明确的不可用状态。
 
-以下为 Windows / PowerShell 示例；SDK 路径请替换为自己的实际目录：
+以下为 Windows / PowerShell 示例：
 
 ```powershell
 git clone --branch main https://github.com/haigepor/Playra.git
 cd Playra
-python tool/miomedia_sdk_input.py sync --sdk-directory "C:/path/to/sdk/python/miomedia"
-python -B -X utf8 tool/source_runtime/import_anifive.py "C:/path/to/sdk/python/anifive"
 flutter pub get
 ```
 
@@ -80,23 +77,23 @@ flutter pub get
 
 默认构建调试包，输出 `build/app/outputs/flutter-apk/app-debug.apk`。传入 `-Release` 可构建 release 模式；正式签名仍须单独配置，release 模式本身不代表正式签名发布。
 
-Android 默认在应用内调用 Python SDK，日常使用无需启动电脑服务。已有安装 ID、数据目录和通信标识保持兼容，系统显示名称为 Playra。
+Android 在应用内调用 Lumina Dart + C 引擎，日常使用无需电脑服务或 Python。已有安装 ID、数据目录和通信标识保持兼容，系统显示名称为 Playra。
 
 ### Web
 
-准备好两套 SDK 后，构建并启动 Web：
+Web 当前仅保留基础界面和媒体代理，尚不能执行 Lumina；不再启动其他来源补齐内容。构建和启动方式：
 
 ```powershell
-.\tool\start-web.ps1 -Port 8931 -RuntimePort 8945 -BangumiEchPort 8946 -Build
+.\tool\start-web.ps1 -Port 8931 -Build
 ```
 
-浏览器地址为 `http://127.0.0.1:8931`。脚本检查并启动 Python 算法服务、Bangumi ECH 服务与 Node 同源网关；日志位于 `.dart_tool/web-service/`。已运行的旧服务不会自动重启，修改代码后须确认服务版本。查看新版移动界面可改用：
+浏览器地址为 `http://127.0.0.1:8931`。脚本启动 Node 静态服务和媒体代理；日志位于 `.dart_tool/web-service/`。已运行的旧服务不会自动重启，修改代码后须确认服务版本。查看新版移动界面可改用：
 
 ```powershell
-.\tool\start-home-preview.ps1 -Port 8933 -RuntimePort 8945 -Build
+.\tool\start-home-preview.ps1 -Port 8933 -Build
 ```
 
-这些地址只用于本地开发；Web 运行方式和来源接口见[算法运行时](docs/source-algorithm-runtime.zh.md)与[来源服务](docs/source-http-api.md)。
+这些地址只用于本地开发；Web 运行方式和来源接口见[原生引擎说明](packages/lumina_engine/README.md)。
 
 ### 更新另一台设备
 

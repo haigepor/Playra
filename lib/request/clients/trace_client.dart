@@ -1,30 +1,17 @@
-import 'package:dio/dio.dart';
-import 'package:kazumi/request/core/dio_factory.dart';
-import 'package:kazumi/request/core/network_error_mapper.dart';
+import 'package:dio/dio.dart' show CancelToken;
+import 'package:kazumi/services/source/source_models.dart' show SourceException;
 
+/// 仅保留旧调用者的拒绝边界，不再创建网络客户端。
 class TraceClient {
   TraceClient._();
-
   static final TraceClient instance = TraceClient._();
-
+  Never _removed() =>
+      throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   Future<dynamic> post(
     String url, {
     Object? data,
     Map<String, dynamic>? queryParameters,
     Map<String, dynamic> headers = const {},
     CancelToken? cancelToken,
-  }) async {
-    try {
-      final response = await DioFactory.apiDio.post(
-        url,
-        data: data,
-        queryParameters: queryParameters,
-        options: Options(headers: headers),
-        cancelToken: cancelToken,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw await NetworkErrorMapper.mapException(e);
-    }
-  }
+  }) async => _removed();
 }

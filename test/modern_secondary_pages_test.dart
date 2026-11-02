@@ -1,6 +1,7 @@
+import 'package:kazumi/pages/source_unavailable_page.dart';
+import 'package:kazumi/request/apis/bangumi_api.dart';
+import 'package:kazumi/services/source/source_models.dart';
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
@@ -15,13 +16,11 @@ import 'package:kazumi/pages/search/search_controller.dart';
 import 'package:kazumi/pages/search/search_page.dart';
 import 'package:kazumi/pages/search/image_search_page.dart';
 import 'package:kazumi/pages/info/character_info_view.dart';
-import 'package:kazumi/pages/info/character_page.dart';
 import 'package:kazumi/bean/widget/image_preview.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
 import 'package:kazumi/pages/onboarding/onboarding_step_layout.dart';
 import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
-import 'package:kazumi/request/core/dio_factory.dart';
 
 class _Paths extends PathProviderPlatform {
   _Paths(this.path);
@@ -66,25 +65,6 @@ class _Controller extends SearchPageController {
     queries.add(input);
     isLoading = false;
   }
-}
-
-class _Adapter implements HttpClientAdapter {
-  String body = '{"data":[]}';
-  String Function(RequestOptions)? bodyFor;
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async => ResponseBody.fromString(
-    bodyFor?.call(options) ?? body,
-    200,
-    headers: {
-      Headers.contentTypeHeader: ['application/json'],
-    },
-  );
-  @override
-  void close({bool force = false}) {}
 }
 
 void main() {
@@ -140,22 +120,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   }
 
-  test('真实控制器区分成功空结果、失败与恢复，不改变旧版字段', () async {
-    final adapter = _Adapter();
-    final dio = DioFactory.bangumiDio;
-    final oldAdapter = dio.httpClientAdapter;
-    dio.httpClientAdapter = adapter;
-    addTearDown(() => dio.httpClientAdapter = oldAdapter);
-    final controller = SearchPageController(_Collect(), _Histories());
-    await controller.searchBangumi('不存在', type: 'init');
-    expect(controller.lastSearchFailed, isFalse);
-    expect(controller.bangumiList, isEmpty);
-    adapter.body = '{}';
-    await controller.searchBangumi('失败', type: 'init');
-    expect(controller.lastSearchFailed, isTrue);
-    adapter.body = '{"data":[]}';
-    await controller.searchBangumi('恢复', type: 'init');
-    expect(controller.lastSearchFailed, isFalse);
+  test('旧资料请求明确报告来源已移除', () async {
+    await expectLater(
+      BangumiApi.bangumiSearch('作品'),
+      throwsA(
+        isA<SourceException>().having((e) => e.code, 'code', 'SOURCE_REMOVED'),
+      ),
+    );
   });
 
   for (final width in [320.0, 390.0, 760.0]) {
@@ -352,45 +323,10 @@ void main() {
     expect(find.byType(CustomScrollView), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
-  testWidgets('人物完整页加载接口并切换资料与真实空评论', (tester) async {
-    final requests = <String>[];
-    final adapter = _Adapter()
-      ..bodyFor = (options) {
-        requests.add(options.path);
-        return options.path.contains('/comments')
-            ? '[]'
-            : '{"id":123,"name":"人物原名","nameCN":"接口人物名","summary":"来自接口的完整简介","infobox":[],"images":{}}';
-      };
-    final dio = DioFactory.bangumiDio;
-    final oldAdapter = dio.httpClientAdapter;
-    dio.httpClientAdapter = adapter;
-    addTearDown(() => dio.httpClientAdapter = oldAdapter);
-    await mount(
-      tester,
-      const CharacterPage(
-        characterID: 123,
-        characterName: '点击入口名称',
-        characterRelation: '主角',
-        modern: true,
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(requests, hasLength(2));
-    expect(requests.every((url) => url.contains('123')), isTrue);
-    expect(find.text('接口人物名'), findsOneWidget);
-    expect(find.text('来自接口的完整简介'), findsOneWidget);
-    expect(
-      tester.widget<TabBar>(find.byType(TabBar)).indicator,
-      isA<UnderlineTabIndicator>(),
-    );
-    await tester.tap(find.text('吐槽'));
-    await tester.pumpAndSettle();
-    expect(find.text('还没有评论'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.tap(find.text('资料'));
-    await tester.pumpAndSettle();
-    expect(find.text('接口人物名'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+  testWidgets('旧人物资料入口明确说明来源已移除', (tester) async {
+    await mount(tester, const SourceUnavailablePage(feature: '人物资料'));
+    expect(find.text('当前仅保留 Lumina 数据源'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
   testWidgets('旧版搜索和以图搜番保持原呈现', (tester) async {
     final controller = _Controller(_Histories());

@@ -17,7 +17,11 @@ void main() {
         await tester.binding.setSurfaceSize(Size(width, 1100));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         final plugin = Plugin.fromJson(
-          jsonDecode(File('assets/plugins/DM84.json').readAsStringSync()),
+          jsonDecode(
+            File(
+              'test/fixtures/retired_sources/plugins/DM84.json',
+            ).readAsStringSync(),
+          ),
         );
         await tester.pumpWidget(
           MaterialApp(

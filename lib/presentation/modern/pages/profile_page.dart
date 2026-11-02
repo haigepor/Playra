@@ -6,7 +6,6 @@ import 'package:kazumi/pages/menu/route_visibility.dart';
 import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/services/storage/storage.dart';
-import 'package:kazumi/services/sync/bangumi_sync_service.dart';
 import 'package:kazumi/presentation/shared/tab_shell.dart';
 import '../home/home_theme.dart';
 import '../profile/modern_profile_view.dart';
@@ -27,12 +26,10 @@ class ModernProfilePage extends StatefulWidget {
 class _ModernProfilePageState extends State<ModernProfilePage>
     with WidgetsBindingObserver {
   bool _attached = false;
-  final _bangumi = BangumiSyncService();
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _bangumi.addListener(_refresh);
   }
 
   @override
@@ -77,14 +74,12 @@ class _ModernProfilePageState extends State<ModernProfilePage>
   }
 
   ProfileSyncState _readSyncState() => ProfileSyncState.from(
-    connecting: _bangumi.isConnecting,
-    hasToken: GStorage.getSetting(
-      SettingsKeys.bangumiAccessToken,
-    ).trim().isNotEmpty,
-    connectionError: _bangumi.lastError != null,
-    verified: _bangumi.initialized,
-    bangumiEnabled: GStorage.getSetting(SettingsKeys.bangumiSyncEnable),
-    username: _bangumi.username,
+    connecting: false,
+    hasToken: false,
+    connectionError: false,
+    verified: false,
+    bangumiEnabled: false,
+    username: '',
     webDavConfigured: GStorage.getSetting(
       SettingsKeys.webDavURL,
     ).trim().isNotEmpty,
@@ -97,7 +92,6 @@ class _ModernProfilePageState extends State<ModernProfilePage>
   @override
   void dispose() {
     _setAttached(false);
-    _bangumi.removeListener(_refresh);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

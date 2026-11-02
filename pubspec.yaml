@@ -234,8 +234,6 @@ flutter:
     - assets/images/sdk-auto.svg
     - assets/images/sdk-orbit.svg
     - assets/images/sdk-route.svg
-    - assets/plugins/
-    - assets/migrations/
     - assets/shaders/
     - assets/images/logo/
     - assets/statements/

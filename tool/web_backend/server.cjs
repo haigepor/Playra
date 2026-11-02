@@ -6,8 +6,6 @@ const path = require('node:path');
 const { pipeline } = require('node:stream/promises');
 const { Readable } = require('node:stream');
 const { validateTarget, resolveStaticPath } = require('./security.cjs');
-const { parseVideo } = require('./parser.cjs');
-const { captcha } = require('./captcha.cjs');
 const { serveStatic } = require('./static_assets.cjs');
 
 // 保留 Node 默认根并加载系统受信任根；仍验证证书和主机名，不接受自签名例外。
@@ -20,8 +18,6 @@ const root = process.env.KAZUMI_WEB_ROOT
   ? path.resolve(process.env.KAZUMI_WEB_ROOT)
   : path.resolve(__dirname, '../../build/web');
 const port = Number(process.env.KAZUMI_WEB_PORT || 8930);
-const sourceApiPort = Number(process.env.KAZUMI_SOURCE_API_PORT || 8940);
-const bangumiEchPort = Number(process.env.PLAYRA_BANGUMI_ECH_PORT || 0);
 const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript',
   '.json': 'application/json', '.wasm': 'application/wasm', '.css': 'text/css',
@@ -70,18 +66,6 @@ function verifyOrigin(req) {
 
 async function upstreamRequest(target, method, headers = {}, bootstrap = false) {
   const requested = new URL(target);
-  if (!bootstrap && bangumiEchPort && requested.protocol === 'https:' &&
-      !requested.username && !requested.password && !requested.port &&
-      ['api.bgm.tv', 'next.bgm.tv', 'lain.bgm.tv'].includes(requested.hostname)) {
-    const forwarded = { 'x-kazumi-request': '1' };
-    for (const [name, value] of Object.entries(headers)) {
-      if (['accept', 'content-type', 'user-agent'].includes(name.toLowerCase())) forwarded[name] = value;
-    }
-    const request = http.request({ hostname: '127.0.0.1', port: bangumiEchPort,
-      path: `/relay?url=${encodeURIComponent(target)}`, method, headers: forwarded });
-    request.setTimeout(35000, () => request.destroy(new Error('Bangumi 网络请求超时')));
-    return request;
-  }
   const { url, address } = await validateTarget(target, bootstrap ?
     async () => [{ address: '8.8.8.8', family: 4 }] : publicLookup);
   const host = url.hostname.replace(/^\[|\]$/g, '');
@@ -261,41 +245,14 @@ const server = http.createServer(async (req, res) => {
   try {
     verifyOrigin(req);
     const url = new URL(req.url, `http://${req.headers.host}`);
-    if (url.pathname.startsWith('/api/runtime/')) {
+    if (url.pathname.startsWith('/api/runtime/') || url.pathname.startsWith('/api/v1/') || ['/api/parse', '/api/captcha'].includes(url.pathname)) {
       res.writeHead(410, { 'content-type': 'application/json' });
       res.end(JSON.stringify({error:{code:'SOURCE_REMOVED'}})); return;
-    }
-    if (url.pathname.startsWith('/api/v1/')) {
-      // 固定本机业务服务，保持 Web 同源；不允许客户端指定转发目标。
-      const headers = { ...req.headers, host: `127.0.0.1:${sourceApiPort}` };
-      const outgoing = http.request({ hostname: '127.0.0.1', port: sourceApiPort,
-        path: url.pathname + url.search, method: req.method, headers });
-      const response = new Promise((resolve, reject) => {
-        outgoing.once('response', resolve); outgoing.once('error', reject);
-      });
-      req.pipe(outgoing);
-      const incoming = await response;
-      res.statusCode = incoming.statusCode;
-      for (const [name, value] of Object.entries(incoming.headers)) {
-        if (value != null && !['connection', 'transfer-encoding'].includes(name)) res.setHeader(name, value);
-      }
-      res.once('close', () => { outgoing.destroy(); incoming.destroy(); });
-      await pipeline(incoming, res); return;
     }
     if (url.pathname === '/api/health') {
       res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ status: 'ok' })); return;
     }
     if (url.pathname === '/api/proxy') { await relay(req, res, url); return; }
-    if (['/api/parse', '/api/captcha'].includes(url.pathname) && req.method === 'POST') {
-      if (req.headers['x-kazumi-request'] !== '1') throw new Error('缺少请求标记');
-      const chunks = []; let size = 0;
-      for await (const chunk of req) { size += chunk.length; if (size > 32768) throw new Error('请求过大'); chunks.push(chunk); }
-      const data = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-      const abort = new AbortController();
-      res.once('close', () => abort.abort());
-      const output = url.pathname === '/api/parse' ? await parseVideo(data, upstreamRequest, { signal: abort.signal }) : await captcha(data, upstreamRequest);
-      res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(output)); return;
-    }
     if (!['GET', 'HEAD'].includes(req.method)) { res.statusCode = 405; res.end(); return; }
     let file = resolveStaticPath(root, url.pathname === '/' ? '/index.html' : url.pathname);
     if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(root, 'index.html');

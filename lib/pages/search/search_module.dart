@@ -1,31 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/pages/search/image_search_page.dart';
-import 'package:kazumi/pages/search/search_controller.dart';
-import 'package:kazumi/pages/search/search_page.dart';
-import 'package:kazumi/presentation/interface_page_host.dart';
-import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
+import 'package:kazumi/pages/source_unavailable_page.dart';
 import 'package:kazumi/presentation/modern/pages/content_search_screen.dart';
 import 'package:kazumi/services/source/content_search.dart';
-
-Widget _searchPage(BuildContext context, {String inputTag = ''}) =>
-    InterfacePageHost(
-      legacy: (_) => SearchPage(
-        controller: context.read<SearchPageController>(),
-        inputTag: inputTag,
-      ),
-      modern: (_) => ModernSecondaryScope(
-        child: SearchPage(
-          controller: context.read<SearchPageController>(),
-          inputTag: inputTag,
-          modern: true,
-        ),
-      ),
-    );
-
-void _provideSearchController(Scoped scoped) {
-  scoped.add<SearchPageController>(SearchPageController.new);
-}
 
 final searchModule = createModule(
   path: '/search',
@@ -33,7 +9,6 @@ final searchModule = createModule(
     c
       ..route(
         '/',
-        provide: _provideSearchController,
         child: (context, state) => ContentSearchScreen(
           initialGroup: state.arguments is ContentGroup
               ? state.arguments as ContentGroup
@@ -42,28 +17,16 @@ final searchModule = createModule(
       )
       ..route(
         '/metadata',
-        provide: _provideSearchController,
-        child: (context, state) => _searchPage(context),
+        child: (_, _) => const SourceUnavailablePage(feature: '资料搜索'),
       )
       ..route(
         '/image',
-        provide: _provideSearchController,
-        child: (context, state) => InterfacePageHost(
-          legacy: (_) =>
-              ImageSearchPage(controller: context.read<SearchPageController>()),
-          modern: (_) => ModernSecondaryScope(
-            child: ImageSearchPage(
-              controller: context.read<SearchPageController>(),
-              modern: true,
-            ),
-          ),
-        ),
+        child: (_, _) => const SourceUnavailablePage(feature: '截图识别'),
       )
       ..route(
         '/:tag',
-        provide: _provideSearchController,
         child: (context, state) =>
-            _searchPage(context, inputTag: state['tag'] ?? ''),
+            ContentSearchScreen(initialKeyword: state['tag'] ?? ''),
       );
   },
 );

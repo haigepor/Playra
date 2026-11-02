@@ -1,43 +1,16 @@
-import 'package:dio/dio.dart';
-import 'package:kazumi/request/core/dio_factory.dart';
-import 'package:kazumi/request/core/network_error_mapper.dart';
-import 'package:kazumi/utils/dandan_credentials.dart';
-import 'package:kazumi/utils/http_headers.dart';
-import 'package:kazumi/utils/crypto.dart';
+import 'package:dio/dio.dart' show CancelToken;
+import 'package:kazumi/services/source/source_models.dart' show SourceException;
 
+/// 仅保留旧调用者的拒绝边界，不再创建网络客户端。
 class DanmakuClient {
   DanmakuClient._();
-
   static final DanmakuClient instance = DanmakuClient._();
-
+  Never _removed() =>
+      throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   Future<dynamic> get(
     String url, {
     Map<String, dynamic>? queryParameters,
     Map<String, dynamic> headers = const {},
     CancelToken? cancelToken,
-  }) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final uri = Uri.parse(url);
-    final requestHeaders = <String, dynamic>{
-      'user-agent': getRandomUA(),
-      'referer': '',
-      'X-Auth': 1,
-      'X-AppId': dandanCredentials['id'],
-      'X-Timestamp': timestamp,
-      'X-Signature': generateDandanSignature(uri.path, timestamp),
-      ...headers,
-    };
-
-    try {
-      final response = await DioFactory.apiDio.get(
-        url,
-        queryParameters: queryParameters,
-        options: Options(headers: requestHeaders),
-        cancelToken: cancelToken,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw await NetworkErrorMapper.mapException(e);
-    }
-  }
+  }) async => _removed();
 }

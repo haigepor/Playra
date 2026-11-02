@@ -85,12 +85,6 @@ class ModernProfileView extends StatelessWidget {
                             '',
                           ),
                           (
-                            LucideIcons.messageSquare,
-                            '弹幕设置',
-                            '/settings/danmaku/',
-                            '',
-                          ),
-                          (
                             LucideIcons.layoutGrid,
                             '页面版本',
                             '/settings/interface',
@@ -98,14 +92,6 @@ class ModernProfileView extends StatelessWidget {
                           ),
                         ]),
                         _group(context, '数据与同步', [
-                          (
-                            LucideIcons.refreshCw,
-                            'Bangumi 追番同步',
-                            '/settings/bangumi/',
-                            sync.username.isEmpty
-                                ? sync.bangumi
-                                : '${sync.bangumi}\n${sync.username}',
-                          ),
                           (
                             LucideIcons.cloud,
                             'WebDAV 多设备同步',
@@ -306,7 +292,7 @@ class ModernProfileView extends StatelessWidget {
               : '${stats.downloadTaskCount} 集任务',
           '/settings/download/',
         ),
-        (LucideIcons.puzzle, '播放规则', '管理播放来源', '/settings/plugin/'),
+        (LucideIcons.search, '搜索作品', 'Lumina 动漫', '/search/'),
       ];
       final children = items.map((item) {
         final c = Theme.of(context).colorScheme;

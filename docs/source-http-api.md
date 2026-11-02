@@ -1,5 +1,8 @@
 # 统一内容源与 HTTP API
 
+> 当前仅保留 Lumina。Kazumi 规则、Bangumi、DanDanPlay、trace.moe 和旧供应商已从运行入口移除；不再安装站点规则或使用资料回退。旧来源 HTTP / 算法路由返回 SOURCE_REMOVED。下文与其他来源有关的流程仅供历史参考，不能用于当前接入。
+
+
 应用内部使用 `SourceService`，HTTP 服务复用同一 `RuleEngine`，XPath 和 JSON API 不重复实现。来源能力按规则声明，目录另由适配器注册；缺失能力返回 `UNSUPPORTED`。
 
 ## 启动

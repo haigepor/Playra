@@ -9,6 +9,7 @@ import 'package:kazumi/services/source/lumina/lumina_home_controller.dart';
 import 'package:kazumi/presentation/modern/home/home_theme.dart';
 import 'package:kazumi/presentation/modern/home/modern_home_controller.dart';
 import 'package:kazumi/presentation/modern/home/modern_home_view.dart';
+import 'package:kazumi/presentation/modern/widgets/modern_feature_carousel.dart';
 
 class _Provider extends ContentSearchProvider {
   _Provider(this.id, this.result, {this.priority = 0});
@@ -97,12 +98,113 @@ void main() {
       expect(home.loadingIn('all'), isFalse);
       expect(publishedReady, isTrue);
       expect(home.hasMoreIn('chinese'), isTrue);
-      await home.loadMoreIn('chinese');
+      expect(home.browseChannels('channel:3').single.id, '3');
+      await home.loadMoreIn('channel:2');
       expect(home.browseItems('chinese').map((v) => v.id), ['21', '22']);
       expect(home.hasMoreIn('chinese'), isTrue);
       await home.loadMoreIn('chinese');
       expect(home.browseItems('chinese').map((v) => v.id), ['21', '22', '23']);
       expect(home.hasMoreIn('chinese'), isFalse);
+    },
+  );
+  testWidgets(
+    'source channel order survives late data and all seven banners remain in source order',
+    (tester) async {
+      final home = LuminaHomeController(LuminaService());
+      final controller = ModernHomeController(readHistory: () => []);
+      addTearDown(home.service.dispose);
+      addTearDown(home.dispose);
+      addTearDown(controller.dispose);
+      home.channels = [
+        LuminaChannel.fromJson({'id': '1', 'name': '日漫'}),
+        LuminaChannel.fromJson({'id': '2', 'name': '國漫'}),
+        LuminaChannel.fromJson({'id': '26', 'name': '動漫電影'}),
+        LuminaChannel.fromJson({'id': '3', 'name': '其他動漫'}),
+      ];
+      List<LuminaVideo> videos(List<String> ids) => [
+        for (final id in ids)
+          LuminaVideo.fromJson({'id': id, 'title': '作品$id'}),
+      ];
+      home.channelItems['2'] = videos(['22', '21']);
+      await tester.binding.setSurfaceSize(const Size(600, 2800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      String? opened;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ModernHomeView(
+            controller: controller,
+            anime: home,
+            onAnimeDetails: (video) => opened = video.id,
+            onAnimeBanner: (banner) => opened = banner.videoId,
+            onSearch: () {},
+            onCalendar: () {},
+            onBrowse: (_) {},
+            onHistory: () {},
+            onToggleTheme: () {},
+            onDetails: (_) {},
+            onResume: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // 国漫先返回，不能把尚未返回的日漫位置挤到后面。
+      home.channelItems['1'] = videos(['12', '11']);
+      home.channelItems['26'] = videos(['262', '261']);
+      home.channelItems['3'] = videos(['32', '31']);
+      home.banners = [
+        for (var id = 100; id < 107; id++)
+          LuminaBanner.fromJson({
+            'videoId': '$id',
+            'title': '轮播$id',
+            'cover': id == 103 ? '' : 'https://images.example/$id.jpg',
+          }),
+      ];
+      home.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(home.browseItems().map((video) => video.id), [
+        '12',
+        '11',
+        '22',
+        '21',
+        '262',
+        '261',
+        '32',
+        '31',
+      ]);
+      final titles = ['推荐·日漫', '推荐·國漫', '推荐·動漫電影', '推荐·其他動漫'];
+      final positions = [
+        for (final title in titles) tester.getTopLeft(find.text(title)).dy,
+      ];
+      expect(positions, orderedEquals([...positions]..sort()));
+      for (final title in ['轮播100', '轮播101', '轮播102', '轮播103']) {
+        expect(find.bySemanticsLabel(RegExp('查看推荐 $title')), findsOneWidget);
+      }
+      await tester.tap(find.bySemanticsLabel(RegExp('查看推荐 轮播100')));
+      expect(opened, '100');
+      await tester.tap(find.byKey(const ValueKey('home-shuffle-featured')));
+      await tester.pumpAndSettle();
+      for (final title in ['轮播104', '轮播105', '轮播106', '轮播100']) {
+        expect(find.bySemanticsLabel(RegExp('查看推荐 $title')), findsOneWidget);
+      }
+      await controller.selectFeed(HomeFeed.popular);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<ModernFeatureCarousel>(find.byType(ModernFeatureCarousel))
+            .entries
+            .map((entry) => entry.id),
+        [
+          'lumina:100',
+          'lumina:101',
+          'lumina:102',
+          'lumina:103',
+          'lumina:104',
+          'lumina:105',
+          'lumina:106',
+        ],
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
     },
   );
   test(
@@ -415,12 +517,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(
-        find.byKey(const ValueKey('home-shuffle-featured')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('home-shuffle-featured')), findsNothing);
       expect(find.byKey(const ValueKey('lumina-browse')), findsNothing);
       expect(find.text('动漫 · Lumina'), findsNothing);
+      await tester.ensureVisible(find.text('很长的动漫名称：第二季与特别篇').first);
       await tester.tap(find.text('很长的动漫名称：第二季与特别篇').first);
       expect(opened, '421');
     },

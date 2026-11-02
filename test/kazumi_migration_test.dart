@@ -10,16 +10,21 @@ void main() {
       (jsonDecode(File(file).readAsStringSync(encoding: utf8))[key] as List)
           .map((p) => Plugin.fromJson(Map<String, dynamic>.from(p)))
           .toList();
-  final legacy = snapshot('assets/migrations/anifive-v1.json', 'legacyRules');
+  final legacy = snapshot(
+    'test/fixtures/retired_sources/migrations/anifive-v1.json',
+    'legacyRules',
+  );
   final previous = snapshot(
-    'assets/migrations/kazumi-v1.json',
+    'test/fixtures/retired_sources/migrations/kazumi-v1.json',
     'previousRules',
   );
   final bundled = kazumiRuleOrigins.keys
       .map(
         (name) => Plugin.fromJson(
           jsonDecode(
-            File('assets/plugins/$name.json').readAsStringSync(encoding: utf8),
+            File(
+              'test/fixtures/retired_sources/plugins/$name.json',
+            ).readAsStringSync(encoding: utf8),
           ),
         ),
       )

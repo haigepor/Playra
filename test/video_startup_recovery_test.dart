@@ -213,7 +213,9 @@ void main() {
   void kazumi({required bool automatic, int? width, int? height}) {
     video.currentPlugin = Plugin.fromJson(
       jsonDecode(
-        File('assets/plugins/akianime.json').readAsStringSync(encoding: utf8),
+        File(
+          'test/fixtures/retired_sources/plugins/akianime.json',
+        ).readAsStringSync(encoding: utf8),
       ),
     );
     video.automaticSource = automatic;

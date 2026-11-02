@@ -374,7 +374,7 @@ void main() {
     return style;
   }
 
-  testWidgets('全部设置保留十二个入口及分组，进入和返回保持暗色', (tester) async {
+  testWidgets('全部设置保留十个入口及分组，进入和返回保持暗色', (tester) async {
     await mount(tester);
     for (final label in [
       '播放',
@@ -382,9 +382,7 @@ void main() {
       '应用',
       '其他',
       '播放设置',
-      '弹幕设置',
       '操作设置',
-      '规则管理',
       '下载设置',
       '外观设置',
       '界面设置',

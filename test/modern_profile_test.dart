@@ -336,12 +336,10 @@ void main() {
     for (final entry in const [
       ('历史记录', '/settings/history/'),
       ('离线缓存', '/settings/download/'),
-      ('播放规则', '/settings/plugin/'),
+      ('搜索作品', '/search/'),
       ('外观设置', '/settings/theme'),
       ('播放设置', '/settings/player'),
-      ('弹幕设置', '/settings/danmaku/'),
       ('页面版本', '/settings/interface'),
-      ('Bangumi 追番同步', '/settings/bangumi/'),
       ('WebDAV 多设备同步', '/settings/webdav/'),
       ('全部同步设置', '/settings/sync'),
       ('存储管理', '/settings/storage'),
@@ -404,7 +402,8 @@ void main() {
     await page();
     await tester.pumpAndSettle();
     expect(controller.watchStats.watchedEpisodeCount, 0);
-    expect(find.text(sync.bangumi), findsOneWidget);
+    expect(find.text(sync.bangumi), findsNothing);
+    expect(find.text(sync.webDav), findsOneWidget);
     await page(legacy: true);
     await tester.pumpAndSettle();
     expect(histories.events.hasListener, isTrue);

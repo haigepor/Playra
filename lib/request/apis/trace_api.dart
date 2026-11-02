@@ -1,26 +1,15 @@
+import 'package:kazumi/services/source/source_models.dart' show SourceException;
 import 'package:kazumi/services/platform/platform_io.dart';
 
-import 'package:kazumi/request/clients/trace_client.dart';
 import 'package:kazumi/modules/search/image_search_module.dart';
-import 'package:kazumi/request/config/api_endpoints.dart';
 
 class TraceApi {
-  static final TraceClient _client = TraceClient.instance;
-
   ///根据图片搜索番剧信息
   static Future<ImageSearchItem> searchAnimeByImageFile(
     File imageFile, {
     int anilistInfo = 2,
   }) async {
-    final bytes = await imageFile.readAsBytes();
-
-    final data = await _client.post(
-      ApiEndpoints.traceApi,
-      queryParameters: {'anilistInfo': anilistInfo},
-      data: bytes,
-      headers: {'Content-Type': 'image/jpeg'},
-    );
-    return ImageSearchItem.fromJson(data as Map<String, dynamic>);
+    throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   }
 
   ///根据图片URL搜索番剧信息
@@ -28,10 +17,6 @@ class TraceApi {
     String imageUrl, {
     int anilistInfo = 2,
   }) async {
-    final data = await _client.post(
-      ApiEndpoints.traceApi,
-      queryParameters: {'anilistInfo': anilistInfo, 'url': imageUrl},
-    );
-    return ImageSearchItem.fromJson(data as Map<String, dynamic>);
+    throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   }
 }

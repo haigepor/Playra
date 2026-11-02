@@ -1,8 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle, AssetManifest;
-import 'package:kazumi/services/source/source_service.dart';
-import 'package:kazumi/services/source/source_directory.dart';
-import 'package:kazumi/services/plugin/rule_engine_runtime_flutter.dart';
 import 'package:kazumi/plugins/plugins.dart';
 
 class HomeRuleEntry {
@@ -49,53 +44,6 @@ class HomeRuleCatalog {
         .replaceAll(RegExp(r'[^a-z0-9\u3040-\u30ff\u3400-\u9fff]'), '');
   }
 
-  static Future<HomeRuleCatalog> load(Iterable<Plugin> installed) async {
-    final registry = SourceDirectoryRegistry(
-      executor: PlatformRuleRequestExecutor(),
-    );
-    final supported = installed
-        .map((p) => SourceDefinition.fromJson(p.toJson()))
-        .where(registry.supports)
-        .toList();
-    if (supported.isEmpty) {
-      // 只读内置配置，不写入用户规则；展示层不识别任何站点名称。
-      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-      for (final path in manifest.listAssets().where(
-        (p) => p.startsWith('assets/plugins/') && p.endsWith('.json'),
-      )) {
-        final source = SourceDefinition.fromJson(
-          jsonDecode(await rootBundle.loadString(path)),
-          origin: 'bundled',
-        );
-        if (registry.supports(source)) supported.add(source);
-      }
-    }
-    supported.sort(
-      (a, b) => registry.priority(a).compareTo(registry.priority(b)),
-    );
-    final failures = <String>[];
-    for (final source in supported) {
-      try {
-        final result = await registry.load(source);
-        failures.addAll(result.failures);
-        return HomeRuleCatalog(
-          name: result.name,
-          entries: result.items
-              .map(
-                (e) => HomeRuleEntry(
-                  e.title,
-                  e.ref.rawRef,
-                  e.classification.rawCategory ?? 'all',
-                ),
-              )
-              .toList(),
-          failures: failures,
-          elapsedMs: result.elapsedMs,
-        );
-      } catch (_) {
-        failures.add('${source.manifest.name}:catalog');
-      }
-    }
-    return HomeRuleCatalog(failures: failures);
-  }
+  static Future<HomeRuleCatalog> load(Iterable<Plugin> installed) async =>
+      const HomeRuleCatalog();
 }

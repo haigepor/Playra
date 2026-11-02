@@ -1,13 +1,12 @@
-import 'package:dio/dio.dart';
-import 'package:kazumi/request/core/dio_factory.dart';
-import 'package:kazumi/request/core/network_error_mapper.dart';
-import 'package:kazumi/utils/http_headers.dart';
+import 'package:dio/dio.dart' show CancelToken;
+import 'package:kazumi/services/source/source_models.dart' show SourceException;
 
+/// 仅保留旧调用者的拒绝边界，不再创建网络客户端。
 class PluginSiteClient {
   PluginSiteClient._();
-
   static final PluginSiteClient instance = PluginSiteClient._();
-
+  Never _removed() =>
+      throw const SourceException('SOURCE_REMOVED', '当前仅保留 Lumina 数据源');
   Future<String> requestText(
     String url, {
     required String method,
@@ -15,31 +14,5 @@ class PluginSiteClient {
     Map<String, dynamic> queryParameters = const {},
     Object? data,
     CancelToken? cancelToken,
-  }) async {
-    try {
-      final response = await DioFactory.pluginDio.request<String>(
-        url,
-        queryParameters: queryParameters,
-        data: data,
-        options: Options(
-          method: method,
-          responseType: ResponseType.plain,
-          headers: _headers(headers),
-        ),
-        cancelToken: cancelToken,
-      );
-      return response.data ?? '';
-    } on DioException catch (e) {
-      throw await NetworkErrorMapper.mapException(e);
-    }
-  }
-
-  Map<String, dynamic> _headers(Map<String, dynamic> headers) {
-    return {
-      'user-agent': getRandomUA(),
-      'Accept-Language': getRandomAcceptedLanguage(),
-      'Connection': 'keep-alive',
-      ...headers,
-    };
-  }
+  }) async => _removed();
 }

@@ -7,14 +7,18 @@ import 'package:kazumi/plugins/bundled_anime_migration.dart';
 void main() {
   final legacy =
       (jsonDecode(
-                File('assets/migrations/anifive-v1.json').readAsStringSync(),
+                File(
+                  'test/fixtures/retired_sources/migrations/anifive-v1.json',
+                ).readAsStringSync(),
               )['legacyRules']
               as List)
           .map((e) => Plugin.fromJson(Map<String, dynamic>.from(e)))
           .toList();
   final bundled =
       (jsonDecode(
-                File('assets/migrations/kazumi-v1.json').readAsStringSync(),
+                File(
+                  'test/fixtures/retired_sources/migrations/kazumi-v1.json',
+                ).readAsStringSync(),
               )['previousRules']
               as List)
           .map((p) => Plugin.fromJson(Map<String, dynamic>.from(p)))

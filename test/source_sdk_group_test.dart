@@ -8,7 +8,9 @@ void main() {
   Plugin bundled(String file) => Plugin.fromJson(
     Map<String, dynamic>.from(
       (jsonDecode(
-                File('assets/migrations/kazumi-v1.json').readAsStringSync(),
+                File(
+                  'test/fixtures/retired_sources/migrations/kazumi-v1.json',
+                ).readAsStringSync(),
               )['previousRules']
               as List)
           .singleWhere((p) => p['name'] == file),

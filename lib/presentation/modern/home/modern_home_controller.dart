@@ -2,8 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/history/history_module.dart';
-import 'package:kazumi/request/apis/bangumi_api.dart';
-import 'package:kazumi/services/network/bangumi_acceleration.dart';
 import 'home_catalog.dart';
 import 'home_content_algorithm.dart';
 
@@ -49,7 +47,7 @@ typedef HomeFeedLoader =
 /// 新版仅拥有展示状态；收藏、观看历史和播放入口仍属于原有业务层。
 class ModernHomeController extends ChangeNotifier {
   ModernHomeController({
-    this.loadFeed = loadBangumiFeed,
+    this.loadFeed,
     required this.readHistory,
     Stream<void>? historyChanges,
     this.loadCatalog,
@@ -60,7 +58,7 @@ class ModernHomeController extends ChangeNotifier {
     _historySubscription = historyChanges?.listen((_) => reloadHistory());
   }
 
-  final HomeFeedLoader loadFeed;
+  final HomeFeedLoader? loadFeed;
   final Future<HomeCatalog> Function()? loadCatalog;
   final Future<HomeCatalog> Function(void Function(HomeCatalog) onUpdate)?
   loadProgressiveCatalog;
@@ -151,23 +149,6 @@ class ModernHomeController extends ChangeNotifier {
           : '${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}上映';
     }
     return schedules[item.id]?.label ?? '时间待定';
-  }
-
-  static Future<List<BangumiItem>> loadBangumiFeed(
-    HomeFeed feed,
-    int offset,
-  ) async {
-    if (feed == HomeFeed.japanese || feed == HomeFeed.chinese) {
-      final tag = feed == HomeFeed.japanese ? '日本' : '中国';
-      return HomeCatalog.loadCategory(tag, limit: 24, offset: offset);
-    }
-    if (feed == HomeFeed.season) {
-      return (await BangumiApi.getCalendar()).expand((day) => day).toList()
-        ..sort((a, b) => b.airDate.compareTo(a.airDate));
-    }
-    return BangumiAcceleration.current == BangumiAcceleration.mirror
-        ? BangumiApi.getBangumiMirrorPopularSubjects(offset: offset)
-        : BangumiApi.getBangumiTrendsList(offset: offset);
   }
 
   void reloadHistory() {
@@ -381,13 +362,13 @@ class ModernHomeController extends ChangeNotifier {
         if (_disposed || request != _request) return;
         fetched = catalog.hasStructuredData ? _catalogItems(requestedFeed) : [];
       } else {
-        fetched = await loadFeed(requestedFeed, offset);
+        fetched = await loadFeed?.call(requestedFeed, offset) ?? const [];
       }
       // 切换分类、再次刷新或销毁页面后，旧请求不能覆盖当前结果。
       if (_disposed || request != _request) return;
       if (reset && fetched.isEmpty) {
         _items = [];
-        error = '这个分类暂时没有符合条件的作品';
+        error = loadFeed == null ? null : '这个分类暂时没有符合条件的作品';
         return;
       }
       final merged = <int, BangumiItem>{

@@ -1,14 +1,10 @@
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:mobx/mobx.dart';
-import 'package:flutter/services.dart' show rootBundle, AssetManifest;
 import 'package:kazumi/services/platform/platform_paths.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/bundled_anime_migration.dart';
 import 'package:kazumi/services/plugin/plugin_validity_tracker.dart';
-import 'package:kazumi/services/source/source_policy.dart';
-import 'package:kazumi/services/network/metered_network_service.dart';
 import 'package:kazumi/services/plugin/plugin_install_time_tracker.dart';
 import 'package:kazumi/request/apis/plugin_catalog_api.dart';
 import 'package:kazumi/modules/plugin/plugin_http_module.dart';
@@ -113,189 +109,13 @@ abstract class _PluginsController with Store {
   Future<void> init() async {
     final directory = await getApplicationSupportDirectory();
     oldPluginDirectory = Directory('${directory.path}/plugins');
-    if (!await oldPluginDirectory!.exists()) {
-      await oldPluginDirectory!.create(recursive: true);
-    }
     newPluginDirectory = Directory('${directory.path}/plugins/v2');
-    if (!await newPluginDirectory!.exists()) {
-      await newPluginDirectory!.create(recursive: true);
-    }
-    await _loadAllPlugins();
-    final policyFile = File('${newPluginDirectory!.path}/source-policy.json');
-    try {
-      if (await policyFile.exists()) {
-        SourcePolicy.shared.restore(await policyFile.readAsString());
-      }
-    } catch (error) {
-      KazumiLogger().w('来源本地策略读取失败，保留默认策略', error: error);
-    }
-    SourcePolicy.shared.environment = kIsWeb
-        ? 'web'
-        : defaultTargetPlatform.name;
-    SourcePolicy.shared.environmentProvider = () =>
-        '${kIsWeb ? 'web' : defaultTargetPlatform.name}|${MeteredNetworkService.isMetered ? 'mobile' : 'local'}';
-    SourcePolicy.shared.persist = (json) =>
-        policyFile.writeAsString(json).then((_) {});
-    await _migrateBundledKazumi(policyFile);
-  }
-
-  Future<void> _migrateBundledKazumi(File policyFile) async {
-    final directory = newPluginDirectory!.path;
-    final marker = File('$directory/kazumi-v1.complete');
-    final migrated = await marker.exists();
-    final snapshot =
-        jsonDecode(
-              await rootBundle.loadString('assets/migrations/anifive-v1.json'),
-            )
-            as Map;
-    final legacy = (snapshot['legacyRules'] as List)
-        .map((e) => Plugin.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
-    final receipt =
-        jsonDecode(
-              await rootBundle.loadString('assets/migrations/kazumi-v1.json'),
-            )
-            as Map;
-    final previousBundled = (receipt['previousRules'] as List)
-        .map((e) => Plugin.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
-    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-    final bundled = <Plugin>[];
-    for (final path in manifest.listAssets().where(
-      (p) => p.startsWith('assets/plugins/') && p.endsWith('.json'),
-    )) {
-      bundled.add(
-        Plugin.fromJson(jsonDecode(await rootBundle.loadString(path))),
-      );
-    }
-    if (migrated) {
-      // 受管来源随应用资产更新；不重新添加用户已删除的规则。
-      await _mutations.run(() async {
-        final updates = <int, Plugin>{};
-        for (var i = 0; i < pluginList.length; i++) {
-          final current = pluginList[i];
-          if (!isManagedKazumi(current)) continue;
-          final next = bundled
-              .where((p) => managedKazumiName(p) == managedKazumiName(current))
-              .firstOrNull;
-          if (next == null || next.version == current.version) continue;
-          updates[i] = Plugin.fromJson(next.toJson())
-            ..sourceId = current.providerId
-            ..name = current.name;
-        }
-        // 在原有串行事务内判断，版本未变时不编码、刷盘或重发规则变更。
-        if (updates.isEmpty) return;
-        await _mutateAndPersistNow(() {
-          for (final entry in updates.entries) {
-            pluginList[entry.key] = entry.value;
-          }
-        }, errorMessage: '官方规则更新保存失败，已恢复内存快照');
-      });
-      return;
-    }
-    final backup = File('$directory/plugins.before-kazumi-v1.json');
-    // 首次快照永久保留；崩溃重试不得把迁移后的内容覆盖到备份。
-    if (!await backup.exists()) {
-      await backup.writeAsString(jsonEncode(_pluginListToJson()), flush: true);
-    }
-    final policyBackup = File('$directory/source-policy.before-kazumi-v1.json');
-    if (await policyFile.exists() && !await policyBackup.exists()) {
-      await policyBackup.writeAsString(
-        await policyFile.readAsString(),
-        flush: true,
-      );
-    }
-    await _mutateAndPersist(() {
-      final next = migrateBundledKazumi(
-        pluginList.toList(),
-        legacy,
-        previousBundled,
-        bundled,
-      );
-      pluginList
-        ..clear()
-        ..addAll(next);
-    }, errorMessage: '官方十六规则迁移保存失败，已恢复内存快照');
-    await marker.writeAsString('1', flush: true);
-  }
-
-  // Loads all plugins from the directory, populates the plugin list, and saves to plugins.json if needed
-  Future<void> _loadAllPlugins() async {
     pluginList.clear();
-    KazumiLogger().i('Plugins Directory: ${newPluginDirectory!.path}');
-    if (await newPluginDirectory!.exists()) {
-      final pluginsFile = File('${newPluginDirectory!.path}/$pluginsFileName');
-      if (await pluginsFile.exists()) {
-        final jsonString = await pluginsFile.readAsString();
-        pluginList.addAll(_getPluginListFromJson(jsonString));
-        KazumiLogger().i('Plugin: Current Plugin number: ${pluginList.length}');
-      } else {
-        // No plugins.json
-        var jsonFiles = await _getPluginFiles();
-        for (var filePath in jsonFiles) {
-          final file = File(filePath);
-          final jsonString = await file.readAsString();
-          final data = jsonDecode(jsonString);
-          final plugin = Plugin.fromJson(data);
-          pluginList.add(plugin);
-          await file.delete(recursive: true);
-        }
-        await _savePlugins();
-      }
-    } else {
-      KazumiLogger().w('Plugin: plugin directory does not exist');
-    }
+    pluginHTTPList.clear();
   }
 
-  // Retrieves a list of JSON plugin file paths from the plugin directory
-  Future<List<String>> _getPluginFiles() async {
-    if (await oldPluginDirectory!.exists()) {
-      final jsonFiles = oldPluginDirectory!
-          .listSync()
-          .where((file) => file.path.endsWith('.json') && file is File)
-          .map((file) => file.path)
-          .toList();
-      return jsonFiles;
-    } else {
-      return [];
-    }
-  }
-
-  // Copies plugin JSON files from the assets to the plugin directory
   Future<void> copyPluginsToExternalDirectory() async {
-    final assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-    final assets = assetManifest.listAssets();
-    final jsonFiles = assets.where(
-      (String asset) =>
-          asset.startsWith('assets/plugins/') && asset.endsWith('.json'),
-    );
-
-    final bundled = <Plugin>[];
-    for (var filePath in jsonFiles) {
-      final jsonString = await rootBundle.loadString(filePath);
-      final plugin = Plugin.fromJson(jsonDecode(jsonString));
-      bundled.add(plugin);
-    }
-    // 先完整读取，再在已有串行事务中补齐；重试不重复安装，也不覆盖自定义规则。
-    final installed = await _mutateAndPersist(() {
-      final ids = pluginList.map((p) => p.providerId).toSet();
-      final names = pluginList.map((p) => pluginNameKey(p.name)).toSet();
-      var added = 0;
-      for (final plugin in bundled) {
-        if (ids.contains(plugin.providerId) ||
-            names.contains(pluginNameKey(plugin.name))) {
-          continue;
-        }
-        ids.add(plugin.providerId);
-        names.add(pluginNameKey(plugin.name));
-        pluginList.add(plugin);
-        added++;
-      }
-      return added;
-    }, errorMessage: 'Plugin: failed to persist bundled rules');
-    KazumiLogger().i(
-      'Plugin: $installed bundled rules added to ${newPluginDirectory!.path}',
-    );
+    pluginList.clear();
   }
 
   List<dynamic> _pluginListToJson() {
@@ -307,14 +127,6 @@ abstract class _PluginsController with Store {
   }
 
   // Converts a JSON string into a list of Plugin objects.
-  List<Plugin> _getPluginListFromJson(String jsonString) {
-    List<dynamic> json = jsonDecode(jsonString);
-    List<Plugin> plugins = [];
-    for (var j in json) {
-      plugins.add(Plugin.fromJson(j));
-    }
-    return plugins;
-  }
 
   Future<void> removePlugin(Plugin plugin) {
     return _mutateAndPersist(

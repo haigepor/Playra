@@ -356,15 +356,18 @@ class _FeatureSlide extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    entry.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      height: 1.35,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xffedf0f8),
+                  InkWell(
+                    onTap: entry.onTap,
+                    child: Text(
+                      entry.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xffedf0f8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 7),
