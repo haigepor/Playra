@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
@@ -66,12 +67,12 @@ class _CollectButtonState extends State<CollectButton> {
       onOpen: widget.onOpen,
       crossAxisUnconstrained: false,
       builder: (context, toggle) => widget._isExtended
-          ? FilledButton.icon(
+          ? PlayraButton.icon(
               onPressed: toggle,
               icon: Icon(_iconFor(collectType)),
               label: Text(_labelFor(collectType)),
             )
-          : IconButton(
+          : PlayraIconButton(
               onPressed: toggle,
               tooltip: _labelFor(collectType),
               icon: Icon(_iconFor(collectType), color: widget.color),

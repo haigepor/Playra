@@ -71,6 +71,7 @@ class NetworkImgLayer extends StatelessWidget {
 
     final (memCacheWidth, memCacheHeight) = _cacheSize(context);
     final url = platformResourceUrl(imageUrl);
+    final headers = httpHeadersForImageUrl(url);
     return ClipRRect(
       clipBehavior: Clip.antiAlias,
       borderRadius: _borderRadius,
@@ -78,8 +79,8 @@ class NetworkImgLayer extends StatelessWidget {
       // Web 用框架的字节解码分支，确保缩略尺寸生效，坏图片也能结束等待。
       child: OctoImage(
         image: kIsWeb
-            ? CachedBytesImageProvider(url)
-            : CachedNetworkImageProvider(url),
+            ? CachedBytesImageProvider(url, headers: headers)
+            : CachedNetworkImageProvider(url, headers: headers),
         width: width,
         height: height,
         memCacheWidth: memCacheWidth,

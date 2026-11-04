@@ -1,3 +1,6 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -85,7 +88,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
           leading: const ModernBackButton(),
           title: const Text('搜索作品'),
           titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontSize: 20,
+            fontSize: PlayraType.title,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -130,10 +133,10 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                                     else ...[
                                       SliverPadding(
                                         padding: const EdgeInsets.fromLTRB(
-                                          16,
-                                          4,
-                                          16,
-                                          12,
+                                          PlayraSpace.lg,
+                                          PlayraSpace.xs,
+                                          PlayraSpace.lg,
+                                          PlayraSpace.md,
                                         ),
                                         sliver: SliverList.builder(
                                           itemCount: works.length,
@@ -147,8 +150,10 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                                       if (session.hasMore)
                                         SliverToBoxAdapter(
                                           child: Padding(
-                                            padding: const EdgeInsets.all(16),
-                                            child: ShadButton.outline(
+                                            padding: const EdgeInsets.all(
+                                              PlayraSpace.lg,
+                                            ),
+                                            child: PlayraButton.outline(
                                               onPressed: session.searching
                                                   ? null
                                                   : session.loadMore,
@@ -173,7 +178,12 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
   );
 
   Widget _searchHeader(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+    padding: const EdgeInsets.fromLTRB(
+      PlayraSpace.lg,
+      PlayraSpace.sm,
+      PlayraSpace.lg,
+      PlayraSpace.md,
+    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -181,7 +191,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         const SizedBox(height: 10),
         _groupFilters(context),
         if (group == ContentGroup.series) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Align(alignment: Alignment.centerLeft, child: _regionFilter(context)),
         ],
       ],
@@ -189,7 +199,6 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
   );
 
   Widget _groupFilters(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
     final available = session.providers.expand((p) => p.groups).toSet();
     final groups = <ContentGroup?>[
       null,
@@ -201,11 +210,11 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
       child: Row(
         children: [
           for (var index = 0; index < groups.length; index++) ...[
-            if (index > 0) const SizedBox(width: 6),
+            if (index > 0) const SizedBox(width: PlayraSpace.compact),
             Semantics(
               selected: group == groups[index],
               inMutuallyExclusiveGroup: true,
-              child: TextButton(
+              child: PlayraButton.ghost(
                 onPressed: () {
                   setState(() {
                     group = groups[index];
@@ -213,25 +222,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                   });
                   if (submitted) unawaited(_search());
                 },
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  backgroundColor: group == groups[index]
-                      ? c.primary.withValues(alpha: .13)
-                      : Colors.transparent,
-                  foregroundColor: group == groups[index]
-                      ? c.primary
-                      : c.onSurfaceVariant,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: TextStyle(
-                    fontSize: 14,
-                    fontWeight: group == groups[index]
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                  ),
-                ),
+
                 child: Text(groups[index]?.label ?? '全部'),
               ),
             ),
@@ -247,11 +238,11 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     return Row(
       children: [
         Expanded(
-          child: TextField(
+          child: PlayraTextField(
             key: const ValueKey('content-search-input'),
             controller: input,
             focusNode: inputFocus,
-            cursorColor: c.primary,
+
             autocorrect: false,
             keyboardType: TextInputType.text,
             // Android 的禁用建议会附带 visible-password 标记，触发部分手机的安全键盘。
@@ -259,7 +250,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
             smartDashesType: SmartDashesType.disabled,
             smartQuotesType: SmartQuotesType.disabled,
             textInputAction: TextInputAction.search,
-            style: Theme.of(context).textTheme.bodyMedium,
+
             onSubmitted: (_) => _search(),
             decoration: InputDecoration(
               hintText: '搜索作品名称',
@@ -274,7 +265,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                 minHeight: 48,
               ),
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
+                horizontal: PlayraSpace.md,
                 vertical: 13,
               ),
               prefixIcon: Icon(
@@ -289,7 +280,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                   maintainSize: true,
                   maintainState: true,
                   maintainAnimation: true,
-                  child: IconButton(
+                  child: PlayraIconButton(
                     tooltip: '清空输入',
                     onPressed: () {
                       input.clear();
@@ -302,18 +293,8 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        FilledButton(
-          onPressed: _search,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(56, 48),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: const Text('搜索'),
-        ),
+        const SizedBox(width: PlayraSpace.sm),
+        PlayraButton(onPressed: _search, child: const Text('搜索')),
       ],
     );
   }
@@ -328,13 +309,8 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     return Padding(
       key: ValueKey(work.id),
       padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: c.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: c.outlineVariant.withValues(alpha: .35)),
-        ),
-        clipBehavior: Clip.antiAlias,
+      child: PlayraCard(
+        padding: EdgeInsets.zero,
         child: InkWell(
           onTap: openingWork == null ? () => _openWork(work) : null,
           child: LayoutBuilder(
@@ -345,7 +321,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                   : 72.0;
               final coverHeight = coverWidth * 1.5;
               return Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(PlayraSpace.md),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -400,7 +376,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: c.onSurfaceVariant),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: PlayraSpace.md),
                             Row(
                               children: [
                                 SvgPicture.asset(
@@ -411,7 +387,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                                   height: 18,
                                   excludeFromSemantics: true,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: PlayraSpace.compact),
                                 Expanded(
                                   child: Text(
                                     sources == 0 ? '作品资料' : '$sources 个候选来源',
@@ -420,18 +396,15 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                                           color: sources == 0
                                               ? c.onSurfaceVariant
                                               : c.primary,
-                                          fontSize: 11,
+                                          fontSize: PlayraType.small,
                                         ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: PlayraSpace.sm),
                                 if (openingWork == work.id)
                                   SizedBox.square(
                                     dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: c.primary,
-                                    ),
+                                    child: PlayraSpinner(),
                                   )
                                 else
                                   Icon(
@@ -508,14 +481,10 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
 
   Widget _regionFilter(BuildContext context) {
     final c = Theme.of(context).colorScheme;
-    return PopupMenuButton<String>(
+    return PlayraPopupMenu<String>(
       tooltip: '选择剧集地区',
       initialValue: region,
-      color: c.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: c.outline),
-      ),
+
       itemBuilder: (_) => [
         for (final entry in _regions.entries)
           PopupMenuItem(value: entry.key, child: Text(entry.value)),
@@ -526,7 +495,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
       },
       child: Container(
         constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md),
         decoration: BoxDecoration(
           color: c.surfaceContainerLow,
           borderRadius: BorderRadius.circular(10),
@@ -541,7 +510,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                 context,
               ).textTheme.bodySmall?.copyWith(color: c.onSurfaceVariant),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: PlayraSpace.sm),
             Icon(LucideIcons.chevronDown, size: 14, color: c.onSurfaceVariant),
           ],
         ),
@@ -565,7 +534,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
             ? '暂未取得结果，部分来源失败；可以展开进度重试'
             : '没有匹配的作品，试试其他名称',
         action: session.hasMore
-            ? ShadButton.outline(
+            ? PlayraButton.outline(
                 onPressed: session.searching ? null : session.loadMore,
                 child: const Text('继续检索下一页'),
               )
@@ -575,18 +544,15 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
   );
 
   Widget _progress(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-    child: ExpansionTile(
+    padding: const EdgeInsets.fromLTRB(
+      PlayraSpace.lg,
+      0,
+      PlayraSpace.lg,
+      PlayraSpace.sm,
+    ),
+    child: PlayraExpansionTile(
       key: const ValueKey('content-search-progress'),
-      dense: true,
-      shape: const Border(),
-      collapsedShape: const Border(),
-      tilePadding: const EdgeInsets.symmetric(horizontal: 2),
-      minTileHeight: 48,
-      textColor: Theme.of(context).colorScheme.onSurfaceVariant,
-      collapsedTextColor: Theme.of(context).colorScheme.onSurfaceVariant,
-      iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
-      collapsedIconColor: Theme.of(context).colorScheme.onSurfaceVariant,
+
       title: Text(
         session.searching
             ? '已完成 ${session.completed}/${session.statuses.length} · 继续检索…'
@@ -594,11 +560,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         style: Theme.of(context).textTheme.bodySmall,
       ),
       leading: session.searching
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
+          ? const SizedBox(width: 16, height: 16, child: PlayraSpinner())
           : const Icon(LucideIcons.listFilter, size: 16),
       children: [
         ConstrainedBox(
@@ -613,8 +575,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
             shrinkWrap: true,
             children: [
               for (final entry in session.statuses.entries)
-                ListTile(
-                  dense: true,
+                PlayraListTile(
                   title: Text(session.provider(entry.key).name),
                   subtitle: Text(switch (entry.value) {
                     ContentProviderStatus.queued => '排队中',
@@ -629,7 +590,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                       entry.value == ContentProviderStatus.failed ||
                           entry.value ==
                               ContentProviderStatus.verificationRequired
-                      ? TextButton(
+                      ? PlayraButton.ghost(
                           onPressed: session.searching
                               ? null
                               : () => session.retry(entry.key),

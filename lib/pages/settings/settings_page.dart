@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -279,7 +280,9 @@ class SettingsIndexPage extends StatelessWidget {
     return Scaffold(
       appBar: SysAppBar(
         title: const Text('设置'),
-        toolbarHeight: ModernSettingsScope.isActiveOf(context) ? 52 : null,
+        toolbarHeight: ModernSettingsScope.isActiveOf(context)
+            ? PlayraLayout.compactToolbar
+            : null,
         leading: BackButton(
           onPressed: () {
             if (!context.maybePop()) context.navigate('/tab/my');
@@ -312,13 +315,27 @@ class _SettingsMenu extends StatelessWidget {
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
       child: ListView(
         padding: wide
-            ? const EdgeInsets.fromLTRB(4, 0, 0, 12)
-            : EdgeInsets.fromLTRB(modern ? 20 : 16, 8, modern ? 20 : 16, 24),
+            ? const EdgeInsets.fromLTRB(PlayraSpace.xs, 0, 0, PlayraSpace.md)
+            : EdgeInsets.fromLTRB(
+                modern
+                    ? PlayraLayout.pageInset(MediaQuery.sizeOf(context))
+                    : PlayraSpace.lg,
+                PlayraSpace.sm,
+                modern
+                    ? PlayraLayout.pageInset(MediaQuery.sizeOf(context))
+                    : PlayraSpace.lg,
+                PlayraSpace.xxl,
+              ),
         children: [
           for (final group in _settingsGroups)
             if (wide) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(28, 16, 28, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  28,
+                  PlayraSpace.lg,
+                  28,
+                  PlayraSpace.sm,
+                ),
                 child: SectionHeader(title: Text(group.title)),
               ),
               for (final category in group.categories)
@@ -329,7 +346,9 @@ class _SettingsMenu extends StatelessWidget {
                 ),
             ] else
               Padding(
-                padding: EdgeInsets.only(top: modern ? 24 : 16),
+                padding: EdgeInsets.only(
+                  top: modern ? PlayraSpace.xxl : PlayraSpace.lg,
+                ),
                 child: ContentSection.group(
                   title: group.title,
                   children: [
@@ -369,7 +388,10 @@ class _RailDestination extends StatelessWidget {
         ? colorScheme.onSecondaryContainer
         : colorScheme.onSurfaceVariant;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: PlayraSpace.md,
+        vertical: PlayraSpace.tiny,
+      ),
       child: Material(
         color: selected ? colorScheme.secondaryContainer : Colors.transparent,
         borderRadius: BorderRadius.circular(modern ? 12 : 28),
@@ -382,13 +404,13 @@ class _RailDestination extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Row(
                 children: [
-                  const SizedBox(width: 16),
+                  const SizedBox(width: PlayraSpace.lg),
                   Icon(
                     modern ? modernSettingsIcon(category.icon) : category.icon,
                     size: modern ? 20 : 24,
                     color: foreground,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: PlayraSpace.md),
                   Expanded(
                     child: Text(
                       category.label,
@@ -397,7 +419,7 @@ class _RailDestination extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: PlayraSpace.md),
                 ],
               ),
             ),

@@ -1,8 +1,12 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/gestures.dart' show DragStartBehavior;
+import 'package:forui/forui.dart' as f;
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
+import '../modern_layout.dart';
 
 class ModernFeatureEntry {
   const ModernFeatureEntry({
@@ -21,6 +25,13 @@ class ModernFeatureEntry {
 class ModernFeatureCarousel extends StatefulWidget {
   const ModernFeatureCarousel({super.key, required this.entries});
   final List<ModernFeatureEntry> entries;
+
+  static double heightFor(BuildContext context) {
+    final compact = isCompactModernViewport(MediaQuery.sizeOf(context));
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return (compact ? 216.0 : 236.0) + 120 * (scale - 1).clamp(0, 3);
+  }
+
   @override
   State<ModernFeatureCarousel> createState() => _ModernFeatureCarouselState();
 }
@@ -133,7 +144,7 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
   @override
   Widget build(BuildContext context) {
     if (widget.entries.isEmpty) return const SizedBox.shrink();
-    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final compact = isCompactModernViewport(MediaQuery.sizeOf(context));
     return Focus(
       onFocusChange: (value) {
         _focus = value;
@@ -161,291 +172,250 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
             _touch = false;
             _schedule();
           },
-          child: Container(
-            height: 206 + 115 * (scale - 1).clamp(0, 3),
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: const Color(0xff222e50),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: LayoutBuilder(
-              builder: (context, bounds) {
-                // 视觉指示线与命中区分开；六项在小屏也保留独立的可点击宽度。
-                final coverWidth = math.min(
-                  math.min((bounds.maxWidth - 36) * .34, 116.0),
-                  (bounds.maxHeight - 66) / 1.42,
-                );
-                final trackWidth = math.min(
-                  bounds.maxWidth - 36,
-                  widget.entries.length * 26.0,
-                );
-                final step = trackWidth / widget.entries.length;
-                final indicatorBottom =
-                    10 + (bounds.maxHeight - 28 - (coverWidth * 1.42 + 38)) / 2;
-                return Stack(
-                  children: [
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: SvgPicture.asset(
-                          'assets/images/modern-feature-orbit.svg',
-                          fit: BoxFit.cover,
-                          excludeFromSemantics: true,
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: PageView.builder(
-                        controller: _pages,
-                        itemCount: widget.entries.length,
-                        onPageChanged: (index) {
-                          setState(() => _index = index);
-                          _schedule();
-                        },
-                        itemBuilder: (_, index) => _FeatureSlide(
-                          entry: widget.entries[index],
-                          coverWidth: coverWidth,
-                        ),
-                      ),
-                    ),
-                    if (widget.entries.length > 1)
-                      Positioned(
-                        right: math.max(
-                          12,
-                          18 + (coverWidth + 6 - trackWidth) / 2,
-                        ),
-                        width: trackWidth,
-                        bottom: indicatorBottom - 4,
-                        height: 40,
-                        child: Center(
-                          child: SizedBox(
-                            width: trackWidth,
-                            height: 40,
-                            child: AnimatedBuilder(
-                              animation: _pages,
-                              builder: (context, _) {
-                                // 跟随真实滚动位置，手势中途也连续移动；减少动画时直接定位。
-                                final page = _reduce
-                                    ? _index.toDouble()
-                                    : (_pages.hasClients &&
-                                              _pages
-                                                  .position
-                                                  .hasContentDimensions
-                                          ? _pages.page ?? _index.toDouble()
-                                          : _index.toDouble());
-                                final position = page.clamp(
-                                  0.0,
-                                  (widget.entries.length - 1).toDouble(),
-                                );
-                                final stretch = _reduce
-                                    ? 0.0
-                                    : math.sin((position % 1) * math.pi) * 4;
-                                final markerWidth = math.min(
-                                  12 + stretch,
-                                  step,
-                                );
-                                return Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        for (
-                                          var i = 0;
-                                          i < widget.entries.length;
-                                          i++
-                                        )
-                                          Semantics(
-                                            button: true,
-                                            selected: i == _index,
-                                            label: '切换到第 ${i + 1} 张推荐',
-                                            child: InkWell(
-                                              key: ValueKey(
-                                                'feature-indicator-$i',
-                                              ),
-                                              onTap: () => _go(i),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: SizedBox(
-                                                width: step,
-                                                height: 40,
-                                                child: const Center(
-                                                  child: DecoratedBox(
-                                                    decoration: BoxDecoration(
-                                                      color: Color(0xff65708f),
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: SizedBox(
-                                                      width: 3,
-                                                      height: 3,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    PositionedDirectional(
-                                      start:
-                                          position * step +
-                                          (step - markerWidth) / 2,
-                                      top: 18.5,
-                                      child: IgnorePointer(
-                                        child: Container(
-                                          key: const ValueKey(
-                                            'feature-carousel-active-indicator',
-                                          ),
-                                          width: markerWidth,
-                                          height: 3,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xffc1cdff),
-                                            borderRadius: BorderRadius.circular(
-                                              2,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
+          child: SizedBox(
+            height: ModernFeatureCarousel.heightFor(context),
+            child: PlayraCard(
+              kind: PlayraCardKind.hero,
+              padding: EdgeInsets.zero,
+              child: LayoutBuilder(
+                builder: (context, bounds) {
+                  final footer = widget.entries.length > 1 ? 40.0 : 0.0;
+                  final coverWidth = math.min(
+                    math.min(bounds.maxWidth * .3, compact ? 104.0 : 124.0),
+                    (bounds.maxHeight - footer - PlayraSpace.section) / 1.42,
+                  );
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        bottom: footer,
+                        child: PageView.builder(
+                          controller: _pages,
+                          dragStartBehavior: DragStartBehavior.down,
+                          itemCount: widget.entries.length,
+                          onPageChanged: (index) {
+                            setState(() => _index = index);
+                            _schedule();
+                          },
+                          itemBuilder: (_, index) => _FeatureSlide(
+                            entry: widget.entries[index],
+                            coverWidth: coverWidth,
+                            compact: compact,
                           ),
                         ),
                       ),
-                  ],
-                );
-              },
+                      if (widget.entries.length > 1)
+                        Positioned(
+                          left: PlayraSpace.lg,
+                          right: PlayraSpace.lg,
+                          bottom: 0,
+                          height: footer,
+                          child: Center(
+                            child: _pagination(
+                              context,
+                              math.min(
+                                bounds.maxWidth - PlayraSpace.section,
+                                widget.entries.length * 20.0 + 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
       ),
     );
   }
-}
 
-class _FeatureSlide extends StatelessWidget {
-  const _FeatureSlide({required this.entry, required this.coverWidth});
-  final ModernFeatureEntry entry;
-  final double coverWidth;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
-    child: LayoutBuilder(
-      builder: (context, bounds) {
-        return Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_outlined,
-                        size: 14,
-                        color: Color(0xffc1cdff),
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        '精选推荐',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xffc1cdff),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  InkWell(
-                    onTap: entry.onTap,
-                    child: Text(
-                      entry.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        height: 1.35,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xffedf0f8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    entry.subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      height: 1.4,
-                      color: Color(0xffbdc8e3),
-                    ),
-                  ),
-                  const Spacer(),
-                  FilledButton.icon(
-                    onPressed: entry.onTap,
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                    iconAlignment: IconAlignment.end,
-                    label: const Text('查看详情', style: TextStyle(fontSize: 11)),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xffedf0ff),
-                      foregroundColor: const Color(0xff243153),
-                      minimumSize: const Size(0, 30),
-                      tapTargetSize: MaterialTapTargetSize.padded,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                    ),
-                  ),
-                ],
+  Widget _pagination(BuildContext context, double width) {
+    final colors = Theme.of(context).colorScheme;
+    const inset = 6.0;
+    final step = (width - inset * 2) / widget.entries.length;
+    return SizedBox(
+      width: width,
+      height: 40,
+      child: AnimatedBuilder(
+        animation: _pages,
+        builder: (context, _) {
+          final page = _reduce
+              ? _index.toDouble()
+              : (_pages.hasClients && _pages.position.hasContentDimensions
+                    ? _pages.page ?? _index.toDouble()
+                    : _index.toDouble());
+          final position = page.clamp(
+            0.0,
+            (widget.entries.length - 1).toDouble(),
+          );
+          final stretch = _reduce
+              ? 0.0
+              : math.sin((position % 1) * math.pi) * 4;
+          final markerWidth = math.min(12 + stretch, step);
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Center(
+                child: f.FBadge.raw(
+                  variant: f.FBadgeVariant.secondary,
+                  builder: (_, _) => SizedBox(width: width, height: 24),
+                ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Semantics(
-                  button: true,
-                  label: '查看 ${entry.title}',
-                  child: InkWell(
-                    onTap: entry.onTap,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Transform.rotate(
-                      angle: .045,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: const Color(0xff536080),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xff687698)),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x40000000),
-                              blurRadius: 16,
-                              offset: Offset(0, 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: inset),
+                child: Row(
+                  children: [
+                    for (var i = 0; i < widget.entries.length; i++)
+                      Expanded(
+                        child: Semantics(
+                          button: true,
+                          selected: i == _index,
+                          label: '切换到第 ${i + 1} 张推荐',
+                          child: f.FTappable(
+                            key: ValueKey('feature-indicator-$i'),
+                            onPress: () => _go(i),
+                            child: SizedBox(
+                              height: 40,
+                              child: Center(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: colors.onSurfaceVariant.withValues(
+                                      alpha: .45,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const SizedBox(width: 4, height: 4),
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(3),
-                          child: NetworkImgLayer(
-                            src: entry.cover,
-                            type: entry.imageType,
-                            width: coverWidth,
-                            height: coverWidth * 1.42,
-                            borderRadius: BorderRadius.circular(9),
                           ),
                         ),
                       ),
+                  ],
+                ),
+              ),
+              PositionedDirectional(
+                start: inset + position * step + (step - markerWidth) / 2,
+                top: 18,
+                child: IgnorePointer(
+                  child: Container(
+                    key: const ValueKey('feature-carousel-active-indicator'),
+                    width: markerWidth,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FeatureSlide extends StatelessWidget {
+  const _FeatureSlide({
+    required this.entry,
+    required this.coverWidth,
+    required this.compact,
+  });
+  final ModernFeatureEntry entry;
+  final double coverWidth;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(PlayraSpace.lg),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              f.FBadge(
+                variant: f.FBadgeVariant.secondary,
+                style: const f.FBadgeStyleDelta.delta(
+                  padding: f.EdgeInsetsGeometryDelta.value(
+                    EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_outlined, size: 12),
+                    SizedBox(width: PlayraSpace.xs),
+                    Text('精选推荐', style: TextStyle(fontSize: PlayraType.small)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: PlayraSpace.sm),
+              f.FTappable(
+                onPress: entry.onTap,
+                child: Text(
+                  entry.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: compact ? PlayraType.section : PlayraType.title,
+                    height: 1.3,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (entry.subtitle.trim().isNotEmpty) ...[
+                const SizedBox(height: PlayraSpace.xs),
+                Text(
+                  entry.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
+              const Spacer(),
+              f.FButton(
+                onPress: entry.onTap,
+                variant: f.FButtonVariant.outline,
+                size: f.FButtonSizeVariant.sm,
+                mainAxisSize: MainAxisSize.min,
+                suffix: const Icon(Icons.arrow_forward_rounded, size: 14),
+                child: const Text(
+                  '查看详情',
+                  style: TextStyle(fontSize: PlayraType.caption),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: PlayraSpace.md),
+        Semantics(
+          button: true,
+          label: '查看 ${entry.title}',
+          child: f.FTappable(
+            onPress: entry.onTap,
+            child: PlayraCard(
+              kind: PlayraCardKind.poster,
+              padding: EdgeInsets.zero,
+              width: coverWidth,
+              height: coverWidth * 1.42,
+              child: NetworkImgLayer(
+                src: entry.cover,
+                type: entry.imageType,
+                width: coverWidth,
+                height: coverWidth * 1.42,
+                borderRadius: BorderRadius.circular(PlayraRadius.poster),
+              ),
             ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     ),
   );
 }

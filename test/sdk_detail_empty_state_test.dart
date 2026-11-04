@@ -48,19 +48,21 @@ void main() {
       );
       addTearDown(service.dispose);
       await _mount(tester, service);
-      expect(find.text('自动 · 正在获取线路'), findsOneWidget);
+      // 新卡片只显示来源名，线路状态不再写成一行描述文案。
+      expect(find.text('动漫 · Lumina'), findsOneWidget);
       expect(find.text('该作品暂无播放线路'), findsNothing);
       expect(find.text('选择剧集后准备播放链接'), findsNothing);
 
       response.complete(_emptyDetail());
       await tester.pumpAndSettle();
-      expect(find.text('自动 · 暂无播放线路'), findsOneWidget);
       expect(find.text('该作品暂无播放线路'), findsOneWidget);
-      expect(find.text('自动 · 正在获取线路'), findsNothing);
-      expect(find.text('选择剧集后准备播放链接'), findsNothing);
+      expect(find.text('动漫 · Lumina'), findsOneWidget);
       expect(calls, ['detail'], reason: '真实空线路不能伪造线路或调用解析');
       final selector = tester.widget<InkWell>(
-        find.byKey(const ValueKey('sdk-line-selector')),
+        find.descendant(
+          of: find.byKey(const ValueKey('sdk-line-selector')),
+          matching: find.byType(InkWell),
+        ),
       );
       expect(selector.onTap, isNull);
       final play = tester.widget<IconButton>(
@@ -92,15 +94,13 @@ void main() {
       await _mount(tester, service);
       await tester.pumpAndSettle();
       expect(find.text('作品资料加载失败，请重试'), findsOneWidget);
-      expect(find.text('自动 · 线路获取失败'), findsOneWidget);
       expect(find.text('该作品暂无播放线路'), findsNothing);
-      expect(find.text('自动 · 正在获取线路'), findsNothing);
+      expect(find.text('动漫 · Lumina'), findsOneWidget);
       expect(find.text('选择剧集后准备播放链接'), findsNothing);
 
       await tester.tap(find.widgetWithText(TextButton, '重试'));
       await tester.pumpAndSettle();
       expect(find.text('作品资料加载失败，请重试'), findsNothing);
-      expect(find.text('自动 · 暂无播放线路'), findsOneWidget);
       expect(find.text('该作品暂无播放线路'), findsOneWidget);
       expect(calls, ['detail', 'detail']);
       expect(tester.takeException(), isNull);

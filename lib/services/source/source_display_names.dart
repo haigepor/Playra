@@ -2,6 +2,8 @@
 String playbackSourceName(String id, String fallback, {bool anime = false}) =>
     switch (id) {
       'lumina' => '动漫 · Lumina',
+      // 第二内容源在个人库与播放源行必须同名，否则记录里会露出接口 id。
+      'whisklet' => 'Whisklet',
       'kazumi' => '已移除来源（记录保留）',
       'anifive' => '已移除来源（记录保留）',
       'miomedia' => '已移除来源（记录保留）',

@@ -1,3 +1,5 @@
+import 'package:forui/forui.dart' show FTheme;
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/pages/source_unavailable_page.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
 import 'package:kazumi/services/source/source_models.dart';
@@ -140,12 +142,18 @@ void main() {
           scale: scale,
         );
         expect(tester.takeException(), isNull);
-        final bar = tester.widget<SearchBar>(find.byType(SearchBar));
+        final bar = tester.widget<PlayraSearchBar>(
+          find.byType(PlayraSearchBar),
+        );
         final colors = Theme.of(
-          tester.element(find.byType(SearchBar)),
+          tester.element(find.byType(PlayraSearchBar)),
         ).colorScheme;
         // 全局浅色主题的中间层级不能渗入新版搜索框。
-        expect(bar.backgroundColor!.resolve({}), colors.surfaceContainerLow);
+        expect(
+          FTheme.of(tester.element(find.byType(PlayraSearchBar))).colors.card,
+          colors.surfaceContainerLow,
+        );
+        expect(bar.controller, isNotNull);
         await tester.tap(find.text('按条件查找'));
         await tester.pumpAndSettle();
         expect(find.text('应用筛选'), findsOneWidget);
@@ -170,11 +178,13 @@ void main() {
         await tester.tap(find.text('图片链接'));
         await tester.pumpAndSettle();
         expect(find.text('图片链接'), findsWidgets);
-        expect(find.byType(TextField), findsOneWidget);
-        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(find.byType(PlayraTextField), findsOneWidget);
+        final field = tester.widget<PlayraTextField>(
+          find.byType(PlayraTextField),
+        );
         field.controller!.text = 'not-a-url';
         await tester.pump();
-        final action = tester.widget<FilledButton>(
+        final action = tester.widget<PlayraButton>(
           find.byKey(const ValueKey('image-search-primary')),
         );
         expect(action.onPressed, isNull);
@@ -187,14 +197,15 @@ void main() {
     await mount(tester, SearchPage(controller: controller, modern: true));
     await tester.tap(find.text('管理'));
     await tester.pump();
-    await tester.tap(find.byTooltip('删除这条搜索记录'));
+    await tester.tap(_tooltip('删除这条搜索记录'));
     await tester.pump();
     expect(controller.histories.values, isEmpty);
-    await tester.enterText(find.byType(TextField), '芙莉莲');
+    await tester.enterText(find.byType(PlayraTextField), '芙莉莲');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pump();
     expect(controller.queries.single, contains('芙莉莲'));
     expect(find.text('没有找到匹配的番剧'), findsOneWidget);
+    await tester.pumpAndSettle();
   });
   testWidgets('应用条件只提交一次，标签删除后同步查询', (tester) async {
     final controller = _Controller(_Histories());
@@ -210,7 +221,7 @@ void main() {
     expect(controller.queries, hasLength(1));
     expect(controller.queries.single, contains('日常'));
     expect(find.byType(InputChip), findsOneWidget);
-    await tester.tap(find.byTooltip('移除“日常”条件'));
+    await tester.tap(_tooltip('移除“日常”条件'));
     await tester.pumpAndSettle();
     expect(controller.queries, hasLength(2));
     expect(controller.queries.last, isNot(contains('日常')));
@@ -271,7 +282,7 @@ void main() {
       width: 320,
       scale: 2,
     );
-    await tester.enterText(find.byType(TextField), '长标题');
+    await tester.enterText(find.byType(PlayraTextField), '长标题');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pump();
     expect(find.text('已加载 1 部'), findsOneWidget);
@@ -328,12 +339,16 @@ void main() {
     expect(find.text('当前仅保留 Lumina 数据源'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
-  testWidgets('旧版搜索和以图搜番保持原呈现', (tester) async {
+  testWidgets('主题切换保留搜索入口与以图搜番内容', (tester) async {
     final controller = _Controller(_Histories());
     await mount(tester, SearchPage(controller: controller), modern: false);
     expect(find.text('番剧搜索'), findsOneWidget);
-    final bar = tester.widget<SearchBar>(find.byType(SearchBar));
-    expect(bar.constraints!.minHeight, 64);
+    final bar = tester.widget<PlayraSearchBar>(find.byType(PlayraSearchBar));
+    expect(
+      tester.getSize(find.byType(PlayraSearchBar)).height,
+      greaterThanOrEqualTo(48),
+    );
+    expect(bar.controller, isNotNull);
     await mount(tester, ImageSearchPage(controller: controller), modern: false);
     expect(find.text('这一幕，\n出自哪部番？'), findsOneWidget);
     expect(find.text('本地图片'), findsOneWidget);
@@ -361,3 +376,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 }
+
+Finder _tooltip(String message) => find.byWidgetPredicate(
+  (widget) =>
+      widget is PlayraIconButton && widget.tooltip == message ||
+      widget is Tooltip && widget.message == message,
+);

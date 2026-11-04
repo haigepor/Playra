@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:kazumi/services/source/sdk_playback_models.dart';
+import 'package:kazumi/services/source/source_display_names.dart';
 
 /// 仅保存稳定身份和观看状态；直链、请求头、凭证不进入本地个人库。
 class SdkWatchProgress {
@@ -73,11 +74,9 @@ class SdkLibraryRecord {
   final SdkWatchProgress? lastWatch;
   final Map<String, SdkWatchProgress> progresses;
   String get key => jsonEncode([providerId, contentId]);
-  String get sourceName => switch (providerId) {
-    'lumina' => '动漫 · Lumina',
-    'miomedia' || 'anifive' => '已移除来源（记录保留）',
-    _ => providerId,
-  };
+  // 与播放源行共用同一张名称表：个人库曾自带一份 switch，新增来源时漏改会
+  // 把接口 id（whisklet）直接显示给用户。
+  String get sourceName => playbackSourceName(providerId, providerId);
   String get progressLabel => lastWatch == null
       ? '尚无观看记录'
       : '${lastWatch!.episode.label} · ${lastWatch!.positionLabel}';

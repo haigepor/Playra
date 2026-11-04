@@ -1,4 +1,7 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' as f;
 
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/bean/widget/split_list_row.dart';
@@ -17,7 +20,7 @@ class SettingsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: PlayraSpace.md),
       itemCount: sections.length,
       itemBuilder: (context, index) => Center(
         child: ConstrainedBox(
@@ -53,8 +56,18 @@ class SettingsSection extends StatelessWidget {
       padding:
           margin ??
           (ModernSettingsScope.isActiveOf(context)
-              ? const EdgeInsets.fromLTRB(20, 0, 20, 24)
-              : const EdgeInsets.fromLTRB(16, 0, 16, 16)),
+              ? EdgeInsets.fromLTRB(
+                  PlayraLayout.pageInset(MediaQuery.sizeOf(context)),
+                  0,
+                  PlayraLayout.pageInset(MediaQuery.sizeOf(context)),
+                  PlayraSpace.xxl,
+                )
+              : const EdgeInsets.fromLTRB(
+                  PlayraSpace.lg,
+                  0,
+                  PlayraSpace.lg,
+                  PlayraSpace.lg,
+                )),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -71,7 +84,12 @@ class SettingsSection extends StatelessWidget {
           SplitListGroup(children: tiles),
           if (bottomInfo != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(
+                PlayraSpace.lg,
+                PlayraSpace.sm,
+                PlayraSpace.lg,
+                0,
+              ),
               child: DefaultTextStyle.merge(
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -155,7 +173,7 @@ class _TileLabel extends StatelessWidget {
                 child: title,
               ),
               if (description != null) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: PlayraSpace.tiny),
                 DefaultTextStyle.merge(
                   style: textTheme.bodySmall?.copyWith(color: secondary),
                   child: description!,
@@ -188,13 +206,38 @@ class SettingsCategoryTile extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final modern = ModernSettingsScope.isActiveOf(context);
+    if (PlayraComponentScope.enabledOf(context)) {
+      return f.FTile(
+        title: Text(title),
+        subtitle: Text(description),
+        onPress: onTap,
+        prefix: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(PlayraRadius.control),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(PlayraSpace.sm),
+            child: Icon(
+              modern ? modernSettingsIcon(icon) : icon,
+              size: PlayraLayout.icon,
+              color: colorScheme.onSecondaryContainer,
+            ),
+          ),
+        ),
+        suffix: const Icon(
+          Icons.chevron_right_rounded,
+          size: PlayraLayout.compactIcon,
+        ),
+      );
+    }
     return InkWell(
       onTap: onTap,
       onHighlightChanged: SplitListRow.pressReporterOf(context),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: modern ? 14 : 16,
-          vertical: 12,
+          horizontal: modern ? 14 : PlayraSpace.lg,
+          vertical: PlayraSpace.md,
         ),
         child: Row(
           children: [
@@ -219,7 +262,7 @@ class SettingsCategoryTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: textTheme.bodyLarge),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: PlayraSpace.tiny),
                   Text(
                     description,
                     style: textTheme.bodySmall?.copyWith(
@@ -273,7 +316,12 @@ class SettingsSliderTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(
+        PlayraSpace.lg,
+        PlayraSpace.md,
+        PlayraSpace.lg,
+        PlayraSpace.md,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -286,15 +334,15 @@ class SettingsSliderTile extends StatelessWidget {
                   description: description,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: PlayraSpace.md),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
-                  vertical: 4,
+                  vertical: PlayraSpace.xs,
                 ),
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
                 ),
                 child: Text(
                   valueLabel,
@@ -312,13 +360,12 @@ class SettingsSliderTile extends StatelessWidget {
             constraints: ModernSettingsScope.isActiveOf(context)
                 ? const BoxConstraints.tightFor(height: 48)
                 : const BoxConstraints(),
-            child: Slider(
+            child: PlayraSlider(
               value: value,
               min: min,
               max: max,
               divisions: divisions,
-              showValueIndicator: ShowValueIndicator.never,
-              padding: EdgeInsets.zero,
+
               onChanged: onChanged,
             ),
           ),
@@ -409,100 +456,114 @@ class SettingsTile<T> extends StatelessWidget {
         : _disabledOn(context);
     final modern = ModernSettingsScope.isActiveOf(context);
 
-    return InkWell(
-      onTap: _tapHandler(context),
-      onHighlightChanged: SplitListRow.pressReporterOf(context),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: modern ? 14 : 16,
-          vertical: 12,
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 32),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final below =
-                  modern &&
-                  value != null &&
-                  constraints.maxWidth < 340 &&
-                  MediaQuery.textScalerOf(context).scale(14) > 18;
-              final valueWidget = value == null
-                  ? null
-                  : DefaultTextStyle.merge(
-                      style: textTheme.bodyMedium?.copyWith(color: secondary),
-                      child: value!,
-                    );
-              final row = Row(
-                children: [
-                  Expanded(
-                    child: _TileLabel(
-                      title: title,
-                      leading: leading,
-                      description: description,
-                      enabled: enabled,
-                    ),
+    final forui = PlayraComponentScope.enabledOf(context);
+    final content = Padding(
+      padding: forui
+          ? EdgeInsets.zero
+          : EdgeInsets.symmetric(
+              horizontal: modern ? 14 : PlayraSpace.lg,
+              vertical: PlayraSpace.md,
+            ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 32),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final below =
+                modern &&
+                value != null &&
+                constraints.maxWidth < 340 &&
+                MediaQuery.textScalerOf(context).scale(14) > 18;
+            final valueWidget = value == null
+                ? null
+                : DefaultTextStyle.merge(
+                    style: textTheme.bodyMedium?.copyWith(color: secondary),
+                    child: value!,
+                  );
+            final row = Row(
+              children: [
+                Expanded(
+                  child: _TileLabel(
+                    title: title,
+                    leading: leading,
+                    description: description,
+                    enabled: enabled,
                   ),
-                  if (valueWidget != null && !below) ...[
-                    const SizedBox(width: 12),
-                    if (modern)
-                      // 只限制长值的最大宽度，让短值贴右而不是占半行。
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: constraints.maxWidth * .42,
-                        ),
-                        child: valueWidget,
-                      )
-                    else
-                      valueWidget,
-                  ],
-                  if (trailing != null) ...[
-                    const SizedBox(width: 8),
-                    IconTheme.merge(
-                      data: IconThemeData(color: secondary),
-                      child: trailing!,
-                    ),
-                  ],
-                  if (_kind == _TileKind.toggle) ...[
-                    const SizedBox(width: 12),
-                    if (modern)
-                      // 只缩小绘制尺寸；命中检测保留原开关的触摸范围。
-                      Transform.scale(
-                        scale: .8,
-                        alignment: Alignment.centerRight,
-                        transformHitTests: false,
-                        child: Switch(
-                          value: initialValue ?? false,
-                          onChanged: enabled ? onToggle : null,
-                        ),
-                      )
-                    else
-                      Switch(
+                ),
+                if (valueWidget != null && !below) ...[
+                  const SizedBox(width: PlayraSpace.md),
+                  if (modern)
+                    // 只限制长值的最大宽度，让短值贴右而不是占半行。
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth * .42,
+                      ),
+                      child: valueWidget,
+                    )
+                  else
+                    valueWidget,
+                ],
+                if (trailing != null) ...[
+                  const SizedBox(width: PlayraSpace.sm),
+                  IconTheme.merge(
+                    data: IconThemeData(color: secondary),
+                    child: trailing!,
+                  ),
+                ],
+                if (_kind == _TileKind.toggle) ...[
+                  const SizedBox(width: PlayraSpace.md),
+                  if (modern && !forui)
+                    // 只缩小绘制尺寸；命中检测保留原开关的触摸范围。
+                    Transform.scale(
+                      scale: .8,
+                      alignment: Alignment.centerRight,
+                      transformHitTests: false,
+                      child: PlayraSwitch(
                         value: initialValue ?? false,
                         onChanged: enabled ? onToggle : null,
                       ),
-                  ],
-                  if (_kind == _TileKind.radio) ...[
-                    const SizedBox(width: 12),
-                    Radio<T>(value: radioValue as T, enabled: enabled),
-                  ],
-                  if (modern &&
-                      _kind == _TileKind.plain &&
-                      onPressed != null &&
-                      value == null &&
-                      trailing == null)
-                    Icon(LucideIcons.chevronRight, size: 16, color: secondary),
-                ],
-              );
-              return below
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [row, const SizedBox(height: 8), valueWidget!],
                     )
-                  : row;
-            },
-          ),
+                  else
+                    PlayraSwitch(
+                      value: initialValue ?? false,
+                      onChanged: enabled ? onToggle : null,
+                    ),
+                ],
+                if (_kind == _TileKind.radio) ...[
+                  const SizedBox(width: PlayraSpace.md),
+                  PlayraRadio<T>(value: radioValue as T, enabled: enabled),
+                ],
+                if (modern &&
+                    _kind == _TileKind.plain &&
+                    onPressed != null &&
+                    value == null &&
+                    trailing == null)
+                  Icon(LucideIcons.chevronRight, size: 16, color: secondary),
+              ],
+            );
+            return below
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      row,
+                      const SizedBox(height: PlayraSpace.sm),
+                      valueWidget!,
+                    ],
+                  )
+                : row;
+          },
         ),
       ),
     );
+    return forui
+        ? f.FTile.raw(
+            onPress: _tapHandler(context),
+            enabled: enabled,
+            child: content,
+          )
+        : InkWell(
+            onTap: _tapHandler(context),
+            onHighlightChanged: SplitListRow.pressReporterOf(context),
+            child: content,
+          );
   }
 }

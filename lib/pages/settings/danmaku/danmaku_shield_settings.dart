@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -10,15 +11,15 @@ class DanmakuShieldSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SettingsDetailScaffold(
-        title: const Text('屏蔽规则'),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
-            child: DanmakuShieldEditor(
-              controller: inject<MyController>(),
-              padding: const EdgeInsets.all(16),
-            ),
-          ),
+    title: const Text('屏蔽规则'),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: DanmakuShieldEditor(
+          controller: inject<MyController>(),
+          padding: const EdgeInsets.all(PlayraSpace.lg),
         ),
-      );
+      ),
+    ),
+  );
 }

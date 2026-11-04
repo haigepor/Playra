@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -61,7 +62,7 @@ class SkeletonPosterCard extends StatelessWidget {
           height: bounds.maxWidth * 1.42,
           uniRadius: 12,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: PlayraSpace.sm),
         FractionallySizedBox(
           alignment: Alignment.centerLeft,
           widthFactor: .82,
@@ -70,7 +71,7 @@ class SkeletonPosterCard extends StatelessWidget {
             uniRadius: 4,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: PlayraSpace.compact),
         FractionallySizedBox(
           alignment: Alignment.centerLeft,
           widthFactor: .5,
@@ -110,7 +111,7 @@ class SkeletonPosters extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: count,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              separatorBuilder: (_, _) => const SizedBox(width: PlayraSpace.md),
               itemBuilder: (_, _) =>
                   SizedBox(width: width, child: const SkeletonPosterCard()),
             ),
@@ -164,7 +165,7 @@ class SkeletonFeature extends StatelessWidget {
                       Expanded(
                         child: Container(
                           height: rowHeight,
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(PlayraSpace.sm),
                           decoration: BoxDecoration(
                             color: Theme.of(
                               context,
@@ -184,9 +185,9 @@ class SkeletonFeature extends StatelessWidget {
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    SizedBox(height: 6),
+                                    SizedBox(height: PlayraSpace.compact),
                                     Bone(height: 12, uniRadius: 3),
-                                    SizedBox(height: 8),
+                                    SizedBox(height: PlayraSpace.sm),
                                     Bone(height: 12, uniRadius: 3),
                                     Spacer(),
                                     FractionallySizedBox(
@@ -194,7 +195,7 @@ class SkeletonFeature extends StatelessWidget {
                                       alignment: Alignment.centerLeft,
                                       child: Bone(height: 10, uniRadius: 3),
                                     ),
-                                    SizedBox(height: 8),
+                                    SizedBox(height: PlayraSpace.sm),
                                   ],
                                 ),
                               ),
@@ -206,7 +207,7 @@ class SkeletonFeature extends StatelessWidget {
                   ],
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: PlayraSpace.md),
               const Center(child: Bone(width: 88, height: 32, uniRadius: 16)),
             ],
           );
@@ -233,9 +234,9 @@ class SkeletonFeature extends StatelessWidget {
                           widthFactor: .4,
                           child: Bone(height: 10, uniRadius: 3),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: PlayraSpace.lg),
                         const Bone(height: 18, uniRadius: 4),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: PlayraSpace.sm),
                         const FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: .7,
@@ -247,7 +248,7 @@ class SkeletonFeature extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: PlayraSpace.lg),
               Bone(
                 width: math.min(bounds.maxWidth * .32, 116),
                 height: height - 36,
@@ -270,9 +271,9 @@ class SkeletonInfoList extends StatelessWidget {
       children: [
         for (var i = 0; i < count; i++)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: PlayraSpace.md),
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(PlayraSpace.md),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(14),
@@ -286,13 +287,13 @@ class SkeletonInfoList extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Bone(height: 16, uniRadius: 4),
-                        SizedBox(height: 12),
+                        SizedBox(height: PlayraSpace.md),
                         FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: .6,
                           child: Bone(height: 11, uniRadius: 3),
                         ),
-                        SizedBox(height: 24),
+                        SizedBox(height: PlayraSpace.xxl),
                         FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: .45,
@@ -333,12 +334,12 @@ class SkeletonComments extends StatelessWidget {
       children: [
         for (var i = 0; i < 3; i++)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: PlayraSpace.lg),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Bone(width: 32, height: 32, uniRadius: 16),
-                SizedBox(width: 12),
+                SizedBox(width: PlayraSpace.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -350,7 +351,7 @@ class SkeletonComments extends StatelessWidget {
                       ),
                       SizedBox(height: 14),
                       Bone(height: 12, uniRadius: 3),
-                      SizedBox(height: 8),
+                      SizedBox(height: PlayraSpace.sm),
                       FractionallySizedBox(
                         alignment: Alignment.centerLeft,
                         widthFactor: .7,

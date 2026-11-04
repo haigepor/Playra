@@ -204,9 +204,9 @@ class LiquidNavigationHost(private val activity: Activity, private val channel: 
                                 BasicText(
                                     String(Character.toChars(icons[index])),
                                     modifier = Modifier.clearAndSetSemantics {},
-                                    style = TextStyle(color = Color(0xFFE6EAF2), fontFamily = typeface, fontSize = 21.sp)
+                                    style = TextStyle(color = Color(0xFFE6EAF2), fontFamily = typeface, fontSize = 20.sp)
                                 )
-                                BasicText(labels[index], style = TextStyle(color = Color(0xFFE6EAF2), fontSize = 12.sp))
+                                BasicText(labels[index], style = TextStyle(color = Color(0xFFE6EAF2), fontSize = 11.5f.sp))
                             }
                         }
                     }

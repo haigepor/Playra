@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -97,16 +99,16 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
                         const Text(
                           '选择放送季度',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: PlayraType.item,
                             fontWeight: FontWeight.w600,
                             height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: PlayraSpace.compact),
                         Text(
                           '当前查看 · ${viewed.year} 年${_names[(viewed.month - 1) ~/ 3]}',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: PlayraType.small,
                             color: colors.onSurfaceVariant,
                             height: 1.3,
                           ),
@@ -115,13 +117,10 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
                     ),
                   ),
                   if (widget.onClose != null)
-                    IconButton(
+                    PlayraIconButton(
                       tooltip: '关闭',
                       onPressed: widget.onClose,
-                      style: IconButton.styleFrom(
-                        minimumSize: const Size(44, 44),
-                        overlayColor: Colors.transparent,
-                      ),
+
                       icon: Icon(
                         LucideIcons.x,
                         size: 18,
@@ -130,7 +129,7 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: PlayraSpace.md),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, body) {
@@ -147,9 +146,9 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
                         )
                       else
                         Expanded(child: _yearPicker(context)),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: PlayraSpace.lg),
                       _quarterHeading(context),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: PlayraSpace.sm),
                       SizedBox(
                         height: quarterHeight,
                         child: _quarters(context),
@@ -170,29 +169,11 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
-              FilledButton(
+              const SizedBox(height: PlayraSpace.lg),
+              PlayraButton(
                 key: const ValueKey('calendar-season-confirm'),
                 onPressed: _confirm,
-                style: FilledButton.styleFrom(
-                  minimumSize: Size(
-                    double.infinity,
-                    48 + (scale - 1).clamp(0, 2) * 16,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.25,
-                  ),
-                  splashFactory: NoSplash.splashFactory,
-                ),
+
                 child: Text(
                   '查看 $_year 年 · ${_names[_quarter]}',
                   maxLines: 1,
@@ -214,28 +195,29 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
         children: [
           const Text(
             '年份',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: PlayraType.caption,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: PlayraSpace.sm),
           Expanded(
             child: Text(
               '$_earliestYear–${widget.now.year}',
-              style: TextStyle(fontSize: 10, color: colors.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: PlayraType.micro,
+                color: colors.onSurfaceVariant,
+              ),
             ),
           ),
-          TextButton(
+          PlayraButton.ghost(
             key: const ValueKey('calendar-season-this-year'),
             onPressed: () => setState(() {
               _year = widget.now.year;
               _clampQuarter();
               _yearPickerGeneration++;
             }),
-            style: TextButton.styleFrom(
-              foregroundColor: colors.onSurfaceVariant,
-              minimumSize: const Size(44, 44),
-              overlayColor: Colors.transparent,
-              textStyle: const TextStyle(fontSize: 11),
-            ),
+
             child: const Text('今年'),
           ),
         ],
@@ -251,25 +233,28 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
         children: [
           const Text(
             '季度',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: PlayraType.caption,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: PlayraSpace.sm),
           Expanded(
             child: Text(
               '$_year 年',
-              style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: PlayraType.small,
+                color: colors.onSurfaceVariant,
+              ),
             ),
           ),
-          TextButton.icon(
+          PlayraButton.ghostIcon(
             key: const ValueKey('calendar-season-current'),
             onPressed: _resetCurrent,
             icon: Icon(LucideIcons.rotateCcw, size: 13, color: colors.primary),
-            label: const Text('当前季度', style: TextStyle(fontSize: 11)),
-            style: TextButton.styleFrom(
-              foregroundColor: colors.primary,
-              minimumSize: const Size(44, 44),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              overlayColor: Colors.transparent,
+            label: const Text(
+              '当前季度',
+              style: TextStyle(fontSize: PlayraType.small),
             ),
           ),
         ],
@@ -303,7 +288,10 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
           space: 0,
         ),
         datePickerTheme: theme.datePickerTheme.copyWith(
-          yearStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          yearStyle: const TextStyle(
+            fontSize: PlayraType.body,
+            fontWeight: FontWeight.w500,
+          ),
           yearForegroundColor: foreground,
           yearBackgroundColor: background,
           todayForegroundColor: foreground,
@@ -330,12 +318,12 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
   Widget _quarters(BuildContext context) => Column(
     children: [
       for (var row = 0; row < 2; row++) ...[
-        if (row > 0) const SizedBox(height: 8),
+        if (row > 0) const SizedBox(height: PlayraSpace.sm),
         Expanded(
           child: Row(
             children: [
               for (var column = 0; column < 2; column++) ...[
-                if (column > 0) const SizedBox(width: 8),
+                if (column > 0) const SizedBox(width: PlayraSpace.sm),
                 Expanded(child: _seasonCard(context, row * 2 + column)),
               ],
             ],
@@ -366,7 +354,7 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
           color: selected
               ? colors.primary.withValues(alpha: .12)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(PlayraRadius.control),
           border: Border.all(
             color: selected
                 ? colors.primary.withValues(alpha: .3)
@@ -375,7 +363,7 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
         ),
         child: Material(
           type: MaterialType.transparency,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(PlayraRadius.control),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             key: ValueKey('calendar-season-${index * 3 + 1}'),
@@ -383,7 +371,10 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
             splashFactory: NoSplash.splashFactory,
             overlayColor: _interactionOverlay(colors),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: PlayraSpace.md,
+                vertical: 10,
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,7 +386,7 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
                           _names[index],
                           style: TextStyle(
                             color: foreground,
-                            fontSize: 14,
+                            fontSize: PlayraType.body,
                             height: 1.25,
                             fontWeight: FontWeight.w600,
                           ),
@@ -409,13 +400,13 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: PlayraSpace.xs),
                   Text(
                     _ranges[index],
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: PlayraType.small,
                       height: 1.25,
                       color: enabled
                           ? colors.onSurfaceVariant

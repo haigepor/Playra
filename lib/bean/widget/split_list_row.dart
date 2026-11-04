@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 
 import 'package:kazumi/bean/widget/tonal_card.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_component_scope.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart'
+    show PlayraListGroup;
 
 const double splitListOuterRadius = tonalCardRadius;
 const double splitListInnerRadius = 4;
 const double splitListRowGap = 4;
 
-const Duration splitListMotionDuration = Duration(milliseconds: 250);
-const Curve splitListMotionCurve = Curves.easeInOutCubic;
+const Duration splitListMotionDuration = PlayraMotion.state;
+const Curve splitListMotionCurve = PlayraMotion.curve;
 
 class SplitListRow extends StatefulWidget {
   const SplitListRow({
@@ -77,8 +82,8 @@ class _SplitListRowState extends State<SplitListRow> {
         child: ListTileTheme(
           data: theme.listTileTheme.copyWith(
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 4,
+              horizontal: PlayraSpace.lg,
+              vertical: PlayraSpace.xs,
             ),
             titleTextStyle: theme.textTheme.bodyLarge?.copyWith(
               color: colors.onSurface,
@@ -117,15 +122,12 @@ class SplitListGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (PlayraComponentScope.enabledOf(context)) {
+      return PlayraListGroup(children: children);
+    }
     if (ModernSettingsScope.isActiveOf(context)) {
-      final c = Theme.of(context).colorScheme;
-      return Material(
-        color: c.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: c.outline.withValues(alpha: .5)),
-        ),
-        clipBehavior: Clip.antiAlias,
+      return PlayraCard(
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

@@ -1,3 +1,6 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
@@ -15,7 +18,9 @@ class HistoryRecordTile extends StatelessWidget {
     required this.onDelete,
     required this.collectType,
     required this.onChangeCollect,
-    this.borderRadius = const BorderRadius.all(Radius.circular(14)),
+    this.borderRadius = const BorderRadius.all(
+      Radius.circular(PlayraRadius.card),
+    ),
     this.editing = false,
     this.busy = false,
   });
@@ -84,10 +89,8 @@ class HistoryRecordTile extends StatelessWidget {
           color: colors.onErrorContainer,
         ),
       ),
-      child: Material(
-        color: colors.surfaceContainerLow,
-        borderRadius: borderRadius,
-        clipBehavior: Clip.antiAlias,
+      child: PlayraCard(
+        padding: EdgeInsets.zero,
         child: Stack(
           children: [
             // Keep menu focus outside the card's InkWell to prevent stuck highlights.
@@ -234,7 +237,6 @@ class HistoryRecordTile extends StatelessWidget {
   }
 
   Widget _actions(BuildContext context, {required bool wide}) {
-    final colors = Theme.of(context).colorScheme;
     if (busy) {
       return const SizedBox(
         width: 48,
@@ -243,26 +245,18 @@ class HistoryRecordTile extends StatelessWidget {
       );
     }
     if (editing) {
-      return IconButton.filledTonal(
+      return PlayraIconButton(
         tooltip: '删除记录',
-        style: IconButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          backgroundColor: colors.errorContainer,
-          foregroundColor: colors.onErrorContainer,
-        ),
+
         onPressed: onDelete,
         icon: const Icon(Icons.delete_outline_rounded),
       );
     }
 
     final buttons = [
-      IconButton.filledTonal(
+      PlayraIconButton(
         tooltip: '继续播放',
-        style: IconButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          backgroundColor: colors.primaryContainer,
-          foregroundColor: colors.onPrimaryContainer,
-        ),
+
         onPressed: onPlay,
         icon: const Icon(Icons.play_arrow_rounded),
       ),
@@ -285,9 +279,9 @@ class HistoryRecordTile extends StatelessWidget {
           const Divider(),
           KazumiMenuItem(destructive: true, onPressed: onDelete, label: '删除记录'),
         ],
-        builder: (context, toggle) => IconButton(
+        builder: (context, toggle) => PlayraIconButton(
           tooltip: '更多操作',
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+
           onPressed: toggle,
           icon: const Icon(Icons.more_horiz_rounded),
         ),

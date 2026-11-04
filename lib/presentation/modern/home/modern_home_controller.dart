@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/history/history_module.dart';
+import 'package:kazumi/services/source/whisklet/whisklet_home_controller.dart'
+    show HomeStyle;
 import 'home_catalog.dart';
 import 'home_content_algorithm.dart';
 
@@ -11,9 +13,12 @@ enum HomeFeed {
   anime('动漫'),
   screen('影视'),
   movies('电影'),
-  television('剧集'),
+  television('电视剧'),
   variety('综艺'),
   comicDrama('漫剧'),
+  shortDrama('短剧'),
+  aiComic('AI漫剧'),
+  live('电视直播'),
   animeMovies('动漫电影'),
   season('新番'),
   japanese('日漫'),
@@ -33,12 +38,30 @@ enum HomeFeed {
       this == chinese ||
       this == animeMovies;
 
+  /// 风格频道 → 上游 `tid`。动漫由 Lumina 出片，Whisklet 只作副源货架。
+  HomeStyle? get style => switch (this) {
+    movies => HomeStyle.movie,
+    television => HomeStyle.series,
+    anime => HomeStyle.anime,
+    variety => HomeStyle.variety,
+    shortDrama => HomeStyle.shortDrama,
+    aiComic => HomeStyle.aiComic,
+    live => HomeStyle.live,
+    _ => null,
+  };
+
+  /// 由第二内容源（Whisklet）独立出片的风格频道。
+  bool get isWhiskletStyle => style != null && this != anime;
+
+  /// 是否有 Lumina 内容源出片。第二源风格频道（含短剧/AI漫剧/直播）没有
+  /// Lumina 对应分类，放开会把 Lumina 动漫货架混进这些频道。
   bool get hasContentSource =>
       this != screen &&
       this != movies &&
       this != television &&
       this != variety &&
-      this != comicDrama;
+      this != comicDrama &&
+      !isWhiskletStyle;
 }
 
 typedef HomeFeedLoader =

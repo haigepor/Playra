@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/pages/about/about_widgets.dart';
@@ -40,14 +41,24 @@ class ProductInformationPage extends StatelessWidget {
         children: [
           for (final paragraph in paragraphs) ...[
             Padding(
-              padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+              padding: const EdgeInsets.fromLTRB(
+                PlayraSpace.xs,
+                PlayraSpace.sm,
+                PlayraSpace.xs,
+                PlayraSpace.sm,
+              ),
               child: Text(
                 paragraph.$1,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 24),
+              padding: const EdgeInsets.fromLTRB(
+                PlayraSpace.xs,
+                0,
+                PlayraSpace.xs,
+                PlayraSpace.xxl,
+              ),
               child: Text(
                 paragraph.$2,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(

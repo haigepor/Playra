@@ -995,165 +995,62 @@ class _SdkDetailPageState extends State<SdkDetailPage>
 
   Widget _sourceControls(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    // 未选中线路不等于仍在加载；成功空目录与请求失败必须分别结束等待状态。
-    final lineSummary = detailLoading
-        ? '正在获取线路'
-        : detailError != null
-        ? '线路获取失败'
-        : line?.label ?? (video.lines.isEmpty ? '暂无播放线路' : '请选择线路');
+    final saved = _library.get(service.id, source.contentId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_library.get(service.id, source.contentId)?.lastWatch != null)
+        if (saved?.lastWatch != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
-            child: Text(
-              '上次看到 ${_library.get(service.id, source.contentId)!.progressLabel}',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.history_rounded,
+                  size: 14,
+                  color: colors.onSurfaceVariant,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '上次看到 ${saved!.progressLabel}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
         if (_storageError != null)
           Text(_storageError!, style: TextStyle(color: colors.error)),
-        Container(
-          key: const ValueKey('sdk-playback-settings'),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: colors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: colors.outlineVariant),
+        // 只保留播放源一行：线路/分辨率/画质这类描述全部移入点击后的弹窗。
+        PlaybackSourcePanel(
+          selectorKey: const ValueKey('sdk-line-selector'),
+          sourceLabel: playbackSourceName(
+            service.id,
+            service.name,
+            anime: video.isAnime,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              PlaybackSourcePanel(
-                embedded: true,
-                title: '播放设置',
-                trailing: PopupMenuButton<int>(
-                  tooltip: '设置收藏状态',
-                  enabled: !_collectBusy,
-                  initialValue:
-                      _library
-                          .get(service.id, source.contentId)
-                          ?.collectionType ??
-                      0,
-                  onSelected: (type) => unawaited(_collect(type)),
-                  itemBuilder: (_) => [
-                    for (final type in CollectType.values)
-                      PopupMenuItem(
-                        value: type.value,
-                        child: Text(
-                          type == CollectType.none ? '取消收藏' : type.label,
-                        ),
-                      ),
-                  ],
-                  child: Semantics(
-                    container: true,
-                    button: true,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.bookmark_border_rounded, size: 18),
-                          const SizedBox(width: 6),
-                          Text(
-                            CollectType.fromValue(
-                                  _library
-                                          .get(service.id, source.contentId)
-                                          ?.collectionType ??
-                                      0,
-                                ).isCollected
-                                ? CollectType.fromValue(
-                                    _library
-                                        .get(service.id, source.contentId)!
-                                        .collectionType,
-                                  ).label
-                                : '收藏',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+          onSelectSource: video.lines.isEmpty ? null : () => showLines(context),
+          trailing: PopupMenuButton<int>(
+            tooltip: '设置收藏状态',
+            enabled: !_collectBusy,
+            initialValue: saved?.collectionType ?? 0,
+            onSelected: (type) => unawaited(_collect(type)),
+            itemBuilder: (_) => [
+              for (final type in CollectType.values)
+                PopupMenuItem(
+                  value: type.value,
+                  child: Text(type == CollectType.none ? '取消收藏' : type.label),
                 ),
-                selectorKey: const ValueKey('sdk-line-selector'),
-                groups: [
-                  if (widget.entry.sources.length == 1)
-                    Text(
-                      playbackSourceName(
-                        service.id,
-                        service.name,
-                        anime: video.isAnime,
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    )
-                  else
-                    for (final binding in widget.entry.sources)
-                      PlaybackSdkChip(
-                        name: playbackSourceName(
-                          binding.provider.id,
-                          binding.provider.name,
-                          anime: video.isAnime,
-                        ),
-                        selected: binding.provider.id == service.id,
-                        onSelected: () {
-                          if (binding.provider.id != service.id) {
-                            unawaited(switchSource(binding));
-                          }
-                        },
-                      ),
-                ],
-                automatic: automatic,
-                summary: '${automatic ? "自动 · " : "手动 · "}$lineSummary',
-                // 旧媒体在新线路准备失败时会保留；其分辨率不能冒充新线路的结果。
-                detail:
-                    decodedResolution != null &&
-                        _installedSdkId == service.id &&
-                        _installedLineCode == line?.code &&
-                        playingIdentity == _requestedEpisode?.identityKey
-                    ? '$decodedResolution · 实际分辨率'
-                    : selectedQuality == null
-                    ? null
-                    : '${selectedQuality!.choiceLabel}${selectedQuality!.height == null ? "" : " · 来源声明"}',
-                lineCount: video.lines.length,
-                onShowLines: video.lines.isEmpty
-                    ? null
-                    : () => showLines(context),
-              ),
-              if (service.supportsQualities &&
-                  episodes.isNotEmpty &&
-                  _requestedEpisode != null &&
-                  _requestedEpisode?.code == line?.code) ...[
-                Divider(height: 12, color: colors.outlineVariant),
-                SdkQualitySelector(
-                  qualities: [...?_qualityCandidate?.qualities]
-                    ..sort(
-                      (a, b) => service
-                          .qualityPreference(b)
-                          .compareTo(service.qualityPreference(a)),
-                    ),
-                  automaticLabel: service.automaticQualityLabel,
-                  selectedCode: _manualQualityCode,
-                  status: switch (_qualityCandidate?.status) {
-                    'timeout' || 'failed' => _qualityCandidate!.status,
-                    'loading' => 'loading',
-                    _ => _qualityCandidate?.qualityStatus ?? 'loading',
-                  },
-                  busy: playingLoading,
-                  showStatus: playMessage == null,
-                  onRetry: playingLoading || playMessage != null
-                      ? null
-                      : _retryPlayback,
-                  onSelected: (code) => unawaited(selectQuality(code)),
-                ),
-              ],
             ],
+            icon: Icon(
+              saved != null &&
+                      CollectType.fromValue(saved.collectionType).isCollected
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
+              size: 20,
+              color: colors.onSurfaceVariant,
+            ),
           ),
         ),
         if (video.lines.isEmpty && !detailLoading && detailError == null)
@@ -1200,6 +1097,58 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                 anime: video.isAnime,
               ),
               onClose: () => Navigator.of(sheetContext).pop(),
+              sources: widget.entry.sources.length < 2
+                  ? null
+                  : Wrap(
+                      spacing: 6,
+                      runSpacing: 2,
+                      children: [
+                        for (final binding in widget.entry.sources)
+                          PlaybackSdkChip(
+                            name: playbackSourceName(
+                              binding.provider.id,
+                              binding.provider.name,
+                              anime: video.isAnime,
+                            ),
+                            selected: binding.provider.id == service.id,
+                            onSelected: () {
+                              if (binding.provider.id != service.id) {
+                                Navigator.of(sheetContext).pop();
+                                unawaited(switchSource(binding));
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+              // 画质从卡片行移入弹窗：弹窗内选择后关闭并立即切换。
+              quality: service.supportsQualities &&
+                      episodes.isNotEmpty &&
+                      _requestedEpisode != null &&
+                      _requestedEpisode?.code == line?.code
+                  ? SdkQualitySelector(
+                      qualities: [...?_qualityCandidate?.qualities]..sort(
+                        (a, b) => service
+                            .qualityPreference(b)
+                            .compareTo(service.qualityPreference(a)),
+                      ),
+                      automaticLabel: service.automaticQualityLabel,
+                      selectedCode: _manualQualityCode,
+                      status: switch (_qualityCandidate?.status) {
+                        'timeout' || 'failed' => _qualityCandidate!.status,
+                        'loading' => 'loading',
+                        _ => _qualityCandidate?.qualityStatus ?? 'loading',
+                      },
+                      busy: playingLoading,
+                      showStatus: playMessage == null,
+                      onRetry: playingLoading || playMessage != null
+                          ? null
+                          : _retryPlayback,
+                      onSelected: (code) {
+                        Navigator.of(sheetContext).pop();
+                        unawaited(selectQuality(code));
+                      },
+                    )
+                  : null,
               automaticOption: SdkLineOption(
                 title: '自动（优选线路）',
                 subtitle: '在当前 SDK 内选线，保留画质偏好',
@@ -1226,7 +1175,23 @@ class _SdkDetailPageState extends State<SdkDetailPage>
               ),
               children: [
                 for (final candidate in video.lines)
-                  sdkLineOption(sheetContext, candidate),
+                  // 没有对应当前集的线路点了也播不了，不再罗列；
+                  // 探测仍在后台跑，匹配成功后弹窗刷新会重新出现。
+                  if (!_lineUnavailable(candidate))
+                    sdkLineOption(sheetContext, candidate),
+                if (video.lines.every(_lineUnavailable))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      '当前选集没有可用线路，可换一集或换来源',
+                      style: Theme.of(sheetContext).textTheme.bodySmall
+                          ?.copyWith(
+                            color: Theme.of(
+                              sheetContext,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
               ],
             );
           },
@@ -1235,6 +1200,16 @@ class _SdkDetailPageState extends State<SdkDetailPage>
     } finally {
       _refreshLineSheet = null;
     }
+  }
+
+  /// 该线路在当前选集下没有可播条目（缺目录或集号对不上）。
+  /// 探测完成前状态是 loading，按可用处理，避免弹窗瞬间清空。
+  bool _lineUnavailable(SdkLine line) {
+    final status = _playback.candidates
+        .where((item) => item.line.code == line.code)
+        .firstOrNull
+        ?.status;
+    return status == 'mismatch' || status == 'empty';
   }
 
   Widget sdkLineOption(BuildContext sheetContext, SdkLine candidate) {
@@ -1655,6 +1630,8 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                                       : video.cover,
                                   width: size.maxWidth,
                                   height: size.maxHeight,
+                                  // 播放器画面占满屏宽：四角不做圆角，避免画面被裁。
+                                  borderRadius: BorderRadius.zero,
                                 ),
                               const ColoredBox(color: Color(0x66000000)),
                               Center(
@@ -1771,24 +1748,6 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                                   _requestedEpisode!.code != line?.code
                               ? null
                               : () => selectEpisode(_requestedEpisode!),
-                        ),
-                      if (_videoController == null &&
-                          playMessage == null &&
-                          detailError == null &&
-                          !detailLoading &&
-                          episodes.isNotEmpty)
-                        Text(
-                          playingLoading
-                              ? '正在准备播放链接…'
-                              : _prepared != null
-                              ? '播放链接已准备，点击播放'
-                              : '选择剧集后准备播放链接',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
                         ),
                       _sourceControls(context),
                       const SizedBox(height: 8),
@@ -2050,7 +2009,7 @@ class _SdkEpisodeSegmentsState extends State<_SdkEpisodeSegments>
         ),
         indicator: BoxDecoration(
           color: colors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(9),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: colors.primary.withValues(alpha: .35)),
         ),
         automaticIndicatorColorAdjustment: false,
@@ -2120,7 +2079,9 @@ class _SdkEpisodeButton extends StatelessWidget {
         side: BorderSide(
           color: selected ? colors.primary : colors.outlineVariant,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        // 选集是密集网格，胶囊（Stadium）在高行高下弧度过大；
+        // 用 12 的圆角矩形与弹窗里的线路条目保持同一视觉语言。
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Row(
         mainAxisAlignment: wide

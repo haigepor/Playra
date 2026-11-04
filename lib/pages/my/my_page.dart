@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -70,15 +71,14 @@ class _MyPageState extends State<MyPage> {
         toolbarHeight: 72,
         title: Text(
           '我的',
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
-              ?.copyWith(fontWeight: FontWeight.w700),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
         needTopOffset: false,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: PlayraSpace.sm),
             child: MySettingsButton(
               onTap: () => context.pushNamed('/settings/'),
             ),
@@ -89,10 +89,8 @@ class _MyPageState extends State<MyPage> {
         top: false,
         bottom: false,
         child: Observer(
-          builder: (context) => MySpaceView(
-            stats: widget.controller.watchStats,
-            onOpen: _open,
-          ),
+          builder: (context) =>
+              MySpaceView(stats: widget.controller.watchStats, onOpen: _open),
         ),
       ),
     );

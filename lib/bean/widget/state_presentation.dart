@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:shadcn_ui/shadcn_ui.dart' show ShadButton;
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:material_new_shapes/material_new_shapes.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 
@@ -74,17 +77,15 @@ class StateActionButton extends StatelessWidget {
 
   static ButtonStyle styleOf(BuildContext context) {
     if (ModernSettingsScope.isActiveOf(context)) {
-      return FilledButton.styleFrom(
-        minimumSize: const Size(48, 40),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        textStyle: const TextStyle(fontSize: 13),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      );
+      return Theme.of(context).filledButtonTheme.style ?? const ButtonStyle();
     }
     return ButtonStyle(
       minimumSize: const WidgetStatePropertyAll(Size(64, 48)),
       padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        EdgeInsets.symmetric(
+          horizontal: PlayraSpace.xxl,
+          vertical: PlayraSpace.md,
+        ),
       ),
       shape: WidgetStateProperty.resolveWith(
         (states) => RoundedRectangleBorder(
@@ -101,29 +102,46 @@ class StateActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final button = _tonal ? FilledButton.tonalIcon : FilledButton.icon;
     final label = Text(text, textAlign: TextAlign.center);
+    final content = reserveText == null
+        ? label
+        : Stack(
+            alignment: Alignment.center,
+            children: [
+              Visibility(
+                visible: false,
+                maintainSize: true,
+                maintainState: true,
+                maintainAnimation: true,
+                child: Text(reserveText!, textAlign: TextAlign.center),
+              ),
+              label,
+            ],
+          );
+    if (PlayraComponentScope.enabledOf(context)) {
+      final button = _tonal ? PlayraButton.tonal : PlayraButton.new;
+      return button(
+        onPressed: onPressed,
+        icon: icon == null ? null : Icon(icon, size: PlayraLayout.compactIcon),
+        child: content,
+      );
+    }
+    if (ModernSettingsScope.isActiveOf(context)) {
+      final button = _tonal ? ShadButton.secondary : ShadButton.new;
+      return button(
+        onPressed: onPressed,
+        leading: icon == null
+            ? null
+            : Icon(icon, size: PlayraLayout.compactIcon),
+        child: content,
+      );
+    }
+    final button = _tonal ? FilledButton.tonalIcon : FilledButton.icon;
     return button(
       onPressed: onPressed,
       style: styleOf(context),
-      icon: icon == null
-          ? null
-          : Icon(icon, size: ModernSettingsScope.isActiveOf(context) ? 18 : 20),
-      label: reserveText == null
-          ? label
-          : Stack(
-              alignment: Alignment.center,
-              children: [
-                Visibility(
-                  visible: false,
-                  maintainSize: true,
-                  maintainState: true,
-                  maintainAnimation: true,
-                  child: Text(reserveText!, textAlign: TextAlign.center),
-                ),
-                label,
-              ],
-            ),
+      icon: icon == null ? null : Icon(icon, size: PlayraLayout.icon),
+      label: content,
     );
   }
 }

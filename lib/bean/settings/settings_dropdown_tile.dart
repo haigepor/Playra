@@ -32,37 +32,32 @@ class SettingsDropdownTile<T> extends StatefulWidget {
 }
 
 class _SettingsDropdownTileState<T> extends State<SettingsDropdownTile<T>> {
-  final _controller = MenuController();
-
   @override
   Widget build(BuildContext context) {
     final enabled = widget.enabled && widget.options.isNotEmpty;
-    return SettingsTile(
-      leading: widget.leading,
-      title: widget.title,
-      description: widget.description,
+    return KazumiMenuButton(
       enabled: enabled,
-      onPressed: (_) =>
-          _controller.isOpen ? _controller.close() : _controller.open(),
-      value: KazumiMenuButton(
-        controller: _controller,
+      builder: (_, toggle) => SettingsTile(
+        leading: widget.leading,
+        title: widget.title,
+        description: widget.description,
         enabled: enabled,
-        builder: (_, _) =>
-            Text(widget.options[widget.value] ?? widget.fallbackLabel),
-        menuChildren: [
-          for (final entry in widget.options.entries)
-            KazumiMenuItem(
-              label: entry.value,
-              selected: entry.key == widget.value,
-              leadingIcon: widget.icons[entry.key] == null
-                  ? null
-                  : Icon(widget.icons[entry.key]),
-              requestFocusOnHover: false,
-              onPressed: enabled ? () => widget.onChanged(entry.key) : null,
-            ),
-        ],
+        onPressed: (_) => toggle?.call(),
+        value: Text(widget.options[widget.value] ?? widget.fallbackLabel),
+        trailing: const Icon(Icons.arrow_drop_down_rounded),
       ),
-      trailing: const Icon(Icons.arrow_drop_down_rounded),
+      menuChildren: [
+        for (final entry in widget.options.entries)
+          KazumiMenuItem(
+            label: entry.value,
+            selected: entry.key == widget.value,
+            leadingIcon: widget.icons[entry.key] == null
+                ? null
+                : Icon(widget.icons[entry.key]),
+            requestFocusOnHover: false,
+            onPressed: enabled ? () => widget.onChanged(entry.key) : null,
+          ),
+      ],
     );
   }
 }

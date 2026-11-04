@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -216,7 +217,11 @@ void main() {
         await pumpView(tester, width: width, scale: scale);
         expect(tester.takeException(), isNull);
         expect(find.text('去发现番剧'), findsOneWidget);
-        await tester.scrollUntilVisible(find.text('组件实验室'), 180);
+        await tester.scrollUntilVisible(
+          find.text('组件实验室'),
+          180,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(tester.takeException(), isNull);
         await pumpView(
           tester,
@@ -272,15 +277,19 @@ void main() {
       Theme.of(tester.element(nav)).navigationBarTheme.backgroundColor,
       const Color(0xff1b202c),
     );
-    expect(tester.getTopLeft(find.byTooltip('全部设置')).dy, 24);
+    expect(tester.getTopLeft(_tooltip('全部设置')).dy, 24);
     expect(tester.getBottomRight(nav).dy, 810);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('横屏矮窗口保留滚动及设置动作', (tester) async {
     await pumpView(tester, width: 844, height: 390, scale: 2);
-    await tester.scrollUntilVisible(find.text('组件实验室'), 180);
-    expect(find.byTooltip('全部设置').hitTestable(), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('组件实验室'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(_tooltip('全部设置').hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -330,8 +339,9 @@ void main() {
       onDiscover: () => discovered = true,
     );
     await tester.tap(find.text('去发现番剧'));
+    await tester.pumpAndSettle();
     expect(discovered, isTrue);
-    await tester.tap(find.byTooltip('全部设置'));
+    await tester.tap(_tooltip('全部设置'));
     expect(opened, '/settings/');
     for (final entry in const [
       ('历史记录', '/settings/history/'),
@@ -349,6 +359,7 @@ void main() {
       await tester.ensureVisible(find.text(entry.$1));
       await tester.pumpAndSettle();
       await tester.tap(find.text(entry.$1));
+      await tester.pumpAndSettle();
       expect(opened, entry.$2);
     }
     expect(find.text('Playra · 测试版本'), findsOneWidget);
@@ -426,3 +437,9 @@ class _TestPaths extends PathProviderPlatform {
   @override
   Future<String?> getApplicationSupportPath() async => path;
 }
+
+Finder _tooltip(String message) => find.byWidgetPredicate(
+  (widget) =>
+      widget is PlayraIconButton && widget.tooltip == message ||
+      widget is Tooltip && widget.message == message,
+);

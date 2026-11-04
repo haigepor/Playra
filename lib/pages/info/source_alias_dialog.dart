@@ -38,9 +38,9 @@ void _showCustomKeywordDialog({
 
   KazumiDialog.show(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => PlayraDialog(
       title: const Text('修改检索词'),
-      content: TextFormField(
+      content: PlayraTextField.form(
         initialValue: initialKeyword,
         autofocus: true,
         textInputAction: TextInputAction.search,
@@ -53,7 +53,7 @@ void _showCustomKeywordDialog({
         onFieldSubmitted: submit,
       ),
       actions: [
-        TextButton(
+        PlayraButton.ghost(
           onPressed: KazumiDialog.dismiss,
           child: Text(
             '取消',
@@ -62,7 +62,10 @@ void _showCustomKeywordDialog({
             ),
           ),
         ),
-        TextButton(onPressed: () => submit(keyword), child: const Text('检索')),
+        PlayraButton.ghost(
+          onPressed: () => submit(keyword),
+          child: const Text('检索'),
+        ),
       ],
     ),
   );
@@ -89,18 +92,18 @@ class _AliasPickerDialogState extends State<_AliasPickerDialog> {
   void _confirmDelete(int index) {
     KazumiDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => PlayraDialog(
         title: const Text('删除确认'),
         content: const Text('删除后无法恢复，确认要永久删除这个别名吗？'),
         actions: [
-          TextButton(
+          PlayraButton.ghost(
             onPressed: KazumiDialog.dismiss,
             child: Text(
               '取消',
               style: TextStyle(color: Theme.of(context).colorScheme.outline),
             ),
           ),
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () {
               KazumiDialog.dismiss();
               // Aliases are shared across source rules.
@@ -119,8 +122,7 @@ class _AliasPickerDialogState extends State<_AliasPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      clipBehavior: Clip.antiAlias,
+    return PlayraDialogSurface(
       child: SizedBox(
         width: 560,
         child: ListView(
@@ -143,9 +145,9 @@ class _AliasPickerDialogState extends State<_AliasPickerDialog> {
               ),
             ),
             for (var index = 0; index < widget.aliases.length; index++)
-              ListTile(
+              PlayraListTile(
                 title: Text(widget.aliases[index]),
-                trailing: IconButton(
+                trailing: PlayraIconButton(
                   onPressed: () => _confirmDelete(index),
                   icon: const Icon(Icons.delete),
                 ),

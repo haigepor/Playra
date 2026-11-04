@@ -5,7 +5,7 @@ import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/bean/widget/image_preview.dart';
 import 'package:kazumi/pages/collect/collect_module.dart';
 import 'package:kazumi/pages/index_page.dart';
-import 'package:kazumi/presentation/modern/components/shadcn_gallery.dart';
+import 'package:kazumi/presentation/modern/components/forui_gallery.dart';
 import 'package:kazumi/presentation/interface_style.dart';
 import 'package:kazumi/pages/info/info_module.dart';
 import 'package:kazumi/pages/init_page.dart';
@@ -159,7 +159,7 @@ final indexModule = createModule(
         '/ui/components',
         child: (context, state) =>
             inject<InterfaceStyleController>().supportsModern
-            ? ShadcnGallery(onExit: () => context.pop())
+            ? ForuiGallery(onExit: () => context.pop())
             : const RouteErrorPage(message: '组件实验室当前仅向新版界面开放。'),
       );
     }

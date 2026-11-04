@@ -103,12 +103,17 @@ Future<void> _mountAndSelectEpisode14(
 }
 
 Future<void> _switchSource(WidgetTester tester, _EpisodeSdk destination) async {
-  final source = find.widgetWithText(ChoiceChip, destination.name);
+  // 来源切换在播放源弹窗内完成：先回到播放源行，再选目标来源。
+  final opener = find.byKey(const ValueKey('sdk-line-selector'));
   await tester.scrollUntilVisible(
-    source,
+    opener,
     -160,
     scrollable: find.byType(Scrollable).first,
   );
+  await tester.tap(opener);
+  await tester.pumpAndSettle();
+  final source = find.widgetWithText(ChoiceChip, destination.name);
+  await tester.ensureVisible(source);
   await tester.tap(source);
   await tester.pumpAndSettle();
   expect(destination.loadedDetails, [destination.contentId]);

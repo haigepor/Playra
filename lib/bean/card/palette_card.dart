@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
 
@@ -5,11 +6,7 @@ class PaletteCard extends StatefulWidget {
   final Color color;
   final bool selected;
 
-  const PaletteCard({
-    super.key,
-    required this.color,
-    required this.selected,
-  });
+  const PaletteCard({super.key, required this.color, required this.selected});
 
   @override
   State<StatefulWidget> createState() => _PaletteCardState();
@@ -28,33 +25,20 @@ class _PaletteCardState extends State<PaletteCard> {
       height: 70,
       child: Stack(
         children: [
-          Card(
-            elevation: 0,
+          PlayraSurface(
             child: Container(
               padding: const EdgeInsets.all(10),
               child: ClipOval(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Container(
-                        color: primary,
-                      ),
-                    ),
+                    Expanded(child: Container(color: primary)),
                     Expanded(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Expanded(
-                            child: Container(
-                              color: tertiary,
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              color: primaryContainer,
-                            ),
-                          ),
+                          Expanded(child: Container(color: tertiary)),
+                          Expanded(child: Container(color: primaryContainer)),
                         ],
                       ),
                     ),

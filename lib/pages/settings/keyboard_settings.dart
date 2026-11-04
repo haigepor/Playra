@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -222,7 +224,7 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
     return SettingsDetailScaffold(
       title: const Text('操作设置'),
       actions: [
-        IconButton(
+        PlayraIconButton(
           icon: const Icon(Icons.settings_backup_restore_rounded),
           tooltip: '恢复默认',
           onPressed: restoreDefaults,
@@ -248,13 +250,13 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
             return handled ? KeyEventResult.handled : KeyEventResult.ignored;
           },
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(PlayraSpace.lg),
             children: [
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1000),
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: PlayraSpace.md),
                     child: Text(
                       '适用于电脑或外接键盘。点按标签，再按下新按键完成修改',
                       style: textTheme.bodySmall?.copyWith(
@@ -279,7 +281,7 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
   }
 
   Widget _buildGroupCard(_ShortcutGroup group) => Padding(
-    padding: const EdgeInsets.only(bottom: 24),
+    padding: const EdgeInsets.only(bottom: PlayraSpace.xxl),
     child: ContentSection(
       title: group.title,
       child: Column(
@@ -294,11 +296,11 @@ class _KeyboardSettingsPageState extends State<KeyboardSettingsPage> {
     final keys = shortcuts[func]!;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: PlayraSpace.compact),
       child: Row(
         children: [
           Text(shortcutsChineseName[func] ?? func, style: textTheme.bodyMedium),
-          const SizedBox(width: 12),
+          const SizedBox(width: PlayraSpace.md),
           Expanded(
             child: Wrap(
               alignment: WrapAlignment.end,
@@ -354,12 +356,15 @@ class _KeyCap extends StatelessWidget {
       color: listening
           ? colorScheme.primaryContainer
           : colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: PlayraSpace.compact,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -373,7 +378,7 @@ class _KeyCap extends StatelessWidget {
                 ),
               ),
               if (onDelete != null) ...[
-                const SizedBox(width: 4),
+                const SizedBox(width: PlayraSpace.xs),
                 GestureDetector(
                   onTap: onDelete,
                   behavior: HitTestBehavior.opaque,
@@ -408,7 +413,7 @@ class _AddKeyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
       side: BorderSide(color: colorScheme.outlineVariant),
     );
 

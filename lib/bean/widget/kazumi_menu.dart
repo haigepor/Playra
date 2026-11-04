@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' as f;
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 
 typedef KazumiMenuBuilder =
     Widget Function(BuildContext context, VoidCallback? toggle);
@@ -38,6 +40,23 @@ class KazumiMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (PlayraComponentScope.enabledOf(context)) {
+      return f.FPopoverMenu.tiles(
+        maxHeight: MediaQuery.sizeOf(context).height * .65,
+        menuBuilder: (context, popover, _) => [
+          f.FTileGroup(
+            children: [
+              for (final item in menuChildren)
+                _foruiItem(item, () => popover.hide()),
+            ],
+          ),
+        ],
+        builder: (context, popover, _) => builder(
+          context,
+          enabled && menuChildren.isNotEmpty ? () => popover.toggle() : null,
+        ),
+      );
+    }
     return MenuButtonTheme(
       data: MenuButtonThemeData(
         // Submenu entries must use the same inset as ordinary menu items.
@@ -61,6 +80,43 @@ class KazumiMenuButton extends StatelessWidget {
       ),
     );
   }
+}
+
+f.FTileMixin _foruiItem(Widget item, VoidCallback close) {
+  if (item is KazumiMenuItem) {
+    return f.FTile(
+      title: Text(item.label),
+      prefix: item.leadingIcon,
+      selected: item.selected ?? false,
+      enabled: item.onPressed != null,
+      variant: item.destructive
+          ? f.FItemVariant.destructive
+          : f.FItemVariant.primary,
+      suffix: item.selected == true
+          ? const Icon(Icons.check_rounded, size: 18)
+          : null,
+      onPress: item.onPressed == null
+          ? null
+          : () {
+              close();
+              item.onPressed!();
+            },
+    );
+  }
+  if (item is SubmenuButton) {
+    return f.FSubmenuTile(
+      title: item.child ?? const SizedBox.shrink(),
+      prefix: item.leadingIcon,
+      menu: [
+        f.FTileGroup(
+          children: [
+            for (final entry in item.menuChildren) _foruiItem(entry, close),
+          ],
+        ),
+      ],
+    );
+  }
+  return f.FTile(title: item);
 }
 
 class KazumiMenuItem extends StatelessWidget {

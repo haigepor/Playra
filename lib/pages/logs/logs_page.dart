@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
 
@@ -206,7 +207,10 @@ class _LogsPageState extends State<LogsPage> {
                   _logLines[index],
                   softWrap: false,
                   overflow: TextOverflow.clip,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: PlayraType.caption,
+                  ),
                 ),
               );
             },

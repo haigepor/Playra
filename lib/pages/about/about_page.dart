@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kazumi/app_brand.dart';
@@ -16,7 +17,7 @@ class AboutPage extends StatelessWidget {
     body: AboutContent(
       children: [
         _BrandHeader(onCheckUpdate: onCheckUpdate),
-        const SizedBox(height: 24),
+        const SizedBox(height: PlayraSpace.xxl),
         ContentSection.group(
           title: '了解应用',
           children: const [
@@ -50,7 +51,7 @@ class _BrandHeader extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(PlayraRadius.brand),
         border: Border.all(color: c.outlineVariant.withValues(alpha: .5)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -72,7 +73,7 @@ class _BrandHeader extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(PlayraSpace.xxl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -81,7 +82,7 @@ class _BrandHeader extends StatelessWidget {
                   color: c.primary,
                   size: 34,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: PlayraSpace.lg),
                 Semantics(
                   header: true,
                   child: Text(
@@ -92,7 +93,7 @@ class _BrandHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: PlayraSpace.compact),
                 Text(
                   '版本 ${ApiEndpoints.version}',
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -101,7 +102,7 @@ class _BrandHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text('好故事，随时继续。', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 6),
+                const SizedBox(height: PlayraSpace.compact),
                 Text(
                   '发现电影与番剧，留住每一次观看。',
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -109,7 +110,7 @@ class _BrandHeader extends StatelessWidget {
                     height: 1.6,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: PlayraSpace.xl),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,

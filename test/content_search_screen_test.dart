@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -80,7 +81,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(home: ContentSearchScreen(providers: [])),
       );
-      final field = find.byType(TextField).first;
+      final field = find.byType(PlayraTextField).first;
       await tester.tap(field);
       await tester.pump();
       for (final value in ['n', 'ni', 'nihao']) {
@@ -93,7 +94,7 @@ void main() {
         );
         await tester.pump();
         expect(
-          tester.widget<TextField>(field).controller!.value.composing,
+          tester.widget<PlayraTextField>(field).controller!.value.composing,
           TextRange(start: 0, end: value.length),
         );
       }
@@ -104,13 +105,14 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(tester.widget<TextField>(field).controller!.text, '你好');
-      await tester.tap(find.byTooltip('清空输入'));
+      expect(tester.widget<PlayraTextField>(field).controller!.text, '你好');
+      await tester.tap(_tooltip('清空输入'));
       await tester.pump();
-      expect(tester.widget<TextField>(field).controller!.text, '');
+      expect(tester.widget<PlayraTextField>(field).controller!.text, '');
       await tester.enterText(field, 'tr');
       await tester.pump();
-      expect(tester.widget<TextField>(field).controller!.text, 'tr');
+      expect(tester.widget<PlayraTextField>(field).controller!.text, 'tr');
+      await tester.pumpAndSettle();
     },
   );
   testWidgets('series search remains usable with a keyboard at 320px', (
@@ -259,3 +261,9 @@ void main() {
     },
   );
 }
+
+Finder _tooltip(String message) => find.byWidgetPredicate(
+  (widget) =>
+      widget is PlayraIconButton && widget.tooltip == message ||
+      widget is Tooltip && widget.message == message,
+);

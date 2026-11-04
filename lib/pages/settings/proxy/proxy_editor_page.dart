@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -134,7 +136,10 @@ class _ProxyEditorPageState extends State<ProxyEditorPage> {
                   title: '连接代理服务器',
                   description: '填写代理和测试地址，保存前会检查连接。',
                 ),
-                TonalCard(padding: const EdgeInsets.all(20), child: _form()),
+                TonalCard(
+                  padding: const EdgeInsets.all(PlayraSpace.xl),
+                  child: _form(),
+                ),
                 StateActionButton(
                   onPressed: _busy ? null : saveAndTest,
                   icon: Icons.save_outlined,
@@ -167,7 +172,7 @@ class _ProxyEditorPageState extends State<ProxyEditorPage> {
     key: _formKey,
     child: Column(
       children: [
-        TextFormField(
+        PlayraTextField.form(
           controller: urlController,
           enabled: !_busy,
           keyboardType: TextInputType.url,
@@ -189,8 +194,8 @@ class _ProxyEditorPageState extends State<ProxyEditorPage> {
             return null;
           },
         ),
-        const SizedBox(height: 16),
-        TextFormField(
+        const SizedBox(height: PlayraSpace.lg),
+        PlayraTextField.form(
           controller: testUrlController,
           enabled: !_busy,
           keyboardType: TextInputType.url,

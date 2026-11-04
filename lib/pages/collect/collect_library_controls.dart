@@ -14,32 +14,11 @@ class _CollectCategories extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    // Each lerped weight is a new font instance, so TabBar animates only the
-    // color and the selected label turns bold once per category change.
-    final labelStyle =
-        theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500);
-    return TabBar(
+    return PlayraTabBar(
       key: const PageStorageKey('collect-filter-strip'),
       controller: controller,
       isScrollable: true,
-      tabAlignment: TabAlignment.start,
-      dividerHeight: 0,
-      indicatorSize: TabBarIndicatorSize.tab,
-      indicatorPadding: const EdgeInsets.symmetric(horizontal: 2),
-      indicator: BoxDecoration(
-        color: colors.primaryContainer,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      indicatorAnimation: TabIndicatorAnimation.elastic,
-      labelColor: colors.onPrimaryContainer,
-      unselectedLabelColor: colors.onSurfaceVariant,
-      labelStyle: labelStyle,
-      unselectedLabelStyle: labelStyle,
-      labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-      splashFactory: NoSplash.splashFactory,
-      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+
       tabs: [
         for (final type in _collectCategories)
           Tab(
@@ -78,7 +57,6 @@ class _CollectLayoutSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 2,
@@ -87,41 +65,16 @@ class _CollectLayoutSwitch extends StatelessWidget {
           Semantics(
             selected: value == layout,
             inMutuallyExclusiveGroup: true,
-            child: IconButton.filledTonal(
+            child: PlayraIconButton(
               tooltip: '${layout.label}布局',
               isSelected: value == layout,
               onPressed: () => onChanged(layout),
-              style: ButtonStyle(
-                minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
-                visualDensity: VisualDensity.standard,
-                backgroundColor: WidgetStateProperty.resolveWith((states) =>
-                    states.contains(WidgetState.selected)
-                        ? colors.secondaryContainer
-                        : colors.surfaceContainerLow),
-                foregroundColor: WidgetStateProperty.resolveWith((states) =>
-                    states.contains(WidgetState.selected)
-                        ? colors.onSecondaryContainer
-                        : colors.onSurfaceVariant),
-                shape: WidgetStateProperty.resolveWith((states) =>
-                    RoundedRectangleBorder(
-                      borderRadius: states.contains(WidgetState.pressed)
-                          ? BorderRadius.circular(12)
-                          : states.contains(WidgetState.selected)
-                              ? BorderRadius.circular(24)
-                              : BorderRadiusDirectional.horizontal(
-                                  start: Radius.circular(
-                                      layout == CollectLayout.cards ? 24 : 8),
-                                  end: Radius.circular(
-                                      layout == CollectLayout.list ? 24 : 8),
-                                ),
-                    )),
-                animationDuration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 200),
+
+              icon: Icon(
+                layout == CollectLayout.list
+                    ? Icons.view_list_rounded
+                    : Icons.grid_view_rounded,
               ),
-              icon: Icon(layout == CollectLayout.list
-                  ? Icons.view_list_rounded
-                  : Icons.grid_view_rounded),
             ),
           ),
       ],
@@ -155,17 +108,13 @@ class _CollectSortMenu extends StatelessWidget {
         return Tooltip(
           message: '排序：${value.label}',
           child: showLabel
-              ? TextButton.icon(
+              ? PlayraButton.ghostIcon(
                   onPressed: toggle,
-                  style: TextButton.styleFrom(
-                    foregroundColor:
-                        Theme.of(context).colorScheme.onSurfaceVariant,
-                    minimumSize: const Size(48, 48),
-                  ),
+
                   icon: const Icon(Icons.sort_rounded, size: 20),
                   label: Text(value.label),
                 )
-              : IconButton(
+              : PlayraIconButton(
                   onPressed: toggle,
                   icon: const Icon(Icons.sort_rounded),
                 ),

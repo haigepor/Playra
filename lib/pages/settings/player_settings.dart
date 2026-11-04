@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -102,15 +103,15 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
   Future<void> resetPlayerSettings() async {
     final bool shouldReset =
         await KazumiDialog.show<bool>(
-          builder: (context) => AlertDialog(
+          builder: (context) => PlayraDialog(
             title: const Text('恢复默认播放设置'),
             content: const Text('播放设置、硬件解码器、视频渲染器和超分辨率设置将恢复为默认值。'),
             actions: [
-              TextButton(
+              PlayraButton.ghost(
                 onPressed: () => KazumiDialog.dismiss(popWith: false),
                 child: Text('取消'),
               ),
-              TextButton(
+              PlayraButton.ghost(
                 onPressed: () => KazumiDialog.dismiss(popWith: true),
                 child: Text('恢复默认'),
               ),
@@ -185,11 +186,11 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
     return KazumiDialog.show<int>(
       builder: (context) {
         String input = "";
-        return AlertDialog(
+        return PlayraDialog(
           title: Text(title),
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
-              return TextField(
+              return PlayraTextField(
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   floatingLabelBehavior: FloatingLabelBehavior.never,
@@ -202,14 +203,14 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
             },
           ),
           actions: <Widget>[
-            TextButton(
+            PlayraButton.ghost(
               onPressed: () => KazumiDialog.dismiss(),
               child: Text(
                 '取消',
                 style: TextStyle(color: Theme.of(context).colorScheme.outline),
               ),
             ),
-            TextButton(
+            PlayraButton.ghost(
               onPressed: () async {
                 final int? newValue = int.tryParse(input);
 

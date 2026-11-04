@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 
@@ -39,7 +40,7 @@ class GeneralErrorWidget extends StatelessWidget {
     return Center(
       child: SingleChildScrollView(
         primary: false,
-        padding: EdgeInsets.all(compact ? 16 : 24),
+        padding: EdgeInsets.all(compact ? PlayraSpace.lg : PlayraSpace.xxl),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 440),
           child: Column(
@@ -63,21 +64,24 @@ class GeneralErrorWidget extends StatelessWidget {
                       child: Text(
                         title,
                         textAlign: TextAlign.center,
-                        style: (compact
-                                ? theme.textTheme.titleMedium
-                                : theme.textTheme.headlineSmall)
-                            ?.copyWith(
-                                color: colors.onSurface,
-                                fontWeight: FontWeight.w700),
+                        style:
+                            (compact
+                                    ? theme.textTheme.titleMedium
+                                    : theme.textTheme.headlineSmall)
+                                ?.copyWith(
+                                  color: colors.onSurface,
+                                  fontWeight: FontWeight.w700,
+                                ),
                       ),
                     ),
                     if (errMsg.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: PlayraSpace.sm),
                       Text(
                         errMsg,
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: colors.onSurfaceVariant),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ],

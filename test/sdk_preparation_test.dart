@@ -10,6 +10,19 @@ import 'package:kazumi/services/source/sdk_playback_coordinator.dart';
 import 'package:kazumi/services/source/source_models.dart';
 import 'package:kazumi/presentation/modern/player/playing_mark.dart';
 
+/// 「已准备」不再是静态文案：播放按钮可点即代表直链已就绪。
+void _expectReadyToPlay(WidgetTester tester) {
+  final button = tester.widget<IconButton>(
+    find
+        .ancestor(
+          of: find.byTooltip('播放当前选集'),
+          matching: find.byType(IconButton),
+        )
+        .first,
+  );
+  expect(button.onPressed, isNotNull);
+}
+
 class _Sdk extends SdkPlaybackProvider {
   @override
   String get id => 'preparation-sdk';
@@ -250,7 +263,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(sdk.resolved, [1], reason: '禁用自动播放仍须解析直链');
-    expect(find.text('播放链接已准备，点击播放'), findsOneWidget);
+    _expectReadyToPlay(tester);
     expect(tester.takeException(), isNull, reason: '准备阶段不能访问播放器、原生模块或媒体打开');
     await tester.pumpWidget(const SizedBox());
   });
@@ -279,7 +292,7 @@ void main() {
       await tester.tap(second);
       await tester.pumpAndSettle();
       expect(sdk.resolved, [1, 2]);
-      expect(find.text('播放链接已准备，点击播放'), findsOneWidget);
+      _expectReadyToPlay(tester);
       expect(tester.takeException(), isNull, reason: '未播放的选集不能访问原生播放器或媒体open');
       await tester.pumpWidget(const SizedBox());
     },
@@ -324,7 +337,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.text('播放链接已准备，点击播放'), findsOneWidget);
+    _expectReadyToPlay(tester);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

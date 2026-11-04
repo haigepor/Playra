@@ -15,8 +15,9 @@ final infoModule = createModule(
         ..add<PlayerController>(PlayerController.new),
       child: (context, state) {
         final entry = state.arguments;
-        if (entry is SdkPlaybackEntry &&
-            entry.sources.every((source) => source.provider.id == 'lumina')) {
+        // 旧来源（bangumi 条目等非 SdkPlaybackEntry 参数）由类型检查挡下；
+        // 所有 SdkPlaybackProvider（Lumina / 第二源）统一走 SdkDetailPage。
+        if (entry is SdkPlaybackEntry) {
           return SdkDetailPage(entry: entry);
         }
         return const SourceUnavailablePage(feature: '旧来源作品详情');

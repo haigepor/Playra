@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -107,25 +108,7 @@ class _CharacterPageState extends State<CharacterPage> {
               onClose: () => Navigator.of(context).pop(),
             ),
             if (widget.modern)
-              TabBar(
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.label,
-                labelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-                indicator: UnderlineTabIndicator(
-                  borderRadius: BorderRadius.circular(2),
-                  borderSide: BorderSide(
-                    width: 3,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  insets: const EdgeInsets.symmetric(horizontal: 8),
-                ),
+              PlayraTabBar(
                 tabs: const [
                   Tab(height: 48, text: '资料'),
                   Tab(height: 48, text: '吐槽'),

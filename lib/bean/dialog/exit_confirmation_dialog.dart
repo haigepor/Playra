@@ -1,12 +1,10 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 
 enum ExitDialogAction { exit, minimizeToTray }
 
 class ExitDialogResult {
-  const ExitDialogResult({
-    required this.action,
-    required this.rememberChoice,
-  });
+  const ExitDialogResult({required this.action, required this.rememberChoice});
 
   final ExitDialogAction action;
   final bool rememberChoice;
@@ -31,30 +29,12 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final buttonStyle = ButtonStyle(
-      minimumSize: const WidgetStatePropertyAll(Size(64, 48)),
-      padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      ),
-      animationDuration: _animationDuration,
-      shape: WidgetStateProperty.resolveWith((states) {
-        return RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            states.contains(WidgetState.pressed) ? 12 : 24,
-          ),
-        );
-      }),
-    );
 
-    return AlertDialog(
+    return PlayraDialog(
       constraints: const BoxConstraints(minWidth: 280, maxWidth: 440),
-      insetPadding: const EdgeInsets.all(24),
-      backgroundColor: colors.surfaceContainerHigh,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      clipBehavior: Clip.antiAlias,
+
       scrollable: true,
-      iconPadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+
       icon: Center(
         child: Container(
           width: 56,
@@ -70,13 +50,9 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
           ),
         ),
       ),
-      titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+
       title: const Text('关闭 Playra？', textAlign: TextAlign.center),
-      titleTextStyle: theme.textTheme.headlineSmall?.copyWith(
-        color: colors.onSurface,
-        fontWeight: FontWeight.w600,
-      ),
-      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+
       content: SizedBox(
         width: 392,
         child: Column(
@@ -118,16 +94,12 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
               ),
             ),
             const SizedBox(height: 16),
-            CheckboxListTile(
+            PlayraCheckboxTile(
               value: _rememberChoice,
               onChanged: (value) {
                 setState(() => _rememberChoice = value ?? false);
               },
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+
               title: Text('记住我的选择', style: theme.textTheme.bodyMedium),
               subtitle: Text(
                 '下次关闭窗口时不再询问',
@@ -139,25 +111,20 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
           ],
         ),
       ),
-      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      actionsOverflowButtonSpacing: 8,
+
       actions: [
-        TextButton(
-          style: buttonStyle,
+        PlayraButton.ghost(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('取消'),
         ),
-        FilledButton(
-          style: buttonStyle,
+        PlayraButton(
           onPressed: () => Navigator.of(context).pop(
             ExitDialogResult(action: _action, rememberChoice: _rememberChoice),
           ),
-          child: Text(
-            switch (_action) {
-              ExitDialogAction.minimizeToTray => '最小化至托盘',
-              ExitDialogAction.exit => '退出',
-            },
-          ),
+          child: Text(switch (_action) {
+            ExitDialogAction.minimizeToTray => '最小化至托盘',
+            ExitDialogAction.exit => '退出',
+          }),
         ),
       ],
     );
@@ -171,32 +138,30 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
     final colors = theme.colorScheme;
     final (icon, title, description) = switch (action) {
       ExitDialogAction.minimizeToTray => (
-          Icons.minimize_rounded,
-          '最小化至托盘',
-          '隐藏窗口，继续在后台运行',
-        ),
+        Icons.minimize_rounded,
+        '最小化至托盘',
+        '隐藏窗口，继续在后台运行',
+      ),
       ExitDialogAction.exit => (
-          Icons.power_settings_new_rounded,
-          '退出 Playra',
-          '结束运行并关闭应用',
-        ),
+        Icons.power_settings_new_rounded,
+        '退出 Playra',
+        '结束运行并关闭应用',
+      ),
     };
     final selected = _action == action;
-    final foreground =
-        selected ? colors.onSecondaryContainer : colors.onSurface;
+    final foreground = selected
+        ? colors.onSecondaryContainer
+        : colors.onSurface;
 
     return Material(
       color: selected ? colors.secondaryContainer : colors.surfaceContainerLow,
       borderRadius: borderRadius,
       clipBehavior: Clip.antiAlias,
       animationDuration: _animationDuration,
-      child: RadioListTile<ExitDialogAction>(
+      child: PlayraRadioTile<ExitDialogAction>(
         value: action,
         selected: selected,
-        activeColor: colors.onSecondaryContainer,
-        controlAffinity: ListTileControlAffinity.trailing,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: borderRadius),
+
         secondary: Icon(icon, color: foreground),
         title: Text(
           title,

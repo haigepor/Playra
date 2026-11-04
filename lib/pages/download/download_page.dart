@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -76,7 +78,9 @@ class _DownloadPageState extends State<DownloadPage> {
                   constraints: const BoxConstraints(maxWidth: 848),
                   child: index == 0
                       ? Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.only(
+                            bottom: PlayraSpace.lg,
+                          ),
                           child: UtilityPageIntro(
                             icon: UtilityIconKind.offline,
                             title: '离线片单',
@@ -185,7 +189,7 @@ class _DownloadPageState extends State<DownloadPage> {
     switch (episode.status) {
       case DownloadStatus.completed:
         buttons.add(
-          IconButton(
+          PlayraIconButton(
             icon: Icon(
               Icons.play_circle_outline,
               size: 20,
@@ -193,13 +197,12 @@ class _DownloadPageState extends State<DownloadPage> {
             ),
             onPressed: () => _playEpisode(record, episode),
             tooltip: '播放',
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           ),
         );
         break;
       case DownloadStatus.downloading:
         buttons.add(
-          IconButton(
+          PlayraIconButton(
             icon: const Icon(Icons.pause_rounded, size: 20),
             onPressed: () => downloadController.pauseDownload(
               record.bangumiId,
@@ -207,13 +210,12 @@ class _DownloadPageState extends State<DownloadPage> {
               episode.episodeNumber,
             ),
             tooltip: '暂停',
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           ),
         );
         break;
       case DownloadStatus.paused:
         buttons.add(
-          IconButton(
+          PlayraIconButton(
             icon: const Icon(Icons.play_arrow_rounded, size: 20),
             onPressed: () => downloadController.retryDownload(
               bangumiId: record.bangumiId,
@@ -221,13 +223,12 @@ class _DownloadPageState extends State<DownloadPage> {
               episodeNumber: episode.episodeNumber,
             ),
             tooltip: '继续',
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           ),
         );
         break;
       case DownloadStatus.failed:
         buttons.add(
-          IconButton(
+          PlayraIconButton(
             icon: const Icon(Icons.refresh_rounded, size: 20),
             onPressed: () => downloadController.retryDownload(
               bangumiId: record.bangumiId,
@@ -235,13 +236,12 @@ class _DownloadPageState extends State<DownloadPage> {
               episodeNumber: episode.episodeNumber,
             ),
             tooltip: '重试',
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           ),
         );
         break;
       case DownloadStatus.pending:
         buttons.add(
-          IconButton(
+          PlayraIconButton(
             icon: Icon(
               Icons.priority_high,
               size: 20,
@@ -256,7 +256,6 @@ class _DownloadPageState extends State<DownloadPage> {
               KazumiDialog.showToast(message: '已插队优先下载');
             },
             tooltip: '优先下载',
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           ),
         );
         break;
@@ -265,7 +264,7 @@ class _DownloadPageState extends State<DownloadPage> {
     }
 
     buttons.add(
-      IconButton(
+      PlayraIconButton(
         icon: Icon(
           Icons.delete_outline,
           size: 20,
@@ -273,7 +272,6 @@ class _DownloadPageState extends State<DownloadPage> {
         ),
         onPressed: () => _confirmDeleteEpisode(record, episode),
         tooltip: '删除',
-        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       ),
     );
 
@@ -329,20 +327,20 @@ class _DownloadPageState extends State<DownloadPage> {
   void _confirmDeleteEpisode(DownloadRecord record, DownloadEpisode episode) {
     KazumiDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => PlayraDialog(
         title: const Text('删除下载'),
         content: Text(
           '确定要删除「${episode.episodeName.isNotEmpty ? episode.episodeName : '第${episode.episodeNumber}集'}」的下载文件吗？',
         ),
         actions: [
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () => KazumiDialog.dismiss(),
             child: Text(
               '取消',
               style: TextStyle(color: Theme.of(context).colorScheme.outline),
             ),
           ),
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () async {
               KazumiDialog.dismiss();
               await _deleteDownload(
@@ -366,18 +364,18 @@ class _DownloadPageState extends State<DownloadPage> {
   void _confirmDeleteRecord(DownloadRecord record) {
     KazumiDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => PlayraDialog(
         title: const Text('删除全部下载'),
         content: Text('确定要删除「${record.bangumiName}」的所有下载文件吗？'),
         actions: [
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () => KazumiDialog.dismiss(),
             child: Text(
               '取消',
               style: TextStyle(color: Theme.of(context).colorScheme.outline),
             ),
           ),
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () async {
               KazumiDialog.dismiss();
               await _deleteDownload(
@@ -405,11 +403,11 @@ class _DownloadPageState extends State<DownloadPage> {
       if (!mounted) return;
       KazumiDialog.show(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => PlayraDialog(
           title: const Text('删除失败'),
           content: const Text('删除下载文件失败，请稍后重试'),
           actions: [
-            TextButton(
+            PlayraButton.ghost(
               onPressed: () => KazumiDialog.dismiss(context: context),
               child: const Text('确定'),
             ),

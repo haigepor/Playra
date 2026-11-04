@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -523,13 +524,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                      child: PlayraButton.outlineIcon(
                         onPressed: _saving ? null : _testRule,
                         icon: const Icon(Icons.science_outlined),
                         label: Text(
@@ -541,13 +536,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                      child: PlayraButton.icon(
                         onPressed: _saving ? null : _save,
                         icon: _saving
                             ? const LoadingIndicator(size: 20)
@@ -740,15 +729,13 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                 '配置 request 与 urlPath；请求模板可用 @episodeUrl。复杂签名算法可由你部署的 HTTP 服务处理。留空使用现有网页解析。',
             maxLines: 8,
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
+          PlayraSwitchTile(
             title: const Text(_RuleEditorText.legacyParser),
             subtitle: const Text(_RuleEditorText.legacyParserDesc),
             value: useLegacyParser,
             onChanged: (value) => setState(() => useLegacyParser = value),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
+          PlayraSwitchTile(
             title: const Text(_RuleEditorText.adBlocker),
             subtitle: const Text(_RuleEditorText.adBlockerDesc),
             value: adBlocker,
@@ -768,8 +755,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
           ),
           if (searchMode == RuleMode.xpath) ...[
             const EditorSubheader(label: _RuleEditorText.groupAntiCrawler),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
+            PlayraSwitchTile(
               title: const Text(_RuleEditorText.antiCrawlerEnable),
               subtitle: const Text(_RuleEditorText.antiCrawlerEnableDesc),
               value: antiCrawlerEnabled,

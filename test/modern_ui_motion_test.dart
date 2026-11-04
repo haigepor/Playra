@@ -22,11 +22,12 @@ void main() {
     bool reduce = false,
     bool ticker = true,
     double scale = 1,
+    Size size = const Size(320, 844),
     VoidCallback? onOpen,
   }) => MaterialApp(
     home: MediaQuery(
       data: MediaQueryData(
-        size: const Size(320, 844),
+        size: size,
         disableAnimations: reduce,
         textScaler: TextScaler.linear(scale),
       ),
@@ -51,6 +52,30 @@ void main() {
       ),
     ),
   );
+
+  testWidgets('carousel leaves more room on narrow and short screens', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const regular = Size(390, 844);
+    tester.view.physicalSize = regular;
+    await tester.pumpWidget(carousel(reduce: true, size: regular));
+    final regularHeight = tester.getSize(find.byType(PageView)).height;
+
+    for (final size in [const Size(320, 640), const Size(640, 360)]) {
+      tester.view.physicalSize = size;
+      await tester.pumpWidget(carousel(reduce: true, size: size));
+      expect(
+        tester.getSize(find.byType(PageView)).height,
+        lessThan(regularHeight),
+      );
+      expect(tester.takeException(), isNull);
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets(
     'carousel advances and pauses with reduced motion and hidden tabs',
@@ -107,6 +132,7 @@ void main() {
       await tester.pump();
       expect(pageView.controller!.page, 0);
       expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
       await tester.pumpWidget(const SizedBox());
     },
   );

@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
@@ -135,14 +137,14 @@ class _InitPageState extends State<InitPage> {
       final result = await KazumiDialog.show<bool>(
         clickMaskDismiss: false,
         builder: (context) {
-          return AlertDialog(
+          return PlayraDialog(
             title: const Text('需要通知权限'),
             content: const Text(
               '开启通知权限后，可以在后台下载时显示进度，并防止系统终止下载任务。\n\n'
               '如果拒绝，下载功能仍可使用，但在后台时可能被系统中断。',
             ),
             actions: [
-              TextButton(
+              PlayraButton.ghost(
                 onPressed: () => KazumiDialog.dismiss(popWith: false),
                 child: Text(
                   '稍后再说',
@@ -151,7 +153,7 @@ class _InitPageState extends State<InitPage> {
                   ),
                 ),
               ),
-              TextButton(
+              PlayraButton.ghost(
                 onPressed: () => KazumiDialog.dismiss(popWith: true),
                 child: const Text('允许'),
               ),
@@ -226,13 +228,13 @@ class _InitPageState extends State<InitPage> {
         builder: (context) {
           return PopScope(
             canPop: false,
-            child: AlertDialog(
+            child: PlayraDialog(
               title: const Text('X11环境检测'),
               content: const Text(
                 '检测到您当前运行在X11环境下，Playra在X11环境下可能出现性能问题或界面异常，建议切换到Wayland以获得更好的体验。您是否希望在X11下继续使用Playra？',
               ),
               actions: [
-                TextButton(
+                PlayraButton.ghost(
                   onPressed: AppExit.quit,
                   child: Text(
                     '退出',
@@ -241,7 +243,7 @@ class _InitPageState extends State<InitPage> {
                     ),
                   ),
                 ),
-                TextButton(
+                PlayraButton.ghost(
                   onPressed: () {
                     KazumiDialog.dismiss();
                   },
@@ -263,18 +265,18 @@ class _InitPageState extends State<InitPage> {
 
     final create = await KazumiDialog.show<bool>(
       clickMaskDismiss: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => PlayraDialog(
         title: const Text('创建桌面快捷方式'),
         content: const Text('是否在桌面创建 Playra 的快捷方式？'),
         actions: [
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () => KazumiDialog.dismiss(popWith: false),
             child: Text(
               '暂不创建',
               style: TextStyle(color: Theme.of(context).colorScheme.outline),
             ),
           ),
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () => KazumiDialog.dismiss(popWith: true),
             child: const Text('创建'),
           ),
@@ -320,7 +322,7 @@ class LoadingWidget extends StatelessWidget {
             body: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(PlayraSpace.xxl),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -328,18 +330,15 @@ class LoadingWidget extends StatelessWidget {
                         asset: 'modern-onboarding-decoration',
                         width: 160,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: PlayraSpace.lg),
                       Text(
                         'Playra',
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: PlayraSpace.md),
                       const Text('正在准备你的观看空间'),
-                      const SizedBox(height: 24),
-                      const SizedBox(
-                        width: 120,
-                        child: LinearProgressIndicator(minHeight: 2),
-                      ),
+                      const SizedBox(height: PlayraSpace.xxl),
+                      const SizedBox(width: 120, child: PlayraProgress()),
                     ],
                   ),
                 ),

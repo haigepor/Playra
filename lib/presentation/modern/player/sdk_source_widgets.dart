@@ -6,124 +6,96 @@ Duration sdkMotion(BuildContext context, [int milliseconds = 220]) =>
     ? Duration.zero
     : Duration(milliseconds: milliseconds);
 
-/// 两类播放页共用紧凑来源栏；分组和当前线路各占一层。
+/// 两类播放页共用紧凑来源栏：左右布局，左侧「播放源」标签，右侧当前源。
+///
+/// 2026-11-03 重设计：只显示播放源与切换入口——线路名称、分辨率、清晰度
+/// 这类描述全部移入点击后的弹窗；行内不再出现任何长文案。
 class PlaybackSourcePanel extends StatelessWidget {
   const PlaybackSourcePanel({
     super.key,
-    required this.groups,
-    required this.summary,
-    required this.automatic,
-    required this.onShowLines,
-    this.lineCount = 0,
-    this.detail,
-    this.selectorKey,
+    required this.sourceLabel,
+    this.onSelectSource,
     this.trailing,
-    this.embedded = false,
+    this.selectorKey,
     this.title = '播放源',
+    this.height = 48,
   });
-  final List<Widget> groups;
-  final String summary;
-  final bool automatic;
-  final int lineCount;
-  final String? detail;
-  final VoidCallback? onShowLines;
-  final Key? selectorKey;
+  final String sourceLabel;
+  final VoidCallback? onSelectSource;
   final Widget? trailing;
-  final bool embedded;
+  final Key? selectorKey;
   final String title;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final controlShape =
-        (theme.outlinedButtonTheme.style?.shape?.resolve({}) ??
-                const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ))
-            .copyWith(side: BorderSide(color: colors.outline));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return Material(
+      color: colors.surfaceContainerHigh,
+      shape: const StadiumBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        height: height,
+        child: Row(
           children: [
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+            Expanded(
+              // 无障碍节点与点击目标挂在同一层：读屏与自动化都只命中一个按钮。
+              child: Semantics(
+                key: selectorKey,
+                container: true,
+                button: true,
+                label: '$title ${sourceLabel.isEmpty ? "未设置" : sourceLabel}',
+                child: InkWell(
+                  onTap: onSelectSource,
+                  customBorder: const StadiumBorder(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.cast_rounded,
+                          size: 18,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          title,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // 源名独占剩余宽度并右对齐：Spacer 与 Flexible 平分会把
+                        // 「动漫 · Lumina」这类长源名提前截断。
+                        Expanded(
+                          child: Text(
+                            sourceLabel.isEmpty ? '选择播放源' : sourceLabel,
+                            maxLines: 1,
+                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.expand_more_rounded,
+                          size: 18,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(child: Wrap(spacing: 6, runSpacing: 2, children: groups)),
-            if (trailing != null) trailing!,
+            ?trailing,
+            const SizedBox(width: 6),
           ],
         ),
-        SizedBox(height: embedded ? 4 : 6),
-        Semantics(
-          container: true,
-          button: true,
-          label: '播放线路',
-          child: Material(
-            color: embedded ? Colors.transparent : colors.surfaceContainerLow,
-            clipBehavior: Clip.antiAlias,
-            shape: embedded ? const RoundedRectangleBorder() : controlShape,
-            child: InkWell(
-              key: selectorKey,
-              onTap: onShowLines,
-              customBorder: controlShape,
-              child: Container(
-                constraints: BoxConstraints(minHeight: embedded ? 48 : 0),
-                padding: EdgeInsets.symmetric(
-                  horizontal: embedded ? 0 : 12,
-                  vertical: embedded ? 6 : 12,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      automatic
-                          ? Icons.auto_awesome_rounded
-                          : Icons.alt_route_rounded,
-                      size: 18,
-                      color: colors.primary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(summary, style: theme.textTheme.labelLarge),
-                          if (detail != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                detail!,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '$lineCount 条',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 20,
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -155,11 +127,19 @@ class PlaybackLineSheet extends StatelessWidget {
     required this.automaticOption,
     required this.children,
     required this.onClose,
+    this.sources,
+    this.quality,
   });
   final String sdkName;
   final Widget automaticOption;
   final List<Widget> children;
   final VoidCallback onClose;
+
+  /// 多供给方时的来源切换区（顶部）。
+  final Widget? sources;
+
+  /// 画质选择区（底部）；单链无多档时为 null。
+  final Widget? quality;
   @override
   Widget build(BuildContext context) => SafeArea(
     top: false,
@@ -214,6 +194,11 @@ class PlaybackLineSheet extends StatelessWidget {
               ],
             ),
           ),
+          if (sources != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: sources!,
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: automaticOption,
@@ -227,6 +212,13 @@ class PlaybackLineSheet extends StatelessWidget {
               children: children,
             ),
           ),
+          if (quality != null) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              child: quality!,
+            ),
+          ],
         ],
       ),
     ),

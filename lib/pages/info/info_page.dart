@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'dart:ui';
 
@@ -347,7 +348,7 @@ class _InfoPageState extends State<InfoPage>
                 automaticallyImplyLeading: false,
                 scrolledUnderElevation: 0.0,
                 leading: EmbeddedNativeControlArea(
-                  child: IconButton(
+                  child: PlayraIconButton(
                     onPressed: () {
                       context.maybePop();
                     },
@@ -429,11 +430,10 @@ class _InfoPageState extends State<InfoPage>
                   ),
                 ),
                 forceElevated: innerBoxIsScrolled,
-                bottom: TabBar(
+                bottom: PlayraTabBar(
                   controller: infoTabController,
                   isScrollable: true,
-                  tabAlignment: TabAlignment.center,
-                  dividerHeight: 0,
+
                   tabs: _infoTabs.map((name) => Tab(text: name)).toList(),
                 ),
               ),

@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -119,7 +120,7 @@ class _InfoActionsMenuState extends State<InfoActionsMenu> {
         ),
         KazumiMenuItem(onPressed: _openExternally, label: '外部打开'),
       ],
-      builder: (context, toggle) => IconButton(
+      builder: (context, toggle) => PlayraIconButton(
         tooltip: '更多操作',
         icon: const Icon(Icons.more_horiz_rounded),
         onPressed: toggle,

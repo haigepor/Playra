@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
 import 'home/home_theme.dart';
+import 'modern_layout.dart';
 import 'widgets/liquid_glass_navigation.dart';
 import 'widgets/native_liquid_navigation.dart';
 
@@ -58,8 +59,10 @@ class _ModernShellState extends State<ModernShell> {
   @override
   Widget build(BuildContext context) {
     final theme = modernHomeTheme(Theme.of(context), forceDark: true);
+    final compact = isCompactModernViewport(MediaQuery.sizeOf(context));
     return Scaffold(
-      extendBody: true,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      extendBody: !compact,
       body: LiquidGlassBackdrop(controller: _backdrop, child: widget.outlet),
       bottomNavigationBar: Theme(
         data: theme,

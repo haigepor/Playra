@@ -609,59 +609,33 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     if (hasPlayback && video.isOfflineMode)
       return Text('离线 · ${video.offlinePluginName}');
     final group = selectedGroup;
-    final entries = [
-      for (final p in group?.plugins ?? <Plugin>[])
-        if (sourceSession.status[p.providerId] == 'ready')
-          ...?sourceSession.entries[p.providerId],
-    ];
-    final count = entries.fold<int>(0, (n, c) => n + c.roads.length);
-    final sameGroup =
-        hasPlayback && playbackSdkId(video.currentPlugin) == group?.id;
-    final road = sameGroup && video.selectedEpisode.road < video.roadList.length
-        ? video.roadList[video.selectedEpisode.road]
-        : null;
-    final automatic = !hasPlayback || video.automaticSource;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 只显示当前播放源一行；源/线路切换全部交给点击后的弹窗。
         PlaybackSourcePanel(
           selectorKey: const ValueKey('anime-line-selector'),
+          sourceLabel: choosingSource ? '正在准备…' : (group?.name ?? ''),
+          onSelectSource: choosingSource
+              ? null
+              : () => chooseSource(context),
           trailing: IconButton(
             tooltip: '高级选源',
             onPressed: choosingSource ? null : () => chooseSource(context),
             icon: const Icon(Icons.more_horiz_rounded, size: 20),
           ),
-          groups: [
-            for (final g in sourceGroups)
-              PlaybackSdkChip(
-                name: g.name,
-                selected: group?.id == g.id,
-                onSelected: choosingSource
-                    ? null
-                    : () {
-                        if (selectedGroup?.id == g.id) return;
-                        setState(() => selectedSdkId = g.id);
-                        unawaited(playAutomatically());
-                      },
-              ),
-          ],
-          automatic: automatic,
-          summary: choosingSource
-              ? '正在准备新线路…'
-              : road == null
-              ? '自动 · 优选线路'
-              : '${automatic ? "自动 · " : "手动 · "}${video.currentPlugin.name} / ${road.name}',
-          detail:
-              automaticSourceError ??
-              (group?.id == 'kazumi'
-                  ? '自动：akianime → mutefun → giriGiriLove；仅实测 ≥1080p，其他来源可手动选择'
-                  : video.activeRouteLabel != null &&
-                        (video.loading || !sameGroup)
-                  ? '当前播放：${video.activeRouteLabel}'
-                  : null),
-          lineCount: count == 0 && road != null ? video.roadList.length : count,
-          onShowLines: () => showAnimeLines(context),
         ),
+        if (automaticSourceError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              automaticSourceError!,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ),
         const SizedBox(height: 10),
       ],
     );

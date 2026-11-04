@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/modules/collect/collect_module.dart';
@@ -91,7 +92,7 @@ void main() {
     );
     expect(find.text('上次看到第七话'), findsOneWidget);
     expect(find.text('12:34'), findsOneWidget);
-    final searchButton = tester.widget<IconButton>(
+    final searchButton = tester.widget<PlayraIconButton>(
       find.byKey(const ValueKey('library-search')),
     );
     final searchContext = tester.element(
@@ -119,7 +120,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.category, CollectType.planToWatch);
     expect(find.text('番剧2'), findsOneWidget);
-    await tester.tap(find.byTooltip('搜索追番'));
+    await tester.tap(_tooltip('搜索追番'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(EditableText), '不存在');
     await tester.pumpAndSettle();
@@ -163,3 +164,9 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }
+
+Finder _tooltip(String message) => find.byWidgetPredicate(
+  (widget) =>
+      widget is PlayraIconButton && widget.tooltip == message ||
+      widget is Tooltip && widget.message == message,
+);

@@ -121,6 +121,19 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+/// 线路与画质现在都在同一个弹窗里，选择前先打开播放源行。
+Future<void> _openLines(WidgetTester tester) =>
+    _tap(tester, find.byKey(const ValueKey('sdk-line-selector')));
+
+IconButton _playButton(WidgetTester tester) => tester.widget<IconButton>(
+  find
+      .ancestor(
+        of: find.byTooltip('播放当前选集'),
+        matching: find.byType(IconButton),
+      )
+      .first,
+);
+
 void main() {
   testWidgets(
     'saved SDK episode and manual line prepare without writing new history',
@@ -156,7 +169,7 @@ void main() {
       final sdk = _Sdk();
       await _mount(tester, sdk, library: library);
       expect(sdk.calls.last, 'b:99:1080p');
-      expect(find.text('手动 · 线路B'), findsOneWidget);
+      expect(find.text('动漫 · Lumina'), findsOneWidget);
       expect(find.widgetWithText(OutlinedButton, '第99集'), findsOneWidget);
       expect(library.histories.single.lastWatch!.updatedAt, before);
       expect(find.textContaining('0:46'), findsOneWidget);
@@ -177,7 +190,8 @@ void main() {
     expect(find.widgetWithText(OutlinedButton, '第99集'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, '第1集'), findsNothing);
     expect(sdk.calls.last.endsWith(':99:2160p'), isTrue);
-    expect(find.text('播放链接已准备，点击播放'), findsOneWidget);
+    // 静态「已准备」文案已删除；可播放状态改由播放按钮的可用性表达。
+    expect(_playButton(tester).onPressed, isNotNull);
   });
   testWidgets(
     'manual quality retains episode 99 and independent manual line lock',
@@ -186,15 +200,15 @@ void main() {
       await _mount(tester, sdk);
       expect(sdk.calls.last, 'a:12:2160p');
       await _tap(tester, find.widgetWithText(OutlinedButton, '第99集'));
-      await _tap(tester, find.byKey(const ValueKey('sdk-line-selector')));
+      await _openLines(tester);
       await _tap(tester, find.text('线路B'));
       expect(sdk.calls.last, 'b:99:2160p');
+      await _openLines(tester);
       await _tap(tester, find.byKey(const ValueKey('sdk-quality-1080p')));
       expect(sdk.calls.last, 'b:99:1080p');
-      expect(find.text('手动 · 线路B'), findsOneWidget);
+      await _openLines(tester);
       await _tap(tester, find.byKey(const ValueKey('sdk-quality-auto')));
-      expect(sdk.calls.last, 'b:99:2160p');
-      expect(find.text('手动 · 线路B'), findsOneWidget, reason: '恢复自动画质不能解除手动锁线');
+      expect(sdk.calls.last, 'b:99:2160p', reason: '恢复自动画质不能解除手动锁线');
       expect(tester.takeException(), isNull);
     },
   );
@@ -203,6 +217,8 @@ void main() {
     tester,
   ) async {
     await _mount(tester, _Sdk()..unknown = true);
+    expect(find.byKey(const ValueKey('sdk-quality-auto')), findsNothing);
+    await _openLines(tester);
     expect(find.byKey(const ValueKey('sdk-quality-auto')), findsNothing);
     expect(find.byKey(const ValueKey('sdk-quality-2160p')), findsNothing);
     expect(find.byKey(const ValueKey('sdk-quality-1080p')), findsNothing);
@@ -218,20 +234,21 @@ void main() {
       await _mount(tester, sdk);
       expect(find.text('来源未声明画质，使用原始直链'), findsNothing);
       expect(find.byKey(const ValueKey('sdk-quality-auto')), findsNothing);
-      await _tap(tester, find.byKey(const ValueKey('sdk-line-selector')));
+      await _openLines(tester);
       await _tap(tester, find.text('线路B'));
-      expect(find.text('手动 · 线路B'), findsOneWidget);
+      final lockedCall = sdk.calls.last;
       expect(find.text('该线路暂未提供可播放地址，可重试或切换线路。'), findsOneWidget);
       await _tap(tester, find.byTooltip('更多恢复操作'));
       await _tap(tester, find.text('切换线路'));
       expect(find.text('线路A'), findsOneWidget);
-      expect(find.text('手动 · 线路B'), findsOneWidget);
+      expect(sdk.calls.last, lockedCall, reason: '打开切换弹窗不能自动改线');
       expect(tester.takeException(), isNull);
     },
   );
 
   testWidgets('quality controls fit 320px with enlarged text', (tester) async {
     await _mount(tester, _Sdk(), scale: 1.8);
+    await _openLines(tester);
     expect(find.byKey(const ValueKey('sdk-quality-2160p')), findsOneWidget);
     expect(find.byKey(const ValueKey('sdk-quality-1080p')), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -243,6 +260,7 @@ void main() {
       final sdk = _Sdk()..firstEpisodeOnly1080 = true;
       await _mount(tester, sdk);
       await _tap(tester, find.widgetWithText(OutlinedButton, '第99集'));
+      await _openLines(tester);
       await _tap(tester, find.byKey(const ValueKey('sdk-quality-2160p')));
       final requestsBeforeMissing = sdk.calls.length;
       await _tap(tester, find.widgetWithText(OutlinedButton, '第12集'));
@@ -252,6 +270,7 @@ void main() {
         reason: '缺少手动4K不能偷偷打开1080p或首集',
       );
       expect(find.text('当前集或线路没有所选画质，请选择其他画质或自动。'), findsOneWidget);
+      await _openLines(tester);
       await _tap(tester, find.byKey(const ValueKey('sdk-quality-auto')));
       expect(sdk.calls.last.endsWith(':12:1080p'), isTrue);
     },
@@ -263,19 +282,24 @@ void main() {
     final sdk = _Sdk();
     await _mount(tester, sdk);
     sdk.gate = Completer<void>();
+    await _openLines(tester);
     final option = find.byKey(const ValueKey('sdk-quality-1080p'));
     await tester.ensureVisible(option);
     await tester.tap(option);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
+    // 选中后弹窗关闭；重新打开再点 4K，模拟慢请求期间的新选择。
+    await _openLines(tester);
     final newer = find.byKey(const ValueKey('sdk-quality-2160p'));
     await tester.ensureVisible(newer);
     await tester.tap(newer);
     await tester.pumpAndSettle();
     sdk.gate!.complete();
     await tester.pumpAndSettle();
+    await _openLines(tester);
     expect(tester.widget<ChoiceChip>(newer).selected, isTrue);
     expect(tester.widget<ChoiceChip>(option).selected, isFalse);
-    expect(find.text('播放链接已准备，点击播放'), findsOneWidget);
+    expect(sdk.calls.last.endsWith(':2160p'), isTrue);
+    expect(tester.takeException(), isNull);
   });
 }

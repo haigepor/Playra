@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
@@ -64,8 +65,11 @@ class GeneralEmptyState extends StatelessWidget {
       child: SingleChildScrollView(
         primary: false,
         padding: compact || modern
-            ? const EdgeInsets.all(16)
-            : const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+            ? const EdgeInsets.all(PlayraSpace.lg)
+            : const EdgeInsets.symmetric(
+                horizontal: PlayraSpace.xxl,
+                vertical: 40,
+              ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 440),
           child: Column(

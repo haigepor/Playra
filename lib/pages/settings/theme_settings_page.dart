@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -168,7 +169,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                     KazumiDialog.show(
                       context: context,
                       builder: (context) {
-                        return AlertDialog(
+                        return PlayraDialog(
                           title: Text('配色方案'),
                           content: StatefulBuilder(
                             builder:

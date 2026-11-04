@@ -1,3 +1,6 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'package:flutter/material.dart';
 
 import 'package:kazumi/bean/card/network_img_layer.dart';
@@ -6,8 +9,8 @@ import 'package:kazumi/modules/download/download_module.dart';
 import 'package:kazumi/utils/format.dart';
 import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 
-const Duration _kExpandDuration = Duration(milliseconds: 250);
-const Curve _kExpandCurve = Curves.easeInOutCubic;
+const Duration _kExpandDuration = PlayraMotion.state;
+const Curve _kExpandCurve = PlayraMotion.curve;
 
 class DownloadRecordCard extends StatelessWidget {
   const DownloadRecordCard({
@@ -68,138 +71,135 @@ class DownloadRecordCard extends StatelessWidget {
       }
     }
 
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: .3),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      NetworkImgLayer(
-                        src: record.bangumiCover,
-                        width: 56,
-                        height: 75,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              record.bangumiName,
-                              style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: PlayraSpace.md),
+      child: PlayraCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              onTap: onToggle,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        NetworkImgLayer(
+                          src: record.bangumiCover,
+                          width: 56,
+                          height: 75,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                record.bangumiName,
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              const SizedBox(height: 6),
+                              Text(
+                                '来源 · ${record.pluginName}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        KazumiMenuButton(
+                          animated: false,
+                          builder: (context, toggle) => PlayraIconButton(
+                            icon: Icon(
+                              Icons.more_vert,
+                              color: colorScheme.onSurfaceVariant,
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '来源 · ${record.pluginName}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                            tooltip: '更多操作',
+                            onPressed: toggle,
+                          ),
+                          menuChildren: [
+                            KazumiMenuItem(
+                              label: '全部开始',
+                              onPressed: onResumeAll,
+                            ),
+                            KazumiMenuItem(
+                              label: '全部删除',
+                              destructive: true,
+                              onPressed: onDeleteAll,
                             ),
                           ],
                         ),
-                      ),
-                      KazumiMenuButton(
-                        animated: false,
-                        builder: (context, toggle) => IconButton(
-                          icon: Icon(
-                            Icons.more_vert,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          tooltip: '更多操作',
-                          onPressed: toggle,
-                        ),
-                        menuChildren: [
-                          KazumiMenuItem(label: '全部开始', onPressed: onResumeAll),
-                          KazumiMenuItem(
-                            label: '全部删除',
-                            destructive: true,
-                            onPressed: onDeleteAll,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          meta,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            meta,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        expanded ? '收起分集' : '查看分集',
-                        style: textTheme.labelSmall?.copyWith(
-                          color: colorScheme.primary,
+                        const SizedBox(width: 8),
+                        Text(
+                          expanded ? '收起分集' : '查看分集',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: colorScheme.primary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      AnimatedRotation(
-                        turns: expanded ? 0.5 : 0,
-                        duration: MediaQuery.disableAnimationsOf(context)
-                            ? Duration.zero
-                            : _kExpandDuration,
-                        curve: _kExpandCurve,
-                        child: Icon(
-                          Icons.expand_more,
-                          color: colorScheme.primary,
-                          size: 18,
+                        const SizedBox(width: 4),
+                        AnimatedRotation(
+                          turns: expanded ? 0.5 : 0,
+                          duration: MediaQuery.disableAnimationsOf(context)
+                              ? Duration.zero
+                              : _kExpandDuration,
+                          curve: _kExpandCurve,
+                          child: Icon(
+                            Icons.expand_more,
+                            color: colorScheme.primary,
+                            size: 18,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          // 收起时显示作品总进度；展开后由分集进度承担主要反馈。
-          if (!allCompleted && !expanded)
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, expanded ? 4 : 16),
-              child: LinearProgressIndicator(value: aggregateProgress),
+            // 收起时显示作品总进度；展开后由分集进度承担主要反馈。
+            if (!allCompleted && !expanded)
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, expanded ? 4 : 16),
+                child: PlayraProgress(value: aggregateProgress),
+              ),
+            AnimatedSize(
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : _kExpandDuration,
+              curve: _kExpandCurve,
+              alignment: Alignment.topCenter,
+              child: expanded
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      child: Column(children: episodeTileBuilder()),
+                    )
+                  : const SizedBox(width: double.infinity),
             ),
-          AnimatedSize(
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : _kExpandDuration,
-            curve: _kExpandCurve,
-            alignment: Alignment.topCenter,
-            child: expanded
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                    child: Column(children: episodeTileBuilder()),
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -252,11 +252,10 @@ class DownloadEpisodeTile extends StatelessWidget {
         ),
         if (showProgress || episode.status == DownloadStatus.resolving) ...[
           const SizedBox(height: 8),
-          LinearProgressIndicator(
+          PlayraProgress(
             value: episode.status == DownloadStatus.resolving
                 ? null
                 : episode.progressPercent,
-            minHeight: 3,
           ),
         ],
       ],

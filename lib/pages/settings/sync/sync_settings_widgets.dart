@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
@@ -168,7 +169,7 @@ class SyncFeedback extends StatelessWidget {
             ),
             if (busy) ...[
               const SizedBox(height: 12),
-              LinearProgressIndicator(value: progress),
+              PlayraProgress(value: progress),
             ],
           ],
         ),

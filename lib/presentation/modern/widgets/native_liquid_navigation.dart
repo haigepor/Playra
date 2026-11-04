@@ -167,7 +167,7 @@ class _NativeLiquidNavigationBarState extends State<NativeLiquidNavigationBar>
         return SizedBox(
           key: _surface,
           width: constraints.maxWidth,
-          height: 64 + 20 * (textScale - 1).clamp(0, 2),
+          height: 60 + 20 * (textScale - 1).clamp(0, 2),
         );
       },
     );

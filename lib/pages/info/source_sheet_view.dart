@@ -148,7 +148,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: SizedBox(
                 width: double.infinity,
-                child: FilledButton.tonalIcon(
+                child: PlayraButton.tonalIcon(
                   onPressed: widget.onAutomatic,
                   icon: const Icon(Icons.auto_awesome_rounded, size: 18),
                   label: const Text('自动优选来源'),
@@ -171,7 +171,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                             onPressed: widget.onRefresh,
                             text: '重新检索',
                           ),
-                          TextButton(
+                          PlayraButton.ghost(
                             onPressed: widget.onSearchAll,
                             child: const Text('修改检索词'),
                           ),
@@ -329,7 +329,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                 onPressed: () => widget.onSourceSearch(group.name),
                 text: '修改检索词',
               ),
-              TextButton(
+              PlayraButton.ghost(
                 onPressed: () => widget.onSourceAliasSearch(group.name),
                 child: const Text('使用别名'),
               ),
@@ -405,7 +405,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
     visible: false,
     child: KazumiMenuButton(
       animated: true,
-      builder: (context, toggle) => IconButton(
+      builder: (context, toggle) => PlayraIconButton(
         tooltip: '${group.name} 的更多操作',
         icon: const Icon(Icons.more_horiz_rounded, size: 20),
         onPressed: toggle,
@@ -554,8 +554,8 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
             spacing: 8,
             runSpacing: 4,
             children: [
-              FilledButton.tonal(onPressed: onAction, child: Text(action)),
-              TextButton(
+              PlayraButton.tonal(onPressed: onAction, child: Text(action)),
+              PlayraButton.ghost(
                 onPressed: () => widget.onOpenBrowser(sourceName),
                 child: const Text('打开网站'),
               ),

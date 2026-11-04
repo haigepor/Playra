@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,11 @@ import 'package:kazumi/navigation.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
+import 'package:kazumi/presentation/interface_style.dart';
+import 'package:kazumi/presentation/theme/playra_theme.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/theme/playra_forui_theme.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class AppWidget extends StatefulWidget {
   const AppWidget({super.key});
@@ -180,6 +186,17 @@ class _AppWidgetState extends State<AppWidget>
       progressIndicatorTheme: progressIndicatorTheme2024,
       sliderTheme: sliderTheme2024,
       pageTransitionsTheme: pageTransitionsTheme2024,
+      // 全站可点击小卡片统一胶囊形态：chip 与各类按钮同用 StadiumBorder。
+      chipTheme: const ChipThemeData(shape: StadiumBorder()),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(shape: const StadiumBorder()),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(shape: const StadiumBorder()),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(shape: const StadiumBorder()),
+      ),
     );
   }
 
@@ -286,6 +303,11 @@ class _AppWidgetState extends State<AppWidget>
   @override
   Widget build(BuildContext context) {
     final ThemeProvider themeProvider = context.watch<ThemeProvider>();
+    final modern =
+        context.watch<InterfaceStyleController>().style ==
+        InterfaceStyle.modern;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     bool oledEnhance = GStorage.getSetting(SettingsKeys.oledEnhance);
 
     var app = DynamicColorBuilder(
@@ -310,42 +332,64 @@ class _AppWidgetState extends State<AppWidget>
             ? oledDarkTheme(dynamicDarkTheme)
             : dynamicDarkTheme;
 
-        return MaterialApp.router(
-          builder: kIsWeb
-              ? (context, child) => FutureBuilder<void>(
-                  future: _webStartup,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError)
-                      return const Scaffold(
-                        body: Center(child: Text('初始化失败，请刷新页面重试')),
-                      );
-                    if (snapshot.connectionState != ConnectionState.done)
-                      return const Scaffold(
-                        body: Center(child: CircularProgressIndicator()),
-                      );
-                    return child ?? const SizedBox.shrink();
-                  },
-                )
-              : null,
-          title: "Playra",
-          localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          supportedLocales: const [
-            Locale.fromSubtags(
+        final materialLight = playraTheme(lightTheme, modern: modern);
+        final materialDark = playraTheme(effectiveDarkTheme, modern: modern);
+        final mode = modern ? ThemeMode.dark : themeProvider.themeMode;
+        return ShadApp.custom(
+          themeMode: mode,
+          theme: playraShadTheme(materialLight, reduceMotion: reduceMotion),
+          darkTheme: playraShadTheme(materialDark, reduceMotion: reduceMotion),
+          appBuilder: (_) => MaterialApp.router(
+            builder: (context, child) => PlayraForuiScope(
+              withOverlays: true,
+              child: ShadAppBuilder(
+                child: kIsWeb
+                    ? FutureBuilder<void>(
+                        future: _webStartup,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return const Scaffold(
+                              body: Center(child: Text('初始化失败，请刷新页面重试')),
+                            );
+                          }
+                          if (snapshot.connectionState !=
+                              ConnectionState.done) {
+                            return const Scaffold(
+                              body: Center(child: PlayraSpinner()),
+                            );
+                          }
+                          return child ?? const SizedBox.shrink();
+                        },
+                      )
+                    : child ?? const SizedBox.shrink(),
+              ),
+            ),
+            title: "Playra",
+            localizationsDelegates: const [
+              GlobalShadLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
+            supportedLocales: const [
+              Locale.fromSubtags(
+                languageCode: 'zh',
+                scriptCode: 'Hans',
+                countryCode: "CN",
+              ),
+            ],
+            locale: const Locale.fromSubtags(
               languageCode: 'zh',
               scriptCode: 'Hans',
               countryCode: "CN",
             ),
-          ],
-          locale: const Locale.fromSubtags(
-            languageCode: 'zh',
-            scriptCode: 'Hans',
-            countryCode: "CN",
+            theme: materialLight,
+            darkTheme: materialDark,
+            themeMode: mode,
+            themeAnimationDuration: reduceMotion
+                ? Duration.zero
+                : PlayraMotion.state,
+            scaffoldMessengerKey: rootScaffoldMessengerKey,
+            routerConfig: ModularApp.routerConfigOf(context),
           ),
-          theme: lightTheme,
-          darkTheme: effectiveDarkTheme,
-          themeMode: themeProvider.themeMode,
-          scaffoldMessengerKey: rootScaffoldMessengerKey,
-          routerConfig: ModularApp.routerConfigOf(context),
         );
       },
     );

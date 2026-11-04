@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -70,22 +72,18 @@ class _HistoryPageState extends State<HistoryPage> {
     if (_clearing || _deleting.isNotEmpty) return;
     final confirmed = await KazumiDialog.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => PlayraDialog(
         icon: const Icon(Icons.delete_sweep_outlined),
         title: const Text('清空历史记录？'),
         content: Text(
           '将删除全部 ${widget.controller.histories.length + SdkLibraryStore.shared.histories.length} 条观看记录，包括SDK、在线和缓存记录，保留收藏。此操作无法撤销。',
         ),
         actions: [
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('取消'),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
+          PlayraButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('清空全部'),
           ),
@@ -131,22 +129,22 @@ class _HistoryPageState extends State<HistoryPage> {
                 if (entries.isNotEmpty ||
                     SdkLibraryStore.shared.histories.isNotEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: PlayraSpace.sm),
                     child: _editing
-                        ? FilledButton.tonal(
+                        ? PlayraButton.tonal(
                             onPressed: _clearing
                                 ? null
                                 : () => setState(() => _editing = false),
                             child: const Text('完成'),
                           )
-                        : IconButton.filledTonal(
+                        : PlayraIconButton(
                             tooltip: '管理历史记录',
                             onPressed: () => setState(() => _editing = true),
                             icon: const Icon(Icons.edit_outlined),
                           ),
                   ),
                   if (_editing)
-                    IconButton(
+                    PlayraIconButton(
                       tooltip: '清空全部历史记录',
                       onPressed: _clearing || _deleting.isNotEmpty
                           ? null

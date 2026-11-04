@@ -6,8 +6,9 @@ import 'package:flutter/painting.dart';
 /// Web 按原地址复用压缩字节，再执行各尺寸的 decoder。
 /// 不走第三方 HtmlImage（忽略尺寸）或 HttpGet（解码异常未收口）分支。
 class CachedBytesImageProvider extends ImageProvider<CachedBytesImageProvider> {
-  const CachedBytesImageProvider(this.url);
+  const CachedBytesImageProvider(this.url, {this.headers = const {}});
   final String url;
+  final Map<String, String> headers;
 
   @override
   Future<CachedBytesImageProvider> obtainKey(
@@ -22,7 +23,7 @@ class CachedBytesImageProvider extends ImageProvider<CachedBytesImageProvider> {
 
   Future<ui.Codec> _decode(ImageDecoderCallback decode) async {
     final cache = CachedNetworkImageProvider.defaultCacheManager;
-    final file = await cache.getSingleFile(url);
+    final file = await cache.getSingleFile(url, headers: headers);
     final buffer = await ui.ImmutableBuffer.fromUint8List(
       await file.readAsBytes(),
     );
@@ -42,7 +43,15 @@ class CachedBytesImageProvider extends ImageProvider<CachedBytesImageProvider> {
 
   @override
   bool operator ==(Object other) =>
-      other is CachedBytesImageProvider && other.url == url;
+      other is CachedBytesImageProvider &&
+      other.url == url &&
+      mapEquals(other.headers, headers);
   @override
-  int get hashCode => Object.hash(CachedBytesImageProvider, url);
+  int get hashCode => Object.hash(
+    CachedBytesImageProvider,
+    url,
+    Object.hashAll(
+      headers.entries.map((entry) => Object.hash(entry.key, entry.value)),
+    ),
+  );
 }

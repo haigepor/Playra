@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
@@ -92,7 +94,7 @@ class _HistoryListViewState extends State<HistoryListView> {
         _query.trim().isNotEmpty || _source != HistorySourceFilter.all;
     final now = DateTime.now();
     const searchBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.all(Radius.circular(14)),
+      borderRadius: BorderRadius.all(Radius.circular(PlayraRadius.control)),
       borderSide: BorderSide.none,
     );
 
@@ -144,7 +146,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                               artwork: 'modern-history-art',
                             ),
                             const SizedBox(height: 16),
-                            TextField(
+                            PlayraTextField(
                               controller: _searchController,
                               focusNode: _searchFocus,
                               textInputAction: TextInputAction.search,
@@ -153,7 +155,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                                 prefixIcon: const Icon(Icons.search_rounded),
                                 suffixIcon: _query.isEmpty
                                     ? null
-                                    : IconButton(
+                                    : PlayraIconButton(
                                         tooltip: '清除搜索',
                                         onPressed: _clearSearch,
                                         icon: const Icon(Icons.close_rounded),
@@ -269,7 +271,7 @@ class _HistoryListViewState extends State<HistoryListView> {
         ),
       );
     }
-    const shape = BorderRadius.all(Radius.circular(14));
+    const shape = BorderRadius.all(Radius.circular(PlayraRadius.card));
     return Padding(
       key: row.key,
       padding: const EdgeInsets.only(bottom: 8),
@@ -283,15 +285,15 @@ class _HistoryListViewState extends State<HistoryListView> {
     final theme = Theme.of(context);
     final selected = _source == source;
     final colors = theme.colorScheme;
-    final shape = BorderRadius.circular(14);
+    final shape = BorderRadius.circular(PlayraRadius.control);
     return Semantics(
       button: true,
       selected: selected,
       child: AnimatedContainer(
         duration: MediaQuery.disableAnimationsOf(context)
             ? Duration.zero
-            : const Duration(milliseconds: 250),
-        curve: Curves.easeInOutCubicEmphasized,
+            : PlayraMotion.state,
+        curve: PlayraMotion.curve,
         decoration: BoxDecoration(
           color: selected
               ? colors.primary.withValues(alpha: .12)

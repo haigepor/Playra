@@ -276,7 +276,7 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context).scale(12) / 12;
-    final height = 68.0 + 20 * (scale - 1).clamp(0, 2);
+    final height = 60.0 + 20 * (scale - 1).clamp(0, 2);
     final theme = Theme.of(context);
     _syncSurface();
     return LayoutBuilder(
@@ -383,7 +383,7 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
                           elevation: 0,
                           iconTheme: WidgetStateProperty.resolveWith(
                             (states) => IconThemeData(
-                              size: 23,
+                              size: 20,
                               color: states.contains(WidgetState.selected)
                                   ? const Color(0xffdce2ff)
                                   : const Color(0xffe3e7f0),
@@ -391,7 +391,7 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
                           ),
                           labelTextStyle: WidgetStateProperty.resolveWith(
                             (states) => theme.textTheme.labelMedium?.copyWith(
-                              fontSize: 13,
+                              fontSize: 11.5,
                               fontWeight: states.contains(WidgetState.selected)
                                   ? FontWeight.w600
                                   : FontWeight.w500,

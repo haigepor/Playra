@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
@@ -68,7 +69,7 @@ class SettingsDetailScaffold extends StatelessWidget {
         backgroundColor: Colors.transparent,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: modern ? 52 : 64,
+        toolbarHeight: modern ? PlayraLayout.compactToolbar : 64,
         titleSpacing: paneLeading == null
             ? 24
             : NavigationToolbar.kMiddleSpacing,
@@ -81,7 +82,7 @@ class SettingsDetailScaffold extends StatelessWidget {
       );
     } else {
       appBar = SysAppBar(
-        toolbarHeight: modern ? 52 : null,
+        toolbarHeight: modern ? PlayraLayout.compactToolbar : null,
         title: title,
         actions: actions,
         leading:

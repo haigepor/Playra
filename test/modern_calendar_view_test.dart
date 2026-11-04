@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/presentation/modern/calendar/modern_calendar_controller.dart';
@@ -96,7 +97,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('筛选与排序'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tester.tap(find.byTooltip('关闭'));
+    await tester.tap(_tooltip('关闭'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('calendar-season')));
     await tester.pumpAndSettle();
@@ -110,7 +111,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('查看 2024 年 · 春季'), findsOneWidget);
     expect(controller.season, originalSeason);
-    await tester.tap(find.byTooltip('关闭'));
+    await tester.tap(_tooltip('关闭'));
     await tester.pumpAndSettle();
     expect(controller.season, originalSeason);
     expect(find.byType(YearPicker), findsNothing);
@@ -151,9 +152,13 @@ void main() {
           .bottom,
       lessThanOrEqualTo(360 - 24),
     );
-    await tester.tap(find.byTooltip('关闭'));
+    await tester.tap(_tooltip('关闭'));
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
   });
 }
+
+Finder _tooltip(String message) => find.byWidgetPredicate((widget) =>
+  widget is PlayraIconButton && widget.tooltip == message ||
+  widget is Tooltip && widget.message == message);

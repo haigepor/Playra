@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
@@ -114,7 +116,7 @@ class _SyncServiceCard extends StatelessWidget {
     final modern = ModernSettingsScope.isActiveOf(context);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(modern ? 16 : 24),
+      padding: EdgeInsets.all(modern ? PlayraSpace.lg : PlayraSpace.xxl),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
@@ -133,7 +135,7 @@ class _SyncServiceCard extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(PlayraRadius.control),
                 ),
                 child: UtilitySvgIcon(
                   service == 'Bangumi'
@@ -143,7 +145,7 @@ class _SyncServiceCard extends StatelessWidget {
                   color: onColor,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: PlayraSpace.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,14 +176,14 @@ class _SyncServiceCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: _SyncStatusChip(status: status),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           Text(
             description,
             style: modern
                 ? theme.textTheme.bodySmall
                 : theme.textTheme.bodyMedium,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: PlayraSpace.lg),
           Text(
             content,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -189,8 +191,7 @@ class _SyncServiceCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: modern ? 16 : 24),
-          FilledButton.tonalIcon(
-            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+          PlayraButton.tonalIcon(
             onPressed: onPressed,
             label: Text(action),
             icon: const Icon(Icons.arrow_forward_rounded, size: 18),
@@ -221,7 +222,10 @@ class _SyncStatusChip extends StatelessWidget {
       _ => (colors.surfaceContainerHighest, colors.onSurfaceVariant),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(
+        horizontal: PlayraSpace.md,
+        vertical: 7,
+      ),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(10),
@@ -230,7 +234,7 @@ class _SyncStatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(status.icon, size: 16, color: foreground),
-          const SizedBox(width: 6),
+          const SizedBox(width: PlayraSpace.compact),
           Flexible(
             child: Text(
               status.label,

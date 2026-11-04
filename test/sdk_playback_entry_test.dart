@@ -150,13 +150,17 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // 来源切换、线路与画质共用同一个弹窗，从播放源行进入。
+      await tester.tap(find.byKey(const ValueKey('sdk-line-selector')));
+      await tester.pumpAndSettle();
       expect(find.widgetWithText(ChoiceChip, '已移除来源（记录保留）'), findsOneWidget);
       final other = find.widgetWithText(ChoiceChip, 'sdk_other');
       await tester.ensureVisible(other);
       await tester.pumpAndSettle();
       await tester.tap(other);
       await tester.pumpAndSettle();
-      expect(tester.widget<ChoiceChip>(other).selected, isTrue);
+      // 选择后弹窗关闭，播放源行显示新来源。
+      expect(find.text('sdk_other'), findsOneWidget);
       expect(a.played, ['a-identity|line/a-identity|57']);
       expect(b.played, ['foreign/id?x|line/foreign/id?x|57']);
       expect(tester.takeException(), isNull);

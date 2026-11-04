@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
 
@@ -142,17 +144,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
-    final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final stacked =
             constraints.maxWidth < 320 ||
             MediaQuery.textScalerOf(context).scale(16) > 24;
-        final secondary = TextButton(
-          style: TextButton.styleFrom(
-            minimumSize: Size(88, widget.modern ? 48 : 56),
-            foregroundColor: theme.colorScheme.onSurfaceVariant,
-          ),
+        final secondary = PlayraButton.ghost(
           onPressed: _installingBundled
               ? null
               : _currentIndex == 0
@@ -160,19 +157,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               : () => _navigate(forward: false),
           child: Text(_currentIndex == 0 ? '退出' : '上一步'),
         );
-        final primary = FilledButton.icon(
-          style: FilledButton.styleFrom(
-            minimumSize: Size(176, widget.modern ? 48 : 56),
-            shape: widget.modern
-                ? RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  )
-                : null,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            textStyle: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+        final primary = PlayraButton.icon(
           onPressed: _installingBundled ? null : () => _navigate(forward: true),
           iconAlignment: IconAlignment.end,
           icon: _installingBundled
@@ -189,17 +174,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
           label: Text(_installingBundled ? '正在准备' : _primaryLabel),
         );
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: PlayraSpace.md),
           child: stacked
               ? Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [primary, const SizedBox(height: 4), secondary],
+                  children: [
+                    primary,
+                    const SizedBox(height: PlayraSpace.xs),
+                    secondary,
+                  ],
                 )
               : Row(
                   children: [
                     secondary,
-                    const SizedBox(width: 16),
+                    const SizedBox(width: PlayraSpace.lg),
                     const Spacer(),
                     primary,
                   ],
@@ -232,7 +221,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 children: [
                   if (widget.modern)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: PlayraSpace.md,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -248,12 +239,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          LinearProgressIndicator(
+                          PlayraProgress(
                             value: (_currentIndex + 1) / _steps.length,
-                            minHeight: 2,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
                           ),
                         ],
                       ),
@@ -302,7 +289,10 @@ class _OnboardingProgress extends StatelessWidget {
       liveRegion: true,
       child: ExcludeSemantics(
         child: Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 12),
+          padding: const EdgeInsets.only(
+            top: PlayraSpace.sm,
+            bottom: PlayraSpace.md,
+          ),
           child: Column(
             children: [
               Row(
@@ -324,11 +314,11 @@ class _OnboardingProgress extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: PlayraSpace.md),
               Row(
                 children: [
                   for (var i = 0; i < labels.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 6),
+                    if (i > 0) const SizedBox(width: PlayraSpace.compact),
                     Expanded(
                       child: AnimatedContainer(
                         duration: MediaQuery.disableAnimationsOf(context)

@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
@@ -119,7 +120,7 @@ class _NetworkMirrorSettingsState extends State<NetworkMirrorSettings> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 for (final mode in modes)
-                  RadioListTile<T>(
+                  PlayraRadioTile<T>(
                     value: mode,
                     title: Text(label(mode)),
                     subtitle: Text(

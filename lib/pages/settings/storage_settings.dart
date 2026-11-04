@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -33,16 +34,16 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
     if (_clearing) return;
     final confirmed = await KazumiDialog.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => PlayraDialog(
         icon: const Icon(Icons.cleaning_services_rounded),
         title: const Text('清除图片缓存？'),
         content: const Text('图片会在下次加载时重新下载。视频、记录和设置不会删除。'),
         actions: [
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('取消'),
           ),
-          FilledButton(
+          PlayraButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('清除缓存'),
           ),
@@ -92,7 +93,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                     snapshot.connectionState == ConnectionState.done &&
                         snapshot.hasError &&
                         !_clearing
-                    ? IconButton(
+                    ? PlayraIconButton(
                         tooltip: '重新统计',
                         onPressed: _refreshSize,
                         icon: const Icon(Icons.refresh_rounded),

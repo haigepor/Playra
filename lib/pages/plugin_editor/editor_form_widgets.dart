@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/pages/plugin_editor/rule_management_widgets.dart';
 
@@ -27,15 +28,12 @@ class EditorTextField extends StatelessWidget {
         const SizedBox(height: 8),
         Semantics(
           label: label,
-          child: TextField(
+          child: PlayraTextField(
             controller: controller,
             maxLines: maxLines,
             autocorrect: false,
             enableSuggestions: true,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontFamily: maxLines > 1 ? 'monospace' : null,
-              height: maxLines > 1 ? 1.6 : 1.4,
-            ),
+
             decoration: ruleInputDecoration(context, hint: hint).copyWith(
               fillColor: theme.colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(
@@ -101,23 +99,7 @@ class EditorChoiceGroup<T> extends StatelessWidget {
         return Semantics(
           selected: selected,
           inMutuallyExclusiveGroup: true,
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(64, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              backgroundColor: selected
-                  ? colors.primary.withValues(alpha: .14)
-                  : Colors.transparent,
-              foregroundColor: selected
-                  ? colors.primary
-                  : colors.onSurfaceVariant,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
+          child: PlayraButton(
             onPressed: segment.enabled ? () => onChanged(segment.value) : null,
             child: segment.label ?? segment.icon ?? const SizedBox.shrink(),
           ),

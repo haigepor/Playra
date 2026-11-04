@@ -2,7 +2,16 @@ part of 'search_page.dart';
 
 extension _ModernSearch on _SearchPageState {
   Widget _modernPage() => Scaffold(
-    appBar: SysAppBar(toolbarHeight: 64, title: _searchField()),
+    appBar: SysAppBar(
+      toolbarHeight: math.max(
+        PlayraLayout.toolbar,
+        MediaQuery.textScalerOf(context).scale(PlayraType.body) *
+                PlayraType.bodyHeight +
+            PlayraSpace.xxl +
+            PlayraSpace.sm,
+      ),
+      title: _searchField(),
+    ),
     body: SafeArea(
       top: false,
       child: LayoutBuilder(
@@ -79,14 +88,14 @@ extension _ModernSearch on _SearchPageState {
             children: [
               const Expanded(child: Text('最近搜索')),
               if (_managingHistory)
-                TextButton(
+                PlayraButton.ghost(
                   onPressed: () async {
                     await _controller.clearSearchHistory();
                     if (mounted) _setHistoryManagement(false);
                   },
                   child: const Text('清空'),
                 ),
-              TextButton(
+              PlayraButton.ghost(
                 onPressed: () => _setHistoryManagement(!_managingHistory),
                 child: Text(_managingHistory ? '完成' : '管理'),
               ),
@@ -99,8 +108,7 @@ extension _ModernSearch on _SearchPageState {
             description: '输入番名，或按题材和放送时间查找。',
           ),
         for (final history in histories.take(10))
-          ListTile(
-            contentPadding: EdgeInsets.zero,
+          PlayraListTile(
             leading: Icon(
               LucideIcons.history,
               size: 18,
@@ -112,7 +120,7 @@ extension _ModernSearch on _SearchPageState {
               overflow: TextOverflow.ellipsis,
             ),
             trailing: _managingHistory
-                ? IconButton(
+                ? PlayraIconButton(
                     tooltip: '删除这条搜索记录',
                     onPressed: () => _controller.deleteSearchHistory(history),
                     icon: const Icon(LucideIcons.x, size: 18),
@@ -156,8 +164,8 @@ extension _ModernSearch on _SearchPageState {
                     busy
                         ? '正在搜索…'
                         : all.isEmpty && _controller.lastSearchFailed
-                            ? '搜索结果'
-                            : '已加载 ${items.length} 部',
+                        ? '搜索结果'
+                        : '已加载 ${items.length} 部',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -167,7 +175,7 @@ extension _ModernSearch on _SearchPageState {
                     onChanged: (sort) =>
                         _applyFilters(filters.copyWith(sort: sort)),
                   ),
-                IconButton(
+                PlayraIconButton(
                   tooltip: '筛选番剧',
                   onPressed: _showFilters,
                   icon: Icon(
@@ -245,7 +253,7 @@ extension _ModernSearch on _SearchPageState {
             description: _controller.lastSearchFailed
                 ? '请检查网络连接后重试。'
                 : '试试其他番名，或放宽筛选条件。',
-            action: TextButton(
+            action: PlayraButton.ghost(
               onPressed: () => _submit(_submittedQuery!),
               child: const Text('重新搜索'),
             ),
@@ -255,7 +263,7 @@ extension _ModernSearch on _SearchPageState {
         SliverToBoxAdapter(
           child: SecondaryEmptyState(
             title: '结果被观看状态筛选隐藏了',
-            action: TextButton(
+            action: PlayraButton.ghost(
               onPressed: () async {
                 await _controller.setNotShowWatchedBangumis(false);
                 await _controller.setNotShowAbandonedBangumis(false);
@@ -267,10 +275,12 @@ extension _ModernSearch on _SearchPageState {
       else
         _ModernSearchGrid(items: items, width: width),
       if (busy && all.isNotEmpty)
-        SliverToBoxAdapter(child: Padding(
-          padding: const EdgeInsets.only(top: 20),
-          child: _modernSearchSkeleton(width, count: 3),
-        )),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: _modernSearchSkeleton(width, count: 3),
+          ),
+        ),
       if (all.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
@@ -279,12 +289,15 @@ extension _ModernSearch on _SearchPageState {
               child: busy
                   ? const SizedBox.shrink()
                   : _controller.lastSearchFailed
-                  ? TextButton(
+                  ? PlayraButton.ghost(
                       onPressed: _loadMore,
                       child: const Text('加载失败，重试'),
                     )
                   : _controller.hasMoreSearchResults
-                  ? TextButton(onPressed: _loadMore, child: const Text('加载更多'))
+                  ? PlayraButton.ghost(
+                      onPressed: _loadMore,
+                      child: const Text('加载更多'),
+                    )
                   : Text(
                       '已加载全部结果',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -301,11 +314,16 @@ extension _ModernSearch on _SearchPageState {
     final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
     final columns = math.max(1, (width / (scale > 1.5 ? 220 : 136)).floor());
     final cardWidth = (width - (columns - 1) * 12) / columns;
-    return SkeletonPosters(horizontal: false, count: count,
+    return SkeletonPosters(
+      horizontal: false,
+      count: count,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns, crossAxisSpacing: 12, mainAxisSpacing: 20,
+        crossAxisCount: columns,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 20,
         mainAxisExtent: cardWidth / .7 + 72 * scale,
-      ));
+      ),
+    );
   }
 }
 

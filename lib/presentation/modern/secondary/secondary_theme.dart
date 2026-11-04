@@ -1,7 +1,8 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
-import '../home/home_theme.dart';
 import '../settings/modern_settings_scope.dart';
 
 /// 只包住本轮新版二级页面；复用已有主题，不改变设置和主页面。
@@ -12,9 +13,8 @@ class ModernSecondaryScope extends StatelessWidget {
       context.dependOnInheritedWidgetOfExactType<_SecondaryAppearance>() !=
       null;
   @override
-  Widget build(BuildContext context) => ModernHomeScope(
-    child: ModernSettingsScope(child: _SecondaryAppearance(child: child)),
-  );
+  Widget build(BuildContext context) =>
+      ModernSettingsScope(child: _SecondaryAppearance(child: child));
 }
 
 class _SecondaryAppearance extends InheritedWidget {
@@ -109,23 +109,31 @@ class SecondaryTabs extends StatefulWidget {
 }
 
 class _SecondaryTabsState extends State<SecondaryTabs>
-    with SingleTickerProviderStateMixin {
-  late final _tabs = TabController(
-    length: widget.labels.length,
-    initialIndex: widget.selected,
-    vsync: this,
-    animationDuration: const Duration(milliseconds: 260),
-  );
+    with TickerProviderStateMixin {
+  late TabController _tabs;
+  Duration? _motionDuration;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final duration = PlayraMotion.duration(context, PlayraMotion.state);
+    if (_motionDuration == duration) return;
+    final index = _motionDuration == null ? widget.selected : _tabs.index;
+    if (_motionDuration != null) _tabs.dispose();
+    _motionDuration = duration;
+    _tabs = TabController(
+      length: widget.labels.length,
+      initialIndex: index,
+      vsync: this,
+      animationDuration: duration,
+    );
+  }
+
   @override
   void didUpdateWidget(SecondaryTabs oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_tabs.index != widget.selected) {
-      _tabs.animateTo(
-        widget.selected,
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 260),
-      );
+      _tabs.animateTo(widget.selected, duration: _motionDuration);
     }
   }
 
@@ -140,28 +148,10 @@ class _SecondaryTabsState extends State<SecondaryTabs>
     excluding: !widget.enabled,
     child: IgnorePointer(
       ignoring: !widget.enabled,
-      child: TabBar(
+      child: PlayraTabBar(
         controller: _tabs,
         onTap: widget.enabled ? widget.onChanged : null,
-        dividerColor: Colors.transparent,
-        indicatorSize: TabBarIndicatorSize.label,
-        splashFactory: NoSplash.splashFactory,
-        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-        labelColor: Theme.of(context).colorScheme.primary,
-        unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-        indicator: UnderlineTabIndicator(
-          borderRadius: BorderRadius.circular(2),
-          borderSide: BorderSide(
-            width: 3,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          insets: const EdgeInsets.symmetric(horizontal: 8),
-        ),
+
         tabs: [for (final label in widget.labels) Tab(height: 48, text: label)],
       ),
     ),
@@ -214,7 +204,7 @@ class SecondaryFailureView extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Center(
-                child: FilledButton.icon(
+                child: PlayraButton.icon(
                   onPressed: action,
                   icon: Icon(actionIcon, size: 18),
                   label: Text(actionLabel),
@@ -222,8 +212,7 @@ class SecondaryFailureView extends StatelessWidget {
               ),
               if (details != null) ...[
                 const SizedBox(height: 20),
-                ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
+                PlayraExpansionTile(
                   title: const Text('查看详细信息'),
                   children: [
                     Padding(

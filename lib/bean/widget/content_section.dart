@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 
 import 'package:kazumi/bean/widget/split_list_row.dart';
@@ -30,7 +31,7 @@ class SectionHeader extends StatelessWidget {
           ),
         ),
         if (description != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: PlayraSpace.xs),
           DefaultTextStyle.merge(
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -49,7 +50,7 @@ class ContentSection extends StatelessWidget {
     required this.title,
     required Widget child,
     this.description,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(PlayraSpace.lg),
   }) : _child = child,
        _children = null;
 

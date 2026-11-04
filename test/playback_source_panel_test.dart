@@ -79,18 +79,9 @@ void main() {
               data: const MediaQueryData(textScaler: TextScaler.linear(2)),
               child: SingleChildScrollView(
                 child: PlaybackSourcePanel(
-                  groups: [
-                    PlaybackSdkChip(
-                      name: 'AniFive',
-                      selected: true,
-                      onSelected: () {},
-                    ),
-                  ],
-                  summary: '手动 · MXdm / 真实线路 2',
-                  automatic: false,
-                  lineCount: 9,
+                  sourceLabel: '动漫 · Lumina',
                   selectorKey: const ValueKey('lines'),
-                  onShowLines: () {
+                  onSelectSource: () {
                     opened++;
                   },
                 ),
@@ -100,6 +91,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(find.text('播放源'), findsOneWidget);
+      expect(find.text('动漫 · Lumina'), findsOneWidget);
       final action = find.byKey(const ValueKey('lines'));
       expect(
         tester.getSemantics(action).getSemanticsData().flagsCollection.isButton,

@@ -1,3 +1,6 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/widgets/playra_sheet.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -204,9 +207,9 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                               Padding(
                                 key: const ValueKey('library-header'),
                                 padding: const EdgeInsets.fromLTRB(
-                                  20,
+                                  PlayraSpace.xl,
                                   0,
-                                  12,
+                                  PlayraSpace.md,
                                   0,
                                 ),
                                 child: Row(
@@ -215,12 +218,12 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                       child: Text(
                                         '追番',
                                         style: TextStyle(
-                                          fontSize: 22,
+                                          fontSize: PlayraType.pageTitle,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
-                                    IconButton(
+                                    PlayraIconButton(
                                       key: const ValueKey('library-search'),
                                       tooltip: '搜索追番',
                                       onPressed: _toggleSearch,
@@ -232,7 +235,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                         color: colors.onSurfaceVariant,
                                       ),
                                     ),
-                                    IconButton(
+                                    PlayraIconButton(
                                       tooltip: '更多操作',
                                       onPressed: () => _showMore(context),
                                       icon: Icon(
@@ -244,32 +247,10 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                   ],
                                 ),
                               ),
-                              TabBar(
+                              PlayraTabBar(
                                 controller: _tabs,
                                 isScrollable: true,
-                                tabAlignment: TabAlignment.start,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                                labelPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                dividerColor: Colors.transparent,
-                                indicatorSize: TabBarIndicatorSize.label,
-                                overlayColor: const WidgetStatePropertyAll(
-                                  Colors.transparent,
-                                ),
-                                splashFactory: NoSplash.splashFactory,
-                                indicator: UnderlineTabIndicator(
-                                  borderRadius: BorderRadius.circular(2),
-                                  borderSide: BorderSide(
-                                    width: 3,
-                                    color: colors.primary,
-                                  ),
-                                  insets: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                ),
+
                                 onTap: (index) => controller.selectCategory(
                                   _categories[index],
                                 ),
@@ -283,7 +264,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                       child: Text(
                                         category?.label ?? '全部',
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: PlayraType.body,
                                           fontWeight:
                                               controller.category == category
                                               ? FontWeight.w700
@@ -298,36 +279,37 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                               ),
                               if (_searchOpen)
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    20,
-                                    12,
-                                    20,
-                                    0,
+                                  padding: PlayraLayout.pagePadding(
+                                    context,
+                                    top: PlayraSpace.md,
+                                    bottom: 0,
                                   ),
-                                  child: ShadInput(
+                                  child: PlayraTextField(
                                     controller: _search,
                                     focusNode: _searchFocus,
-                                    placeholder: const Text('搜索名称或别名'),
-                                    leading: Icon(
-                                      LucideIcons.search,
-                                      size: 17,
-                                      color: colors.onSurfaceVariant,
-                                    ),
-                                    trailing: _search.text.isEmpty
-                                        ? null
-                                        : IconButton(
-                                            tooltip: '清空搜索',
-                                            icon: Icon(
-                                              LucideIcons.x,
-                                              size: 16,
-                                              color: colors.onSurfaceVariant,
+                                    decoration: InputDecoration(
+                                      hintText: '搜索名称或别名',
+                                      prefixIcon: Icon(
+                                        LucideIcons.search,
+                                        size: 17,
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                                      suffixIcon: _search.text.isEmpty
+                                          ? null
+                                          : PlayraIconButton(
+                                              tooltip: '清空搜索',
+                                              icon: Icon(
+                                                LucideIcons.x,
+                                                size: 16,
+                                                color: colors.onSurfaceVariant,
+                                              ),
+                                              onPressed: () {
+                                                _search.clear();
+                                                controller.setQuery('');
+                                                _resetScroll();
+                                              },
                                             ),
-                                            onPressed: () {
-                                              _search.clear();
-                                              controller.setQuery('');
-                                              _resetScroll();
-                                            },
-                                          ),
+                                    ),
                                     onChanged: (value) {
                                       controller.setQuery(value);
                                       _resetScroll();
@@ -336,7 +318,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                 ),
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
-                                  20,
+                                  PlayraSpace.xl,
                                   0,
                                   14,
                                   0,
@@ -349,18 +331,14 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                             ? '${controller.count(controller.category) + sdkRecords.where((r) => controller.category == null || r.collectionType == controller.category!.value).length} 部作品'
                                             : '${entries.length} 部匹配',
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: PlayraType.caption,
                                           color: colors.onSurfaceVariant,
                                         ),
                                       ),
                                     ),
-                                    ShadButton.ghost(
+                                    PlayraButton.ghost(
                                       key: const ValueKey('library-sort'),
-                                      height: 44,
-                                      size: ShadButtonSize.sm,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                      ),
+
                                       onPressed: () => _showSort(context),
                                       trailing: const Icon(
                                         LucideIcons.chevronDown,
@@ -369,7 +347,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                       child: Text(
                                         controller.sort.label,
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: PlayraType.caption,
                                           color: colors.onSurfaceVariant,
                                         ),
                                       ),
@@ -378,7 +356,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                 ),
                               ),
                               if (controller.error != null)
-                                TextButton(
+                                PlayraButton.ghost(
                                   onPressed: controller.reloadLocal,
                                   child: Text(controller.error!),
                                 ),
@@ -419,11 +397,10 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                           )
                                         else
                                           SliverPadding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                              20,
-                                              4,
-                                              20,
-                                              20,
+                                            padding: PlayraLayout.pagePadding(
+                                              context,
+                                              top: PlayraSpace.xs,
+                                              bottom: PlayraSpace.xl,
                                             ),
                                             sliver: SliverGrid.builder(
                                               itemCount: entries.length,
@@ -513,10 +490,12 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
 
   Widget _empty(BuildContext context, ModernLibraryController controller) {
     final searching = controller.query.trim().isNotEmpty;
-    final emptyLibrary = controller.count(null) == 0 && SdkLibraryStore.shared.collections.isEmpty;
+    final emptyLibrary =
+        controller.count(null) == 0 &&
+        SdkLibraryStore.shared.collections.isEmpty;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(PlayraSpace.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -525,7 +504,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
               size: 36,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: PlayraSpace.lg),
             Text(
               searching
                   ? '没有匹配的番剧'
@@ -535,7 +514,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: PlayraSpace.sm),
             Text(
               searching
                   ? '换个名称或别名试试'
@@ -544,12 +523,12 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                   : '可以切换分类，或在番剧菜单中修改状态',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: PlayraType.label,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 20),
-            ShadButton.outline(
+            const SizedBox(height: PlayraSpace.xl),
+            PlayraButton.outline(
               onPressed: searching
                   ? () {
                       _search.clear();
@@ -576,56 +555,16 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
     BuildContext context,
     String title,
     Widget Function(BuildContext) content,
-  ) => showModalBottomSheet<void>(
+  ) => showPlayraSheet<void>(
     context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    showDragHandle: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    constraints: const BoxConstraints(maxWidth: 520),
-    builder: (_) => ModernHomeScope(
-      child: Builder(
-        builder: (context) => SafeArea(
-          top: false,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * .8,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: '关闭',
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(
-                          LucideIcons.x,
-                          size: 20,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  content(context),
-                ],
-              ),
-            ),
-          ),
-        ),
+    title: title,
+    builder: (context) => SingleChildScrollView(
+      padding: PlayraLayout.pagePadding(
+        context,
+        top: 0,
+        bottom: PlayraSpace.xl,
       ),
+      child: content(context),
     ),
   );
 
@@ -635,7 +574,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
     (context) => Column(
       children: [
         for (final sort in LibrarySort.values)
-          ListTile(
+          PlayraListTile(
             title: Text(sort.label),
             trailing: widget.controller.sort == sort
                 ? Icon(
@@ -661,7 +600,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
       listenable: widget.controller,
       builder: (context, _) => Column(
         children: [
-          ListTile(
+          PlayraListTile(
             leading: Icon(
               LucideIcons.refreshCw,
               size: 20,
@@ -675,7 +614,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
               widget.onSync();
             },
           ),
-          ListTile(
+          PlayraListTile(
             leading: Icon(
               LucideIcons.layoutGrid,
               size: 20,
@@ -697,7 +636,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
               Navigator.of(context).pop();
             },
           ),
-          ListTile(
+          PlayraListTile(
             leading: Icon(
               LucideIcons.palette,
               size: 20,
@@ -727,7 +666,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: PlayraType.label,
               color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
             ),
           ),
@@ -735,7 +674,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
           for (final type in CollectType.values.where(
             (type) => type.isCollected,
           ))
-            ListTile(
+            PlayraListTile(
               key: ValueKey('library-status-${type.value}'),
               title: Text(type.label),
               enabled: widget.controller.canEdit(entry.item.id),
@@ -752,7 +691,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
               },
             ),
           const Divider(),
-          ListTile(
+          PlayraListTile(
             leading: Icon(
               LucideIcons.trash2,
               size: 18,
@@ -774,16 +713,16 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => ModernHomeScope(
-        child: AlertDialog(
+        child: PlayraDialog(
           title: const Text('移除收藏？'),
           content: Text('将“${entry.title}”从收藏中移除，观看记录会保留。'),
           actions: [
-            TextButton(
+            PlayraButton.ghost(
               onPressed: () =>
                   Navigator.of(context, rootNavigator: true).pop(false),
               child: const Text('取消'),
             ),
-            TextButton(
+            PlayraButton.ghost(
               onPressed: () =>
                   Navigator.of(context, rootNavigator: true).pop(true),
               child: const Text('移除'),

@@ -1,3 +1,5 @@
+import 'package:forui/forui.dart' show FTileGroup;
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -121,7 +123,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  testWidgets('新版分组连续，旧版圆角分行和基础主题保留', (tester) async {
+  testWidgets('分组统一使用 Forui，主题偏好保留', (tester) async {
     Future<void> pump(bool enabled) => tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(colorSchemeSeed: Colors.green),
@@ -140,14 +142,15 @@ void main() {
       ),
     );
     await pump(false);
-    expect(find.byType(SplitListRow), findsNWidgets(2));
+    expect(find.byType(SplitListRow), findsNothing);
+    expect(find.byType(FTileGroup), findsOneWidget);
     expect(
       Theme.of(tester.element(find.text('第一项'))).brightness,
       Brightness.light,
     );
     await pump(true);
     expect(find.byType(SplitListRow), findsNothing);
-    expect(find.byType(Divider), findsOneWidget);
+    expect(find.byType(FTileGroup), findsOneWidget);
     final theme = Theme.of(tester.element(find.text('第一项')));
     expect(theme.brightness, Brightness.dark);
     expect(theme.scaffoldBackgroundColor, const Color(0xff11141c));
@@ -202,9 +205,12 @@ void main() {
         await tester.ensureVisible(find.text('去发现番剧'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('去发现番剧'));
+        await tester.pumpAndSettle();
         expect(count, 1);
         expect(
-          tester.getSize(find.byType(FilledButton)).height,
+          tester
+              .getSize(find.widgetWithText(StateActionButton, '去发现番剧'))
+              .height,
           greaterThanOrEqualTo(48),
         );
         expect(tester.takeException(), isNull);
@@ -284,18 +290,23 @@ void main() {
         await tester.pumpAndSettle();
         expect(toggled, isTrue);
         expect(
-          tester.getSize(find.byType(Switch)).height,
+          tester.getSize(find.byType(PlayraSwitch)).height,
           greaterThanOrEqualTo(48),
         );
-        await tester.tap(find.byType(Switch));
+        await tester.tap(find.byType(PlayraSwitch));
         await tester.pumpAndSettle();
         expect(toggled, isFalse);
-        await tester.ensureVisible(find.byType(Slider));
+        await tester.ensureVisible(find.byType(PlayraSlider));
         expect(
-          tester.getSize(find.byType(Slider)).height,
+          tester.getSize(find.byType(PlayraSlider)).height,
           greaterThanOrEqualTo(48),
         );
-        await tester.drag(find.byType(Slider), const Offset(50, 0));
+        final slider = tester.getRect(find.byType(PlayraSlider));
+        // Forui starts a drag from the thumb; tapping the track also selects a value.
+        await tester.dragFrom(
+          Offset(slider.left + slider.width / 3, slider.center.dy),
+          Offset(slider.width * .5, 0),
+        );
         await tester.pumpAndSettle();
         expect(speed, greaterThan(1));
         await tester.ensureVisible(find.text('较长的设置名称'));
@@ -331,15 +342,13 @@ void main() {
       if (modern) {
         expect(find.byType(ModernBackButton), findsOneWidget);
         expect(find.byType(BackButton), findsNothing);
-        expect(
-          tester.getSize(find.byTooltip('返回')).height,
-          greaterThanOrEqualTo(48),
-        );
+        expect(tester.getSize(_tooltip('返回')).height, greaterThanOrEqualTo(48));
       } else {
         expect(find.byType(ModernBackButton), findsNothing);
         expect(find.byType(BackButton), findsOneWidget);
       }
-      await tester.tap(modern ? find.byTooltip('返回') : find.byType(BackButton));
+      await tester.tap(modern ? _tooltip('返回') : find.byType(BackButton));
+      await tester.pumpAndSettle();
       expect(count, 1);
       expect(tester.takeException(), isNull);
     });
@@ -447,3 +456,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 }
+
+Finder _tooltip(String message) => find.byWidgetPredicate(
+  (widget) =>
+      widget is PlayraIconButton && widget.tooltip == message ||
+      widget is Tooltip && widget.message == message,
+);

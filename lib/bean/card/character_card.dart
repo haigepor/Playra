@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/dialog/adaptive_bottom_sheet.dart';
 import 'package:kazumi/bean/widget/bangumi_avatar.dart';
@@ -16,7 +17,7 @@ class CharacterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return PlayraListTile(
       leading: BangumiAvatar(imageUrl: characterItem.avator.grid),
       title: Text(
         characterItem.name,

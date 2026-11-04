@@ -22,6 +22,8 @@ import 'package:kazumi/services/source/lumina/lumina_home_controller.dart';
 import 'package:kazumi/services/source/lumina/lumina_playback_provider.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/sdk_rank_controller.dart';
+import 'package:kazumi/services/source/whisklet/whisklet_home_controller.dart';
+import 'package:kazumi/services/source/whisklet/whisklet_playback_provider.dart';
 
 /// 路由适配层：新版视图不直接读取全局容器或启动独立业务仓库。
 class ModernDiscoverPage extends StatefulWidget {
@@ -35,6 +37,11 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
   late final ModernHomeController controller;
   LuminaService? animeService;
   LuminaHomeController? anime;
+  late final WhiskletHomeController whisklet;
+  // 与目录共享同一个客户端；首次访问（进详情页）才真正构造。
+  late final WhiskletPlaybackProvider whiskletPlayback = WhiskletPlaybackProvider(
+    whisklet.catalog,
+  );
   late final SdkRankController ranking;
   String? _rankingKey;
   bool _changingTheme = false;
@@ -54,6 +61,8 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
       anime = LuminaHomeController(animeService!);
     }
     ranking = SdkRankController(lumina: animeService);
+    // 第二内容源与 Lumina 相互独立：Lumina 不可用的平台仍可浏览影视风格频道。
+    whisklet = WhiskletHomeController();
     controller.addListener(_syncRanking);
     anime?.addListener(_syncRanking);
     _syncRanking();
@@ -77,6 +86,8 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
 
   void _syncRanking({bool refresh = false}) {
     final feed = controller.feed;
+    // 风格频道由第二内容源独立出片，不展示也不预取 Lumina 榜单。
+    if (feed.isWhiskletStyle) return;
     final bucket = switch (feed) {
       HomeFeed.japanese => 'japanese',
       HomeFeed.chinese => 'chinese',
@@ -170,6 +181,8 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
     ranking.dispose();
     anime?.dispose();
     animeService?.dispose();
+    whiskletPlayback.dispose();
+    whisklet.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -180,6 +193,21 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
       builder: (context) => ModernHomeView(
         controller: controller,
         anime: anime,
+        whisklet: whisklet,
+        onWhiskletDetails: (work) => context.pushNamed(
+          '/info/',
+          arguments: SdkPlaybackEntry(
+            title: work.title,
+            cover: work.cover,
+            autoPlay: false,
+            sources: [
+              SdkSourceBinding(
+                provider: whiskletPlayback,
+                contentId: '${work.id}',
+              ),
+            ],
+          ),
+        ),
         ranking: ranking,
         onRankDetails: (entry) => context.pushNamed('/info/', arguments: entry),
         refreshRanking: () => _syncRanking(refresh: true),

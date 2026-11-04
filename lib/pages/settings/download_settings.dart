@@ -1,3 +1,5 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:flutter/material.dart';
@@ -144,7 +146,7 @@ class _DownloadSettingsPageState extends State<DownloadSettingsPage> {
                           ? '正在读取默认位置...'
                           : _effectiveDownloadDirectory,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: PlayraSpace.sm),
                     Text(
                       _hasCustomDirectory
                           ? '当前使用自定义下载位置，修改后仅对新下载生效'
@@ -162,7 +164,7 @@ class _DownloadSettingsPageState extends State<DownloadSettingsPage> {
                         child: LoadingIndicator(),
                       )
                     : _hasCustomDirectory
-                    ? IconButton(
+                    ? PlayraIconButton(
                         tooltip: '恢复默认',
                         icon: const Icon(Icons.restore_rounded),
                         onPressed: _resetDownloadDirectory,

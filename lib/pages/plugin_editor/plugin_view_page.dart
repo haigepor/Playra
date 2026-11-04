@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:kazumi/services/platform/platform_io.dart';
@@ -217,7 +218,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
     child: SettingsDetailScaffold(
       title: Text(_selecting ? '已选择 ${_selected.length} 条' : '规则管理'),
       leading: _selecting
-          ? IconButton(
+          ? PlayraIconButton(
               tooltip: '退出多选',
               onPressed: _leaveSelection,
               icon: const Icon(Icons.close_rounded),
@@ -225,7 +226,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
           : null,
       actions: [
         if (_selecting)
-          IconButton(
+          PlayraIconButton(
             tooltip: '删除所选规则',
             onPressed: _selected.isEmpty || _deleting
                 ? null
@@ -233,7 +234,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
             icon: const Icon(Icons.delete_outline_rounded),
           )
         else
-          IconButton(
+          PlayraIconButton(
             tooltip: '批量选择',
             onPressed: () => setState(() => _selecting = true),
             icon: const Icon(Icons.checklist_rounded),
@@ -319,18 +320,12 @@ class _PluginViewPageState extends State<PluginViewPage> {
                             '${all.length} 个来源 · ${registeredSdks.length} 个 SDK${independentCount > 0 ? ' · $independentCount 条独立规则' : ''}。查看对应 SDK，管理启用状态与更新。',
                         icon: Icons.extension_rounded,
                         actions: [
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size(120, 48),
-                            ),
+                          PlayraButton.icon(
                             onPressed: _add,
                             icon: const Icon(Icons.add_rounded),
                             label: const Text('添加规则'),
                           ),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(120, 48),
-                            ),
+                          PlayraButton.outlineIcon(
                             onPressed: () =>
                                 context.pushNamed('/settings/plugin/shop'),
                             icon: const Icon(Icons.travel_explore_rounded),
@@ -339,7 +334,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      TextField(
+                      PlayraTextField(
                         controller: _search,
                         onChanged: (_) => setState(() {}),
                         decoration: ruleInputDecoration(
@@ -348,7 +343,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                           prefix: const Icon(Icons.search_rounded),
                           suffix: query.isEmpty
                               ? null
-                              : IconButton(
+                              : PlayraIconButton(
                                   tooltip: '清除搜索',
                                   onPressed: () => setState(_search.clear),
                                   icon: const Icon(Icons.close_rounded),
@@ -371,25 +366,21 @@ class _PluginViewPageState extends State<PluginViewPage> {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             KazumiMenuButton(
-                              builder: (context, toggle) => TextButton.icon(
-                                onPressed: toggle,
-                                style: TextButton.styleFrom(
-                                  minimumSize: const Size(48, 48),
-                                  foregroundColor: _domain.isEmpty
-                                      ? colors.onSurfaceVariant
-                                      : colors.primary,
-                                ),
-                                icon: const Icon(
-                                  Icons.filter_list_rounded,
-                                  size: 18,
-                                ),
-                                label: Text(switch (_domain) {
-                                  'anime' => '动漫',
-                                  'screen' => '影视',
-                                  'unknown' => '未分类',
-                                  _ => '全部分类',
-                                }),
-                              ),
+                              builder: (context, toggle) =>
+                                  PlayraButton.ghostIcon(
+                                    onPressed: toggle,
+
+                                    icon: const Icon(
+                                      Icons.filter_list_rounded,
+                                      size: 18,
+                                    ),
+                                    label: Text(switch (_domain) {
+                                      'anime' => '动漫',
+                                      'screen' => '影视',
+                                      'unknown' => '未分类',
+                                      _ => '全部分类',
+                                    }),
+                                  ),
                               menuChildren: [
                                 for (final entry in const {
                                   '': '全部分类',
@@ -408,16 +399,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                             ),
                             Semantics(
                               toggled: _updatesOnly,
-                              child: TextButton.icon(
-                                style: TextButton.styleFrom(
-                                  minimumSize: const Size(48, 48),
-                                  foregroundColor: _updatesOnly
-                                      ? colors.primary
-                                      : colors.onSurfaceVariant,
-                                  backgroundColor: _updatesOnly
-                                      ? colors.primary.withValues(alpha: .1)
-                                      : Colors.transparent,
-                                ),
+                              child: PlayraButton.ghostIcon(
                                 icon: Icon(
                                   _updatesOnly
                                       ? Icons.check_circle_outline_rounded
@@ -430,7 +412,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                                 ),
                               ),
                             ),
-                            TextButton.icon(
+                            PlayraButton.ghostIcon(
                               onPressed: _updating || _updatingNames.isNotEmpty
                                   ? null
                                   : _updateAll,
@@ -440,7 +422,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                               label: Text(_updating ? '正在更新' : '更新全部'),
                             ),
                             if (_selecting)
-                              TextButton(
+                              PlayraButton.ghost(
                                 onPressed: () => setState(() {
                                   if (visible.every(
                                     (p) => _selected.contains(p.name),
@@ -621,7 +603,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (_selecting)
-                            Checkbox(
+                            PlayraCheckbox(
                               value: _selected.contains(plugin.name),
                               semanticLabel: '选择 ${plugin.name}',
                               onChanged: (_) => _toggleSelection(plugin.name),
@@ -664,7 +646,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
       ),
       padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
     ),
-    builder: (context, toggle) => IconButton(
+    builder: (context, toggle) => PlayraIconButton(
       tooltip: '${plugin.name} 的更多操作',
       onPressed: toggle,
       icon: const Icon(Icons.more_horiz_rounded),

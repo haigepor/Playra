@@ -1,3 +1,6 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'package:kazumi/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -31,26 +34,26 @@ class ModernProfileView extends StatelessWidget {
       child: Column(
         children: [
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
+            constraints: const BoxConstraints(maxWidth: PlayraLayout.formWidth),
             child: Padding(
-              padding: const EdgeInsets.only(left: 20, right: 12),
+              padding: const EdgeInsets.only(
+                left: PlayraSpace.xl,
+                right: PlayraSpace.md,
+              ),
               child: Row(
                 children: [
                   const Expanded(
                     child: Text(
                       '我的',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: PlayraType.pageTitle,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  IconButton(
+                  PlayraIconButton(
                     tooltip: '全部设置',
-                    constraints: const BoxConstraints(
-                      minWidth: 48,
-                      minHeight: 48,
-                    ),
+
                     icon: Icon(
                       LucideIcons.settings,
                       size: 20,
@@ -67,14 +70,20 @@ class ModernProfileView extends StatelessWidget {
               key: const PageStorageKey('modern-profile-scroll'),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
+                  constraints: const BoxConstraints(
+                    maxWidth: PlayraLayout.formWidth,
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                    padding: PlayraLayout.pagePadding(
+                      context,
+                      top: PlayraSpace.md,
+                      bottom: PlayraSpace.xxl,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _footprint(context),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: PlayraSpace.md),
                         _quickActions(context),
                         _group(context, '观看偏好', [
                           (LucideIcons.palette, '外观设置', '/settings/theme', ''),
@@ -121,12 +130,12 @@ class ModernProfileView extends StatelessWidget {
                               '',
                             ),
                         ]),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: PlayraSpace.xxl),
                         Text(
                           '${AppBrand.name} · $version',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: PlayraType.caption,
                             color: c.onSurfaceVariant,
                           ),
                         ),
@@ -146,101 +155,96 @@ class ModernProfileView extends StatelessWidget {
     final c = Theme.of(context).colorScheme;
     final empty =
         stats.watchedBangumiCount == 0 && stats.watchedEpisodeCount == 0;
-    return Container(
-      constraints: BoxConstraints(minHeight: empty ? 148 : 176),
-      decoration: BoxDecoration(
-        color: c.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: c.outline.withValues(alpha: .5)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned(
-            right: empty ? 12 : 0,
-            top: empty ? 10 : 0,
-            child: IgnorePointer(
-              child: ExcludeSemantics(
-                child: Opacity(
-                  opacity: empty ? .45 : .20,
-                  child: empty
-                      ? SvgPicture.asset(
-                          'assets/images/modern-profile-empty.svg',
-                          width: 80,
-                        )
-                      : const ModernMaterialArt(
-                          asset: 'modern-profile-header-art.png',
-                          width: 480,
-                          opacity: 1,
-                        ),
+    return PlayraCard(
+      padding: EdgeInsets.zero,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: empty ? 148 : 176),
+        child: Stack(
+          children: [
+            Positioned(
+              right: empty ? 12 : 0,
+              top: empty ? 10 : 0,
+              child: IgnorePointer(
+                child: ExcludeSemantics(
+                  child: Opacity(
+                    opacity: empty ? .45 : .20,
+                    child: empty
+                        ? SvgPicture.asset(
+                            'assets/images/modern-profile-empty.svg',
+                            width: 80,
+                          )
+                        : const ModernMaterialArt(
+                            asset: 'modern-profile-header-art.png',
+                            width: 480,
+                            opacity: 1,
+                          ),
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(right: empty ? 72 : 0),
-                  child: Column(
+            Padding(
+              padding: const EdgeInsets.all(PlayraSpace.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: empty ? 72 : 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          empty ? '你的观看足迹，从这里开始' : '观看足迹',
+                          style: const TextStyle(
+                            fontSize: PlayraType.body,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: PlayraSpace.compact),
+                        Text(
+                          empty ? '观看后，记录会保存在这里' : '每一段故事，都有迹可循',
+                          style: TextStyle(
+                            fontSize: PlayraType.caption,
+                            color: c.onSurfaceVariant,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        empty ? '你的观看足迹，从这里开始' : '观看足迹',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: _stat(
+                          context,
+                          stats.watchedBangumiCount,
+                          '有观看记录的番剧',
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        empty ? '观看后，记录会保存在这里' : '每一段故事，都有迹可循',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: c.onSurfaceVariant,
-                          height: 1.6,
+                      const SizedBox(width: PlayraSpace.md),
+                      Expanded(
+                        child: _stat(
+                          context,
+                          stats.watchedEpisodeCount,
+                          '记录过的集数',
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _stat(
-                        context,
-                        stats.watchedBangumiCount,
-                        '有观看记录的番剧',
+                  if (empty)
+                    PlayraButton.ghost(
+                      onPressed: onDiscover,
+                      child: const Text(
+                        '去发现番剧',
+                        style: TextStyle(fontSize: PlayraType.caption),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _stat(
-                        context,
-                        stats.watchedEpisodeCount,
-                        '记录过的集数',
-                      ),
-                    ),
-                  ],
-                ),
-                if (empty)
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      alignment: Alignment.centerLeft,
-                      minimumSize: const Size(48, 44),
-                    ),
-                    onPressed: onDiscover,
-                    child: const Text('去发现番剧', style: TextStyle(fontSize: 12)),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -260,11 +264,11 @@ class ModernProfileView extends StatelessWidget {
           ),
         ),
       ),
-      const SizedBox(height: 6),
+      const SizedBox(height: PlayraSpace.compact),
       Text(
         label,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: PlayraType.caption,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
           height: 1.5,
         ),
@@ -312,14 +316,17 @@ class ModernProfileView extends StatelessWidget {
           children: [
             Text(
               item.$2,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontSize: PlayraType.label,
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: vertical ? TextAlign.left : TextAlign.center,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: PlayraSpace.xs),
             Text(
               item.$3,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: PlayraType.micro,
                 height: 1.5,
                 color: c.onSurfaceVariant,
               ),
@@ -330,19 +337,19 @@ class ModernProfileView extends StatelessWidget {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(PlayraRadius.control),
             onTap: () => onOpen(item.$4),
             child: Container(
               constraints: BoxConstraints(minHeight: vertical ? 64 : 88),
               padding: EdgeInsets.symmetric(
-                vertical: 8,
-                horizontal: vertical ? 12 : 0,
+                vertical: PlayraSpace.sm,
+                horizontal: vertical ? PlayraSpace.md : 0,
               ),
               child: vertical
                   ? Row(
                       children: [
                         icon,
-                        const SizedBox(width: 12),
+                        const SizedBox(width: PlayraSpace.md),
                         Expanded(child: copy),
                         Icon(
                           LucideIcons.chevronRight,
@@ -351,7 +358,13 @@ class ModernProfileView extends StatelessWidget {
                         ),
                       ],
                     )
-                  : Column(children: [icon, const SizedBox(height: 6), copy]),
+                  : Column(
+                      children: [
+                        icon,
+                        const SizedBox(height: PlayraSpace.compact),
+                        copy,
+                      ],
+                    ),
             ),
           ),
         );
@@ -365,7 +378,7 @@ class ModernProfileView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (var i = 0; i < children.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 8),
+                  if (i > 0) const SizedBox(width: PlayraSpace.sm),
                   Expanded(child: children[i]),
                 ],
               ],
@@ -380,94 +393,43 @@ class ModernProfileView extends StatelessWidget {
   ) {
     final c = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.only(top: PlayraSpace.xxl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 2, bottom: 8),
+            padding: const EdgeInsets.only(
+              left: PlayraSpace.tiny,
+              bottom: PlayraSpace.sm,
+            ),
             child: Text(
               title,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: PlayraType.caption,
                 fontWeight: FontWeight.w600,
                 color: c.onSurfaceVariant,
               ),
             ),
           ),
-          Material(
-            color: c.surfaceContainerLow,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: c.outline.withValues(alpha: .5)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                for (var i = 0; i < items.length; i++) ...[
-                  if (i > 0)
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      indent: 46,
-                      endIndent: 14,
-                      color: c.outline.withValues(alpha: .4),
-                    ),
-                  InkWell(
-                    onTap: () => onOpen(items[i].$3),
-                    child: Container(
-                      constraints: BoxConstraints(
-                        minHeight: items[i].$4.isEmpty ? 56 : 68,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            items[i].$1,
-                            size: 20,
-                            color: c.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  items[i].$2,
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                                if (items[i].$4.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    items[i].$4,
-                                    maxLines: 4,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      height: 1.5,
-                                      color: c.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            LucideIcons.chevronRight,
-                            size: 16,
-                            color: c.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ),
+          PlayraListGroup(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                PlayraListTile(
+                  onTap: () => onOpen(items[i].$3),
+                  leading: Icon(
+                    items[i].$1,
+                    size: PlayraLayout.icon,
+                    color: c.onSurfaceVariant,
                   ),
-                ],
-              ],
-            ),
+                  title: Text(items[i].$2),
+                  subtitle: items[i].$4.isEmpty ? null : Text(items[i].$4),
+                  trailing: Icon(
+                    LucideIcons.chevronRight,
+                    size: PlayraLayout.compactIcon,
+                    color: c.onSurfaceVariant,
+                  ),
+                ),
+            ],
           ),
         ],
       ),

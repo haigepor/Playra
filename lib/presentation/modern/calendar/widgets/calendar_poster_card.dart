@@ -1,3 +1,6 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -39,19 +42,14 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => hovered = true),
       onExit: (_) => setState(() => hovered = false),
-      child: Material(
-        color: colors.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: colors.outlineVariant.withValues(alpha: .5)),
-        ),
-        clipBehavior: Clip.antiAlias,
+      child: PlayraCard(
+        padding: EdgeInsets.zero,
         child: InkWell(
           onTap: widget.onDetails,
           child: SizedBox(
             height: 146 + 100 * math.max(0, scale - 1),
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(PlayraSpace.md),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -61,7 +59,7 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                     votes: entry.item.votes,
                     hovered: hovered,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: PlayraSpace.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +81,7 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 7,
-                                  vertical: 2,
+                                  vertical: PlayraSpace.tiny,
                                 ),
                                 decoration: BoxDecoration(
                                   color: colors.primary.withValues(alpha: .09),
@@ -92,13 +90,13 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                                 child: Text(
                                   widget.collection.label,
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: PlayraType.micro,
                                     height: 1.4,
                                     color: colors.primary,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: PlayraSpace.sm),
                             ],
                             Expanded(
                               child: Text(
@@ -106,7 +104,7 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: PlayraType.small,
                                   color: colors.onSurfaceVariant,
                                 ),
                               ),
@@ -135,7 +133,7 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: PlayraType.caption,
                                             height: 1.5,
                                             color: colors.primary,
                                           ),
@@ -149,7 +147,7 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: PlayraType.small,
                                         height: 1.5,
                                         color: colors.onSurfaceVariant,
                                       ),
@@ -157,23 +155,12 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                                 ],
                               ),
                             ),
-                            IconButton(
+                            PlayraIconButton(
                               tooltip: widget.onResume != null
                                   ? '继续观看${entry.title}'
                                   : '查看${entry.title}详情',
                               onPressed: widget.onResume ?? widget.onDetails,
-                              constraints: const BoxConstraints.tightFor(
-                                width: 44,
-                                height: 44,
-                              ),
-                              style: IconButton.styleFrom(
-                                backgroundColor: widget.onResume != null
-                                    ? colors.primary.withValues(alpha: .1)
-                                    : Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
+
                               icon: Icon(
                                 widget.onResume != null
                                     ? LucideIcons.play

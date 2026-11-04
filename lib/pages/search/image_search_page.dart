@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
 
@@ -242,7 +243,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
   void _showHelp() {
     KazumiDialog.show<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => PlayraDialog(
         icon: const Icon(Icons.image_search_rounded),
         title: const Text('让截图更容易被找到'),
         content: const SingleChildScrollView(
@@ -258,11 +259,11 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
           ),
         ),
         actions: [
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () => _openExternal(Uri.parse('https://trace.moe')),
             child: const Text('访问 trace.moe'),
           ),
-          FilledButton(
+          PlayraButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('知道了'),
           ),
@@ -280,7 +281,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         title: widget.modern ? const Text('以图搜番') : null,
         backgroundColor: colors.surface,
         actions: [
-          IconButton(
+          PlayraIconButton(
             onPressed: _showHelp,
             tooltip: '搜图小贴士',
             icon: Icon(
@@ -494,7 +495,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         ),
         const SizedBox(height: 16),
         if (_useUrl) ...[
-          TextField(
+          PlayraTextField(
             controller: _urlController,
             focusNode: _urlFocus,
             readOnly: busy,
@@ -512,14 +513,15 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(widget.modern ? 12 : 16),
               ),
-              suffixIcon: IconButton(
+              suffixIcon: PlayraIconButton(
                 onPressed: busy ? null : _pasteUrl,
                 tooltip: '粘贴图片链接',
                 icon: Icon(
-                    widget.modern
-                        ? LucideIcons.clipboardPaste
-                        : Icons.content_paste_rounded,
-                    size: widget.modern ? 20 : null),
+                  widget.modern
+                      ? LucideIcons.clipboardPaste
+                      : Icons.content_paste_rounded,
+                  size: widget.modern ? 20 : null,
+                ),
               ),
             ),
           ),
@@ -589,14 +591,15 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                     ),
                   ),
                 ),
-                TextButton.icon(
+                PlayraButton.ghostIcon(
                   onPressed: busy ? null : _pickImage,
                   label: const Text('更换截图'),
                   icon: Icon(
-                      widget.modern
-                          ? LucideIcons.refreshCw
-                          : Icons.swap_horiz_rounded,
-                      size: 20),
+                    widget.modern
+                        ? LucideIcons.refreshCw
+                        : Icons.swap_horiz_rounded,
+                    size: 20,
+                  ),
                 ),
               ],
             )
@@ -635,10 +638,10 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
 
   Widget _buildPrimaryAction(bool searching) {
     final colors = Theme.of(context).colorScheme;
-    final type = Theme.of(context).textTheme;
+
     final busy = searching || _isPicking;
     final selecting = !_useUrl && _imageFile == null;
-    return FilledButton.icon(
+    return PlayraButton.icon(
       key: const ValueKey('image-search-primary'),
       onPressed: busy
           ? null
@@ -647,29 +650,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
           : _hasImage
           ? _search
           : null,
-      style: ButtonStyle(
-        minimumSize: WidgetStatePropertyAll(
-          Size.fromHeight(widget.modern ? 48 : 56),
-        ),
-        padding: const WidgetStatePropertyAll(
-          EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        ),
-        textStyle: WidgetStatePropertyAll(
-          type.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        shape: WidgetStateProperty.resolveWith(
-          (states) => RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              widget.modern
-                  ? 12
-                  : states.contains(WidgetState.pressed)
-                  ? 16
-                  : 28,
-            ),
-          ),
-        ),
-        animationDuration: _transition,
-      ),
+
       icon: searching || _isPicking
           ? LoadingIndicator(size: 24, color: colors.onSurfaceVariant)
           : Icon(

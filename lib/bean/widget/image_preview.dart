@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -189,12 +190,10 @@ class _ImageViewerState extends State<ImageViewer> {
         shape: widget.modern ? BoxShape.rectangle : BoxShape.circle,
         borderRadius: widget.modern ? BorderRadius.circular(10) : null,
       ),
-      child: IconButton(
+      child: PlayraIconButton(
         onPressed: onPressed,
         tooltip: tooltip,
-        constraints: widget.modern
-            ? const BoxConstraints(minWidth: 48, minHeight: 48)
-            : null,
+
         icon: Icon(
           icon,
           color: onPressed != null ? Colors.white : Colors.white38,
@@ -220,12 +219,10 @@ class _ImageViewerState extends State<ImageViewer> {
                 shape: widget.modern ? BoxShape.rectangle : BoxShape.circle,
                 borderRadius: widget.modern ? BorderRadius.circular(10) : null,
               ),
-              child: IconButton(
+              child: PlayraIconButton(
                 key: const ValueKey('image-preview-close'),
                 tooltip: '关闭图片预览',
-                constraints: widget.modern
-                    ? const BoxConstraints(minWidth: 48, minHeight: 48)
-                    : null,
+
                 onPressed: _closePreview,
                 icon: Icon(
                   widget.modern ? LucideIcons.x : Icons.close,

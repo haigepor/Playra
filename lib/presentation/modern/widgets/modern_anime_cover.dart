@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
@@ -67,7 +68,7 @@ class ModernAnimeCover extends StatelessWidget {
                         Text(
                           score.toStringAsFixed(1),
                           style: const TextStyle(
-                            fontSize: 10,
+                            fontSize: PlayraType.micro,
                             fontWeight: FontWeight.w700,
                             color: Color(0xffffd484),
                           ),

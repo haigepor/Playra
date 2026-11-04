@@ -1,3 +1,6 @@
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -39,17 +42,12 @@ class _LibraryCardState extends State<LibraryCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: Material(
-        color: colors.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: colors.outlineVariant.withValues(alpha: .5)),
-        ),
-        clipBehavior: Clip.antiAlias,
+      child: PlayraCard(
+        padding: EdgeInsets.zero,
         child: InkWell(
           onTap: widget.onDetails,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(PlayraSpace.md),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -60,7 +58,7 @@ class _LibraryCardState extends State<LibraryCard> {
                   showRating: widget.showRating,
                   hovered: _hovered,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: PlayraSpace.md),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, bounds) {
@@ -94,7 +92,7 @@ class _LibraryCardState extends State<LibraryCard> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 7,
-                                      vertical: 2,
+                                      vertical: PlayraSpace.tiny,
                                     ),
                                     decoration: BoxDecoration(
                                       color: colors.primary.withValues(
@@ -105,21 +103,21 @@ class _LibraryCardState extends State<LibraryCard> {
                                     child: Text(
                                       entry.status.label,
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: PlayraType.micro,
                                         color: colors.primary,
                                         height: 1.4,
                                       ),
                                     ),
                                   ),
                                   if (year != null) ...[
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: PlayraSpace.sm),
                                     Flexible(
                                       child: Text(
                                         '$year',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                          fontSize: 11,
+                                          fontSize: PlayraType.small,
                                           color: colors.onSurfaceVariant,
                                         ),
                                       ),
@@ -141,7 +139,7 @@ class _LibraryCardState extends State<LibraryCard> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontSize: 11,
+                                            fontSize: PlayraType.small,
                                             height: 1.4,
                                             color: colors.onSurfaceVariant,
                                           ),
@@ -151,7 +149,7 @@ class _LibraryCardState extends State<LibraryCard> {
                                             entry.positionLabel!,
                                             maxLines: 1,
                                             style: TextStyle(
-                                              fontSize: 11,
+                                              fontSize: PlayraType.small,
                                               height: 1.5,
                                               color: colors.primary,
                                             ),
@@ -159,34 +157,19 @@ class _LibraryCardState extends State<LibraryCard> {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: PlayraSpace.xs),
                                   Tooltip(
                                     message: hasHistory
                                         ? '继续观看${entry.title}'
                                         : '查看${entry.title}详情',
-                                    child: TextButton(
+                                    child: PlayraButton.ghost(
                                       key: ValueKey(
                                         'library-resume-${entry.item.id}',
                                       ),
                                       onPressed: hasHistory
                                           ? widget.onResume
                                           : widget.onDetails,
-                                      style: TextButton.styleFrom(
-                                        minimumSize: const Size(44, 44),
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: compact ? 8 : 10,
-                                        ),
-                                        backgroundColor: hasHistory
-                                            ? colors.primary.withValues(
-                                                alpha: .1,
-                                              )
-                                            : Colors.transparent,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                      ),
+
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -194,10 +177,12 @@ class _LibraryCardState extends State<LibraryCard> {
                                             Text(
                                               hasHistory ? '续播' : '详情',
                                               style: const TextStyle(
-                                                fontSize: 12,
+                                                fontSize: PlayraType.caption,
                                               ),
                                             ),
-                                            const SizedBox(width: 4),
+                                            const SizedBox(
+                                              width: PlayraSpace.xs,
+                                            ),
                                           ],
                                           Icon(
                                             hasHistory
@@ -217,23 +202,16 @@ class _LibraryCardState extends State<LibraryCard> {
                           Positioned(
                             right: 0,
                             top: 0,
-                            child: IconButton(
+                            child: PlayraIconButton(
                               key: ValueKey('library-manage-${entry.item.id}'),
                               tooltip: '管理${entry.title}',
-                              constraints: const BoxConstraints.tightFor(
-                                width: 44,
-                                height: 44,
-                              ),
-                              alignment: Alignment.topRight,
-                              padding: const EdgeInsets.only(top: 2),
+
                               onPressed: widget.onManage,
                               icon: widget.pending
                                   ? const SizedBox(
                                       width: 16,
                                       height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
+                                      child: PlayraSpinner(),
                                     )
                                   : Icon(
                                       LucideIcons.ellipsis,

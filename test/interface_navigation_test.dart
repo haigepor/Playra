@@ -287,6 +287,29 @@ void main() {
     }
   }
 
+  testWidgets('small-screen content stays clear of the bottom navigation', (
+    tester,
+  ) async {
+    await _mount(
+      tester,
+      _controller(style: 'modern'),
+      size: const Size(320, 640),
+      preview: true,
+      textScale: 1.6,
+    );
+    final content = tester.getRect(
+      find.byKey(const PageStorageKey('modern-home-scroll')),
+    );
+    final navigation = tester.getRect(
+      find.byKey(const ValueKey('modern-navigation')),
+    );
+    expect(content.bottom, lessThanOrEqualTo(navigation.top));
+    await tester.tap(find.text('日历'));
+    await tester.pumpAndSettle();
+    expect(find.text('modern-timeline'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'renders the modern Android home inside the actual navigation shell',
     (tester) async {
