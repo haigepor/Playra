@@ -215,7 +215,7 @@ jobs:
           mkdir -p build/playra-artifacts
           cp build/app/outputs/flutter-apk/app-release.apk build/playra-artifacts/Playra_android.apk
           tar -czf build/playra-artifacts/Playra_web.tar.gz -C build/web .
-          sha256sum build/playra-artifacts/* > build/playra-artifacts/SHA256SUMS
+          (cd build/playra-artifacts && sha256sum Playra_android.apk Playra_web.tar.gz > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
           name: Playra-build
