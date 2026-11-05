@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/bean/card/user_comments_card.dart';
 import 'package:kazumi/bean/widget/error_widget.dart';
@@ -107,10 +108,8 @@ class EpisodeCommentsView extends StatelessWidget {
                                 style:
                                     TextStyle(color: colors.onErrorContainer)),
                           ),
-                          TextButton(
+                          PlayraButton.ghost(
                             onPressed: onRefresh,
-                            style: TextButton.styleFrom(
-                                foregroundColor: colors.onErrorContainer),
                             child: const Text('重试'),
                           ),
                         ]),
@@ -186,9 +185,8 @@ class EpisodeCommentsView extends StatelessWidget {
         ],
       ]);
       final actions = Row(mainAxisSize: MainAxisSize.min, children: [
-        TextButton.icon(
+        PlayraButton.ghostIcon(
           onPressed: comments.length > 1 ? onToggleSort : null,
-          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
           icon: Icon(
               isAscending
                   ? Icons.arrow_upward_rounded
@@ -197,25 +195,16 @@ class EpisodeCommentsView extends StatelessWidget {
           label: Text(isAscending ? '最早优先' : '最新优先'),
         ),
         const SizedBox(width: 4),
-        SizedBox.square(
-          dimension: 48,
-          child: IconButton.filledTonal(
-            tooltip: isLoading ? '正在加载评论' : '刷新评论',
-            onPressed: isLoading ? null : onRefresh,
-            style: IconButton.styleFrom(
-              backgroundColor: colors.secondaryContainer,
-              disabledBackgroundColor: colors.secondaryContainer,
-              foregroundColor: colors.onSecondaryContainer,
-              disabledForegroundColor: colors.onSecondaryContainer,
-            ),
-            icon: isLoading
-                ? LoadingIndicator(
-                    size: 24,
-                    color: colors.onSecondaryContainer,
-                    semanticsLabel: '正在加载评论',
-                  )
-                : const Icon(Icons.refresh_rounded, size: 24),
-          ),
+        PlayraIconButton(
+          tooltip: isLoading ? '正在加载评论' : '刷新评论',
+          onPressed: isLoading ? null : onRefresh,
+          icon: isLoading
+              ? LoadingIndicator(
+                  size: 20,
+                  color: colors.onSecondaryContainer,
+                  semanticsLabel: '正在加载评论',
+                )
+              : const Icon(Icons.refresh_rounded, size: 20),
         ),
       ]);
       if (constraints.maxWidth < 310 ||
@@ -288,14 +277,8 @@ class _EpisodeHeader extends StatelessWidget {
                             color: colors.onPrimary,
                             fontWeight: FontWeight.w700)),
                   ),
-                  FilledButton.icon(
+                  PlayraButton.outlineIcon(
                     onPressed: onSelectEpisode,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      backgroundColor: colors.surface,
-                      foregroundColor: colors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
                     icon: const Icon(Icons.video_library_outlined, size: 18),
                     label: const Text('切换分集'),
                   ),

@@ -1,4 +1,5 @@
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
 
@@ -224,15 +225,13 @@ class _LogsPageState extends State<LogsPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        FloatingActionButton(
-          heroTag: null,
+        PlayraFloatingActionButton(
           onPressed: _clearLogs,
           tooltip: '清空日志',
           child: const Icon(Icons.clear_all),
         ),
         const SizedBox(width: 15),
-        FloatingActionButton(
-          heroTag: null,
+        PlayraFloatingActionButton(
           onPressed: _copyLogs,
           tooltip: '复制日志',
           child: const Icon(Icons.copy),

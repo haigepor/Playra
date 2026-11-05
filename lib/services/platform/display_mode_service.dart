@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/services/platform/browser_display.dart';
+import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:window_manager/window_manager.dart';
@@ -14,24 +15,25 @@ class DisplayModeService {
   static Object? _systemBarsOwner;
   static bool _systemBarsHidden = false;
 
-  static Future<void> applyVideoFullscreen(bool fullscreen) {
-    if (kIsWeb) return _attempt(() => setBrowserFullscreen(fullscreen));
+  static Future<void> applyVideoFullscreen(VideoFullscreenMode mode) {
+    if (kIsWeb) return _attempt(() => setBrowserFullscreen(mode.isFullscreen));
     return _pendingFullscreen = _pendingFullscreen.then((_) async {
       if (isDesktop()) {
-        await _attempt(() => windowManager.setFullScreen(fullscreen));
+        await _attempt(() => windowManager.setFullScreen(mode.isFullscreen));
         return;
       }
 
       // Restore system orientation on exit, including an existing landscape.
+      final orientations = switch (mode) {
+        VideoFullscreenMode.none => const <DeviceOrientation>[],
+        VideoFullscreenMode.landscape => const [
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ],
+        VideoFullscreenMode.portrait => const [DeviceOrientation.portraitUp],
+      };
       await _attempt(
-        () => SystemChrome.setPreferredOrientations(
-          fullscreen
-              ? [
-                  DeviceOrientation.landscapeLeft,
-                  DeviceOrientation.landscapeRight,
-                ]
-              : [],
-        ),
+        () => SystemChrome.setPreferredOrientations(orientations),
       );
     });
   }

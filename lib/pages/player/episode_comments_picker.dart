@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/modules/bangumi/episode_item.dart';
 
 class EpisodeCommentsPicker extends StatelessWidget {
@@ -15,10 +17,14 @@ class EpisodeCommentsPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final type = Theme.of(context).textTheme;
+    final tokens = PlayraTokens.of(context);
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      backgroundColor: colors.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      backgroundColor: tokens.surfaceRaised,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(PlayraRadius.overlay),
+        side: BorderSide(color: tokens.borderSubtle),
+      ),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
@@ -52,46 +58,49 @@ class EpisodeCommentsPicker extends StatelessWidget {
                   final title =
                       info.nameCn.isNotEmpty ? info.nameCn : info.name;
                   final selected = index + 1 == selectedEpisode;
-                  return Material(
-                    color: selected
-                        ? colors.primaryContainer
-                        : colors.surfaceContainerHighest,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(index == 0 ? 20 : 4),
-                      bottom: Radius.circular(
-                          index == episodes.length - 1 ? 20 : 4),
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? tokens.primaryContainer
+                          : tokens.surface,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(index == 0 ? 20 : 4),
+                        bottom: Radius.circular(
+                            index == episodes.length - 1 ? 20 : 4),
+                      ),
+                      border: Border.all(
+                        color: selected ? tokens.primary : tokens.borderSubtle,
+                      ),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ListTile(
-                      selected: selected,
-                      selectedColor: colors.onPrimaryContainer,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                    child: PlayraListTile(
+                      onTap: () => Navigator.pop(context, index + 1),
                       title: Text(
                         '${info.readType().toUpperCase()} ${info.episode}'
                             .trim(),
                         style: type.labelLarge?.copyWith(
                           color: selected
-                              ? colors.onPrimaryContainer
-                              : colors.primary,
+                              ? tokens.primary
+                              : tokens.foreground,
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                         ),
                       ),
                       subtitle: title.isEmpty
                           ? null
-                          : Text(title,
-                              style: type.bodyLarge?.copyWith(
+                          : Text(
+                              title,
+                              style: type.bodyMedium?.copyWith(
                                 color: selected
-                                    ? colors.onPrimaryContainer
-                                    : colors.onSurface,
-                              )),
+                                    ? tokens.foreground
+                                    : tokens.foregroundMuted,
+                              ),
+                            ),
                       trailing: Icon(
                         selected
                             ? Icons.check_circle_rounded
                             : Icons.chevron_right_rounded,
                         color:
-                            selected ? colors.primary : colors.onSurfaceVariant,
+                            selected ? tokens.primary : tokens.foregroundMuted,
                       ),
-                      onTap: () => Navigator.pop(context, index + 1),
                     ),
                   );
                 },
@@ -101,9 +110,8 @@ class EpisodeCommentsPicker extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               child: Align(
                 alignment: Alignment.centerRight,
-                child: TextButton(
+                child: PlayraButton.ghost(
                   onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
                   child: const Text('取消'),
                 ),
               ),

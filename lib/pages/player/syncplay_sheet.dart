@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 
 import 'package:kazumi/bean/dialog/adaptive_bottom_sheet.dart';
 import 'package:kazumi/bean/dialog/material_bottom_sheet.dart';
@@ -113,7 +114,7 @@ class _SyncPlaySheetScaffold extends StatelessWidget {
                     children: [
                       primaryAction!,
                       const SizedBox(width: 8),
-                      IconButton(
+                      PlayraIconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         tooltip: '关闭',
                         icon: const Icon(Icons.close_rounded),
@@ -136,7 +137,7 @@ class _SyncPlaySheetScaffold extends StatelessWidget {
               child: Row(
                 children: [
                   if (showCancel)
-                    TextButton(
+                    PlayraButton.ghost(
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('取消'),
                     ),
@@ -160,8 +161,6 @@ class _SyncPlayHomeSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
     return Observer(builder: (context) {
       // Read all observables here; the deferred body builder is not tracked.
       final bool hasSession = playerController.syncplay.hasSession;
@@ -175,16 +174,12 @@ class _SyncPlayHomeSheet extends StatelessWidget {
         title: '一起看',
         description: '和朋友同步看番',
         primaryAction: hasSession
-            ? FilledButton.tonalIcon(
+            ? PlayraButton.destructive(
                 onPressed: () async {
                   await playerController.exitSyncPlayRoom();
                 },
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.errorContainer,
-                  foregroundColor: colorScheme.onErrorContainer,
-                ),
                 icon: const Icon(Icons.logout_rounded),
-                label: Text(connecting ? '取消连接' : '断开连接'),
+                child: Text(connecting ? '取消连接' : '断开连接'),
               )
             : null,
         bodyBuilder: (context, compact) {
@@ -270,8 +265,7 @@ class _SyncPlayHomeSheet extends StatelessWidget {
           ],
         )),
         const SizedBox(height: 16),
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        PlayraListTile(
           title: const Text('同步服务器'),
           subtitle: Text(_readEndPoint(), overflow: TextOverflow.ellipsis),
           trailing: const Icon(Icons.chevron_right_rounded),
@@ -484,11 +478,11 @@ class _SyncPlayRoomSheetState extends State<_SyncPlayRoomSheet> {
       title: isCreate ? '创建房间' : '加入房间',
       description: isCreate ? '将房间号分享给好友' : '输入好友的房间号',
       showCancel: true,
-      primaryAction: FilledButton.icon(
+      primaryAction: PlayraButton(
         onPressed: _submit,
         icon: Icon(
             isCreate ? Icons.play_circle_outline_rounded : Icons.login_rounded),
-        label: Text(isCreate ? '创建并加入' : '加入房间'),
+        child: Text(isCreate ? '创建并加入' : '加入房间'),
       ),
       bodyBuilder: (context, compact) {
         final Widget lead = isCreate
@@ -496,11 +490,10 @@ class _SyncPlayRoomSheetState extends State<_SyncPlayRoomSheet> {
                 room: _createdRoom,
                 label: '房间号',
                 trailing: [
-                  IconButton(
+                  PlayraIconButton(
                     onPressed: () =>
                         setState(() => _createdRoom = _generateRoomNumber()),
                     tooltip: '重新生成',
-                    color: Theme.of(context).colorScheme.onSurface,
                     icon: const Icon(Icons.refresh_rounded),
                   ),
                   _CopyButton(value: _createdRoom),
@@ -637,7 +630,7 @@ class _SyncPlayServerSheetState extends State<_SyncPlayServerSheet> {
       title: '同步服务器',
       description: '房间成员需使用同一服务器',
       showCancel: true,
-      primaryAction: FilledButton(
+      primaryAction: PlayraButton(
         onPressed: _save,
         child: const Text('保存'),
       ),
@@ -656,7 +649,7 @@ class _SyncPlayServerSheetState extends State<_SyncPlayServerSheet> {
             ]),
             if (_selectedEndPoint == _customOption) ...[
               const SizedBox(height: 16),
-              TextField(
+              PlayraTextField(
                 controller: _customEndPointController,
                 autofocus: _focusCustomEndPoint,
                 keyboardType: TextInputType.url,
@@ -685,8 +678,7 @@ class _SyncPlayServerSheetState extends State<_SyncPlayServerSheet> {
     final bool selected = _selectedEndPoint == endPoint;
     final bool isCustom = endPoint == _customOption;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+    return PlayraListTile(
       leading: Icon(
         isCustom ? Icons.edit_outlined : Icons.public_rounded,
         color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
@@ -797,10 +789,9 @@ class _CopyButtonState extends State<_CopyButton> {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
+    return PlayraIconButton(
       onPressed: _copy,
       tooltip: _copied ? '已复制' : '复制',
-      color: Theme.of(context).colorScheme.onSurface,
       icon: Icon(_copied ? Icons.check_rounded : Icons.copy_rounded),
     );
   }

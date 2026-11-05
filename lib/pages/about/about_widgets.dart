@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/split_list_row.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 
 void _showMessage(BuildContext context, String message) {
   KazumiDialog.showToast(context: context, message: message);
@@ -54,6 +55,24 @@ class AboutLinkTile extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final modern = ModernSettingsScope.isActiveOf(context);
+    if (PlayraComponentScope.enabledOf(context)) {
+      return PlayraListTile(
+        title: Text(title),
+        subtitle: subtitle == null ? null : Text(subtitle!),
+        onTap: () => context.pushNamed(_route),
+        leading: StateIconBadge(
+          icon: icon,
+          size: 36,
+          iconSize: 20,
+          backgroundColor: colors.secondaryContainer,
+          foregroundColor: colors.onSecondaryContainer,
+        ),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          size: PlayraLayout.compactIcon,
+        ),
+      );
+    }
     return InkWell(
       onTap: () => context.pushNamed(_route),
       onHighlightChanged: SplitListRow.pressReporterOf(context),

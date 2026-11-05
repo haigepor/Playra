@@ -50,7 +50,9 @@ class ProxyAwareImageCacheManager extends CacheManager with ImageCacheManager {
   }
 
   static IOClient _createHttpClient() {
-    final client = HttpClient();
+    final client = HttpClient()
+      // 污染域名的 TCP/TLS 常表现为长时间挂起；限时后交给镜像回退。
+      ..connectionTimeout = const Duration(seconds: 8);
     final proxy = _currentProxy();
     if (proxy != null) {
       client.findProxy = (_) => 'PROXY ${proxy.$1}:${proxy.$2}';

@@ -1,4 +1,5 @@
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -286,7 +287,6 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
   @override
   Widget build(BuildContext context) => Observer(
     builder: (context) {
-      final colors = Theme.of(context).colorScheme;
       final catalog = _controller.pluginHTTPList.toList();
       final installed = catalog
           .where(
@@ -330,14 +330,14 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
                       tags: [
                         RuleTag(
                           label: item.version,
-                          background: colors.surfaceContainerHighest,
-                          foreground: colors.onSurfaceVariant,
+                          background: PlayraTokens.of(context).surface,
+                          foreground: PlayraTokens.of(context).foregroundMuted,
                         ),
                         if (item.antiCrawlerEnabled)
                           RuleTag(
                             label: '含验证支持',
-                            background: colors.tertiaryContainer,
-                            foreground: colors.onTertiaryContainer,
+                            background: PlayraTokens.of(context).primaryContainer,
+                            foreground: PlayraTokens.of(context).primary,
                           ),
                       ],
                       caption: item.lastUpdate > 0

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 Duration sdkMotion(BuildContext context, [int milliseconds = 220]) =>
@@ -185,9 +186,8 @@ class PlaybackLineSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-                IconButton(
+                PlayraIconButton(
                   tooltip: '关闭线路选择',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   onPressed: onClose,
                   icon: const Icon(Icons.close_rounded),
                 ),
@@ -204,7 +204,7 @@ class PlaybackLineSheet extends StatelessWidget {
             child: automaticOption,
           ),
           const SizedBox(height: 4),
-          const Divider(height: 1),
+          const PlayraDivider(),
           Flexible(
             child: ListView(
               shrinkWrap: true,
@@ -213,7 +213,7 @@ class PlaybackLineSheet extends StatelessWidget {
             ),
           ),
           if (quality != null) ...[
-            const Divider(height: 1),
+            const PlayraDivider(),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
               child: quality!,

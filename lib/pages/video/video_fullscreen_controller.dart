@@ -1,15 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 import 'package:mobx/mobx.dart';
 
 /// Explicit fullscreen owns a local history entry; rotation does not.
+///
+/// `landscape` preserves the previous behaviour. `portrait` is a manual
+/// alternative entered from the player's top bar; it uses the same history
+/// entry so back always exits fullscreen before leaving the page.
 class VideoFullscreenController {
   VideoFullscreenController({
-    required Future<void> Function(bool fullscreen) applyFullscreen,
+    required Future<void> Function(VideoFullscreenMode mode) applyFullscreen,
   }) : _applyFullscreen = applyFullscreen;
 
-  final Future<void> Function(bool fullscreen) _applyFullscreen;
+  final Future<void> Function(VideoFullscreenMode mode) _applyFullscreen;
+  final Observable<VideoFullscreenMode> _mode = Observable(
+    VideoFullscreenMode.none,
+  );
   final Observable<LocalHistoryEntry?> _entry = Observable(null);
   ModalRoute<dynamic>? _route;
   int _revision = 0;
@@ -17,26 +25,45 @@ class VideoFullscreenController {
   Future<void> _lastRequest = Future.value();
   Future<void>? _closeFuture;
 
-  bool get isFullscreen => _entry.value != null;
+  VideoFullscreenMode get mode => _mode.value;
+  bool get isFullscreen => mode.isFullscreen;
 
   void attach(ModalRoute<dynamic> route) {
     assert(_route == null || identical(_route, route));
     _route = route;
   }
 
-  Future<void> toggle() => setFullscreen(!isFullscreen);
+  /// Default fullscreen button: normal page <-> landscape fullscreen.
+  Future<void> toggle() =>
+      setMode(isFullscreen ? VideoFullscreenMode.none : VideoFullscreenMode.landscape);
 
-  Future<void> setFullscreen(bool fullscreen) =>
-      _setFullscreen(fullscreen, updatePlatform: true);
+  /// Top-bar button: normal/landscape -> portrait; portrait -> exit.
+  Future<void> togglePortrait() => setMode(
+    mode == VideoFullscreenMode.portrait
+        ? VideoFullscreenMode.none
+        : VideoFullscreenMode.portrait,
+  );
 
-  Future<void> _setFullscreen(bool fullscreen, {required bool updatePlatform}) {
-    if (_closeFuture != null || fullscreen == isFullscreen) return _lastRequest;
+  Future<void> setFullscreen(bool fullscreen) => setMode(
+    fullscreen ? VideoFullscreenMode.landscape : VideoFullscreenMode.none,
+  );
+
+  Future<void> setMode(VideoFullscreenMode next) =>
+      _setMode(next, updatePlatform: true);
+
+  Future<void> _setMode(
+    VideoFullscreenMode next, {
+    required bool updatePlatform,
+  }) {
+    if (_closeFuture != null || next == mode) return _lastRequest;
     final route = _route;
     if (route == null) {
       throw StateError('Attach the video route before entering fullscreen.');
     }
     _revision++;
-    if (fullscreen) {
+    final wasFullscreen = isFullscreen;
+    final willFullscreen = next.isFullscreen;
+    if (!wasFullscreen && willFullscreen) {
       late final LocalHistoryEntry entry;
       entry = LocalHistoryEntry(
         impliesAppBarDismissal: false,
@@ -44,15 +71,23 @@ class VideoFullscreenController {
           if (!identical(_entry.value, entry)) return;
           _revision++;
           _setEntry(null);
-          unawaited(_requestFullscreen(false));
+          _setModeValue(VideoFullscreenMode.none);
+          unawaited(_requestFullscreen(VideoFullscreenMode.none));
         },
       );
       route.addLocalHistoryEntry(entry);
       _setEntry(entry);
-    } else {
+    } else if (wasFullscreen && !willFullscreen) {
       _removeEntry();
+    } else if (!wasFullscreen) {
+      _setEntry(null);
     }
-    return updatePlatform ? _requestFullscreen(fullscreen) : Future.value();
+    _setModeValue(next);
+    return updatePlatform ? _requestFullscreen(next) : Future.value();
+  }
+
+  void _setModeValue(VideoFullscreenMode value) {
+    runInAction(() => _mode.value = value);
   }
 
   void _setEntry(LocalHistoryEntry? entry) {
@@ -68,7 +103,13 @@ class VideoFullscreenController {
   void onDesktopFullscreenChanged(bool fullscreen) {
     // Ignore acknowledgements of commands still in flight.
     if (_pendingRequests != 0) return;
-    unawaited(_setFullscreen(fullscreen, updatePlatform: false));
+    if (!fullscreen) {
+      unawaited(_setMode(VideoFullscreenMode.none, updatePlatform: false));
+    } else if (!isFullscreen) {
+      unawaited(
+        _setMode(VideoFullscreenMode.landscape, updatePlatform: false),
+      );
+    }
   }
 
   Future<void> initializeDesktop(Future<bool> Function() readFullscreen) async {
@@ -77,9 +118,9 @@ class VideoFullscreenController {
     if (revision == _revision) onDesktopFullscreenChanged(fullscreen);
   }
 
-  Future<void> _requestFullscreen(bool fullscreen) {
+  Future<void> _requestFullscreen(VideoFullscreenMode mode) {
     _pendingRequests++;
-    return _lastRequest = _applyFullscreen(fullscreen).whenComplete(() {
+    return _lastRequest = _applyFullscreen(mode).whenComplete(() {
       _pendingRequests--;
     });
   }
@@ -93,7 +134,8 @@ class VideoFullscreenController {
   Future<void> detach() {
     _revision++;
     _removeEntry();
+    _setModeValue(VideoFullscreenMode.none);
     _route = null;
-    return _requestFullscreen(false);
+    return _requestFullscreen(VideoFullscreenMode.none);
   }
 }

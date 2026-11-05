@@ -85,7 +85,9 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: colors.primary.withValues(alpha: .09),
-                                  borderRadius: BorderRadius.circular(5),
+                                  borderRadius: BorderRadius.circular(
+                                    PlayraRadius.thumbnail,
+                                  ),
                                 ),
                                 child: Text(
                                   widget.collection.label,

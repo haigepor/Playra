@@ -150,9 +150,14 @@ ThemeData playraTheme(
     textTheme: typography,
     iconTheme: IconThemeData(color: t.mutedForeground, size: PlayraLayout.icon),
     splashFactory: NoSplash.splashFactory,
-    highlightColor: t.foreground.withValues(alpha: .035),
-    hoverColor: t.foreground.withValues(alpha: .025),
-    focusColor: t.primary.withValues(alpha: .12),
+    // 交互反馈交给控件自身的选中态/缩放/文字变化，不叠加按压、悬停或焦点底色。
+    highlightColor: Colors.transparent,
+    hoverColor: Colors.transparent,
+    focusColor: Colors.transparent,
+    tabBarTheme: base.tabBarTheme.copyWith(
+      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+      splashFactory: NoSplash.splashFactory,
+    ),
     dividerColor: t.border.withValues(alpha: .4),
     appBarTheme: base.appBarTheme.copyWith(
       backgroundColor: t.background,

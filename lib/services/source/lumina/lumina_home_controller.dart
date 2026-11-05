@@ -203,10 +203,11 @@ class LuminaHomeController extends ChangeNotifier {
       unawaited(
         service
             .banners(id, cancel: bannerCancel)
-            .then((value) {
+            .then((value) async {
               if (current(generation, cancel) && !bannerCancel.isCancelled) {
                 banners = value;
                 notifyListeners();
+                await _fillBannerCovers(value, generation, bannerCancel);
               }
             })
             .catchError((Object _) {
@@ -241,6 +242,30 @@ class LuminaHomeController extends ChangeNotifier {
       if (current(generation, cancel)) {
         loading = false;
         notifyListeners();
+      }
+    }
+  }
+
+  /// banner 接口只返回 id/videoId/title/cover，部分条目 cover 为空；
+  /// 用作品详情补图，最多补 5 个，失败时保留占位。
+  Future<void> _fillBannerCovers(
+    List<LuminaBanner> source,
+    int generation,
+    CancelToken cancel,
+  ) async {
+    final missing = source.where((banner) => banner.cover.isEmpty).take(5);
+    for (final banner in missing) {
+      try {
+        final video = await service.detail(banner.videoId, cancel: cancel);
+        if (!current(generation, cancel) || video.cover.isEmpty) continue;
+        final index = banners.indexWhere(
+          (item) => item.videoId == banner.videoId,
+        );
+        if (index < 0) continue;
+        banners = [...banners]..[index] = banner.withCover(video.cover);
+        notifyListeners();
+      } catch (_) {
+        // 详情补图失败时保留占位，不影响其他轮播内容。
       }
     }
   }

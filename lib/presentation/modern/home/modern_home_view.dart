@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:shadcn_ui/shadcn_ui.dart';
-import 'package:forui/forui.dart' as f;
 import '../modern_layout.dart';
 import '../widgets/modern_page_art.dart';
 import '../widgets/modern_section_mark.dart';
@@ -286,10 +285,12 @@ class _ModernHomeViewState extends State<ModernHomeView> {
     required bool failed,
     required String emptyMessage,
     VoidCallback? onRetry,
+    int typeId = 0,
   }) {
     final source = whisklet;
     if (source == null) return null;
     final cards = _whiskletCards(works);
+    final style = HomeStyle.ofTid(typeId);
     return _ChannelRail(
       id: id,
       title: title,
@@ -302,6 +303,11 @@ class _ModernHomeViewState extends State<ModernHomeView> {
         controller,
         onDetails,
         readCards: () => cards,
+        sourceUpdates: style != null ? source : null,
+        sourceLoadMore: style != null ? () => source.loadMore(style) : null,
+        sourceHasMore: style != null ? () => source.hasMore(style) == true : null,
+        sourceLoading: style != null ? () => source.loading(style) == true : null,
+        sourceFailed: style != null ? () => source.failed(style) == true : null,
       ),
       loading: loading,
       failed: failed,
@@ -424,9 +430,22 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                   ? (refreshAnime?.call() ??
                                         anime?.bootstrap(force: true))
                                   : null;
+                              final whiskletRefresh = whisklet != null
+                                  ? (controller.feed == HomeFeed.recommended
+                                      ? whisklet!.loadShelves(refresh: true)
+                                      : controller.feed == HomeFeed.popular
+                                          ? whisklet!.loadHot(refresh: true)
+                                          : controller.feed.isWhiskletStyle
+                                              ? whisklet!.loadStyle(
+                                                  controller.feed.style!,
+                                                  refresh: true,
+                                                )
+                                              : null)
+                                  : null;
                               await Future.wait([
                                 controller.refresh(),
                                 ?animeRefresh,
+                                ?whiskletRefresh,
                               ]);
                             },
                             child: NotificationListener<ScrollNotification>(
@@ -597,6 +616,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                             loading: false,
                                             failed: false,
                                             emptyMessage: '暂无片目',
+                                            typeId: shelf.typeId,
                                           ),
                                       if (controller.feed == HomeFeed.anime)
                                         ?_whiskletRail(
@@ -955,19 +975,25 @@ class _FeedTabsState extends State<_FeedTabs> {
             Semantics(
               key: ValueKey('home-feed-${feed.name}'),
               selected: feed == selected,
-              child: f.FTappable(
+              child: Material(
                 key: _keys[feed],
-                onPress: () => widget.controller.selectFeed(feed),
-                child: SizedBox(
-                  height: height,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: widget.compact
-                          ? PlayraSpace.xs
-                          : PlayraSpace.compact,
-                    ),
-                    child: Center(
-                      child: Text(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(PlayraTokens.radiusSm),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(PlayraTokens.radiusSm),
+                  // 分类切换只用文字颜色/字重表达选中，不显示悬停、焦点或按压底色。
+                  overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+                  onTap: () => widget.controller.selectFeed(feed),
+                  child: SizedBox(
+                    height: height,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: widget.compact
+                            ? PlayraSpace.xs
+                            : PlayraSpace.compact,
+                      ),
+                      child: Center(
+                        child: Text(
                         feed.label,
                         maxLines: 1,
                         softWrap: false,
@@ -986,7 +1012,8 @@ class _FeedTabsState extends State<_FeedTabs> {
                 ),
               ),
             ),
-            if (feed != feeds.last) SizedBox(width: widget.compact ? 6 : 8),
+          ),
+          if (feed != feeds.last) SizedBox(width: widget.compact ? 6 : 8),
           ],
         ],
       ),
@@ -1469,17 +1496,47 @@ class _SearchEntry extends StatelessWidget {
   final VoidCallback onSearch;
 
   @override
-  Widget build(BuildContext context) => f.FButton(
-    key: const ValueKey('home-search'),
-    onPress: onSearch,
-    variant: f.FButtonVariant.secondary,
-    size: f.FButtonSizeVariant.lg,
-    mainAxisSize: MainAxisSize.max,
-    semanticsLabel: '搜索动漫或关键词',
-    suffix: const Icon(LucideIcons.search, size: PlayraLayout.compactIcon),
-    builder: (_, _, _, _, _, child) => Expanded(child: child!),
-    child: const Text('搜索动漫或关键词', maxLines: 1, overflow: TextOverflow.ellipsis),
-  );
+  Widget build(BuildContext context) {
+    final tokens = context.playraTokens;
+    return Material(
+      key: const ValueKey('home-search'),
+      color: tokens.surfaceRaised,
+      borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onSearch,
+        borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+            border: Border.all(color: tokens.borderSubtle),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '搜索动漫或关键词',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: tokens.foregroundMuted,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Icon(
+                LucideIcons.search,
+                size: PlayraLayout.compactIcon,
+                color: tokens.foregroundMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _RecommendationBento extends StatelessWidget {
@@ -1606,31 +1663,34 @@ class _BentoCardState extends State<_BentoCard> {
     ),
   );
 
-  Widget _rating() => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const Icon(LucideIcons.star, size: 12, color: Color(0xffe7b65c)),
-      const SizedBox(width: PlayraSpace.xs),
-      Flexible(
-        child: Text(
-          widget.item.ratingScore > 0
-              ? widget.item.ratingScore.toStringAsFixed(1)
-              : '暂无评分',
-          semanticsLabel: widget.item.ratingScore > 0
-              ? '评分 ${widget.item.ratingScore.toStringAsFixed(1)}'
-              : '暂无评分',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: PlayraType.small,
-            height: 1.2,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+  Widget _rating() {
+    final tokens = PlayraTokens.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(LucideIcons.star, size: 12, color: tokens.rankGold),
+        const SizedBox(width: PlayraSpace.xs),
+        Flexible(
+          child: Text(
+            widget.item.ratingScore > 0
+                ? widget.item.ratingScore.toStringAsFixed(1)
+                : '暂无评分',
+            semanticsLabel: widget.item.ratingScore > 0
+                ? '评分 ${widget.item.ratingScore.toStringAsFixed(1)}'
+                : '暂无评分',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: PlayraType.small,
+              height: 1.2,
+              fontWeight: FontWeight.w600,
+              color: tokens.mutedForeground,
+            ),
           ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1673,7 +1733,9 @@ class _BentoCardState extends State<_BentoCard> {
                           SizedBox(
                             width: coverWidth - 8,
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(9),
+                              borderRadius: BorderRadius.circular(
+                                PlayraRadius.thumbnail,
+                              ),
                               child: _cover(
                                 coverWidth - 8,
                                 bounds.maxHeight - 16,
@@ -1894,7 +1956,9 @@ class _ContinueCard extends StatelessWidget {
                     width: 52,
                     height: 74,
                     type: 'bg',
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(
+                      PlayraRadius.thumbnail,
+                    ),
                   ),
                   const SizedBox(width: PlayraSpace.md),
                   Expanded(
@@ -1997,6 +2061,7 @@ class _PosterCardState extends State<_PosterCard> {
         );
 
   Widget _buildCard(BuildContext context) {
+    final tokens = PlayraTokens.of(context);
     final item = widget.item;
     final airing = item.metadata == null
         ? item.status
@@ -2014,13 +2079,13 @@ class _PosterCardState extends State<_PosterCard> {
           key: ValueKey('home-poster-${item.id}'),
           onTap: widget.onTap,
           hoverColor: Colors.transparent,
-          borderRadius: BorderRadius.circular(PlayraRadius.control),
+          borderRadius: BorderRadius.circular(PlayraRadius.poster),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               LayoutBuilder(
                 builder: (context, bounds) => ClipRRect(
-                  borderRadius: BorderRadius.circular(PlayraRadius.control),
+                  borderRadius: BorderRadius.circular(PlayraRadius.poster),
                   child: SizedBox(
                     width: bounds.maxWidth,
                     height: bounds.maxWidth * 1.42,
@@ -2076,10 +2141,12 @@ class _PosterCardState extends State<_PosterCard> {
                               horizontal: PlayraSpace.compact,
                               vertical: 5,
                             ),
-                            decoration: const BoxDecoration(
-                              color: Color(0xffe7b65c),
-                              borderRadius: BorderRadius.only(
-                                bottomRight: Radius.circular(9),
+                            decoration: BoxDecoration(
+                              color: tokens.rankGold,
+                              borderRadius: const BorderRadius.only(
+                                bottomRight: Radius.circular(
+                                  PlayraRadius.thumbnail,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -2089,8 +2156,8 @@ class _PosterCardState extends State<_PosterCard> {
                               semanticsLabel: item.ratingScore > 0
                                   ? '评分 ${item.ratingScore.toStringAsFixed(1)}'
                                   : '暂无评分',
-                              style: const TextStyle(
-                                color: Color(0xff272017),
+                              style: TextStyle(
+                                color: tokens.warningContainer,
                                 fontSize: PlayraType.small,
                                 height: 1.2,
                                 fontWeight: FontWeight.w800,
@@ -2146,13 +2213,16 @@ class _EmptyFeed extends StatelessWidget {
   final String message;
   final VoidCallback retry;
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(PlayraSpace.xl),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(22),
-    ),
+  Widget build(BuildContext context) {
+    final tokens = PlayraTokens.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(PlayraSpace.xl),
+      decoration: BoxDecoration(
+        color: tokens.surfaceRaised,
+        borderRadius: BorderRadius.circular(PlayraRadius.hero),
+        border: Border.all(color: tokens.borderSubtle),
+      ),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -2176,6 +2246,7 @@ class _EmptyFeed extends StatelessWidget {
       ],
     ),
   );
+  }
 }
 
 class _LoadingFeature extends StatelessWidget {

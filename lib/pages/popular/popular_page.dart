@@ -121,7 +121,8 @@ class _PopularPageState extends State<PopularPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: PlayraFloatingActionButton(
+        tooltip: '回到顶部',
         onPressed: () => scrollController.animateTo(
           0,
           duration: const Duration(milliseconds: 350),

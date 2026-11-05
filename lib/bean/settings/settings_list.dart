@@ -1,7 +1,6 @@
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart' as f;
 
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/bean/widget/split_list_row.dart';
@@ -207,11 +206,11 @@ class SettingsCategoryTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final modern = ModernSettingsScope.isActiveOf(context);
     if (PlayraComponentScope.enabledOf(context)) {
-      return f.FTile(
+      return PlayraListTile(
         title: Text(title),
         subtitle: Text(description),
-        onPress: onTap,
-        prefix: DecoratedBox(
+        onTap: onTap,
+        leading: DecoratedBox(
           decoration: BoxDecoration(
             color: colorScheme.secondaryContainer,
             borderRadius: BorderRadius.circular(PlayraRadius.control),
@@ -225,7 +224,7 @@ class SettingsCategoryTile extends StatelessWidget {
             ),
           ),
         ),
-        suffix: const Icon(
+        trailing: const Icon(
           Icons.chevron_right_rounded,
           size: PlayraLayout.compactIcon,
         ),
@@ -554,16 +553,10 @@ class SettingsTile<T> extends StatelessWidget {
         ),
       ),
     );
-    return forui
-        ? f.FTile.raw(
-            onPress: _tapHandler(context),
-            enabled: enabled,
-            child: content,
-          )
-        : InkWell(
-            onTap: _tapHandler(context),
-            onHighlightChanged: SplitListRow.pressReporterOf(context),
-            child: content,
-          );
+    return InkWell(
+      onTap: _tapHandler(context),
+      onHighlightChanged: SplitListRow.pressReporterOf(context),
+      child: content,
+    );
   }
 }

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -619,7 +621,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
           onSelectSource: choosingSource
               ? null
               : () => chooseSource(context),
-          trailing: IconButton(
+          trailing: PlayraIconButton(
             tooltip: '高级选源',
             onPressed: choosingSource ? null : () => chooseSource(context),
             icon: const Icon(Icons.more_horiz_rounded, size: 20),
@@ -772,14 +774,14 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                 )
               else if (!ready) ...[
                 if (!failed)
-                  TextButton(
+                  PlayraButton.ghost(
                     onPressed: () {
                       Navigator.of(sheetContext).pop();
                       unawaited(chooseSource(pageContext));
                     },
                     child: const Text('手动确认'),
                   ),
-                IconButton(
+                PlayraIconButton(
                   tooltip: '重试 ${plugin.name}',
                   onPressed: () => sourceSession.prepare(plugin, retry: true),
                   icon: const Icon(Icons.refresh_rounded),
@@ -993,42 +995,45 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         playerController: widget.playerController,
         historyController: widget.historyController,
         downloadController: widget.downloadController,
-        idlePlayerBuilder: (context) => Stack(
-          fit: StackFit.expand,
-          children: [
-            PlayerCover(url: item.images['large'] ?? '', player: true),
-            const ColoredBox(color: Color(0x66000000)),
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    container: true,
-                    label: choosingSource
-                        ? '正在自动匹配来源'
-                        : resumeCandidate != null
-                        ? '继续观看'
-                        : '开始观看，自动选择来源',
-                    button: true,
-                    enabled: !choosingSource,
-                    excludeSemantics: true,
-                    onTap: choosingSource ? null : () => resume(context),
-                    child: ShadButton(
-                      onPressed: choosingSource ? null : () => resume(context),
-                      width: 52,
-                      height: 52,
-                      padding: EdgeInsets.zero,
-                      decoration: ShadDecoration(
-                        border: ShadBorder(radius: BorderRadius.circular(26)),
+        idlePlayerBuilder: (context) {
+          final tokens = PlayraTokens.of(context);
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              PlayerCover(url: item.images['large'] ?? '', player: true),
+              const ColoredBox(color: Color(0x66000000)),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Semantics(
+                      container: true,
+                      label: choosingSource
+                          ? '正在自动匹配来源'
+                          : resumeCandidate != null
+                          ? '继续观看'
+                          : '开始观看，自动选择来源',
+                      button: true,
+                      enabled: !choosingSource,
+                      excludeSemantics: true,
+                      onTap: choosingSource ? null : () => resume(context),
+                      child: ShadButton(
+                        onPressed:
+                            choosingSource ? null : () => resume(context),
+                        width: 52,
+                        height: 52,
+                        padding: EdgeInsets.zero,
+                        decoration: ShadDecoration(
+                          border: ShadBorder(radius: BorderRadius.circular(26)),
+                        ),
+                        child: choosingSource
+                            ? LoadingIndicator(
+                                size: 26,
+                                color: tokens.primaryForeground,
+                              )
+                            : const Icon(LucideIcons.play, size: 22),
                       ),
-                      child: choosingSource
-                          ? const LoadingIndicator(
-                              size: 26,
-                              color: Color(0xff182142),
-                            )
-                          : const Icon(LucideIcons.play, size: 22),
                     ),
-                  ),
                   const SizedBox(height: 8),
                   Text(
                     choosingSource ||
@@ -1049,11 +1054,10 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
             Positioned(
               top: 0,
               left: 4,
-              child: IconButton(
+              child: PlayraIconButton(
                 tooltip: '返回',
-                color: Colors.white,
                 onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(LucideIcons.chevronLeft, size: 22),
+                icon: const Icon(LucideIcons.chevronLeft, size: 22, color: Colors.white),
               ),
             ),
             Positioned(top: 0, right: 4, child: actionsMenu(context)),
@@ -1062,16 +1066,16 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               Positioned(
                 right: 4,
                 bottom: 4,
-                child: IconButton(
+                child: PlayraIconButton(
                   key: const ValueKey('modern-player-open-details'),
                   tooltip: '详情与选集',
-                  color: Colors.white,
                   onPressed: () => playbackKey.currentState?.toggleDetails(),
-                  icon: const Icon(Icons.view_sidebar_outlined, size: 22),
+                  icon: const Icon(Icons.view_sidebar_outlined, size: 22, color: Colors.white),
                 ),
               ),
-          ],
-        ),
+            ],
+          );
+        },
         contentBuilder: (context, _) => Column(
           children: [
             PlayerDetailTabs(
@@ -1113,7 +1117,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                         children: [
                           scoreOverview(context),
                           if (commentsError && info.commentsList.isNotEmpty)
-                            TextButton(
+                            PlayraButton.ghost(
                               onPressed: () => loadComments(),
                               child: const Text('刷新失败，点击重试'),
                             ),
@@ -1132,6 +1136,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
 
   Widget detail(BuildContext context) {
     final c = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     final selection = video.selectedEpisode;
     final road = hasPlayback && selection.road < video.roadList.length
         ? video.roadList[selection.road]
@@ -1173,39 +1178,41 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
           ].join(' · '),
           style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
         ),
-        TextButton(
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(48, 48),
-            foregroundColor: c.onSurfaceVariant,
-          ),
-          onPressed: () => showModernPlayerSheet<void>(
+        InkWell(
+          borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
+          onTap: () => showModernPlayerSheet<void>(
             context,
             PlayerWorkInfoSheet(
               controller: info,
               beforeNavigate: widget.playerController.pause,
             ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  item.summary.isEmpty
-                      ? '查看简介、角色与制作人员'
-                      : item.summary.replaceAll('\n', ' '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: PlayraSpace.sm),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item.summary.isEmpty
+                        ? '查看简介、角色与制作人员'
+                        : item.summary.replaceAll('\n', ' '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: c.onSurfaceVariant,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text('简介', style: TextStyle(color: c.primary, fontSize: 12)),
-              const Icon(LucideIcons.chevronRight, size: 16),
-            ],
+                const SizedBox(width: 12),
+                Text('简介', style: TextStyle(color: c.primary, fontSize: 12)),
+                Icon(LucideIcons.chevronRight, size: 16, color: c.onSurfaceVariant),
+              ],
+            ),
           ),
         ),
         if (infoError)
-          TextButton(onPressed: loadInfo, child: const Text('资料未能补齐，点击重试')),
+          PlayraButton.ghost(onPressed: loadInfo, child: const Text('资料未能补齐，点击重试')),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -1216,22 +1223,18 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                 filledButtonTheme: FilledButtonThemeData(
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(100, 48),
-                    backgroundColor: c.secondaryContainer,
-                    foregroundColor: c.primary,
+                    backgroundColor: tokens.primaryContainer,
+                    foregroundColor: tokens.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(PlayraRadius.control),
                     ),
                   ),
                 ),
               ),
               child: CollectButton.extend(bangumiItem: item),
             ),
-            TextButton.icon(
+            PlayraButton.ghostIcon(
               onPressed: () => download(context),
-              style: TextButton.styleFrom(
-                minimumSize: const Size(48, 48),
-                foregroundColor: c.onSurfaceVariant,
-              ),
               icon: const Icon(LucideIcons.download, size: 18),
               label: const Text('下载'),
             ),
@@ -1293,11 +1296,11 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
             Wrap(
               spacing: 8,
               children: [
-                TextButton(
+                PlayraButton.ghost(
                   onPressed: () => playbackKey.currentState?.retryPlayback(),
                   child: const Text('重试'),
                 ),
-                TextButton(
+                PlayraButton.ghost(
                   onPressed: () => chooseSource(context),
                   child: const Text('换源'),
                 ),
@@ -1324,14 +1327,14 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               ),
             ),
           if (choosingSource) const LinearProgressIndicator(),
-          TextButton.icon(
+          PlayraButton.ghostIcon(
             onPressed: choosingSource ? null : () => playAutomatically(),
             icon: const Icon(LucideIcons.play, size: 16),
             label: const Text('自动播放'),
           ),
         ],
         const SizedBox(height: 24),
-        const Divider(height: 1),
+        const PlayraDivider(),
         const SizedBox(height: 16),
         const Text(
           '关联作品',
@@ -1341,7 +1344,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         if (relationsLoading && info.relationList.isEmpty)
           const SkeletonPosters(count: 3)
         else if (relationsError)
-          TextButton(
+          PlayraButton.ghost(
             onPressed: loadRelations,
             child: const Text('关联作品加载失败，点击重试'),
           )

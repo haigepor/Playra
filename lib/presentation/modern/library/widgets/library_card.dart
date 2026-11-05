@@ -98,7 +98,9 @@ class _LibraryCardState extends State<LibraryCard> {
                                       color: colors.primary.withValues(
                                         alpha: .09,
                                       ),
-                                      borderRadius: BorderRadius.circular(5),
+                                      borderRadius: BorderRadius.circular(
+                                        PlayraRadius.thumbnail,
+                                      ),
                                     ),
                                     child: Text(
                                       entry.status.label,

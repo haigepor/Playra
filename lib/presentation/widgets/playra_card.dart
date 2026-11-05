@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart' as f;
-import 'package:shadcn_ui/shadcn_ui.dart' show ShadCard, ShadBorder;
 
 import '../theme/playra_tokens.dart';
-import '../theme/playra_forui_theme.dart';
-import 'playra_component_scope.dart';
 
 enum PlayraCardKind { content, poster, hero }
 
@@ -36,48 +32,27 @@ class PlayraCard extends StatelessWidget {
       PlayraCardKind.hero => PlayraRadius.hero,
     });
     final content = Padding(padding: padding, child: child);
-    if (!PlayraComponentScope.enabledOf(context)) {
-      return ShadCard(
-        width: width,
-        height: height,
-        padding: EdgeInsets.zero,
-        radius: radius,
-        backgroundColor: t.surface,
-        border: ShadBorder.all(color: t.border.withValues(alpha: .5)),
-        shadows: const [],
-        rowMainAxisSize: MainAxisSize.max,
-        columnCrossAxisAlignment: CrossAxisAlignment.stretch,
-        child: Material(
-          type: MaterialType.transparency,
-          child: onTap == null
-              ? content
-              : InkWell(onTap: onTap, borderRadius: radius, child: content),
-        ),
-      );
-    }
-    final theme = playraForuiTheme(Theme.of(context));
-    final card = f.FCard(
-      style: f.FCardStyle(
-        decoration: ShapeDecoration(
-          color: t.surface,
-          shape: RoundedSuperellipseBorder(
+    final isPoster = kind == PlayraCardKind.poster;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Material(
+        color: isPoster ? Colors.transparent : t.surface,
+        borderRadius: radius,
+        clipBehavior: isPoster ? Clip.none : Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
             borderRadius: radius,
-            side: BorderSide(color: t.border),
+            border: isPoster ? null : Border.all(color: t.borderSubtle),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: radius,
+            child: content,
           ),
         ),
-        titleTextStyle: theme.typography.display.lg,
-        subtitleTextStyle: theme.typography.body.sm,
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        type: MaterialType.transparency,
-        child: onTap == null
-            ? content
-            : InkWell(onTap: onTap, borderRadius: radius, child: content),
-      ),
-    );
-    return PlayraForuiScope(
-      child: SizedBox(width: width, height: height, child: card),
     );
   }
 }

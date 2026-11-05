@@ -43,6 +43,7 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     this.trailing,
     this.kind = PlayraButtonKind.primary,
     this.iconAlignment = IconAlignment.start,
+    this.busy = false,
   });
   const PlayraButton.tonal({
     super.key,
@@ -51,6 +52,7 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     this.icon,
     this.trailing,
     this.iconAlignment = IconAlignment.start,
+    this.busy = false,
   }) : kind = PlayraButtonKind.secondary;
   const PlayraButton.outline({
     super.key,
@@ -59,6 +61,7 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     this.icon,
     this.trailing,
     this.iconAlignment = IconAlignment.start,
+    this.busy = false,
   }) : kind = PlayraButtonKind.outline;
   const PlayraButton.ghost({
     super.key,
@@ -67,7 +70,17 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     this.icon,
     this.trailing,
     this.iconAlignment = IconAlignment.start,
+    this.busy = false,
   }) : kind = PlayraButtonKind.ghost;
+  const PlayraButton.destructive({
+    super.key,
+    required this.onPressed,
+    required this.child,
+    this.icon,
+    this.trailing,
+    this.iconAlignment = IconAlignment.start,
+    this.busy = false,
+  }) : kind = PlayraButtonKind.destructive;
   const PlayraButton.icon({
     super.key,
     required this.onPressed,
@@ -75,6 +88,7 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     this.icon,
     this.kind = PlayraButtonKind.primary,
     this.iconAlignment = IconAlignment.start,
+    this.busy = false,
   }) : child = label,
        trailing = null;
   const PlayraButton.tonalIcon({
@@ -83,6 +97,7 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     required Widget label,
     this.icon,
     this.iconAlignment = IconAlignment.start,
+    this.busy = false,
   }) : child = label,
        trailing = null,
        kind = PlayraButtonKind.secondary;
@@ -92,6 +107,7 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     required Widget label,
     this.icon,
     this.iconAlignment = IconAlignment.start,
+    this.busy = false,
   }) : child = label,
        trailing = null,
        kind = PlayraButtonKind.outline;
@@ -101,15 +117,27 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     required Widget label,
     this.icon,
     this.iconAlignment = IconAlignment.start,
+    this.busy = false,
   }) : child = label,
        trailing = null,
        kind = PlayraButtonKind.ghost;
+  const PlayraButton.destructiveIcon({
+    super.key,
+    required this.onPressed,
+    required Widget label,
+    this.icon,
+    this.iconAlignment = IconAlignment.start,
+    this.busy = false,
+  }) : child = label,
+       trailing = null,
+       kind = PlayraButtonKind.destructive;
   final VoidCallback? onPressed;
   final Widget child;
   final Widget? icon;
   final Widget? trailing;
   final PlayraButtonKind kind;
   final IconAlignment iconAlignment;
+  final bool busy;
 
   @override
   Widget buildForui(BuildContext context) {
@@ -117,13 +145,22 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
       final content = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[icon!, const SizedBox(width: 8)],
+          if (busy) ...[
+            const SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+          ] else if (icon != null) ...[
+            icon!,
+            const SizedBox(width: 8),
+          ],
           child,
         ],
       );
       return kind == PlayraButtonKind.ghost
-          ? TextButton(onPressed: onPressed, child: content)
-          : FilledButton.tonal(onPressed: onPressed, child: content);
+          ? TextButton(onPressed: busy ? null : onPressed, child: content)
+          : FilledButton.tonal(onPressed: busy ? null : onPressed, child: content);
     }
     final variant = switch (kind) {
       PlayraButtonKind.primary => f.FButtonVariant.primary,
@@ -132,13 +169,16 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
       PlayraButtonKind.ghost => f.FButtonVariant.ghost,
       PlayraButtonKind.destructive => f.FButtonVariant.destructive,
     };
+    final effectivePrefix = busy
+        ? const SizedBox.square(dimension: 16, child: f.FCircularProgress())
+        : (iconAlignment == IconAlignment.start ? icon : null);
     return f.FButton(
-      onPress: onPressed,
+      onPress: busy ? null : onPressed,
       variant: variant,
       size: f.FButtonSizeVariant.lg,
       mainAxisSize: MainAxisSize.min,
-      prefix: iconAlignment == IconAlignment.start ? icon : null,
-      suffix: trailing ?? (iconAlignment == IconAlignment.end ? icon : null),
+      prefix: effectivePrefix,
+      suffix: trailing ?? (iconAlignment == IconAlignment.end && !busy ? icon : null),
       child: child,
     );
   }
@@ -791,6 +831,15 @@ class PlayraTabBar extends StatelessWidget
       animation: current,
       builder: (context, _) => f.FTabs(
         scrollable: isScrollable,
+        // 选项卡只用文字颜色区分选中，不画整条底色或选中指示块。
+        style: f.FTabsStyleDelta.delta(
+          decoration: f.DecorationDelta.value(
+            const BoxDecoration(color: Colors.transparent),
+          ),
+          indicatorDecoration: f.DecorationDelta.value(
+            const BoxDecoration(color: Colors.transparent),
+          ),
+        ),
         control: f.FTabControl.lifted(
           index: current.index,
           motion: f.FTabMotion(
@@ -926,4 +975,235 @@ class PlayraDialogSurface extends StatelessWidget with PlayraForuiComponent {
       builder: (_, _) => child,
     ),
   );
+}
+
+enum PlayraBadgeKind { primary, secondary, outline, destructive }
+
+class PlayraBadge extends StatelessWidget with PlayraForuiComponent {
+  const PlayraBadge({
+    super.key,
+    required this.child,
+    this.kind = PlayraBadgeKind.primary,
+  });
+
+  const PlayraBadge.secondary({
+    super.key,
+    required this.child,
+  }) : kind = PlayraBadgeKind.secondary;
+
+  const PlayraBadge.outline({
+    super.key,
+    required this.child,
+  }) : kind = PlayraBadgeKind.outline;
+
+  const PlayraBadge.destructive({
+    super.key,
+    required this.child,
+  }) : kind = PlayraBadgeKind.destructive;
+
+  final Widget child;
+  final PlayraBadgeKind kind;
+
+  @override
+  Widget buildForui(BuildContext context) {
+    final tokens = context.playraTokens;
+    final (bg, fg, border) = switch (kind) {
+      PlayraBadgeKind.primary => (tokens.primary, tokens.primaryForeground, null),
+      PlayraBadgeKind.secondary => (tokens.surfaceRaised, tokens.foreground, tokens.borderSubtle),
+      PlayraBadgeKind.outline => (Colors.transparent, tokens.foreground, tokens.borderSubtle),
+      PlayraBadgeKind.destructive => (tokens.destructive, tokens.destructiveContainer, null),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(PlayraTokens.radiusSm),
+        border: border != null ? Border.all(color: border) : null,
+      ),
+      child: DefaultTextStyle.merge(
+        style: TextStyle(
+          color: fg,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+enum PlayraAlertKind { primary, destructive }
+
+class PlayraAlert extends StatelessWidget with PlayraForuiComponent {
+  const PlayraAlert({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.icon,
+    this.kind = PlayraAlertKind.primary,
+  });
+
+  const PlayraAlert.destructive({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.icon,
+  }) : kind = PlayraAlertKind.destructive;
+
+  final Widget title;
+  final Widget? subtitle;
+  final Widget? icon;
+  final PlayraAlertKind kind;
+
+  @override
+  Widget buildForui(BuildContext context) {
+    final tokens = context.playraTokens;
+    final isDestructive = kind == PlayraAlertKind.destructive;
+    final bg = isDestructive ? tokens.destructiveContainer : tokens.surfaceRaised;
+    final borderColor = isDestructive ? tokens.destructive : tokens.borderSubtle;
+    final iconColor = isDestructive ? tokens.destructive : tokens.primary;
+
+    return Container(
+      padding: const EdgeInsets.all(PlayraSpace.md),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            IconTheme(
+              data: IconThemeData(color: iconColor, size: 20),
+              child: icon!,
+            ),
+            const SizedBox(width: PlayraSpace.sm),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DefaultTextStyle.merge(
+                  style: TextStyle(
+                    color: tokens.foreground,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  child: title,
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: PlayraSpace.xs),
+                  DefaultTextStyle.merge(
+                    style: TextStyle(
+                      color: tokens.foregroundMuted,
+                      fontSize: 13,
+                    ),
+                    child: subtitle!,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PlayraDivider extends StatelessWidget with PlayraForuiComponent {
+  const PlayraDivider({
+    super.key,
+    this.vertical = false,
+  });
+
+  final bool vertical;
+
+  @override
+  Widget buildForui(BuildContext context) {
+    final tokens = context.playraTokens;
+    return vertical
+        ? VerticalDivider(color: tokens.borderSubtle, width: 1, thickness: 1)
+        : Divider(color: tokens.borderSubtle, height: 1, thickness: 1);
+  }
+}
+
+class PlayraFloatingActionButton extends StatelessWidget with PlayraForuiComponent {
+  const PlayraFloatingActionButton({
+    super.key,
+    required this.onPressed,
+    required this.child,
+    this.tooltip,
+  }) : label = null,
+       icon = null;
+
+  const PlayraFloatingActionButton.extended({
+    super.key,
+    required this.onPressed,
+    required this.label,
+    this.icon,
+    this.tooltip,
+  }) : child = null;
+
+  final VoidCallback? onPressed;
+  final Widget? child;
+  final Widget? label;
+  final Widget? icon;
+  final String? tooltip;
+
+  @override
+  Widget buildForui(BuildContext context) {
+    final tokens = context.playraTokens;
+    final isExtended = label != null;
+    final shape = isExtended
+        ? RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+          )
+        : const CircleBorder();
+
+    final content = isExtended
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  icon!,
+                  const SizedBox(width: 8),
+                ],
+                label!,
+              ],
+            ),
+          )
+        : SizedBox(
+            width: 56,
+            height: 56,
+            child: Center(child: child),
+          );
+
+    final button = Material(
+      color: tokens.primary,
+      elevation: 4,
+      shadowColor: Colors.black38,
+      shape: shape,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: shape,
+        child: IconTheme(
+          data: IconThemeData(color: tokens.primaryForeground, size: 24),
+          child: DefaultTextStyle(
+            style: TextStyle(
+              color: tokens.primaryForeground,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            child: content,
+          ),
+        ),
+      ),
+    );
+    return tooltip != null ? Tooltip(message: tooltip!, child: button) : button;
+  }
 }

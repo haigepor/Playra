@@ -51,7 +51,7 @@ void main() {
     final shelves = await catalog.shelves();
     expect(shelves, isNotEmpty);
     expect(shelves.first.title, isNotEmpty);
-    expect(shelves.first.items, isNotEmpty);
+    expect(shelves.first.items.length, greaterThan(6));
     expect(shelves.every((shelf) => shelf.title.isNotEmpty), isTrue);
   }, timeout: const Timeout(Duration(seconds: 120)));
 

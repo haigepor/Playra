@@ -1,5 +1,6 @@
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/pages/plugin_editor/rule_management_widgets.dart';
 
 class EditorTextField extends StatelessWidget {
@@ -41,7 +42,7 @@ class EditorTextField extends StatelessWidget {
                 vertical: 13,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(PlayraRadius.control),
                 borderSide: BorderSide(
                   color: theme.colorScheme.outlineVariant.withValues(
                     alpha: .65,
@@ -49,7 +50,7 @@ class EditorTextField extends StatelessWidget {
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(PlayraRadius.control),
                 borderSide: BorderSide(
                   color: theme.colorScheme.primary,
                   width: 1.5,

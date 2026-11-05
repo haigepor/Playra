@@ -1,4 +1,5 @@
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:kazumi/services/platform/platform_io.dart';
@@ -354,10 +355,10 @@ class _PluginViewPageState extends State<PluginViewPage> {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: colors.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(14),
+                          color: PlayraTokens.of(context).surfaceRaised,
+                          borderRadius: BorderRadius.circular(PlayraRadius.card),
                           border: Border.all(
-                            color: colors.outlineVariant.withValues(alpha: .3),
+                            color: PlayraTokens.of(context).borderSubtle,
                           ),
                         ),
                         child: Wrap(
@@ -558,8 +559,8 @@ class _PluginViewPageState extends State<PluginViewPage> {
                       tags: [
                         RuleTag(
                           label: plugin.profile.label,
-                          background: colors.surfaceContainerHighest,
-                          foreground: colors.onSurfaceVariant,
+                          background: PlayraTokens.of(context).surface,
+                          foreground: PlayraTokens.of(context).foregroundMuted,
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 3),
@@ -572,14 +573,14 @@ class _PluginViewPageState extends State<PluginViewPage> {
                                     : Icons.pause_circle_outline_rounded,
                                 size: 13,
                                 color: plugin.enabled
-                                    ? colors.primary
-                                    : colors.onSurfaceVariant,
+                                    ? PlayraTokens.of(context).primary
+                                    : PlayraTokens.of(context).foregroundMuted,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 plugin.enabled ? '已启用' : '已停用',
                                 style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(color: colors.onSurfaceVariant),
+                                    ?.copyWith(color: PlayraTokens.of(context).foregroundMuted),
                               ),
                             ],
                           ),
@@ -587,16 +588,16 @@ class _PluginViewPageState extends State<PluginViewPage> {
                         if (updatable)
                           RuleTag(
                             label: '可更新',
-                            background: colors.secondaryContainer,
-                            foreground: colors.onSecondaryContainer,
+                            background: PlayraTokens.of(context).primaryContainer,
+                            foreground: PlayraTokens.of(context).primary,
                           ),
                         if (_controller.validityTracker.isSearchValid(
                           plugin.name,
                         ))
                           RuleTag(
                             label: '搜索通过',
-                            background: colors.tertiaryContainer,
-                            foreground: colors.onTertiaryContainer,
+                            background: PlayraTokens.of(context).successContainer,
+                            foreground: PlayraTokens.of(context).success,
                           ),
                       ],
                       trailing: Row(
@@ -708,27 +709,34 @@ class _PluginViewPageState extends State<PluginViewPage> {
   Future<void> _setDomain(Plugin plugin) async {
     final result = await showDialog<List<String>>(
       context: context,
-      builder: (context) => SimpleDialog(
+      builder: (context) => PlayraDialog(
         title: const Text('来源分类'),
-        children: [
-          for (final entry in const {
-            'anime': '动漫',
-            'screen': '影视',
-            'both': '动漫与影视',
-            'unknown': '未分类',
-          }.entries)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(
-                context,
-                entry.key == 'both'
-                    ? ['anime', 'screen']
-                    : entry.key == 'unknown'
-                    ? <String>[]
-                    : [entry.key],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final entry in const {
+              'anime': '动漫',
+              'screen': '影视',
+              'both': '动漫与影视',
+              'unknown': '未分类',
+            }.entries)
+              PlayraButton.ghost(
+                onPressed: () => Navigator.pop(
+                  context,
+                  entry.key == 'both'
+                      ? ['anime', 'screen']
+                      : entry.key == 'unknown'
+                      ? <String>[]
+                      : [entry.key],
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(entry.value),
+                ),
               ),
-              child: Text(entry.value),
-            ),
-        ],
+          ],
+        ),
       ),
     );
     if (result == null) return;

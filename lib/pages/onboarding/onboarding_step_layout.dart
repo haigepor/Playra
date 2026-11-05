@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_new_shapes/material_new_shapes.dart';
 import 'package:kazumi/presentation/modern/secondary/secondary_theme.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 
 /// Keeps the rule catalog lazy within the responsive onboarding scroll surface.
 class OnboardingStepLayout extends StatelessWidget {
@@ -192,7 +193,7 @@ class OnboardingStepIcon extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           color: colors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(PlayraRadius.control),
         ),
         child: Icon(icon, size: 20, color: colors.primary),
       );

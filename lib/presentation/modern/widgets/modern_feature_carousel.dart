@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart' show DragStartBehavior;
-import 'package:forui/forui.dart' as f;
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import '../modern_layout.dart';
@@ -240,6 +240,7 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
       child: AnimatedBuilder(
         animation: _pages,
         builder: (context, _) {
+          final tokens = context.playraTokens;
           final page = _reduce
               ? _index.toDouble()
               : (_pages.hasClients && _pages.position.hasContentDimensions
@@ -257,9 +258,14 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
             alignment: Alignment.center,
             children: [
               Center(
-                child: f.FBadge.raw(
-                  variant: f.FBadgeVariant.secondary,
-                  builder: (_, _) => SizedBox(width: width, height: 24),
+                child: Container(
+                  width: width,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: tokens.surfaceRaised,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: tokens.borderSubtle),
+                  ),
                 ),
               ),
               Padding(
@@ -272,9 +278,10 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
                           button: true,
                           selected: i == _index,
                           label: '切换到第 ${i + 1} 张推荐',
-                          child: f.FTappable(
+                          child: InkWell(
                             key: ValueKey('feature-indicator-$i'),
-                            onPress: () => _go(i),
+                            onTap: () => _go(i),
+                            borderRadius: BorderRadius.circular(20),
                             child: SizedBox(
                               height: 40,
                               child: Center(
@@ -338,14 +345,8 @@ class _FeatureSlide extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              f.FBadge(
-                variant: f.FBadgeVariant.secondary,
-                style: const f.FBadgeStyleDelta.delta(
-                  padding: f.EdgeInsetsGeometryDelta.value(
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  ),
-                ),
-                child: const Row(
+              const PlayraBadge.secondary(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.auto_awesome_outlined, size: 12),
@@ -355,8 +356,9 @@ class _FeatureSlide extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: PlayraSpace.sm),
-              f.FTappable(
-                onPress: entry.onTap,
+              InkWell(
+                onTap: entry.onTap,
+                borderRadius: BorderRadius.circular(PlayraTokens.radiusSm),
                 child: Text(
                   entry.title,
                   maxLines: 2,
@@ -380,13 +382,11 @@ class _FeatureSlide extends StatelessWidget {
                 ),
               ],
               const Spacer(),
-              f.FButton(
-                onPress: entry.onTap,
-                variant: f.FButtonVariant.outline,
-                size: f.FButtonSizeVariant.sm,
-                mainAxisSize: MainAxisSize.min,
-                suffix: const Icon(Icons.arrow_forward_rounded, size: 14),
-                child: const Text(
+              PlayraButton.outlineIcon(
+                onPressed: entry.onTap,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                iconAlignment: IconAlignment.end,
+                label: const Text(
                   '查看详情',
                   style: TextStyle(fontSize: PlayraType.caption),
                 ),
@@ -398,20 +398,18 @@ class _FeatureSlide extends StatelessWidget {
         Semantics(
           button: true,
           label: '查看 ${entry.title}',
-          child: f.FTappable(
-            onPress: entry.onTap,
-            child: PlayraCard(
-              kind: PlayraCardKind.poster,
-              padding: EdgeInsets.zero,
+          child: PlayraCard(
+            kind: PlayraCardKind.poster,
+            padding: EdgeInsets.zero,
+            width: coverWidth,
+            height: coverWidth * 1.42,
+            onTap: entry.onTap,
+            child: NetworkImgLayer(
+              src: entry.cover,
+              type: entry.imageType,
               width: coverWidth,
               height: coverWidth * 1.42,
-              child: NetworkImgLayer(
-                src: entry.cover,
-                type: entry.imageType,
-                width: coverWidth,
-                height: coverWidth * 1.42,
-                borderRadius: BorderRadius.circular(PlayraRadius.poster),
-              ),
+              borderRadius: BorderRadius.circular(PlayraRadius.poster),
             ),
           ),
         ),

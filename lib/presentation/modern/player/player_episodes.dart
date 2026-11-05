@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/widgets/playra_sheet.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 import 'package:kazumi/modules/bangumi/episode_item.dart';
@@ -7,30 +10,10 @@ import 'package:kazumi/pages/video/video_controller.dart';
 import '../player/playing_mark.dart';
 
 Future<T?> showModernPlayerSheet<T>(BuildContext context, Widget child) {
-  final media = MediaQuery.of(context);
-  final usable =
-      media.size.height - media.padding.vertical - media.viewInsets.bottom;
-  return showModalBottomSheet<T>(
+  return showPlayraSheet<T>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: false,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    constraints: BoxConstraints(maxWidth: math.min(media.size.width, 640)),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-    ),
-    clipBehavior: Clip.antiAlias,
-    sheetAnimationStyle: media.disableAnimations
-        ? AnimationStyle.noAnimation
-        : const AnimationStyle(
-            duration: Duration(milliseconds: 220),
-            reverseDuration: Duration(milliseconds: 180),
-          ),
-    builder: (_) => SafeArea(
-      top: false,
-      child: SizedBox(height: usable * .8, child: child),
-    ),
+    size: PlayraSheetSize.standard,
+    builder: (_) => child,
   );
 }
 
@@ -62,9 +45,8 @@ class PlayerSheetHeader extends StatelessWidget {
                 ),
               ),
             ),
-            IconButton(
+            PlayraIconButton(
               tooltip: '关闭',
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: () => Navigator.pop(context),
               icon: const Icon(LucideIcons.x, size: 20),
             ),
@@ -89,48 +71,55 @@ class PlayerEpisodeButton extends StatelessWidget {
   final bool selected, playing, downloaded;
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
+      side: BorderSide(
+        color: selected ? tokens.primary : tokens.borderSubtle,
+      ),
+    );
     return Semantics(
       selected: selected,
       label: playing ? '$title，正在播放' : null,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(60, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          foregroundColor: selected ? c.primary : c.onSurfaceVariant,
-          backgroundColor: selected
-              ? c.secondaryContainer
-              : c.surfaceContainerLow,
-          side: BorderSide(
-            color: selected
-                ? c.primary.withValues(alpha: .5)
-                : Colors.transparent,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (selected) ...[
-              PlayingMark(active: playing, color: c.primary),
-              const SizedBox(width: 5),
-            ],
-            Flexible(
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12),
-              ),
+      child: Material(
+        color: selected ? tokens.primaryContainer : tokens.surfaceRaised,
+        shape: shape,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: shape,
+          child: Container(
+            constraints: const BoxConstraints(minWidth: 60, minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (selected) ...[
+                  PlayingMark(active: playing, color: tokens.primary),
+                  const SizedBox(width: 5),
+                ],
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: selected ? tokens.primary : tokens.foreground,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+                if (downloaded) ...[
+                  const SizedBox(width: 4),
+                  Icon(LucideIcons.download, size: 12, color: tokens.foregroundSubtle),
+                ],
+              ],
             ),
-            if (downloaded) ...[
-              const SizedBox(width: 4),
-              const Icon(LucideIcons.download, size: 12),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -163,9 +152,8 @@ class PlayerEpisodesHeader extends StatelessWidget {
             ),
           ),
           Flexible(
-            child: TextButton(
+            child: PlayraButton.ghost(
               onPressed: onShowAll,
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
               child: Text(
                 sourceVerified ? '当前线路 $count 集 · 全部 ›' : '目录 $count 集 ›',
                 style: const TextStyle(fontSize: 12),
@@ -229,7 +217,7 @@ class _PlayerCatalogEpisodesSheetState
               const Expanded(
                 child: Text('实际可播放集数以匹配来源为准', style: TextStyle(fontSize: 12)),
               ),
-              TextButton.icon(
+              PlayraButton.ghostIcon(
                 onPressed: () => setState(() => descending = !descending),
                 icon: Icon(
                   descending ? LucideIcons.arrowDown : LucideIcons.arrowUp,
@@ -415,15 +403,13 @@ class _PlayerEpisodesSheetState extends State<PlayerEpisodesSheet> {
                     },
                   ),
                 ),
-              TextButton.icon(
+              PlayraButton.ghostIcon(
                 onPressed: () => setState(() => descending = !descending),
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
                 icon: const Icon(LucideIcons.arrowDownUp, size: 16),
                 label: Text(descending ? '降序' : '升序'),
               ),
-              TextButton.icon(
+              PlayraButton.ghostIcon(
                 onPressed: locate,
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
                 icon: const Icon(LucideIcons.locateFixed, size: 16),
                 label: const Text('当前集'),
               ),
@@ -438,20 +424,16 @@ class _PlayerEpisodesSheetState extends State<PlayerEpisodesSheet> {
               scrollDirection: Axis.horizontal,
               itemCount: (count / 50).ceil(),
               separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (_, i) => TextButton(
+              itemBuilder: (_, i) => PlayraButton.ghost(
                 onPressed: () {
                   setState(() => segment = i);
                   if (scroll.hasClients) scroll.jumpTo(0);
                 },
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(64, 48),
-                  backgroundColor: i == segment ? c.secondaryContainer : null,
-                ),
                 child: Text('${i * 50 + 1}–${math.min((i + 1) * 50, count)}'),
               ),
             ),
           ),
-        const Divider(height: 1),
+        const PlayraDivider(),
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {

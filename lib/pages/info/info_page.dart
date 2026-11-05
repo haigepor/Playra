@@ -470,7 +470,7 @@ class _InfoPageState extends State<InfoPage>
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: PlayraFloatingActionButton.extended(
         tooltip: '开始观看',
         onPressed: () {
           showAdaptiveBottomSheet<void>(

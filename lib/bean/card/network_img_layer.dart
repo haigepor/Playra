@@ -96,10 +96,7 @@ class NetworkImgLayer extends StatelessWidget {
         color: color,
         colorBlendMode: colorBlendMode,
         errorBuilder: (context, error, stackTrace) {
-          KazumiLogger().w(
-            'NetworkImage: network image load error',
-            error: error,
-          );
+          _logFailure(url, error);
           return _placeholder(context);
         },
         // 仅请求等待期间使用骨架；失败和空地址继续显示静态回退。
@@ -159,6 +156,18 @@ class NetworkImgLayer extends StatelessWidget {
         'emote' => 0,
         _ => StyleString.imgRadius.x,
       });
+
+  // 同一 URL 的失败只记录一次，避免滚动或重建时重复刷日志。
+  static final _loggedFailures = <String>{};
+
+  static void _logFailure(String url, Object error) {
+    if (_loggedFailures.length >= 200) _loggedFailures.clear();
+    if (!_loggedFailures.add(url)) return;
+    KazumiLogger().w(
+      'NetworkImage: network image load error',
+      error: '$error | url=$url',
+    );
+  }
 
   Widget _placeholder(BuildContext context) {
     return Container(

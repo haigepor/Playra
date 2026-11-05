@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 
 import 'package:kazumi/bean/dialog/adaptive_bottom_sheet.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
@@ -188,7 +189,7 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
 
   Widget _statusField(BuildContext context, String label, String value,
       {bool compact = false}) {
-    return ListTile(
+    return PlayraListTile(
       title: Text(label),
       subtitle: Text(
         value.isEmpty ? '尚未获取' : value,
@@ -197,7 +198,7 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
       ),
       trailing: value.isEmpty
           ? null
-          : IconButton(
+          : PlayraIconButton(
               tooltip: '复制$label',
               icon: const Icon(Icons.content_copy_rounded, size: 18),
               onPressed: () => _copyToClipboard(context, value),
@@ -239,7 +240,7 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
           Row(children: [
             Text('${logs.length} 条记录', style: theme.textTheme.labelMedium),
             const Spacer(),
-            TextButton.icon(
+            PlayraButton.ghostIcon(
               onPressed: logs.isEmpty
                   ? null
                   : () => _copyToClipboard(context, logs.join('\n')),

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/side_panel_transition.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 
 class VideoSidePanel extends StatefulWidget {
   const VideoSidePanel({
@@ -110,10 +111,10 @@ class VideoSidePanelState extends State<VideoSidePanel>
                 (constraints.maxWidth / 3).clamp(320.0, 420.0)),
             height: constraints.maxHeight,
             child: Material(
-              color: Theme.of(context).colorScheme.surface,
+              color: PlayraTokens.of(context).surfaceRaised,
               borderRadius: const BorderRadiusDirectional.only(
-                topStart: Radius.circular(28),
-                bottomStart: Radius.circular(28),
+                topStart: Radius.circular(PlayraRadius.brand),
+                bottomStart: Radius.circular(PlayraRadius.brand),
               ),
               clipBehavior: Clip.antiAlias,
               // Consume the hidden status-bar inset for the entire overlay.

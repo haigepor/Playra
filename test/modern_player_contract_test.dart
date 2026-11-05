@@ -8,6 +8,7 @@ import 'package:kazumi/pages/video/playback_identity.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/pages/video/video_playback_args.dart';
 import 'package:kazumi/pages/video/video_fullscreen_controller.dart';
+import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/presentation/modern/player/player_episodes.dart';
 import 'package:kazumi/presentation/modern/player/player_theme.dart';
@@ -45,7 +46,7 @@ void main() {
   testWidgets(
     'presentation remount can enter fullscreen and back exits it first',
     (tester) async {
-      final applied = <bool>[];
+      final applied = <VideoFullscreenMode>[];
       final fullscreen = VideoFullscreenController(
         applyFullscreen: (value) async {
           applied.add(value);
@@ -73,7 +74,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(fullscreen.isFullscreen, isFalse);
       expect(find.text('播放页'), findsOneWidget);
-      expect(applied, [true, false, true, false]);
+      expect(applied, [
+        VideoFullscreenMode.landscape,
+        VideoFullscreenMode.none,
+        VideoFullscreenMode.landscape,
+        VideoFullscreenMode.none,
+      ]);
       await fullscreen.close();
       await fullscreen.close();
       expect(applied.length, 5);

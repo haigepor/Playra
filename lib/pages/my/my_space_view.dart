@@ -765,18 +765,8 @@ class _ExpressiveActionState extends State<_ExpressiveAction> {
             child: InkWell(
               onTap: widget.onTap,
               onHighlightChanged: (value) => setState(() => _pressed = value),
-              overlayColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.pressed)) {
-                  return widget.foreground.withValues(alpha: .10);
-                }
-                if (states.contains(WidgetState.focused)) {
-                  return widget.foreground.withValues(alpha: .12);
-                }
-                if (states.contains(WidgetState.hovered)) {
-                  return widget.foreground.withValues(alpha: .08);
-                }
-                return null;
-              }),
+              // 按压反馈由缩放和圆角变化承担，不再叠加背景层。
+              overlayColor: const WidgetStatePropertyAll(Colors.transparent),
               child: IconTheme.merge(
                 data: IconThemeData(color: widget.foreground),
                 child: DefaultTextStyle.merge(

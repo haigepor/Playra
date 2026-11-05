@@ -6,6 +6,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/pages/player/controller/player_screenshot_controller.dart';
 import 'package:kazumi/pages/player/player_screenshot_image.dart';
@@ -27,9 +29,15 @@ Future<void> showPlayerScreenshotSheet(
           : 24.0;
       return Dialog(
         clipBehavior: Clip.antiAlias,
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+        backgroundColor: context.playraTokens.surfaceRaised,
         insetPadding: EdgeInsets.all(inset),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+          side: BorderSide(
+            color: context.playraTokens.borderSubtle,
+            width: 1,
+          ),
+        ),
         child: SizedBox(
           width: 1120,
           child: ConstrainedBox(
@@ -226,15 +234,15 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
     if (collection.busy || collection.candidates.isEmpty) return;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => PlayraDialog(
         title: const Text('清空候选截图？'),
         content: Text('这将丢弃 ${collection.candidates.length} 张未保存的截图，无法恢复。'),
         actions: [
-          TextButton(
+          PlayraButton.ghost(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('取消'),
           ),
-          TextButton(
+          PlayraButton.destructive(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('清空'),
           ),
@@ -433,7 +441,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
   Widget _navigation() => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      IconButton(
+      PlayraIconButton(
         tooltip: '上一张',
         onPressed: _index > 0 ? () => _step(-1) : null,
         icon: const Icon(Icons.chevron_left_rounded),
@@ -442,7 +450,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
         '${_index + 1} / ${collection.candidates.length}',
         style: Theme.of(context).textTheme.labelMedium,
       ),
-      IconButton(
+      PlayraIconButton(
         tooltip: '下一张',
         onPressed: _index < collection.candidates.length - 1
             ? () => _step(1)
@@ -493,7 +501,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
           KazumiMenuButton(
             animated: true,
             enabled: !collection.busy,
-            builder: (context, toggle) => IconButton(
+            builder: (context, toggle) => PlayraIconButton(
               tooltip: '管理截图',
               icon: const Icon(Icons.more_vert_rounded),
               onPressed: toggle,
@@ -514,7 +522,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
             ],
           ),
         if (current != null)
-          IconButton(
+          PlayraIconButton(
             tooltip: _zoomed ? '还原大小' : '放大查看',
             onPressed: _toggleZoom,
             icon: Icon(
@@ -522,7 +530,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
             ),
           ),
         Observer(
-          builder: (context) => IconButton(
+          builder: (context) => PlayraIconButton(
             tooltip: '返回播放',
             onPressed: collection.saving ? null : _close,
             icon: const Icon(Icons.close_rounded),
@@ -533,7 +541,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
   );
 
   Widget _stage() => ColoredBox(
-    color: const Color(0xff101114),
+    color: PlayraTokens.of(context).background,
     child: Stack(
       fit: StackFit.expand,
       children: [
@@ -614,8 +622,8 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
       final selected = collection.isSelected(item);
       return Semantics(
         selected: selected,
-        child: FilledButton.tonalIcon(
-          style: _toggleStyle(selected: selected),
+        child: PlayraButton(
+          kind: selected ? PlayraButtonKind.primary : PlayraButtonKind.secondary,
           onPressed: collection.saving ? null : _toggle,
           icon: Icon(
             selected
@@ -623,7 +631,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                 : Icons.radio_button_unchecked_rounded,
             size: 20,
           ),
-          label: Text(selected ? '已选中' : '选择这张'),
+          child: Text(selected ? '已选中' : '选择这张'),
         ),
       );
     },
@@ -668,9 +676,8 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                   ),
                 ),
               ),
-              IconButton(
+              PlayraIconButton(
                 tooltip: '关闭提示',
-                color: colors.onInverseSurface,
                 onPressed: () => setState(() => _notice = null),
                 icon: const Icon(Icons.close_rounded, size: 20),
               ),
@@ -693,18 +700,13 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
     final save = SizedBox(
       height: buttonHeight,
       child: Observer(
-        builder: (context) => FilledButton.icon(
-          style: _actionStyle(),
+        builder: (context) => PlayraButton(
+          busy: collection.saving,
           onPressed: !collection.busy && collection.selectedCount > 0
               ? _save
               : null,
-          icon: collection.saving
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.save_alt_rounded, size: 20),
-          label: Text(
+          icon: const Icon(Icons.save_alt_rounded, size: 20),
+          child: Text(
             collection.saving
                 ? '${collection.saveCompleted}/${collection.saveTotal}'
                 : '保存${collection.selectedCount > 0 ? ' ${collection.selectedCount} 张' : '所选'}',
@@ -771,62 +773,29 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
         child: Observer(
           builder: (context) {
             final all = collection.allSelected;
-            final style = _toggleStyle(selected: all);
             final onPressed = collection.saving
                 ? null
                 : () => collection.setAllSelected(!all);
             final label = Text(all ? '取消全选' : '全选');
             if (compact) {
-              return FilledButton.tonal(
-                style: style.copyWith(
-                  padding: const WidgetStatePropertyAll(
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                  ),
-                ),
+              return PlayraButton(
+                kind: PlayraButtonKind.secondary,
                 onPressed: onPressed,
                 child: label,
               );
             }
-            return FilledButton.tonalIcon(
-              style: style,
+            return PlayraButton(
+              kind: PlayraButtonKind.secondary,
               onPressed: onPressed,
               icon: Icon(
                 all ? Icons.deselect_rounded : Icons.select_all_rounded,
                 size: 20,
               ),
-              label: label,
+              child: label,
             );
           },
         ),
       );
-
-  ButtonStyle _toggleStyle({required bool selected}) {
-    final colors = Theme.of(context).colorScheme;
-    return _actionStyle(selected: selected).copyWith(
-      backgroundColor: WidgetStatePropertyAll(
-        selected ? colors.secondaryContainer : colors.surfaceContainerHighest,
-      ),
-    );
-  }
-
-  ButtonStyle _actionStyle({bool selected = false}) => ButtonStyle(
-    minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
-    padding: const WidgetStatePropertyAll(
-      EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-    ),
-    animationDuration: _motion,
-    shape: WidgetStateProperty.resolveWith(
-      (states) => RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(
-          states.contains(WidgetState.pressed)
-              ? 12
-              : selected
-              ? 16
-              : 24,
-        ),
-      ),
-    ),
-  );
 
   Widget _empty(BuildContext context) => Center(
     child: SingleChildScrollView(
@@ -848,7 +817,10 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          FilledButton.tonal(onPressed: _close, child: const Text('返回视频截图')),
+          PlayraButton.tonal(
+            onPressed: _close,
+            child: const Text('返回视频截图'),
+          ),
         ],
       ),
     ),

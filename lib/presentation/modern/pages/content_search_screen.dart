@@ -331,7 +331,9 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                         height: coverHeight,
                         decoration: BoxDecoration(
                           color: c.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(9),
+                          borderRadius: BorderRadius.circular(
+                            PlayraRadius.thumbnail,
+                          ),
                         ),
                         child: Icon(
                           LucideIcons.film,
@@ -344,7 +346,9 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                         src: work.cover,
                         width: coverWidth,
                         height: coverHeight,
-                        borderRadius: BorderRadius.circular(9),
+                        borderRadius: BorderRadius.circular(
+                          PlayraRadius.thumbnail,
+                        ),
                       ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -498,7 +502,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md),
         decoration: BoxDecoration(
           color: c.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(PlayraRadius.control),
           border: Border.all(color: c.outline),
         ),
         child: Row(

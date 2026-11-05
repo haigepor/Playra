@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kazumi/modules/bangumi/episode_item.dart';
@@ -186,8 +187,8 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
               ),
             ),
             if (error)
-              TextButton(onPressed: refresh, child: const Text('重新加载')),
-            TextButton(onPressed: pick, child: const Text('匹配讨论分集')),
+              PlayraButton.ghost(onPressed: refresh, child: const Text('重新加载')),
+            PlayraButton.outline(onPressed: pick, child: const Text('匹配讨论分集')),
           ],
         ],
       );

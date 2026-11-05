@@ -1,4 +1,5 @@
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -606,7 +607,8 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                           vertical: 13,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius:
+                              BorderRadius.circular(PlayraRadius.control),
                           borderSide: BorderSide(
                             color: Theme.of(
                               context,
@@ -614,7 +616,8 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius:
+                              BorderRadius.circular(PlayraRadius.control),
                           borderSide: BorderSide(
                             color: Theme.of(context).colorScheme.primary,
                             width: 1.5,

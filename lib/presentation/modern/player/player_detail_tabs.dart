@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 
 /// 三个稳定标签使用短横线；动画只移动指示器，不缩放文字。
 class PlayerDetailTabs extends StatelessWidget {
@@ -12,7 +13,7 @@ class PlayerDetailTabs extends StatelessWidget {
   final bool disableAnimations;
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     final height = math.max(
       48.0,
       MediaQuery.textScalerOf(context).scale(14) + 26,
@@ -33,32 +34,34 @@ class PlayerDetailTabs extends StatelessWidget {
                         Expanded(
                           child: Semantics(
                             selected: controller.index == i,
-                            child: TextButton(
-                              style: TextButton.styleFrom(
-                                minimumSize: Size(48, height),
-                                foregroundColor: controller.index == i
-                                    ? colors.onSurface
-                                    : colors.onSurfaceVariant,
-                                shape: const RoundedRectangleBorder(),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
+                            button: true,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => controller.animateTo(
+                                  i,
+                                  duration:
+                                      disableAnimations ||
+                                          MediaQuery.disableAnimationsOf(context)
+                                      ? Duration.zero
+                                      : const Duration(milliseconds: 200),
                                 ),
-                              ),
-                              onPressed: () => controller.animateTo(
-                                i,
-                                duration:
-                                    disableAnimations ||
-                                        MediaQuery.disableAnimationsOf(context)
-                                    ? Duration.zero
-                                    : const Duration(milliseconds: 200),
-                              ),
-                              child: Text(
-                                ['详情', '讨论', '评价'][i],
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: controller.index == i
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
+                                child: SizedBox(
+                                  height: height,
+                                  child: Center(
+                                    child: Text(
+                                      ['详情', '讨论', '评价'][i],
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: controller.index == i
+                                            ? tokens.foreground
+                                            : tokens.foregroundSubtle,
+                                        fontWeight: controller.index == i
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -71,7 +74,7 @@ class PlayerDetailTabs extends StatelessWidget {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  child: Container(height: .5, color: colors.outline),
+                  child: Container(height: .5, color: tokens.borderSubtle),
                 ),
                 Positioned(
                   bottom: 0,
@@ -80,7 +83,7 @@ class PlayerDetailTabs extends StatelessWidget {
                     width: 20,
                     height: 3,
                     decoration: BoxDecoration(
-                      color: colors.primary,
+                      color: tokens.primary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

@@ -30,6 +30,9 @@ class LuminaBanner {
       title = luminaText(raw['title']),
       cover = luminaImage(raw['cover']);
   final String videoId, title, cover;
+  LuminaBanner._(this.videoId, this.title, this.cover);
+  LuminaBanner withCover(String value) =>
+      LuminaBanner._(videoId, title, value);
 }
 
 /// SDK 原生作品身份独立于 Bangumi；totalEpisodes 只用于资料，不生成可播放目录。

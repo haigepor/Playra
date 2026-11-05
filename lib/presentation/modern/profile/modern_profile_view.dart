@@ -299,15 +299,16 @@ class ModernProfileView extends StatelessWidget {
         (LucideIcons.search, '搜索作品', 'Lumina 动漫', '/search/'),
       ];
       final children = items.map((item) {
-        final c = Theme.of(context).colorScheme;
+        final tokens = PlayraTokens.of(context);
         final icon = Container(
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: c.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(10),
+            color: tokens.surfaceRaised,
+            borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
+            border: Border.all(color: tokens.borderSubtle),
           ),
-          child: Icon(item.$1, size: 22, color: c.primary),
+          child: Icon(item.$1, size: 20, color: tokens.primary),
         );
         final copy = Column(
           crossAxisAlignment: vertical
@@ -316,9 +317,10 @@ class ModernProfileView extends StatelessWidget {
           children: [
             Text(
               item.$2,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: PlayraType.label,
                 fontWeight: FontWeight.w500,
+                color: tokens.foreground,
               ),
               textAlign: vertical ? TextAlign.left : TextAlign.center,
             ),
@@ -328,7 +330,7 @@ class ModernProfileView extends StatelessWidget {
               style: TextStyle(
                 fontSize: PlayraType.micro,
                 height: 1.5,
-                color: c.onSurfaceVariant,
+                color: tokens.foregroundSubtle,
               ),
               textAlign: vertical ? TextAlign.left : TextAlign.center,
             ),
@@ -354,7 +356,7 @@ class ModernProfileView extends StatelessWidget {
                         Icon(
                           LucideIcons.chevronRight,
                           size: 16,
-                          color: c.onSurfaceVariant,
+                          color: tokens.foregroundMuted,
                         ),
                       ],
                     )

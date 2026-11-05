@@ -2,11 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:forui/forui.dart' as f;
 
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
-import 'package:kazumi/presentation/widgets/playra_controls.dart';
 
 /// Single-use ownership of a route, including before its first frame.
 class KazumiDialogHandle<T> {
@@ -39,7 +37,6 @@ class KazumiDialog {
   // Allows modal sheets to use the same dismissal and route tracking.
   static const routeSettings = RouteSettings(name: 'KazumiDialog');
   static int _toastRevision = 0;
-  static f.FToasterEntry? _foruiToast;
 
   KazumiDialog._internal();
 
@@ -96,33 +93,6 @@ class KazumiDialog {
     VoidCallback? onActionPressed,
     Duration duration = const Duration(seconds: 2),
   }) {
-    final toastContext = context != null && context.mounted
-        ? context
-        : rootNavigatorKey.currentContext;
-    if (toastContext != null &&
-        PlayraComponentScope.enabledOf(toastContext) &&
-        toastContext.findAncestorStateOfType<f.FToasterState>() != null) {
-      _toastRevision++;
-      _foruiToast?.dismiss();
-      _foruiToast = f.showFToast(
-        context: toastContext,
-        title: Text(message),
-        duration: duration,
-        alignment: f.FToastAlignment.bottomCenter,
-        suffixBuilder: showActionButton
-            ? (_, entry) => PlayraButton.ghost(
-                onPressed: () {
-                  entry.dismiss();
-                  if (onActionPressed != null) {
-                    scheduleMicrotask(onActionPressed);
-                  }
-                },
-                child: Text(actionLabel ?? '关闭'),
-              )
-            : null,
-      );
-      return;
-    }
     final messenger = _resolveScaffoldMessenger(context);
     if (messenger != null && messenger.mounted) {
       final toastContext = context != null && context.mounted
@@ -130,12 +100,21 @@ class KazumiDialog {
           : messenger.context;
       try {
         _toastRevision++;
+        final tokens = toastContext.playraTokens;
         messenger
           ..removeCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text(message),
+              content: Text(
+                message,
+                style: TextStyle(color: tokens.foreground),
+              ),
+              backgroundColor: tokens.surfaceRaised,
               behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+                side: BorderSide(color: tokens.borderSubtle),
+              ),
               width:
                   MediaQuery.sizeOf(toastContext).width >
                       PlayraLayout.expandedWidth
@@ -145,7 +124,8 @@ class KazumiDialog {
               persist: false,
               action: showActionButton
                   ? SnackBarAction(
-                      label: actionLabel ?? 'Dismiss',
+                      label: actionLabel ?? '关闭',
+                      textColor: tokens.primary,
                       onPressed: () {
                         // Let SnackBarAction close the old toast before replacing it.
                         if (onActionPressed != null) {
@@ -293,8 +273,6 @@ class KazumiDialogObserver extends NavigatorObserver {
       _snackBarClearScheduled = false;
       // Only clear the old page's toast, never one posted after navigation.
       if (revision == KazumiDialog._toastRevision) {
-        KazumiDialog._foruiToast?.dismiss();
-        KazumiDialog._foruiToast = null;
         rootScaffoldMessengerKey.currentState?.removeCurrentSnackBar();
       }
     });

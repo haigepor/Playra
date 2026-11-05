@@ -2,8 +2,6 @@ import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:forui/forui.dart' as f;
-import 'package:kazumi/presentation/theme/playra_forui_theme.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/services/platform/desktop_window_config.dart';
@@ -55,42 +53,6 @@ class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
                     )
             : null);
 
-    if (PlayraComponentScope.enabledOf(context)) {
-      final header = f.FTheme.of(context).headerStyles.nested;
-      return PlayraForuiScope.ensure(
-        context,
-        (context) => GestureDetector(
-          onPanStart: desktop ? (_) => windowManager.startDragging() : null,
-          child: f.FHeader.nested(
-            title: title ?? const SizedBox.shrink(),
-            titleAlignment: AlignmentDirectional.centerStart,
-            prefixes: [
-              if (appBarLeading != null)
-                EmbeddedNativeControlArea(
-                  requireOffset: needTopOffset,
-                  child: appBarLeading,
-                ),
-            ],
-            suffixes: [
-              for (final action in appBarActions)
-                EmbeddedNativeControlArea(
-                  requireOffset: needTopOffset,
-                  child: action,
-                ),
-            ],
-            style: f.FHeaderStyle(
-              systemOverlayStyle: header.systemOverlayStyle,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              constraints: BoxConstraints(minHeight: preferredSize.height),
-              titleTextStyle: Theme.of(
-                context,
-              ).textTheme.titleLarge!.copyWith(height: 1.2),
-              actionStyle: header.actionStyle,
-            ),
-          ),
-        ),
-      );
-    }
     return GestureDetector(
       onPanStart: desktop ? (_) => windowManager.startDragging() : null,
       child: AppBar(

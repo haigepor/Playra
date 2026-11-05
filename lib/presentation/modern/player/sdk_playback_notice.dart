@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 
 /// 错误与恢复动作同行；窄屏只让文案换行，不为空白操作区预留整行。
 class SdkPlaybackNotice extends StatelessWidget {
@@ -22,7 +24,7 @@ class SdkPlaybackNotice extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
         decoration: BoxDecoration(
           color: colors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(PlayraRadius.control),
           border: Border(left: BorderSide(color: colors.primary, width: 3)),
         ),
         child: Row(
@@ -39,7 +41,7 @@ class SdkPlaybackNotice extends StatelessWidget {
               ),
             ),
             if (onRetry != null)
-              TextButton(onPressed: onRetry, child: const Text('重试')),
+              PlayraButton.ghost(onPressed: onRetry, child: const Text('重试')),
             if (onSwitch != null)
               PopupMenuButton<String>(
                 tooltip: '更多恢复操作',

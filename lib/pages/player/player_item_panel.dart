@@ -14,6 +14,7 @@ import 'package:kazumi/pages/player/controller/player_super_resolution.dart';
 import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/pages/player/player_panel_hold.dart';
 import 'package:kazumi/services/player/pip_utils.dart';
+import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
@@ -27,6 +28,7 @@ import 'package:kazumi/services/player/timed_shutdown_service.dart';
 import 'package:kazumi/utils/format.dart';
 import 'package:kazumi/pages/player/player_transport_bar.dart';
 import 'package:kazumi/pages/player/player_screenshot_controls.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({
@@ -38,6 +40,7 @@ class PlayerItemPanel extends StatefulWidget {
     required this.setPlaybackSpeed,
     required this.showDanmakuSwitch,
     required this.handleFullscreen,
+    required this.handlePortraitFullscreen,
     required this.enterAndroidPictureInPicture,
     required this.handleScreenShot,
     required this.showScreenshotCandidates,
@@ -66,6 +69,7 @@ class PlayerItemPanel extends StatefulWidget {
   final VoidCallback showDanmakuSwitch;
   final VoidCallback? onToggleSidePanel;
   final VoidCallback handleFullscreen;
+  final VoidCallback handlePortraitFullscreen;
   final Future<void> Function() enterAndroidPictureInPicture;
   final VoidCallback handleScreenShot;
   final VoidCallback showScreenshotCandidates;
@@ -192,14 +196,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               decoration: InputDecoration(
                 enabled: playerController.danmaku.danmakuOn,
                 filled: true,
-                fillColor: Colors.white38,
+                fillColor: Colors.black.withValues(alpha: 0.35),
                 floatingLabelBehavior: FloatingLabelBehavior.never,
                 hintText: playerController.danmaku.danmakuOn
                     ? '发个友善的弹幕见证当下'
                     : '已关闭弹幕',
                 hintStyle: TextStyle(
                   fontSize: _desktop ? 15 : 13,
-                  color: Colors.white60,
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
                 alignLabelWithHint: true,
                 contentPadding: EdgeInsets.symmetric(
@@ -207,7 +211,19 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   horizontal: _desktop ? 8 : 12,
                 ),
                 border: OutlineInputBorder(
-                  borderSide: BorderSide.none,
+                  borderSide: const BorderSide(color: Colors.white24),
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(_desktop ? 8 : 20),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white24),
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(_desktop ? 8 : 20),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white60),
                   borderRadius: BorderRadius.all(
                     Radius.circular(_desktop ? 8 : 20),
                   ),
@@ -216,24 +232,17 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextButton(
-                      onPressed: () {
-                        unawaited(_submitDanmakuText(textController.text));
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: playerController.danmaku.danmakuOn
-                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                            : Colors.white60,
-                        backgroundColor: playerController.danmaku.danmakuOn
-                            ? Theme.of(context).colorScheme.primaryContainer
-                            : Theme.of(context).disabledColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            _desktop ? 8 : 20,
-                          ),
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: PlayraButton(
+                        kind: playerController.danmaku.danmakuOn
+                            ? PlayraButtonKind.primary
+                            : PlayraButtonKind.secondary,
+                        onPressed: () {
+                          unawaited(_submitDanmakuText(textController.text));
+                        },
+                        child: const Text('发送'),
                       ),
-                      child: const Text('发送'),
                     ),
                   ],
                 ),
@@ -256,9 +265,9 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     KazumiDialog.show(
       builder: (context) {
         var input = '';
-        return AlertDialog(
+        return PlayraDialog(
           title: const Text('跳过秒数'),
-          content: TextField(
+          content: PlayraTextField(
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
               floatingLabelBehavior: FloatingLabelBehavior.never,
@@ -269,14 +278,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             },
           ),
           actions: <Widget>[
-            TextButton(
+            PlayraButton.ghost(
               onPressed: () => KazumiDialog.dismiss(),
-              child: Text(
-                '取消',
-                style: TextStyle(color: Theme.of(context).colorScheme.outline),
-              ),
+              child: const Text('取消'),
             ),
-            TextButton(
+            PlayraButton(
               onPressed: () {
                 if (input.isNotEmpty) {
                   playerController.setButtonForwardTime(int.parse(input));
@@ -380,10 +386,18 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => _buildPanel(
-      constraints.maxWidth < MediaQuery.textScalerOf(context).scale(600),
-    ),
+  Widget build(BuildContext context) => Observer(
+    builder: (_) {
+      final portraitFullscreen =
+          videoPageController.fullscreen.mode ==
+          VideoFullscreenMode.portrait;
+      return LayoutBuilder(
+        builder: (context, constraints) => _buildPanel(
+          constraints.maxWidth < MediaQuery.textScalerOf(context).scale(600) ||
+              portraitFullscreen,
+        ),
+      );
+    },
   );
 
   Widget _buildPanel(bool compact) {
@@ -622,8 +636,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
     onVisibilityChanged: widget.onMenuVisibilityChanged,
     builder: (context, toggle) => tooltip == null
-        ? TextButton(onPressed: toggle, child: child)
-        : IconButton(onPressed: toggle, icon: child, tooltip: tooltip),
+        ? PlayraButton.ghost(onPressed: toggle, child: child)
+        : PlayraIconButton(onPressed: toggle, icon: child, tooltip: tooltip),
     menuChildren: items,
   );
 
@@ -704,7 +718,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
   Widget _buildBottomControls(bool compact) => SafeArea(
     top: false,
-    bottom: !compact && widget.fillsWindow,
+    bottom: widget.fillsWindow,
     left: !compact && widget.fillsWindow,
     right: !compact && widget.fillsWindow,
     child: PlayerPanelHoldMouseRegion(
@@ -793,7 +807,9 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     return EmbeddedNativeControlArea(
       requireOffset: compact || !videoPageController.isFullscreen,
       child: SafeArea(
-        top: false,
+        top:
+            videoPageController.fullscreen.mode ==
+            VideoFullscreenMode.portrait,
         bottom: false,
         left: !compact && widget.fillsWindow,
         right: !compact && widget.fillsWindow,
@@ -834,6 +850,22 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   controller: playerController.screenshots,
                   onCapture: widget.handleScreenShot,
                   onReview: widget.showScreenshotCandidates,
+                ),
+              if (!kIsWeb && !_desktop)
+                IconButton(
+                  tooltip:
+                      videoPageController.fullscreen.mode ==
+                          VideoFullscreenMode.portrait
+                      ? '退出竖屏全屏'
+                      : '竖屏全屏',
+                  onPressed: widget.handlePortraitFullscreen,
+                  icon: Icon(
+                    videoPageController.fullscreen.mode ==
+                            VideoFullscreenMode.portrait
+                        ? Icons.fullscreen_exit_rounded
+                        : Icons.stay_current_portrait,
+                    color: Colors.white,
+                  ),
                 ),
               if (kIsWeb ||
                   (_desktop &&
@@ -882,6 +914,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   );
                 },
                 menuChildren: [
+                  KazumiMenuItem(
+                    onPressed: widget.handlePortraitFullscreen,
+                    label:
+                        videoPageController.fullscreen.mode ==
+                            VideoFullscreenMode.portrait
+                        ? '退出竖屏全屏'
+                        : '竖屏全屏',
+                  ),
                   if (compact) ...[
                     SubmenuButton(
                       menuChildren: _aspectRatioItems,

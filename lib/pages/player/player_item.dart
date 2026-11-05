@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:kazumi/services/platform/browser_display.dart';
+import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 import 'package:kazumi/pages/player/player_item_panel.dart';
 import 'package:kazumi/pages/player/player_buffering_overlay.dart';
 import 'package:kazumi/pages/player/player_keyboard_shortcuts.dart';
@@ -33,6 +34,7 @@ import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/modules/danmaku/danmaku_module.dart';
 import 'package:kazumi/pages/player/controller/player_danmaku_controller.dart';
 import 'package:kazumi/pages/player/danmaku_source_sheet.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/pages/player/player_item_surface.dart';
 import 'package:mobx/mobx.dart' as mobx;
 import 'package:kazumi/pages/my/my_controller.dart';
@@ -885,14 +887,14 @@ class _PlayerItemState extends State<PlayerItem>
       if (androidVideoRenderer == 'mediacodec_embed') {
         await KazumiDialog.show(
           builder: (context) {
-            return AlertDialog(
+            return PlayraDialog(
               title: const Text('兼容性提示'),
               content: const Text(
                 'MediaCodec 渲染器不支持超分辨率功能。\n\n'
                 '如需使用超分辨率，请在播放设置中将视频渲染器切换为 gpu 或 gpu-next。',
               ),
               actions: [
-                TextButton(
+                PlayraButton.ghost(
                   onPressed: () {
                     KazumiDialog.dismiss(context: context);
                   },
@@ -920,7 +922,7 @@ class _PlayerItemState extends State<PlayerItem>
 
           return StatefulBuilder(
             builder: (context, setState) {
-              return AlertDialog(
+              return PlayraDialog(
                 title: const Text('性能提示'),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -942,7 +944,7 @@ class _PlayerItemState extends State<PlayerItem>
                   ],
                 ),
                 actions: [
-                  TextButton(
+                  PlayraButton.ghost(
                     onPressed: () async {
                       if (dontAskAgain) {
                         await GStorage.putSetting(
@@ -955,7 +957,7 @@ class _PlayerItemState extends State<PlayerItem>
                     },
                     child: const Text('取消'),
                   ),
-                  TextButton(
+                  PlayraButton(
                     onPressed: () async {
                       confirmed = true;
                       if (dontAskAgain) {
@@ -987,6 +989,13 @@ class _PlayerItemState extends State<PlayerItem>
   void handleFullscreen() {
     if (!videoPageController.isPip) {
       unawaited(videoPageController.fullscreen.toggle());
+    }
+  }
+
+  /// 顶部按钮：普通/横屏全屏 -> 竖屏全屏；竖屏全屏 -> 退出。
+  void handlePortraitFullscreen() {
+    if (!videoPageController.isPip) {
+      unawaited(videoPageController.fullscreen.togglePortrait());
     }
   }
 
@@ -1319,8 +1328,8 @@ class _PlayerItemState extends State<PlayerItem>
     playerController = widget.playerController;
     _initKeyboardActions();
     _initPlayerMenu();
-    _fullscreenListener = mobx.reaction<bool>(
-      (_) => videoPageController.isFullscreen,
+    _fullscreenListener = mobx.reaction<VideoFullscreenMode>(
+      (_) => videoPageController.fullscreen.mode,
       (_) {
         _handleFullscreenChange();
       },
@@ -1485,7 +1494,7 @@ class _PlayerItemState extends State<PlayerItem>
           Positioned(
             left: 8,
             top: 4,
-            child: IconButton(
+            child: PlayraIconButton(
               tooltip: '返回',
               onPressed: widget.onBackPressed,
               icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -1650,6 +1659,8 @@ class _PlayerItemState extends State<PlayerItem>
                               showDanmakuSwitch: showDanmakuSwitch,
                               onToggleSidePanel: widget.onToggleSidePanel,
                               handleFullscreen: handleFullscreen,
+                              handlePortraitFullscreen:
+                                  handlePortraitFullscreen,
                               enterAndroidPictureInPicture:
                                   enterAndroidPictureInPicture,
                               handleProgressBarDragStart:

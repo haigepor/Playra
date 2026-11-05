@@ -1,4 +1,4 @@
-import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
@@ -20,8 +20,9 @@ class BangumiCardV extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PlayraSurface(
-      margin: EdgeInsets.zero,
+    return PlayraCard(
+      kind: PlayraCardKind.poster,
+      padding: EdgeInsets.zero,
       child: GestureDetector(
         child: InkWell(
           onTap: () {

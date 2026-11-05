@@ -1,4 +1,5 @@
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -256,30 +257,32 @@ class _EpisodeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     final backgroundColor = isDownloaded
-        ? colorScheme.surfaceContainerLow
+        ? tokens.surface.withValues(alpha: 0.5)
         : isSelected
-        ? colorScheme.secondaryContainer
-        : colorScheme.surfaceContainerLow;
+        ? tokens.primaryContainer
+        : tokens.surfaceRaised;
     final foregroundColor = isDownloaded
-        ? colorScheme.outline
+        ? tokens.foregroundMuted
         : isSelected
-        ? colorScheme.onSecondaryContainer
-        : colorScheme.onSurface;
+        ? tokens.primary
+        : tokens.foreground;
+    final borderColor = isSelected ? tokens.primary : tokens.borderSubtle;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOutCubic,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(isSelected ? 28 : 16),
+        borderRadius: BorderRadius.circular(isSelected ? 20 : 12),
+        border: Border.all(color: borderColor),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
-          borderRadius: BorderRadius.circular(isSelected ? 28 : 16),
+          borderRadius: BorderRadius.circular(isSelected ? 20 : 12),
           onTap: onTap,
           child: Stack(
             children: [
@@ -304,7 +307,7 @@ class _EpisodeTile extends StatelessWidget {
                   child: Icon(
                     Icons.download_done_rounded,
                     size: 14,
-                    color: colorScheme.outline,
+                    color: tokens.foregroundMuted,
                   ),
                 )
               else
@@ -318,7 +321,7 @@ class _EpisodeTile extends StatelessWidget {
                     child: Icon(
                       Icons.check_circle_rounded,
                       size: 14,
-                      color: colorScheme.onSecondaryContainer,
+                      color: tokens.primary,
                     ),
                   ),
                 ),

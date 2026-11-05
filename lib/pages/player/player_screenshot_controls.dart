@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/pages/player/controller/player_screenshot_controller.dart';
 
 class PlayerScreenshotControls extends StatelessWidget {
@@ -18,12 +19,8 @@ class PlayerScreenshotControls extends StatelessWidget {
     builder: (context) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
+        PlayraIconButton(
           tooltip: '截取当前画面',
-          style: IconButton.styleFrom(
-            foregroundColor: Colors.white,
-            minimumSize: const Size(48, 48),
-          ),
           onPressed: controller.busy ? null : onCapture,
           icon: controller.capturing
               ? const SizedBox.square(
@@ -33,21 +30,17 @@ class PlayerScreenshotControls extends StatelessWidget {
                     color: Colors.white,
                   ),
                 )
-              : const Icon(Icons.photo_camera_outlined),
+              : const Icon(Icons.photo_camera_outlined, color: Colors.white),
         ),
         if (controller.candidates.isNotEmpty)
-          IconButton(
+          PlayraIconButton(
             tooltip: '挑选截图 · ${controller.candidates.length} 张',
-            style: IconButton.styleFrom(
-              foregroundColor: Colors.white,
-              minimumSize: const Size(48, 48),
-            ),
             onPressed: controller.saving ? null : onReview,
             icon: Badge.count(
               count: controller.candidates.length,
               backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
               textColor: Theme.of(context).colorScheme.onSecondaryContainer,
-              child: const Icon(Icons.photo_library_outlined),
+              child: const Icon(Icons.photo_library_outlined, color: Colors.white),
             ),
           ),
       ],

@@ -90,9 +90,10 @@ class WhiskletWork {
 }
 
 class WhiskletShelf {
-  const WhiskletShelf(this.title, this.items);
+  const WhiskletShelf(this.title, this.items, {this.typeId = 0});
   final String title;
   final List<WhiskletWork> items;
+  final int typeId;
 }
 
 class WhiskletPage {

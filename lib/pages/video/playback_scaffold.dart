@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/platform/browser_display.dart';
+import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 
 import 'package:canvas_danmaku/models/danmaku_content_item.dart';
 import 'package:flutter/material.dart';
@@ -431,6 +433,13 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
       child: Observer(
         builder: (context) {
           final bool isPip = videoPageController.isPip;
+          final mode = videoPageController.fullscreen.mode;
+          final playerWidth = playerController.debug.playerWidth;
+          final playerHeight = playerController.debug.playerHeight;
+          final portraitAspectRatio =
+              playerWidth > 0 && playerHeight > playerWidth
+              ? playerWidth / playerHeight
+              : null;
           return VideoSystemBars(
             fullscreen: videoPageController.isFullscreen,
             isPip: isPip,
@@ -438,6 +447,8 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
               body: VideoPageLayout(
                 fullscreen: videoPageController.isFullscreen,
                 isPip: isPip,
+                portraitFullscreen: mode == VideoFullscreenMode.portrait,
+                portraitAspectRatio: portraitAspectRatio,
                 playerBuilder: (context, layout) => ColoredBox(
                   color: Colors.black,
                   child: Focus(
@@ -584,10 +595,10 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton.filled(
+                    PlayraIconButton(
                       tooltip: '播放当前选集',
                       onPressed: _onlineArgs == null ? null : playPrepared,
-                      icon: const Icon(Icons.play_arrow),
+                      icon: const Icon(Icons.play_arrow, color: Colors.white),
                     ),
                     Text(
                       isPreparing
@@ -602,11 +613,10 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
               Positioned(
                 top: 4,
                 left: 8,
-                child: IconButton(
+                child: PlayraIconButton(
                   tooltip: '返回',
                   onPressed: _onBackPressed,
-                  color: Colors.white,
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const Icon(Icons.chevron_left, color: Colors.white),
                 ),
               ),
             ],
@@ -636,7 +646,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                                 icon: Icons.videocam_off_outlined,
                               ),
                             ),
-                            TextButton.icon(
+                            PlayraButton.ghostIcon(
                               onPressed: retryPlayback,
                               icon: const Icon(Icons.refresh_rounded, size: 18),
                               label: const Text('重试当前集'),
@@ -698,7 +708,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                       requireOffset: !videoPageController.isFullscreen,
                       child: Row(
                         children: [
-                          IconButton(
+                          PlayraIconButton(
                             icon: const Icon(
                               Icons.arrow_back,
                               color: Colors.white,
@@ -710,7 +720,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                               child: SizedBox(height: 40),
                             ),
                           ),
-                          IconButton(
+                          PlayraIconButton(
                             icon: const Icon(
                               Icons.refresh_outlined,
                               color: Colors.white,
@@ -724,14 +734,14 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                             },
                           ),
                           if (layout.hasSidePanel)
-                            IconButton(
+                            PlayraIconButton(
                               onPressed: _toggleSidePanel,
                               icon: const Icon(
                                 Icons.menu_open_rounded,
                                 color: Colors.white,
                               ),
                             ),
-                          IconButton(
+                          PlayraIconButton(
                             icon: Icon(
                               showDebugLog
                                   ? Icons.bug_report

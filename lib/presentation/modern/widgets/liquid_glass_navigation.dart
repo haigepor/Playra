@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 
 /// Samples only the area beneath the dock; the dock itself is outside this layer.
 class LiquidGlassBackdropController extends ChangeNotifier {
@@ -278,6 +279,7 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
     final scale = MediaQuery.textScalerOf(context).scale(12) / 12;
     final height = 60.0 + 20 * (scale - 1).clamp(0, 2);
     final theme = Theme.of(context);
+    final tokens = PlayraTokens.of(context);
     _syncSurface();
     return LayoutBuilder(
       builder: (context, bounds) {
@@ -343,9 +345,11 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
                           if (_shader == null || snapshot == null) {
                             return DecoratedBox(
                               decoration: BoxDecoration(
-                                color: const Color(0xd9161b27),
+                                color: tokens.surface.withValues(alpha: 0.85),
                                 border: Border.all(
-                                  color: const Color(0x55e3eaff),
+                                  color: tokens.borderSubtle.withValues(
+                                    alpha: 0.35,
+                                  ),
                                 ),
                                 borderRadius: BorderRadius.circular(height / 2),
                               ),
@@ -385,8 +389,8 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
                             (states) => IconThemeData(
                               size: 20,
                               color: states.contains(WidgetState.selected)
-                                  ? const Color(0xffdce2ff)
-                                  : const Color(0xffe3e7f0),
+                                  ? tokens.primary
+                                  : tokens.mutedForeground,
                             ),
                           ),
                           labelTextStyle: WidgetStateProperty.resolveWith(
@@ -396,8 +400,8 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
                                   ? FontWeight.w600
                                   : FontWeight.w500,
                               color: states.contains(WidgetState.selected)
-                                  ? const Color(0xffdce2ff)
-                                  : const Color(0xffe3e7f0),
+                                  ? tokens.primary
+                                  : tokens.mutedForeground,
                             ),
                           ),
                         ),

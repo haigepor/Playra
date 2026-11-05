@@ -228,7 +228,7 @@ class _SyncStatusChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(PlayraRadius.control),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

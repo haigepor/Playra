@@ -4,6 +4,8 @@ import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/dialog/adaptive_bottom_sheet.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/dialog/material_bottom_sheet.dart';
@@ -356,14 +358,14 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
   }
 
   Widget _buildSearch() {
-    final colors = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
           child: ValueListenableBuilder<TextEditingValue>(
             valueListenable: _keywordController,
-            builder: (context, value, _) => TextField(
+            builder: (context, value, _) => PlayraTextField(
               controller: _keywordController,
               autofocus: true,
               textInputAction: TextInputAction.search,
@@ -373,7 +375,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: value.text.isEmpty
                     ? null
-                    : IconButton(
+                    : PlayraIconButton(
                         tooltip: '清空',
                         onPressed: () => _keywordController.clear(),
                         icon: const Icon(Icons.close, size: 18),
@@ -389,7 +391,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (_error != null) ...[
-                  Text(_error!, style: TextStyle(color: colors.error)),
+                  Text(_error!, style: TextStyle(color: tokens.destructive)),
                   const SizedBox(height: 12),
                 ],
                 if (_recentKeywords.isNotEmpty) ...[
@@ -422,14 +424,14 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
         ),
         DecoratedBox(
           decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: colors.outlineVariant)),
+            border: Border(top: BorderSide(color: tokens.borderSubtle)),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
+                PlayraButton.ghost(
                   onPressed: () => KazumiDialog.dismiss(context: context),
                   child: const Text('取消'),
                 ),
@@ -485,7 +487,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
                     ? splitListOuterRadius
                     : splitListInnerRadius,
                 onTap: () => _selectAnime(anime),
-                child: ListTile(
+                child: PlayraListTile(
                   title: Text(anime.animeTitle,
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                   subtitle: anime.typeDescription.isEmpty
@@ -554,7 +556,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
                             ? splitListOuterRadius
                             : splitListInnerRadius,
                         onTap: () => _selectEpisode(episode),
-                        child: ListTile(
+                        child: PlayraListTile(
                           title: Text(episode.episodeTitle,
                               maxLines: 1, overflow: TextOverflow.ellipsis),
                         ),
@@ -607,7 +609,7 @@ class _SheetHeader extends StatelessWidget {
             title: title,
             leading: onBack == null
                 ? null
-                : IconButton(
+                : PlayraIconButton(
                     tooltip: '返回',
                     onPressed: onBack,
                     icon: const Icon(Icons.arrow_back),
@@ -697,7 +699,7 @@ class _EpisodeToolbar extends StatelessWidget {
               Expanded(
                 child: SizedBox(
                   height: 46,
-                  child: TextField(
+                  child: PlayraTextField(
                     controller: searchController,
                     onChanged: onSearch,
                     decoration: InputDecoration(
@@ -706,7 +708,7 @@ class _EpisodeToolbar extends StatelessWidget {
                       prefixIcon: const Icon(Icons.search, size: 18),
                       suffixIcon: searchController.text.isEmpty
                           ? null
-                          : IconButton(
+                          : PlayraIconButton(
                               tooltip: '清空',
                               onPressed: () {
                                 searchController.clear();
@@ -723,7 +725,7 @@ class _EpisodeToolbar extends StatelessWidget {
                 SizedBox(
                   width: 126,
                   height: 46,
-                  child: TextField(
+                  child: PlayraTextField(
                     controller: jumpController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -732,7 +734,7 @@ class _EpisodeToolbar extends StatelessWidget {
                     decoration: InputDecoration(
                       isDense: true,
                       hintText: '集号',
-                      suffixIcon: IconButton(
+                      suffixIcon: PlayraIconButton(
                         tooltip: '跳转',
                         onPressed: onJump,
                         icon: const Icon(Icons.arrow_forward, size: 18),

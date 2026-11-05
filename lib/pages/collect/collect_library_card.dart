@@ -220,11 +220,18 @@ class _CollectPosterCard extends StatelessWidget {
                 ),
               );
 
-        return Material(
-          color: colors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(compact ? 16 : 20),
-          clipBehavior: Clip.antiAlias,
-          child: Semantics(
+        final tokens = PlayraTokens.of(context);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: tokens.surfaceRaised,
+            borderRadius: BorderRadius.circular(compact ? 16 : 20),
+            border: Border.all(color: tokens.borderSubtle),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: BorderRadius.circular(compact ? 16 : 20),
+            clipBehavior: Clip.antiAlias,
+            child: Semantics(
             button: true,
             label: [
               title,
@@ -248,9 +255,10 @@ class _CollectPosterCard extends StatelessWidget {
               ),
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 }
 
@@ -281,11 +289,18 @@ class _CollectListTile extends StatelessWidget {
         '${item.ratingScore.toStringAsFixed(1)} 分',
     ];
 
-    return Material(
-      color: colors.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
+    final tokens = PlayraTokens.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.surfaceRaised,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: tokens.borderSubtle),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
         children: [
           // Isolate menu focus and taps from card navigation.
           Positioned.fill(
@@ -367,8 +382,9 @@ class _CollectListTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _CollectCover extends StatelessWidget {

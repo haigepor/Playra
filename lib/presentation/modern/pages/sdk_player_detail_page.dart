@@ -9,7 +9,9 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:kazumi/pages/player/player_item.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
+import 'package:kazumi/pages/video/video_page_layout.dart';
 import 'package:kazumi/pages/video/video_system_bars.dart';
+import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 import 'package:kazumi/services/video_source/video_source_format.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
@@ -27,6 +29,9 @@ import 'package:kazumi/services/source/prepared_playback.dart';
 import 'package:kazumi/services/source/source_display_names.dart';
 import 'package:kazumi/services/source/sdk_playback_resume.dart';
 import 'package:kazumi/services/source/source_models.dart' show SourceException;
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/widgets/playra_sheet.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import '../player/playing_mark.dart';
 import '../player/player_theme.dart';
 import '../settings/modern_back_button.dart';
@@ -1072,19 +1077,10 @@ class _SdkDetailPageState extends State<SdkDetailPage>
 
   Future<void> showLines(BuildContext pageContext) async {
     try {
-      await showModalBottomSheet<void>(
+      await showPlayraSheet<void>(
         context: pageContext,
-        isScrollControlled: true,
+        size: PlayraSheetSize.standard,
         showDragHandle: false,
-        useSafeArea: true,
-        constraints: const BoxConstraints(maxWidth: 640),
-        sheetAnimationStyle: MediaQuery.disableAnimationsOf(pageContext)
-            ? AnimationStyle.noAnimation
-            : const AnimationStyle(
-                duration: Duration(milliseconds: 260),
-                reverseDuration: Duration(milliseconds: 200),
-              ),
-        clipBehavior: Clip.antiAlias,
         builder: (sheetContext) => StatefulBuilder(
           builder: (context, update) {
             _refreshLineSheet = () {
@@ -1231,60 +1227,34 @@ class _SdkDetailPageState extends State<SdkDetailPage>
   }
 
   void showDescription(BuildContext pageContext) {
-    final colors = Theme.of(pageContext).colorScheme;
-    showModalBottomSheet<void>(
+    showPlayraSheet<void>(
       context: pageContext,
-      backgroundColor: colors.surface,
-      barrierColor: Colors.black.withValues(alpha: .65),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .75,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        video.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: '关闭简介',
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        size: 18,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+      size: PlayraSheetSize.standard,
+      title: video.title,
+      builder: (context) => SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (video.subtitle.isNotEmpty) ...[
+              Text(
+                video.subtitle,
+                style: TextStyle(
+                  fontSize: PlayraType.caption,
+                  color: PlayraTokens.of(context).foregroundMuted,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  video.subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  video.description.isEmpty ? '暂无简介' : video.description,
-                  style: const TextStyle(fontSize: 14, height: 1.65),
-                ),
-              ],
+              ),
+              const SizedBox(height: PlayraSpace.md),
+            ],
+            Text(
+              video.description.isEmpty ? '暂无简介' : video.description,
+              style: TextStyle(
+                fontSize: PlayraType.body,
+                height: PlayraType.readingHeight,
+                color: PlayraTokens.of(context).foreground,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -1323,114 +1293,85 @@ class _SdkDetailPageState extends State<SdkDetailPage>
   );
 
   void showEpisodes(BuildContext pageContext) {
-    final colors = Theme.of(pageContext).colorScheme;
     // 弹层只调整显示顺序；点击始终传回真实线路与剧集编号。
     final ascending = List<SdkEpisode>.of(episodes);
     var descending = false;
     final currentIndex = _displayEpisodeIndex(ascending);
     var segment = currentIndex < 0 ? 0 : currentIndex ~/ 50;
-    showModalBottomSheet<void>(
+    showPlayraSheet<void>(
       context: pageContext,
-      backgroundColor: colors.surface,
-      barrierColor: Colors.black.withValues(alpha: .65),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      isScrollControlled: true,
-      showDragHandle: true,
+      size: PlayraSheetSize.standard,
+      title: '全部选集',
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, update) {
           final ordered = descending ? ascending.reversed.toList() : ascending;
           final groups = (ordered.length / 50).ceil();
           final visible = ordered.skip(segment * 50).take(50).toList();
-          final textScale = MediaQuery.textScalerOf(context);
-          final columns =
-              (MediaQuery.sizeOf(context).width / (82 * textScale.scale(1)))
-                  .floor()
-                  .clamp(2, 6);
-          final tileHeight = 48 + (textScale.scale(12) - 12).clamp(0, 24);
-          final width = MediaQuery.sizeOf(context).width - 32;
-          final tileWidth = (width - 8 * (columns - 1)) / columns;
-          final rows = _episodeRows(
-            context,
-            visible,
-            width,
-            tileWidth,
-            columns,
-          );
-          final hasWide = rows.any(
-            (row) => row.size != _EpisodeCardSize.compact,
-          );
-          // 单集作品采用紧凑弹层；长篇保留较高弹层与独立网格滚动。
-          final contentHeight =
-              (190 +
-                      rows.fold<double>(
-                        0,
-                        (height, row) =>
-                            height + _episodeHeight(context, row.size) + 8,
-                      ) +
-                      (groups > 1 ? 48 : 0))
-                  .clamp(0, MediaQuery.sizeOf(context).height * .8)
-                  .toDouble();
-          return ModernPlayerScope(
-            child: SafeArea(
-              child: SizedBox(
-                height: contentHeight,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '全部选集',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final textScale = MediaQuery.textScalerOf(context);
+              final contentWidth = constraints.maxWidth > 0
+                  ? constraints.maxWidth
+                  : MediaQuery.sizeOf(context).width - 32;
+              final columns =
+                  (contentWidth / (82 * textScale.scale(1)))
+                      .floor()
+                      .clamp(2, 6);
+              final tileHeight = 48 + (textScale.scale(12) - 12).clamp(0, 24);
+              final tileWidth = (contentWidth - 8 * (columns - 1)) / columns;
+              final rows = _episodeRows(
+                context,
+                visible,
+                contentWidth,
+                tileWidth,
+                columns,
+              );
+              final hasWide = rows.any(
+                (row) => row.size != _EpisodeCardSize.compact,
+              );
+              return ModernPlayerScope(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${line?.label ?? ''} · 共 ${ascending.length} 集',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: PlayraTokens.of(context).foregroundMuted,
+                                ),
                               ),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () => update(() {
-                              descending = !descending;
-                              segment = 0;
-                            }),
-                            child: Text(descending ? '降序' : '升序'),
-                          ),
-                          if (playingCode == line?.code &&
-                              playingIdentity != null)
-                            IconButton(
-                              tooltip: '定位当前集',
+                            PlayraButton.ghost(
                               onPressed: () => update(() {
-                                final index = ordered.indexWhere(
-                                  (e) => e.identityKey == playingIdentity,
-                                );
-                                if (index >= 0) segment = index ~/ 50;
+                                descending = !descending;
+                                segment = 0;
                               }),
-                              icon: Icon(
-                                Icons.my_location,
-                                size: 20,
-                                color: colors.primary,
+                              child: Text(descending ? '降序' : '升序'),
+                            ),
+                            if (playingCode == line?.code &&
+                                playingIdentity != null)
+                              PlayraIconButton(
+                                tooltip: '定位当前集',
+                                onPressed: () => update(() {
+                                  final index = ordered.indexWhere(
+                                    (e) => e.identityKey == playingIdentity,
+                                  );
+                                  if (index >= 0) segment = index ~/ 50;
+                                }),
+                                icon: Icon(
+                                  Icons.my_location,
+                                  size: 20,
+                                  color: PlayraTokens.of(context).primary,
+                                ),
                               ),
-                            ),
-                          IconButton(
-                            tooltip: '关闭选集',
-                            onPressed: () => Navigator.of(sheetContext).pop(),
-                            icon: Icon(
-                              Icons.close_rounded,
-                              size: 18,
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        '${line?.label ?? ''} · 共 ${ascending.length} 集',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.onSurfaceVariant,
+                          ],
                         ),
-                      ),
                       if (groups > 1)
                         _SdkEpisodeSegments(
                           labels: [
@@ -1499,12 +1440,13 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                   ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+            );
+          },
+        );
+      },
+    ),
+  );
+}
 
   @override
   void dispose() {
@@ -1540,13 +1482,28 @@ class _SdkDetailPageState extends State<SdkDetailPage>
           builder: (_) {
             final fullscreen = _nativeView?.isFullscreen == true;
             final pip = _nativeView?.isPip == true;
+            final portrait =
+                _nativeView?.fullscreen.mode ==
+                VideoFullscreenMode.portrait;
             if (_nativePlayer != null &&
                 _videoController != null &&
                 (fullscreen || pip)) {
+              final width = _nativePlayer!.debug.playerWidth;
+              final height = _nativePlayer!.debug.playerHeight;
+              final surface = _nativePlayerSurface(fillsWindow: true);
               return VideoSystemBars(
                 fullscreen: fullscreen,
                 isPip: pip,
-                child: Scaffold(body: _nativePlayerSurface(fillsWindow: true)),
+                child: Scaffold(
+                  body: portrait
+                      ? PortraitVideoCanvas(
+                          aspectRatio: width > 0 && height > width
+                              ? width / height
+                              : null,
+                          child: surface,
+                        )
+                      : surface,
+                ),
               );
             }
             return _buildPage(context);
@@ -1635,7 +1592,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                                 ),
                               const ColoredBox(color: Color(0x66000000)),
                               Center(
-                                child: IconButton.filled(
+                                child: PlayraIconButton(
                                   tooltip: '播放当前选集',
                                   onPressed: episodes.isEmpty
                                       ? null
@@ -1649,15 +1606,17 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                           ),
                         ),
                       if (playingLoading && !_preparingOnly)
-                        const Center(
+                        Center(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: Color(0xcc11141c),
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(16),
+                              color: PlayraTokens.of(
+                                context,
+                              ).background.withValues(alpha: 0.8),
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(PlayraRadius.card),
                               ),
                             ),
-                            child: Padding(
+                            child: const Padding(
                               padding: EdgeInsets.all(14),
                               child: LoadingIndicator(
                                 size: 38,
@@ -1672,7 +1631,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                           _requestedEpisode != null &&
                           _requestedEpisode!.code == line?.code)
                         Center(
-                          child: IconButton.filled(
+                          child: PlayraIconButton(
                             tooltip: '重试当前集',
                             onPressed: () => play(_requestedEpisode!),
                             icon: const Icon(Icons.replay_rounded, size: 28),
@@ -1712,7 +1671,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                               ),
                             ),
                           ),
-                          TextButton(
+                          PlayraButton.ghost(
                             onPressed: () => showDescription(context),
                             child: const Text('简介 ›'),
                           ),
@@ -1730,7 +1689,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                         Row(
                           children: [
                             Expanded(child: Text(detailError!)),
-                            TextButton(
+                            PlayraButton.ghost(
                               onPressed: loadDetail,
                               child: const Text('重试'),
                             ),
@@ -1762,7 +1721,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                               ),
                             ),
                           ),
-                          TextButton(
+                          PlayraButton.ghost(
                             onPressed: episodes.isEmpty
                                 ? null
                                 : () => showEpisodes(context),
@@ -1782,7 +1741,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                         Row(
                           children: [
                             Expanded(child: Text(episodesError!)),
-                            TextButton(
+                            PlayraButton.ghost(
                               onPressed: line == null
                                   ? null
                                   : () => selectLine(line!),
@@ -2060,54 +2019,62 @@ class _SdkEpisodeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     final expanded = size == _EpisodeCardSize.full;
     final wide = size != _EpisodeCardSize.compact;
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        minimumSize: Size(0, _episodeHeight(context, size)),
-        visualDensity: VisualDensity.standard,
-        padding: EdgeInsets.symmetric(
-          horizontal: wide ? 12 : 8,
-          vertical: expanded ? 10 : 0,
-        ),
-        foregroundColor: selected ? colors.primary : colors.onSurface,
-        backgroundColor: selected
-            ? colors.surfaceContainerHighest
-            : colors.surfaceContainerLow,
-        side: BorderSide(
-          color: selected ? colors.primary : colors.outlineVariant,
-        ),
-        // 选集是密集网格，胶囊（Stadium）在高行高下弧度过大；
-        // 用 12 的圆角矩形与弹窗里的线路条目保持同一视觉语言。
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(PlayraRadius.control),
+      side: BorderSide(
+        color: selected ? tokens.primary : tokens.borderSubtle,
       ),
-      child: Row(
-        mainAxisAlignment: wide
-            ? MainAxisAlignment.start
-            : MainAxisAlignment.center,
-        children: [
-          if (selected) ...[
-            if (activity == null)
-              PlayingMark(active: false, color: colors.primary)
-            else
-              ValueListenableBuilder<bool>(
-                valueListenable: activity!,
-                builder: (_, active, _) =>
-                    PlayingMark(active: active, color: colors.primary),
-              ),
-            const SizedBox(width: 4),
-          ],
-          Flexible(
-            child: Text(
-              '${episode.vip ? 'VIP · ' : ''}${episode.label}',
-              maxLines: expanded ? 2 : 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, height: 1.4),
-            ),
+    );
+    return Material(
+      color: selected ? tokens.primaryContainer : tokens.surfaceRaised,
+      shape: shape,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: shape,
+        child: Container(
+          constraints: BoxConstraints(minHeight: _episodeHeight(context, size)),
+          padding: EdgeInsets.symmetric(
+            horizontal: wide ? PlayraSpace.md : PlayraSpace.sm,
+            vertical: expanded ? 10 : 0,
           ),
-        ],
+          alignment: wide ? Alignment.centerLeft : Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: wide
+                ? MainAxisAlignment.start
+                : MainAxisAlignment.center,
+            children: [
+              if (selected) ...[
+                if (activity == null)
+                  PlayingMark(active: false, color: tokens.primary)
+                else
+                  ValueListenableBuilder<bool>(
+                    valueListenable: activity!,
+                    builder: (_, active, _) =>
+                        PlayingMark(active: active, color: tokens.primary),
+                  ),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  '${episode.vip ? 'VIP · ' : ''}${episode.label}',
+                  maxLines: expanded ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: selected ? tokens.primary : tokens.foreground,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
 
 import 'package:kazumi/bean/card/network_img_layer.dart';
@@ -388,22 +389,31 @@ class _CharacterPortrait extends StatelessWidget {
                                 width: width,
                                 height: height,
                                 fit: BoxFit.contain,
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          Positioned(
-                            right: 4,
-                            bottom: 4,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                  color: colors.surface.withValues(alpha: .8),
-                                  borderRadius: BorderRadius.circular(6)),
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: Icon(LucideIcons.maximize2,
-                                    size: 14, color: colors.onSurfaceVariant),
+                                borderRadius: BorderRadius.circular(
+                                  PlayraRadius.poster,
+                                ),
                               ),
                             ),
-                          ),
+                            Positioned(
+                              right: 4,
+                              bottom: 4,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: colors.surface.withValues(alpha: .8),
+                                  borderRadius: BorderRadius.circular(
+                                    PlayraRadius.thumbnail,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    LucideIcons.maximize2,
+                                    size: 14,
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
                         ])
                       : Center(
                           child: Icon(LucideIcons.userRound,

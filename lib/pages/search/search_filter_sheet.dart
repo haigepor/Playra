@@ -106,12 +106,15 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
   }
 
   Widget _buildScoreRangeSlider(SearchDoubleRange range) {
+    final tokens = PlayraTokens.of(context);
     final values = _safeRangeValues(range.min ?? 0, range.max ?? 10, 0, 10);
     return RangeSlider(
       values: values,
       min: 0,
       max: 10,
       divisions: 20,
+      activeColor: tokens.primary,
+      inactiveColor: tokens.muted,
       labels: RangeLabels(
         values.start.toStringAsFixed(1),
         values.end.toStringAsFixed(1),
@@ -127,6 +130,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
   }
 
   Widget _buildRankRangeSlider(SearchIntRange range) {
+    final tokens = PlayraTokens.of(context);
     final values = _safeRangeValues(
       (range.min ?? 1).toDouble(),
       (range.max ?? 10000).toDouble(),
@@ -138,6 +142,8 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
       min: 1,
       max: 10000,
       divisions: 100,
+      activeColor: tokens.primary,
+      inactiveColor: tokens.muted,
       labels: RangeLabels('${values.start.round()}', '${values.end.round()}'),
       onChanged: (value) {
         setState(() {
@@ -152,16 +158,27 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
     );
   }
 
-  InputDecoration _fieldDecoration(String label) => InputDecoration(
-    labelText: label,
-    filled: true,
-    fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
-    // Keep labels inside the fill to avoid ExpansionTile clipping.
-    border: UnderlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide.none,
-    ),
-  );
+  InputDecoration _fieldDecoration(String label) {
+    final tokens = PlayraTokens.of(context);
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: tokens.surfaceRaised,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(PlayraRadius.control),
+        borderSide: BorderSide(color: tokens.borderSubtle),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(PlayraRadius.control),
+        borderSide: BorderSide(color: tokens.borderSubtle),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(PlayraRadius.control),
+        borderSide: BorderSide(color: tokens.primary, width: 1.5),
+      ),
+    );
+  }
 
   void _apply() => Navigator.pop(
     context,
@@ -175,7 +192,6 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final colors = Theme.of(context).colorScheme;
     final dateSummary = _draft.season.isNotEmpty
         ? _draft.season
         : _draft.dateRange == null
@@ -283,7 +299,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
                         ),
                       ],
                     ),
-                    Divider(height: 1, color: colors.outlineVariant),
+                    Divider(height: 1, color: PlayraTokens.of(context).borderSubtle),
                     _SearchFilterGroup(
                       title: '放送时间',
                       summary:
@@ -368,7 +384,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
                         ),
                       ],
                     ),
-                    Divider(height: 1, color: colors.outlineVariant),
+                    Divider(height: 1, color: PlayraTokens.of(context).borderSubtle),
                     _SearchFilterGroup(
                       title: '评分与排名',
                       summary: [
@@ -415,7 +431,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
                         ],
                       ],
                     ),
-                    Divider(height: 1, color: colors.outlineVariant),
+                    Divider(height: 1, color: PlayraTokens.of(context).borderSubtle),
                     _SearchFilterGroup(
                       title: '收藏状态',
                       summary: [

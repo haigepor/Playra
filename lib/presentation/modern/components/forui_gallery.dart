@@ -105,6 +105,24 @@ class _ForuiGalleryState extends State<ForuiGallery> {
                       ),
                   ],
                 ),
+                const SizedBox(height: PlayraSpace.md),
+                const Wrap(
+                  spacing: PlayraSpace.sm,
+                  runSpacing: PlayraSpace.sm,
+                  children: [
+                    PlayraBadge(child: Text('在看 12')),
+                    PlayraBadge.secondary(child: Text('更新至 24 话')),
+                    PlayraBadge.outline(child: Text('1080P')),
+                    PlayraBadge.destructive(child: Text('已完结')),
+                  ],
+                ),
+                const SizedBox(height: PlayraSpace.md),
+                const PlayraAlert(
+                  title: Text('全站 Forui 组件重构'),
+                  subtitle: Text('所有卡片、表单、弹窗均由统一 Token 驱动。'),
+                ),
+                const SizedBox(height: PlayraSpace.md),
+                const PlayraDivider(),
                 const PlayraExpansionTile(
                   title: Text('展开说明'),
                   children: [Text('圆角、间距、文字、交互状态统一来自应用主题。')],

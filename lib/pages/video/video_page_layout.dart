@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 typedef VideoPlayerLayout = ({bool fillsWindow, bool hasSidePanel});
@@ -11,6 +13,8 @@ class VideoPageLayout extends StatelessWidget {
     required this.playerBuilder,
     required this.tabs,
     this.sidePanel,
+    this.portraitFullscreen = false,
+    this.portraitAspectRatio,
   });
 
   final bool fullscreen;
@@ -20,8 +24,22 @@ class VideoPageLayout extends StatelessWidget {
   final Widget tabs;
   final Widget? sidePanel;
 
+  /// Manual portrait fullscreen from the top bar; the normal fullscreen
+  /// button keeps the existing landscape behaviour.
+  final bool portraitFullscreen;
+  final double? portraitAspectRatio;
+
   @override
   Widget build(BuildContext context) {
+    if (portraitFullscreen) {
+      return PortraitVideoCanvas(
+        aspectRatio: portraitAspectRatio,
+        child: playerBuilder(
+          context,
+          (fillsWindow: true, hasSidePanel: false),
+        ),
+      );
+    }
     return LayoutBuilder(builder: (context, constraints) {
       final fillsWindow =
           fullscreen || isPip || constraints.maxWidth > constraints.maxHeight;
@@ -59,5 +77,33 @@ class VideoPageLayout extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+/// A centred portrait canvas for manual portrait fullscreen.
+///
+/// The canvas fills the window height; on a landscape tablet it leaves black
+/// side bars instead of stretching the 16:9 surface into a short band.
+class PortraitVideoCanvas extends StatelessWidget {
+  const PortraitVideoCanvas({
+    super.key,
+    required this.child,
+    this.aspectRatio,
+  });
+
+  final Widget child;
+  final double? aspectRatio;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final aspect = aspectRatio ?? 9 / 16;
+    final width = math.min(size.width, size.height * aspect);
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: SizedBox(width: width, height: size.height, child: child),
+      ),
+    );
   }
 }

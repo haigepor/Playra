@@ -321,7 +321,7 @@ class _EpisodeStatusBadge extends StatelessWidget {
       height: 36,
       decoration: BoxDecoration(
         color: foreground.withValues(alpha: .09),
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(PlayraRadius.control),
       ),
       child: Center(child: UtilitySvgIcon(kind, size: 20, color: foreground)),
     );

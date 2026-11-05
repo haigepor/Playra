@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Shared loading surface for native anime and film playback.
@@ -95,12 +96,13 @@ class _PlayerBufferingOverlayState extends State<PlayerBufferingOverlay> {
         : progress == null
         ? '正在缓冲'
         : '缓冲 ${progress.round()}%';
+    final tokens = PlayraTokens.of(context);
     return IgnorePointer(
       child: Center(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: const Color(0xcc11141c),
-            borderRadius: BorderRadius.circular(16),
+            color: tokens.background.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(PlayraRadius.card),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),

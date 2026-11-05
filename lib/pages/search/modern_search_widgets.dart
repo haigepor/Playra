@@ -195,13 +195,17 @@ extension _ModernSearch on _SearchPageState {
                   children: [
                     for (final tag in filters.tags)
                       InputChip(
-                        backgroundColor: c.surfaceContainerLow,
-                        side: BorderSide.none,
+                        backgroundColor: PlayraTokens.of(context).surfaceRaised,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(PlayraRadius.control),
+                          side: BorderSide(color: PlayraTokens.of(context).borderSubtle),
+                        ),
                         labelStyle: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: c.onSurfaceVariant),
+                            ?.copyWith(color: PlayraTokens.of(context).foreground),
                         label: Text(tag),
                         onPressed: _showFilters,
                         deleteIcon: const Icon(LucideIcons.x, size: 14),
+                        deleteIconColor: PlayraTokens.of(context).foregroundMuted,
                         deleteButtonTooltipMessage: '移除“$tag”条件',
                         onDeleted: () => _applyFilters(
                           filters.copyWith(
@@ -211,12 +215,16 @@ extension _ModernSearch on _SearchPageState {
                       ),
                     if (filters.season.isNotEmpty || filters.dateRange != null)
                       InputChip(
-                        backgroundColor: c.surfaceContainerLow,
-                        side: BorderSide.none,
+                        backgroundColor: PlayraTokens.of(context).surfaceRaised,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(PlayraRadius.control),
+                          side: BorderSide(color: PlayraTokens.of(context).borderSubtle),
+                        ),
                         labelStyle: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: c.onSurfaceVariant),
+                            ?.copyWith(color: PlayraTokens.of(context).foreground),
                         onPressed: _showFilters,
                         deleteIcon: const Icon(LucideIcons.x, size: 14),
+                        deleteIconColor: PlayraTokens.of(context).foregroundMuted,
                         deleteButtonTooltipMessage: '移除放送时间条件',
                         label: Text(
                           filters.season.isNotEmpty
@@ -231,10 +239,13 @@ extension _ModernSearch on _SearchPageState {
                         filters.rankRange != null ||
                         filters.weekdays.isNotEmpty)
                       ActionChip(
-                        backgroundColor: c.surfaceContainerLow,
-                        side: BorderSide.none,
+                        backgroundColor: PlayraTokens.of(context).surfaceRaised,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(PlayraRadius.control),
+                          side: BorderSide(color: PlayraTokens.of(context).borderSubtle),
+                        ),
                         labelStyle: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: c.onSurfaceVariant),
+                            ?.copyWith(color: PlayraTokens.of(context).foreground),
                         label: const Text('更多条件'),
                         onPressed: _showFilters,
                       ),

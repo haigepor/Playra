@@ -349,14 +349,17 @@ class _KeyCap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     final textTheme = Theme.of(context).textTheme;
 
     return Material(
-      color: listening
-          ? colorScheme.primaryContainer
-          : colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
+      color: listening ? tokens.primaryContainer : tokens.surfaceRaised,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
+        side: BorderSide(
+          color: listening ? tokens.primary : tokens.borderSubtle,
+        ),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -371,9 +374,7 @@ class _KeyCap extends StatelessWidget {
               Text(
                 label,
                 style: textTheme.labelMedium?.copyWith(
-                  color: listening
-                      ? colorScheme.onPrimaryContainer
-                      : colorScheme.onSurface,
+                  color: listening ? tokens.primary : tokens.foreground,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -390,7 +391,7 @@ class _KeyCap extends StatelessWidget {
                       child: Icon(
                         Icons.close_rounded,
                         size: 14,
-                        color: colorScheme.onSurfaceVariant,
+                        color: tokens.foregroundSubtle,
                       ),
                     ),
                   ),
@@ -411,10 +412,10 @@ class _AddKeyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
-      side: BorderSide(color: colorScheme.outlineVariant),
+      side: BorderSide(color: tokens.borderSubtle),
     );
 
     return Tooltip(
@@ -432,7 +433,7 @@ class _AddKeyButton extends StatelessWidget {
               child: Icon(
                 Icons.add_rounded,
                 size: 16,
-                color: colorScheme.onSurfaceVariant,
+                color: tokens.foregroundSubtle,
               ),
             ),
           ),

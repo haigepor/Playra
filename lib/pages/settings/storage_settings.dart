@@ -43,7 +43,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('取消'),
           ),
-          PlayraButton(
+          PlayraButton.destructive(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('清除缓存'),
           ),

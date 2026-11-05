@@ -55,14 +55,35 @@ class WhiskletCatalog {
     if (groups is! List) {
       throw const SourceException('PROTOCOL', '推荐片目不完整');
     }
-    return [
-      for (final group in groups)
-        if (group is Map && group['vlist'] is List)
-          WhiskletShelf(
-            WhiskletWork.plain(group['name']),
-            WhiskletWork.list(group['vlist']),
-          ),
-    ].where((shelf) => shelf.items.isNotEmpty).toList();
+    final rawShelves = <WhiskletShelf>[];
+    for (final group in groups) {
+      if (group is Map && group['vlist'] is List) {
+        final title = WhiskletWork.plain(group['name']);
+        final items = WhiskletWork.list(group['vlist']);
+        final typeId = WhiskletWork.count(group['type_id']);
+        if (items.isNotEmpty) {
+          rawShelves.add(WhiskletShelf(title, items, typeId: typeId));
+        }
+      }
+    }
+    // 上游 index_recommend 每栏仅固定下发 6 条，在平板/大屏横滑容器下无法铺满且缺乏扩展性；
+    // 并行拉取各分栏首屏数据去重追加，使各栏片目扩充至 20+ 条，形成饱满连贯的内容货架。
+    return Future.wait(
+      rawShelves.map((shelf) async {
+        if (shelf.typeId <= 0) return shelf;
+        try {
+          final page = await browse(shelf.typeId, 1, cancel: cancel);
+          final seen = shelf.items.map((work) => work.id).toSet();
+          final merged = [
+            ...shelf.items,
+            ...page.items.where((work) => seen.add(work.id)),
+          ];
+          return WhiskletShelf(shelf.title, merged, typeId: shelf.typeId);
+        } catch (_) {
+          return shelf;
+        }
+      }),
+    );
   }
 
   Future<List<WhiskletWork>> hot({CancelToken? cancel}) async {

@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -60,7 +62,7 @@ class PlayerRelations extends StatelessWidget {
             SizedBox(
               width: width,
               child: InkWell(
-                borderRadius: BorderRadius.circular(9),
+                borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
                 onTap: () async {
                   await beforeNavigate?.call();
                   if (!context.mounted) return;
@@ -73,7 +75,8 @@ class PlayerRelations extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius:
+                          BorderRadius.circular(PlayraRadius.thumbnail),
                       child: AspectRatio(
                         aspectRatio: 5 / 7,
                         child: PlayerCover(
@@ -235,7 +238,7 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Center(
-                        child: TextButton(
+                        child: PlayraButton.ghost(
                           onPressed: () =>
                               setState(() => pending[index] = load(index)),
                           child: const Text('资料加载失败，点击重试'),

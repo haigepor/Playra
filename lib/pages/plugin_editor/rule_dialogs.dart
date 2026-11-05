@@ -1,4 +1,5 @@
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -18,7 +19,7 @@ Future<RuleAddSource?> showRuleAddDialog(
 ) => KazumiDialog.show<RuleAddSource>(
   context: context,
   builder: (context) {
-    final colors = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     return _RuleDialog(
       title: '添加规则',
       icon: Icons.add_circle_outline_rounded,
@@ -50,17 +51,30 @@ Future<RuleAddSource?> showRuleAddDialog(
             (RuleAddSource.create, Icons.edit_note_rounded, '新建规则', '从模板开始编写'),
           ])
             Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Material(
-                color: option.$1 == RuleAddSource.catalog
-                    ? colors.secondaryContainer
-                    : colors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(
-                  option.$1 == RuleAddSource.catalog ? 20 : 12,
+              padding: const EdgeInsets.only(bottom: 6),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: option.$1 == RuleAddSource.catalog
+                      ? tokens.primaryContainer
+                      : tokens.surface,
+                  borderRadius: BorderRadius.circular(
+                    option.$1 == RuleAddSource.catalog
+                        ? PlayraRadius.overlay
+                        : PlayraRadius.control,
+                  ),
+                  border: Border.all(
+                    color: option.$1 == RuleAddSource.catalog
+                        ? tokens.primary
+                        : tokens.borderSubtle,
+                  ),
                 ),
-                clipBehavior: Clip.antiAlias,
                 child: PlayraListTile(
-                  leading: Icon(option.$2, color: colors.onSurfaceVariant),
+                  leading: Icon(
+                    option.$2,
+                    color: option.$1 == RuleAddSource.catalog
+                        ? tokens.primary
+                        : tokens.foregroundMuted,
+                  ),
                   title: Text(option.$3),
                   subtitle: Text(option.$4),
                   trailing: const Icon(Icons.arrow_forward_rounded, size: 20),
@@ -133,8 +147,9 @@ Future<void> showRuleShareDialog(BuildContext context, Plugin plugin) async {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(16),
+              color: PlayraTokens.of(context).surface,
+              borderRadius: BorderRadius.circular(PlayraRadius.card),
+              border: Border.all(color: PlayraTokens.of(context).borderSubtle),
             ),
             constraints: const BoxConstraints(maxHeight: 180),
             child: SingleChildScrollView(
@@ -305,12 +320,12 @@ class _RuleDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     return PlayraDialog(
       constraints: const BoxConstraints(maxWidth: 560),
 
       scrollable: true,
-      icon: Icon(icon, color: colors.secondary, size: 32),
+      icon: Icon(icon, color: tokens.primary, size: 32),
       title: Text(title),
       content: SizedBox(width: 480, child: content),
 

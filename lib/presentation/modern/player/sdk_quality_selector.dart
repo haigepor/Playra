@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/source/sdk_playback_models.dart';
 
 /// 画质偏好独立于线路锁；控件完全继承新版播放页的主题与触控约束。
@@ -79,7 +80,7 @@ class SdkQualitySelector extends StatelessWidget {
               ),
             ),
             if (onRetry != null && (status == 'failed' || status == 'timeout'))
-              IconButton(
+              PlayraIconButton(
                 onPressed: onRetry,
                 tooltip: '重新获取画质',
                 icon: const Icon(Icons.refresh_rounded, size: 16),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 
@@ -45,13 +46,14 @@ class RuleSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = PlayraTokens.of(context);
     final modern = ModernSettingsScope.isActiveOf(context);
     return Material(
-      color: theme.colorScheme.surfaceContainerLow,
+      color: tokens.surfaceRaised,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(modern ? 14 : 20),
+        borderRadius: BorderRadius.circular(modern ? 14 : PlayraRadius.overlay),
         side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: .3),
+          color: tokens.borderSubtle,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -63,7 +65,7 @@ class RuleSection extends StatelessWidget {
             Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: theme.colorScheme.primary),
+                  Icon(icon, color: tokens.primary),
                   const SizedBox(width: 12),
                 ],
                 Expanded(
@@ -81,7 +83,7 @@ class RuleSection extends StatelessWidget {
               Text(
                 description!,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.foregroundMuted,
                 ),
               ),
             ],
@@ -101,7 +103,7 @@ InputDecoration ruleInputDecoration(
   Widget? prefix,
   Widget? suffix,
 }) {
-  final colors = Theme.of(context).colorScheme;
+  final tokens = PlayraTokens.of(context);
   final modern = ModernSettingsScope.isActiveOf(context);
   return InputDecoration(
     labelText: label,
@@ -109,22 +111,22 @@ InputDecoration ruleInputDecoration(
     prefixIcon: prefix,
     suffixIcon: suffix,
     filled: true,
-    fillColor: colors.surfaceContainerHighest,
+    fillColor: tokens.surface,
     contentPadding: EdgeInsets.symmetric(
       horizontal: modern ? 14 : 20,
       vertical: modern ? 14 : 18,
     ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(modern ? 14 : 16),
-      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(modern ? 14 : PlayraRadius.card),
+      borderSide: BorderSide(color: tokens.borderSubtle),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(modern ? 14 : 16),
-      borderSide: BorderSide.none,
+      borderRadius: BorderRadius.circular(modern ? 14 : PlayraRadius.card),
+      borderSide: BorderSide(color: tokens.borderSubtle),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(modern ? 14 : 16),
-      borderSide: BorderSide(color: colors.primary, width: 2),
+      borderRadius: BorderRadius.circular(modern ? 14 : PlayraRadius.card),
+      borderSide: BorderSide(color: tokens.primary, width: 1.5),
     ),
   );
 }

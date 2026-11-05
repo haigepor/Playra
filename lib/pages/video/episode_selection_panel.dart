@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
@@ -168,13 +170,13 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
                             ),
                           ),
                         ),
-                        IconButton(
+                        PlayraIconButton(
                           tooltip: '定位当前集',
                           onPressed: _canLocate ? revealCurrentEpisode : null,
                           icon: const Icon(Icons.my_location_rounded, size: 20),
                         ),
                         if (!widget.isOffline)
-                          IconButton.filledTonal(
+                          PlayraIconButton(
                             tooltip: '缓存剧集',
                             onPressed: count > 0 && widget.onDownload != null
                                 ? () => widget.onDownload!(_visibleRoad)
@@ -354,10 +356,10 @@ class _RoadSelectorState extends State<_RoadSelector> {
             visualDensity: VisualDensity.standard,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: WidgetStatePropertyAll(
-              selected ? colors.secondaryContainer : colors.surfaceContainerLow,
+              selected ? PlayraTokens.of(context).primaryContainer : PlayraTokens.of(context).surface,
             ),
             foregroundColor: WidgetStatePropertyAll(
-              selected ? colors.onSecondaryContainer : colors.onSurface,
+              selected ? PlayraTokens.of(context).primary : PlayraTokens.of(context).foreground,
             ),
             textStyle: WidgetStatePropertyAll(
               theme.textTheme.labelLarge?.copyWith(
@@ -371,6 +373,11 @@ class _RoadSelectorState extends State<_RoadSelector> {
                       top: Radius.circular(index == 0 ? 20 : 4),
                       bottom: Radius.circular(last ? 20 : 4),
                     ),
+              side: BorderSide(
+                color: selected
+                    ? PlayraTokens.of(context).primary
+                    : PlayraTokens.of(context).borderSubtle,
+              ),
             )),
           ),
           child: Column(
@@ -416,12 +423,13 @@ class _RoadSelectorState extends State<_RoadSelector> {
         alignmentOffset: const Offset(0, 8),
         style: MenuStyle(
           alignment: AlignmentDirectional.bottomStart,
-          backgroundColor: WidgetStatePropertyAll(colors.surfaceContainer),
+          backgroundColor: WidgetStatePropertyAll(PlayraTokens.of(context).surfaceOverlay),
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-          elevation: const WidgetStatePropertyAll(3),
+          elevation: const WidgetStatePropertyAll(4),
           padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
           shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(PlayraRadius.overlay),
+            side: BorderSide(color: PlayraTokens.of(context).borderSubtle),
           )),
           minimumSize: WidgetStatePropertyAll(Size(width, 0)),
           maximumSize: WidgetStatePropertyAll(Size(
@@ -571,7 +579,8 @@ class _EpisodeRowState extends State<_EpisodeRow>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final foreground = widget.selected ? colors.onPrimary : colors.onSurface;
+    final tokens = PlayraTokens.of(context);
+    final foreground = widget.selected ? tokens.primary : tokens.foreground;
     final status =
         widget.isOffline ? DownloadStatus.completed : widget.download?.status;
     final downloadLabel = switch (status) {
@@ -622,10 +631,15 @@ class _EpisodeRowState extends State<_EpisodeRow>
                     ? Duration.zero
                     : const Duration(milliseconds: 200),
                 color: widget.selected
-                    ? colors.primary
-                    : colors.surfaceContainerLow,
-                borderRadius: BorderRadius.lerp(
-                    restShape, BorderRadius.circular(12), press),
+                    ? tokens.primaryContainer
+                    : tokens.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.lerp(
+                      restShape, BorderRadius.circular(12), press)!,
+                  side: BorderSide(
+                    color: widget.selected ? tokens.primary : tokens.borderSubtle,
+                  ),
+                ),
                 clipBehavior: Clip.antiAlias,
                 child: child,
               ),
@@ -635,16 +649,8 @@ class _EpisodeRowState extends State<_EpisodeRow>
             onTap: widget.onTap,
             onHighlightChanged: _setPressed,
             excludeFromSemantics: true,
-            overlayColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.pressed) ||
-                  states.contains(WidgetState.focused)) {
-                return foreground.withValues(alpha: 0.1);
-              }
-              if (states.contains(WidgetState.hovered)) {
-                return foreground.withValues(alpha: 0.08);
-              }
-              return null;
-            }),
+            // 选集只用边框/底色表达选中，按压与悬停不再叠加背景。
+            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
             child: ExcludeSemantics(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 56),

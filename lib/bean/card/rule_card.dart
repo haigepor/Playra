@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/modern/secondary/utility_page_art.dart';
 
 class RuleCard extends StatelessWidget {
@@ -31,6 +32,7 @@ class RuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final tokens = PlayraTokens.of(context);
     // Keep menu focus from activating the enclosing InkWell's highlight.
     final actions = trailing == null
         ? null
@@ -52,19 +54,19 @@ class RuleCard extends StatelessWidget {
           curve: Curves.easeInOutCubicEmphasized,
           decoration: BoxDecoration(
             color: selected
-                ? colors.secondaryContainer
-                : colors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(14),
+                ? tokens.primaryContainer
+                : tokens.surfaceRaised,
+            borderRadius: BorderRadius.circular(PlayraRadius.card),
             border: Border.all(
               color: selected
-                  ? colors.primary
-                  : colors.outlineVariant.withValues(alpha: .3),
+                  ? tokens.primary
+                  : tokens.borderSubtle,
               width: 1,
             ),
           ),
           child: Material(
             type: MaterialType.transparency,
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(PlayraRadius.card - 1),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: onTap,
@@ -189,6 +191,7 @@ class RuleCard extends StatelessWidget {
 
   Widget _sourceContent(BuildContext context, Widget? actions) {
     final colors = Theme.of(context).colorScheme;
+    final tokens = PlayraTokens.of(context);
     final text = Theme.of(context).textTheme;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -270,7 +273,7 @@ class RuleCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Divider(
                 height: 1,
-                color: colors.outlineVariant.withValues(alpha: .3),
+                color: tokens.borderSubtle,
               ),
             ),
             Wrap(

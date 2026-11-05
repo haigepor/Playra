@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
 import 'package:kazumi/services/source/content_search.dart';
@@ -58,7 +61,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
         !_confirmedCandidates.contains(binding.hit.key)) {
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => PlayraDialog(
           title: const Text('确认同名候选'),
           content: Text(
             '${binding.hit.title} · ${binding.hit.year ?? '年份未知'}\n'
@@ -66,11 +69,11 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
             '目前证据不足以确认是同一作品，请核对目录后手动选择。',
           ),
           actions: [
-            TextButton(
+            PlayraButton.ghost(
               onPressed: () => Navigator.pop(context, false),
               child: const Text('取消'),
             ),
-            TextButton(
+            PlayraButton(
               onPressed: () => Navigator.pop(context, true),
               child: const Text('确认选择'),
             ),
@@ -259,8 +262,8 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                           const Text('仍在检索…', style: TextStyle(fontSize: 12)),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
+                    const SizedBox(height: PlayraSpace.sm),
+                    PlayraButton.ghostIcon(
                       onPressed: matchingSearch.searching
                           ? null
                           : () => matchingSearch.submit(
@@ -277,16 +280,10 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                       style: TextStyle(fontSize: 12),
                     ),
                     for (final binding in sources.bindings)
-                      Card(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerLow,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: PlayraSpace.sm),
+                        child: PlayraCard(
+                          padding: const EdgeInsets.all(PlayraSpace.md),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -306,51 +303,62 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                               ),
                               if (binding.status ==
                                   ContentDirectoryStatus.ready)
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children: [
-                                    for (final line in binding.lines)
-                                      ChoiceChip(
-                                        backgroundColor: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerLow,
-                                        selectedColor: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
-                                        side: BorderSide(
-                                          color: Theme.of(
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: PlayraSpace.sm,
+                                  ),
+                                  child: Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    children: [
+                                      for (final line in binding.lines)
+                                        ChoiceChip(
+                                          backgroundColor: Theme.of(
                                             context,
-                                          ).colorScheme.outline,
+                                          ).colorScheme.surfaceContainerLow,
+                                          selectedColor: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
+                                          side: BorderSide(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.outline,
+                                          ),
+                                          labelStyle: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
+                                          label: Text(line.name),
+                                          selected:
+                                              identical(
+                                                sources.selected,
+                                                binding,
+                                              ) &&
+                                              sources.selectedLine?.id ==
+                                                  line.id,
+                                          onSelected: (_) =>
+                                              _select(binding, line),
                                         ),
-                                        labelStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurfaceVariant,
-                                            ),
-                                        label: Text(line.name),
-                                        selected:
-                                            identical(
-                                              sources.selected,
-                                              binding,
-                                            ) &&
-                                            sources.selectedLine?.id == line.id,
-                                        onSelected: (_) =>
-                                            _select(binding, line),
-                                      ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               if (binding.status ==
                                       ContentDirectoryStatus.failed ||
                                   binding.status ==
                                       ContentDirectoryStatus
                                           .verificationRequired)
-                                TextButton(
-                                  onPressed: () => sources.retry(binding),
-                                  child: const Text('重试目录'),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: PlayraSpace.sm,
+                                  ),
+                                  child: PlayraButton.outline(
+                                    onPressed: () => sources.retry(binding),
+                                    child: const Text('重试目录'),
+                                  ),
                                 ),
                             ],
                           ),
@@ -362,7 +370,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                         child: Text('暂未找到来源，可以返回修改名称或等待其他检索结果'),
                       ),
                     if (sources.loadingEpisodes)
-                      const LinearProgressIndicator(),
+                      const PlayraProgress(),
                     if (sources.episodeError != null)
                       Text('剧集加载失败（${sources.episodeError}），请重新选择线路'),
                     if (sources.selected != null) ...[
@@ -393,7 +401,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                     ],
                     for (final hit in widget.work.hits)
                       if (hit.metadataId?.startsWith('bangumi:') == true)
-                        TextButton(
+                        PlayraButton.ghost(
                           onPressed: _metadataLoading
                               ? null
                               : () => _metadata(hit),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/services/source/sdk_rank_controller.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
@@ -24,7 +25,6 @@ class SdkRankSection extends StatelessWidget {
       final loading =
           controller.loading.isNotEmpty || controller.discoveringSources;
       final failed = controller.failed.isNotEmpty;
-      final colors = Theme.of(context).colorScheme;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -46,20 +46,11 @@ class SdkRankSection extends StatelessWidget {
                             ? '推荐加载失败；点击重试'
                             : '部分来源暂不可用，显示已有推荐；点击重试'
                       : '当前暂无推荐；点击刷新',
-                  child: SizedBox(
-                    width: 48,
-                    height: 24,
-                    child: TextButton(
-                      onPressed: loading ? null : controller.retry,
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        foregroundColor: colors.primary,
-                      ),
-                      child: Text(
-                        failed ? '重试' : '刷新',
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                  child: PlayraButton.ghost(
+                    onPressed: loading ? null : controller.retry,
+                    child: Text(
+                      failed ? '重试' : '刷新',
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
                 ),

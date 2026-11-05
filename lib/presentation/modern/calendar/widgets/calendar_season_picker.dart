@@ -67,6 +67,7 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
     widget.onSelected(_draft);
   }
 
+  // 点击/悬浮不画整块底色，键盘焦点仍保留可见提示。
   WidgetStateProperty<Color?> _interactionOverlay(ColorScheme colors) =>
       WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.focused)
@@ -298,7 +299,9 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
           todayBackgroundColor: background,
           todayBorder: BorderSide.none,
           yearShape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(PlayraRadius.control),
+            ),
           ),
           // 不显示点击/悬浮整块背景，键盘操作仍保留可见焦点。
           yearOverlayColor: _interactionOverlay(colors),
