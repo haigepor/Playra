@@ -14,6 +14,8 @@ import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/sdk_playback_provider.dart';
 import 'package:kazumi/services/source/whisklet/whisklet_catalog.dart';
 import 'package:kazumi/services/source/whisklet/whisklet_playback_provider.dart';
+import 'package:kazumi/services/source/hongguo/hongguo_playback_provider.dart';
+import 'package:kazumi/services/source/hongguo/hongguo_env.dart';
 import 'package:kazumi/services/storage/sdk_library_store.dart';
 
 /// 个人库卡片打开时按来源现建供给方；第二内容源复用同一实例，避免每次进页
@@ -28,6 +30,8 @@ void openSdkLibraryRecord(BuildContext context, SdkLibraryRecord record) {
     'lumina' when luminaSupported => LuminaPlaybackProvider(LuminaService()),
     // 第二内容源不依赖 Lumina 平台支持，自己就是完整播放链路。
     'whisklet' => _whiskletProvider(),
+    // 红果客户端由 HongguoEnv 进程级共享，全平台可用。
+    'hongguo' => HongguoPlaybackProvider(HongguoEnv.shared),
     _ => null,
   };
   if (provider == null) {

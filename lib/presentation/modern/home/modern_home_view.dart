@@ -1,17 +1,17 @@
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_card.dart';
-import 'package:kazumi/presentation/widgets/playra_sheet.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
+import 'package:skeletonizer/skeletonizer.dart' show Bone;
+import 'package:kazumi/utils/image_extension.dart' show isFlutterTestBinding;
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../modern_layout.dart';
 import '../widgets/modern_page_art.dart';
 import '../widgets/modern_section_mark.dart';
-import '../widgets/near_end_scroll.dart';
 import '../widgets/modern_feature_carousel.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
@@ -25,7 +25,11 @@ import 'package:kazumi/services/source/sdk_rank_controller.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/whisklet/whisklet_home_controller.dart';
 import 'package:kazumi/services/source/whisklet/whisklet_models.dart';
+import 'package:kazumi/services/source/hongguo/hongguo_home_controller.dart';
+import 'package:kazumi/services/source/hongguo/hongguo_models.dart';
+import 'package:kazumi/services/source/content_search.dart' show ContentGroup;
 import '../player/sdk_rank_section.dart';
+import '../pages/modern_category_list_page.dart';
 import 'home_anime_card.dart';
 import 'home_display_session.dart';
 import 'home_frame_updates.dart';
@@ -64,6 +68,8 @@ class ModernHomeView extends StatefulWidget {
     this.refreshAnime,
     this.whisklet,
     this.onWhiskletDetails,
+    this.hongguo,
+    this.onHongguoDetails,
   });
   final ModernHomeController controller;
   final LuminaHomeController? anime;
@@ -73,6 +79,12 @@ class ModernHomeView extends StatefulWidget {
 
   /// 第二内容源片目点击 → 详情页（播放供给方由路由层组装）。
   final ValueChanged<WhiskletWork>? onWhiskletDetails;
+
+  /// 红果短剧频道：热榜 + 推荐流，独立出片。
+  final HongguoHomeController? hongguo;
+
+  /// 红果条目点击 → 详情页。
+  final ValueChanged<HongguoSeriesSummary>? onHongguoDetails;
   final ValueChanged<LuminaVideo>? onAnimeDetails;
   final ValueChanged<LuminaBanner>? onAnimeBanner;
   final SdkRankController? ranking;
@@ -93,6 +105,13 @@ class _ModernHomeViewState extends State<ModernHomeView> {
   LuminaHomeController? get anime => widget.anime;
   WhiskletHomeController? get whisklet => widget.whisklet;
   ValueChanged<WhiskletWork>? get onWhiskletDetails => widget.onWhiskletDetails;
+  HongguoHomeController? get hongguo => widget.hongguo;
+  ValueChanged<HongguoSeriesSummary>? get onHongguoDetails =>
+      widget.onHongguoDetails;
+
+  /// 本频道由 SDK 目录（Whisklet 或红果）出片，Bangumi 主列表不出片。
+  bool get isSdkStyleFeed =>
+      controller.feed.isWhiskletStyle || controller.feed.isHongguoStyle;
   ValueChanged<LuminaVideo>? get onAnimeDetails => widget.onAnimeDetails;
   ValueChanged<LuminaBanner>? get onAnimeBanner => widget.onAnimeBanner;
   SdkRankController? get ranking => widget.ranking;
@@ -111,22 +130,27 @@ class _ModernHomeViewState extends State<ModernHomeView> {
 
   late HomeFrameUpdates _contentUpdates;
   HomeFrameUpdates _listenContent() =>
-      HomeFrameUpdates([controller, ?anime, ?whisklet]);
+      HomeFrameUpdates([controller, ?anime, ?whisklet, ?hongguo]);
 
   /// 换频道时按需取第二内容源的首屏；已取过的频道不重复请求。
   void _syncWhisklet() {
     final source = whisklet;
-    if (source == null) return;
-    if (controller.feed.isWhiskletStyle) {
-      final style = controller.feed.style!;
-      unawaited(source.loadStyle(style));
-    } else if (controller.feed == HomeFeed.popular) {
-      unawaited(source.loadHot());
-    } else if (controller.feed == HomeFeed.recommended) {
-      unawaited(source.loadShelves());
-    } else if (controller.feed == HomeFeed.anime) {
-      // 动漫主源是 Lumina，第二源只补一条副货架，仍需在此触发加载。
-      unawaited(source.loadStyle(HomeStyle.anime));
+    if (source != null) {
+      if (controller.feed.isWhiskletStyle) {
+        final style = controller.feed.style!;
+        unawaited(source.loadStyle(style));
+      } else if (controller.feed == HomeFeed.popular) {
+        unawaited(source.loadHot());
+      } else if (controller.feed == HomeFeed.recommended) {
+        unawaited(source.loadShelves());
+      } else if (controller.feed == HomeFeed.anime) {
+        // 动漫主源是 Lumina，第二源只补一条副货架，仍需在此触发加载。
+        unawaited(source.loadStyle(HomeStyle.anime));
+      }
+    }
+    // 红果频道：热榜与推荐流并行首屏。
+    if (controller.feed.isHongguoStyle) {
+      unawaited(hongguo?.load());
     }
   }
 
@@ -232,6 +256,9 @@ class _ModernHomeViewState extends State<ModernHomeView> {
       sourceHasMore: () => anime?.hasMoreIn(bucket) == true,
       sourceLoading: () => anime?.loadingIn(bucket) == true,
       sourceFailed: () => anime?.pageFailedIn(bucket) == true,
+      onRefresh: anime == null ? null : () => anime!.bootstrap(force: true),
+      onSearch: () => onBrowse(_channelTitle(channel)),
+      emptyMessage: '暂无${_channelTitle(channel)}内容',
     );
   }
 
@@ -276,6 +303,23 @@ class _ModernHomeViewState extends State<ModernHomeView> {
       );
   }
 
+  /// 红果条目 → 详情页；卡片模型由 _HongguoStyleGrid 构造。
+  void _noticeHongguo(BuildContext context, HongguoSeriesSummary item) {
+    final handler = onHongguoDetails;
+    if (handler != null) {
+      handler(item);
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('《${item.title}》播放链路将在下一阶段接入'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
   Widget? _whiskletRail(
     BuildContext context,
     String id,
@@ -297,18 +341,31 @@ class _ModernHomeViewState extends State<ModernHomeView> {
       items: cards,
       controller: controller,
       onDetails: (card) => card.onTap(),
-      onMore: () => _showChannelItems(
-        context,
-        HomeChannel(id, title, const []),
-        controller,
-        onDetails,
-        readCards: () => cards,
-        sourceUpdates: style != null ? source : null,
-        sourceLoadMore: style != null ? () => source.loadMore(style) : null,
-        sourceHasMore: style != null ? () => source.hasMore(style) == true : null,
-        sourceLoading: style != null ? () => source.loading(style) == true : null,
-        sourceFailed: style != null ? () => source.failed(style) == true : null,
-      ),
+      onMore: () {
+        if (style != null && source.of(style).isEmpty && !source.loading(style)) {
+          source.loadStyle(style);
+        }
+        _showChannelItems(
+          context,
+          HomeChannel(id, title, const []),
+          controller,
+          onDetails,
+          readCards: () => style != null && source.of(style).isNotEmpty
+              ? _whiskletCards(source.of(style))
+              : cards,
+          sourceUpdates: style != null ? source : null,
+          sourceLoadMore: style != null ? () => source.loadMore(style) : null,
+          sourceHasMore: style != null ? () => source.hasMore(style) == true : null,
+          sourceLoading: style != null ? () => source.loading(style) == true : null,
+          sourceFailed: style != null ? () => source.failed(style) == true : null,
+          onRefresh: style != null
+              ? () => source.loadStyle(style, refresh: true)
+              : null,
+          onSearch: () => onBrowse(title),
+          initialCards: cards,
+          emptyMessage: emptyMessage,
+        );
+      },
       loading: loading,
       failed: failed,
       emptyMessage: emptyMessage,
@@ -360,7 +417,11 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                         final cover = banner.cover.isNotEmpty
                             ? banner.cover
                             : catalog?.cover ?? '';
-                        if (banner.title.trim().isEmpty) {
+                        if (banner.title.trim().isEmpty ||
+                            isBlockedSourceNotice(
+                              title: banner.title,
+                              cover: cover,
+                            )) {
                           continue;
                         }
                         heroCards.add(
@@ -374,10 +435,17 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                         );
                       }
                     }
-                    if (animeBucket != 'all') {
-                      heroCards.addAll(animeItems);
+                    if (animeBucket != 'all' || heroCards.length < 4) {
+                      final seenHeroIds = {
+                        for (final card in heroCards) card.id,
+                      };
+                      for (final card in animeItems) {
+                        if (seenHeroIds.add(card.id)) {
+                          heroCards.add(card);
+                        }
+                      }
                     }
-                    final visibleHeroCards = heroCards;
+                    final visibleHeroCards = heroCards.take(6).toList();
                     // 四卡布局依次翻阅来源轮播，不用目录前四项代替推荐。
                     final featured = List<HomeAnimeCard?>.generate(
                       4,
@@ -391,7 +459,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                           in anime?.channels ?? <LuminaChannel>[])
                         HomeChannel(
                           'lumina:${channel.id}',
-                          '推荐·${channel.name}',
+                          channel.name,
                           const [],
                         ),
                     ];
@@ -421,44 +489,63 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                           ),
                         ),
                         Expanded(
-                          child: RefreshIndicator(
-                            onRefresh: () async {
-                              controller.reloadHistory();
-                              refreshRanking?.call();
-                              // 各来源独立刷新，慢 SDK 不阻塞影视或备用资料请求。
-                              final animeRefresh = showAnime
-                                  ? (refreshAnime?.call() ??
-                                        anime?.bootstrap(force: true))
-                                  : null;
-                              final whiskletRefresh = whisklet != null
-                                  ? (controller.feed == HomeFeed.recommended
-                                      ? whisklet!.loadShelves(refresh: true)
-                                      : controller.feed == HomeFeed.popular
-                                          ? whisklet!.loadHot(refresh: true)
-                                          : controller.feed.isWhiskletStyle
-                                              ? whisklet!.loadStyle(
-                                                  controller.feed.style!,
-                                                  refresh: true,
-                                                )
-                                              : null)
-                                  : null;
-                              await Future.wait([
-                                controller.refresh(),
-                                ?animeRefresh,
-                                ?whiskletRefresh,
-                              ]);
-                            },
-                            child: NotificationListener<ScrollNotification>(
+                          child: Builder(
+                            builder: (context) {
+                              Future<void> retryFeed() async {
+                                controller.reloadHistory();
+                                refreshRanking?.call();
+                                // 各来源独立刷新，慢 SDK 不阻塞影视或备用资料请求。
+                                final animeRefresh = showAnime
+                                    ? (refreshAnime?.call() ??
+                                          anime?.bootstrap(force: true))
+                                    : null;
+                                final whiskletRefresh = whisklet != null
+                                    ? (controller.feed == HomeFeed.recommended
+                                        ? whisklet!.loadShelves(refresh: true)
+                                        : controller.feed == HomeFeed.popular
+                                            ? whisklet!.loadHot(refresh: true)
+                                            : controller.feed.isWhiskletStyle
+                                                ? whisklet!.loadStyle(
+                                                    controller.feed.style!,
+                                                    refresh: true,
+                                                  )
+                                                : null)
+                                    : null;
+                                final hongguoRefresh =
+                                    controller.feed.isHongguoStyle
+                                    ? hongguo?.load(refresh: true)
+                                    : null;
+                                await Future.wait([
+                                  controller.refresh(),
+                                  ?animeRefresh,
+                                  ?whiskletRefresh,
+                                  ?hongguoRefresh,
+                                ]);
+                              }
+
+                              return RefreshIndicator(
+                                onRefresh: retryFeed,
+                                child: NotificationListener<ScrollNotification>(
                               onNotification: (notification) {
                                 // 只在尾部继续向下滚动时取下一页，横向栏目和刷新不触发。
                                 if (notification.depth == 0 &&
                                     notification.metrics.axis ==
                                         Axis.vertical &&
                                     notification.metrics.extentAfter < 480 &&
-                                    notification is ScrollUpdateNotification &&
-                                    (notification.scrollDelta ?? 0) > 0 &&
-                                    anime?.pageFailedIn(animeBucket) != true) {
-                                  anime?.loadMoreIn(animeBucket);
+                                    (notification is ScrollUpdateNotification &&
+                                            (notification.scrollDelta ?? 0) >
+                                                0 ||
+                                        notification
+                                                is OverscrollNotification &&
+                                            notification.overscroll > 0)) {
+                                  if (controller.feed.isWhiskletStyle) {
+                                    whisklet?.loadMore(controller.feed.style!);
+                                  } else if (controller.feed.isHongguoStyle) {
+                                    hongguo?.loadMoreDiscover();
+                                  } else if (anime?.pageFailedIn(animeBucket) !=
+                                      true) {
+                                    anime?.loadMoreIn(animeBucket);
+                                  }
                                 }
                                 return false;
                               },
@@ -493,9 +580,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                             ),
                                             onDetails: (card) => card.onTap(),
                                           )
-                                        else if (!controller
-                                                .feed
-                                                .isWhiskletStyle &&
+                                        else if (!isSdkStyleFeed &&
                                             visibleHeroCards.isNotEmpty)
                                           ModernFeatureCarousel(
                                             key: ValueKey(
@@ -517,9 +602,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                                 ),
                                             ],
                                           )
-                                        else if (!controller
-                                                .feed
-                                                .isWhiskletStyle &&
+                                        else if (!isSdkStyleFeed &&
                                             (anime?.loading == true ||
                                                 controller.loading ||
                                                 (!controller
@@ -533,14 +616,14 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                                 !compact,
                                           )
                                         else if (items.isEmpty &&
-                                            !controller.feed.isWhiskletStyle)
+                                            !isSdkStyleFeed)
                                           _EmptyFeed(
                                             message:
                                                 controller.error ??
                                                 (anime == null
                                                     ? '当前平台尚不支持 Lumina'
                                                     : 'Lumina 暂无可展示的内容'),
-                                            retry: controller.refresh,
+                                            retry: retryFeed,
                                           ),
                                         if (sourceCards.isEmpty &&
                                             controller.error != null &&
@@ -551,7 +634,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                             ),
                                             child: _EmptyFeed(
                                               message: controller.error!,
-                                              retry: controller.refresh,
+                                              retry: retryFeed,
                                             ),
                                           ),
                                         // 继续观看是跨分类的个人历史，只在聚合位展示；
@@ -567,11 +650,20 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                             onTap: (work) =>
                                                 _noticeWhisklet(context, work),
                                           ),
+                                        if (controller.feed.isHongguoStyle &&
+                                            hongguo != null &&
+                                            onHongguoDetails != null)
+                                          _HongguoStyleGrid(
+                                            source: hongguo!,
+                                            controller: controller,
+                                            onTap: (item) =>
+                                                _noticeHongguo(context, item),
+                                          ),
                                       ],
                                     ),
                                   ),
                                   // Lumina 榜单同样是跨分类内容，风格频道不展示。
-                                  if (!controller.feed.isWhiskletStyle &&
+                                  if (!isSdkStyleFeed &&
                                       ranking != null &&
                                       onRankDetails != null)
                                     SliverToBoxAdapter(
@@ -642,7 +734,12 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                         ),
                                       if (controller.feed.isGeneralCategory)
                                         for (final channel in sourceChannels)
-                                          _ChannelRail(
+                                          if (_channelCards(channel).isNotEmpty ||
+                                              anime?.loadingIn(
+                                                    _channelBucket(channel),
+                                                  ) ==
+                                                  true)
+                                            _ChannelRail(
                                             id: channel.id,
                                             title: _channelTitle(channel),
                                             items: _channelCards(
@@ -686,6 +783,7 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                                 _openChannel(context, channel),
                                           ),
                                       if (!controller.feed.isGeneralCategory &&
+                                          !controller.feed.isHongguoStyle &&
                                           !controller
                                               .catalog
                                               .hasStructuredData) ...[
@@ -792,10 +890,12 @@ class _ModernHomeViewState extends State<ModernHomeView> {
                                 ],
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                    );
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
                   },
                 ),
               ),
@@ -898,8 +998,9 @@ class _FeedTabs extends StatefulWidget {
 }
 
 class _FeedTabsState extends State<_FeedTabs> {
-  // 顺序即展示顺序：两个聚合位在前，其后是上游 7 个风格频道。
-  // 动漫由 Lumina 出片（子分类仍走动漫内部桶），其余风格由第二源出片。
+  // 顺序即展示顺序：两个聚合位在前，其后是上游 7 个风格频道与红果短剧。
+  // 动漫由 Lumina 出片（子分类仍走动漫内部桶），其余风格由第二源出片；
+  // 红果短剧由红果源独立出片。
   static const feeds = [
     HomeFeed.recommended,
     HomeFeed.popular,
@@ -910,6 +1011,7 @@ class _FeedTabsState extends State<_FeedTabs> {
     HomeFeed.shortDrama,
     HomeFeed.aiComic,
     HomeFeed.live,
+    HomeFeed.hongguo,
   ];
   final Map<HomeFeed, GlobalKey> _keys = {
     for (final feed in feeds) feed: GlobalKey(),
@@ -1081,51 +1183,85 @@ class _WhiskletStyleGrid extends StatelessWidget {
             ],
           ),
           SizedBox(height: compact ? 8 : 12),
-          if (works.isEmpty && loading)
-            const SkeletonPosters()
-          else if (works.isEmpty)
-            Container(
-              height: 96,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: colors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: PlayraButton.ghost(
-                key: ValueKey('whisklet-retry-${style.name}'),
-                onPressed: () => source.retry(style),
-                child: Text(failed ? '这个频道加载失败，点击重试' : '暂无${style.label}内容'),
-              ),
-            )
-          else ...[
-            GridView.builder(
-              key: ValueKey('whisklet-grid-${style.name}'),
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.5,
-              ),
-              itemCount: works.length,
-              itemBuilder: (context, index) => _PosterCard(
-                item: _card(works[index]),
-                controller: controller,
-                onTap: () => onTap(works[index]),
-              ),
-            ),
-            if (source.hasMore(style))
-              Center(
-                child: PlayraButton.ghost(
-                  key: ValueKey('whisklet-more-${style.name}'),
-                  onPressed: loading ? null : () => source.loadMore(style),
-                  child: Text(loading ? '加载中…' : '加载更多'),
-                ),
-              ),
-            SizedBox(height: 8 * scale),
-          ],
+          AnimatedSwitcher(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: works.isEmpty && loading
+                ? SkeletonPosters(
+                    key: ValueKey('whisklet-skeleton-${style.name}'),
+                    horizontal: false,
+                    count: columns * 3,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.5,
+                    ),
+                  )
+                : works.isEmpty
+                ? Container(
+                    key: ValueKey('whisklet-empty-${style.name}'),
+                    height: 96,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: PlayraButton.ghost(
+                      key: ValueKey('whisklet-retry-${style.name}'),
+                      onPressed: () => source.retry(style),
+                      child: Text(
+                        failed ? '这个频道加载失败，点击重试' : '暂无${style.label}内容',
+                      ),
+                    ),
+                  )
+                : Column(
+                    key: ValueKey('whisklet-content-${style.name}'),
+                    children: [
+                      GridView.builder(
+                        key: ValueKey('whisklet-grid-${style.name}'),
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisSpacing: 14,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.5,
+                        ),
+                        itemCount:
+                            works.length +
+                            (loading
+                                ? ((columns - (works.length % columns)) %
+                                          columns) +
+                                      columns
+                                : 0),
+                        itemBuilder: (context, index) => index >= works.length
+                            ? ContentSkeleton(
+                                animate: !isFlutterTestBinding,
+                                child: const SkeletonPosterCard(),
+                              )
+                            : _PosterCard(
+                                item: _card(works[index]),
+                                controller: controller,
+                                onTap: () => onTap(works[index]),
+                              ),
+                      ),
+                      if (failed)
+                        Center(
+                          child: PlayraButton.ghost(
+                            key: ValueKey('whisklet-more-${style.name}'),
+                            onPressed: () => source.retry(style),
+                            child: const Text('加载失败，点击重试'),
+                          ),
+                        ),
+                      SizedBox(height: 8 * scale),
+                    ],
+                  ),
+          ),
         ],
       ),
     );
@@ -1143,6 +1279,159 @@ class _WhiskletStyleGrid extends StatelessWidget {
     year: int.tryParse(work.year),
     onTap: () => onTap(work),
   );
+}
+
+/// 红果短剧频道正文：热榜在前、推荐流续接的三列海报网格 + 触底续页。
+class _HongguoStyleGrid extends StatelessWidget {
+  const _HongguoStyleGrid({
+    required this.source,
+    required this.controller,
+    required this.onTap,
+  });
+  final HongguoHomeController source;
+  final ModernHomeController controller;
+  final ValueChanged<HongguoSeriesSummary> onTap;
+
+  List<HomeAnimeCard> _cards(List<HongguoSeriesSummary> items) => [
+    for (final item in items)
+      HomeAnimeCard(
+        id: 'hongguo:${item.id}',
+        title: item.title,
+        cover: item.coverUrl,
+        status: item.episodeCount > 0 ? '共${item.episodeCount}集' : '',
+        subtitle: '红果短剧',
+        group: ContentGroup.series,
+        onTap: () => onTap(item),
+      ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final items = source.feed;
+    final loading = source.loading;
+    final failed = source.failed;
+    final compact = isCompactModernViewport(MediaQuery.sizeOf(context));
+    final horizontalPadding = compact ? 16.0 : 20.0;
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final columns = MediaQuery.sizeOf(context).width >= 840 ? 5 : 3;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        compact ? PlayraSpace.md : PlayraSpace.lg,
+        horizontalPadding,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const ModernSectionMark(kind: ModernSectionKind.curated),
+              const SizedBox(width: PlayraSpace.sm),
+              Expanded(
+                child: Text(
+                  '红果热榜',
+                  style: const TextStyle(
+                    fontSize: PlayraType.section,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (items.isNotEmpty)
+                Text(
+                  '${items.length}${source.discoverHasMore ? '+' : ''} 部',
+                  style: TextStyle(
+                    fontSize: PlayraType.small,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: compact ? 8 : 12),
+          AnimatedSwitcher(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: items.isEmpty && loading
+                ? SkeletonPosters(
+                    key: const ValueKey('hongguo-skeleton'),
+                    horizontal: false,
+                    count: columns * 3,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.5,
+                    ),
+                  )
+                : items.isEmpty
+                ? Container(
+                    key: const ValueKey('hongguo-empty'),
+                    height: 96,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: PlayraButton.ghost(
+                      key: const ValueKey('hongguo-retry'),
+                      onPressed: source.retry,
+                      child: Text(
+                        failed ? '红果频道加载失败，点击重试' : '暂无红果短剧内容',
+                      ),
+                    ),
+                  )
+                : Column(
+                    key: const ValueKey('hongguo-content'),
+                    children: [
+                      GridView.builder(
+                        key: const ValueKey('hongguo-grid'),
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisSpacing: 14,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.5,
+                        ),
+                        itemCount:
+                            items.length +
+                            (source.discoverLoading
+                                ? ((columns - (items.length % columns)) %
+                                          columns) +
+                                      columns
+                                : 0),
+                        itemBuilder: (context, index) => index >= items.length
+                            ? ContentSkeleton(
+                                animate: !isFlutterTestBinding,
+                                child: const SkeletonPosterCard(),
+                              )
+                            : _PosterCard(
+                                item: _cards([items[index]]).single,
+                                controller: controller,
+                                onTap: () => onTap(items[index]),
+                              ),
+                      ),
+                      if (failed)
+                        Center(
+                          child: PlayraButton.ghost(
+                            key: const ValueKey('hongguo-more'),
+                            onPressed: source.retry,
+                            child: const Text('加载失败，点击重试'),
+                          ),
+                        ),
+                      SizedBox(height: 8 * scale),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ChannelRail extends StatelessWidget {
@@ -1287,7 +1576,7 @@ class _ChannelRail extends StatelessWidget {
   }
 }
 
-/// 展开同一份栏目快照，避免标签搜索放宽类型条件后混入其他分类。
+/// 导航至统一的专门分类列表页面（替代原有的临时弹窗），提供多端响应式网格与沉浸体验。
 Future<void> _showChannelItems(
   BuildContext context,
   HomeChannel channel,
@@ -1299,189 +1588,31 @@ Future<void> _showChannelItems(
   bool Function()? sourceHasMore,
   bool Function()? sourceLoading,
   bool Function()? sourceFailed,
-}) => showPlayraSheet<void>(
-  context: context,
-  size: PlayraSheetSize.catalog,
-  maxHeightFactor: 1,
-  builder: (sheetContext) => SizedBox(
-    width: MediaQuery.sizeOf(sheetContext).width >= 840
-        ? math.min(MediaQuery.sizeOf(sheetContext).width - 80, 1120)
-        : MediaQuery.sizeOf(sheetContext).width,
-    child: ModernHomeScope(
-      child: DraggableScrollableSheet(
-        initialChildSize: .82,
-        minChildSize: .4,
-        maxChildSize: .94,
-        expand: false,
-        builder: (context, scrollController) => SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  PlayraSpace.xl,
-                  0,
-                  PlayraSpace.md,
-                  PlayraSpace.sm,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        channel.title,
-                        style: const TextStyle(
-                          fontSize: PlayraType.section,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    PlayraIconButton(
-                      tooltip: '关闭',
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                      icon: const Icon(LucideIcons.x, size: 20),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, bounds) {
-                    final scale =
-                        MediaQuery.textScalerOf(context).scale(13) / 13;
-                    final columns = ((bounds.maxWidth - 40) / (116 * scale))
-                        .floor()
-                        .clamp(2, 6);
-                    final width =
-                        (bounds.maxWidth - 40 - 12 * (columns - 1)) / columns;
-                    return ListenableBuilder(
-                      listenable: Listenable.merge([
-                        controller,
-                        ?sourceUpdates,
-                      ]),
-                      builder: (context, _) {
-                        final visibleItems =
-                            channel.id == 'anime' &&
-                                controller.feed.isGeneralCategory
-                            ? controller.items
-                            : channel.allItems;
-                        final pending =
-                            sourceLoading?.call() == true ||
-                            channel.id == 'anime' &&
-                                controller.feed.isGeneralCategory &&
-                                controller.loading;
-                        final cards =
-                            readCards?.call() ??
-                            [
-                              for (final item in visibleItems)
-                                HomeAnimeCard.metadata(
-                                  item,
-                                  controller,
-                                  () => onDetails(item),
-                                ),
-                            ];
-                        return ScrollConfiguration(
-                          behavior: const _HomeScrollBehavior(),
-                          child: NotificationListener<ScrollNotification>(
-                            onNotification: (notification) {
-                              final legacyMore =
-                                  channel.id == 'anime' &&
-                                  controller.feed.isGeneralCategory &&
-                                  controller.hasMore;
-                              if (isNearEndScroll(notification) &&
-                                  !controller.loading &&
-                                  sourceLoading?.call() != true &&
-                                  (!legacyMore || controller.error == null) &&
-                                  sourceFailed?.call() != true) {
-                                if (legacyMore) {
-                                  unawaited(controller.loadMore());
-                                }
-                                if (sourceHasMore?.call() == true) {
-                                  unawaited(sourceLoadMore?.call());
-                                }
-                              }
-                              return false;
-                            },
-                            child: GridView.builder(
-                              controller: scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(
-                                PlayraSpace.xl,
-                                0,
-                                PlayraSpace.xl,
-                                PlayraSpace.xxl,
-                              ),
-                              itemCount: cards.length + (pending ? columns : 0),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: columns,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 16,
-                                    mainAxisExtent: width * 1.42 + 48 * scale,
-                                  ),
-                              itemBuilder: (context, index) =>
-                                  index >= cards.length
-                                  ? const ContentSkeleton(
-                                      child: SkeletonPosterCard(),
-                                    )
-                                  : _PosterCard(
-                                      item: cards[index],
-                                      controller: controller,
-                                      onTap: () {
-                                        Navigator.of(sheetContext).pop();
-                                        cards[index].onTap();
-                                      },
-                                    ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              if (channel.id == 'anime' && controller.feed.isGeneralCategory ||
-                  sourceLoadMore != null)
-                ListenableBuilder(
-                  listenable: Listenable.merge([controller, ?sourceUpdates]),
-                  builder: (context, _) {
-                    final legacyMore =
-                        channel.id == 'anime' &&
-                        controller.feed.isGeneralCategory &&
-                        controller.hasMore;
-                    final sourceMore = sourceHasMore?.call() == true;
-                    final pending =
-                        controller.loading || sourceLoading?.call() == true;
-                    final failed =
-                        legacyMore && controller.error != null ||
-                        sourceFailed?.call() == true;
-                    return PlayraButton.ghost(
-                      onPressed: !pending && (legacyMore || sourceMore)
-                          ? () {
-                              if (legacyMore) controller.loadMore();
-                              if (sourceMore) sourceLoadMore?.call();
-                            }
-                          : null,
-                      child: Text(
-                        pending
-                            ? '加载中…'
-                            : failed
-                            ? '加载失败，点击重试'
-                            : legacyMore || sourceMore
-                            ? '加载更多'
-                            : '已显示当前全部内容',
-                      ),
-                    );
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
+  Future<void> Function()? onRefresh,
+  VoidCallback? onSearch,
+  List<HomeAnimeCard>? initialCards,
+  String? emptyMessage,
+}) => Navigator.of(context).push<void>(
+  MaterialPageRoute(
+    builder: (_) => ModernCategoryListPage(
+      channelTitle: channel.title,
+      channelId: channel.id,
+      controller: controller,
+      onDetails: onDetails,
+      readCards: readCards,
+      sourceUpdates: sourceUpdates,
+      sourceLoadMore: sourceLoadMore,
+      sourceHasMore: sourceHasMore,
+      sourceLoading: sourceLoading,
+      sourceFailed: sourceFailed,
+      onRefresh: onRefresh,
+      onSearch: onSearch,
+      initialCards: initialCards,
+      emptyMessage: emptyMessage,
     ),
   ),
 );
 
-/// 浏览器验收支持鼠标拖动，安卓沿用触摸滚动与平台惯性。
 class _HomeScrollBehavior extends MaterialScrollBehavior {
   const _HomeScrollBehavior();
   @override
@@ -1624,13 +1755,50 @@ class _BentoPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     label: '推荐内容加载中',
-    child: Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(PlayraRadius.card),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+    child: ExcludeSemantics(
+      child: ContentSkeleton(
+        animate: !isFlutterTestBinding,
+        child: LayoutBuilder(
+          builder: (context, bounds) => Container(
+            padding: const EdgeInsets.all(PlayraSpace.sm),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(PlayraRadius.card),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+            child: Row(
+              children: [
+                Bone(
+                  width: bounds.maxWidth * .34,
+                  height: bounds.maxHeight - 16,
+                  uniRadius: PlayraRadius.thumbnail,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: PlayraSpace.compact),
+                      Bone(height: 12, uniRadius: 3),
+                      SizedBox(height: PlayraSpace.sm),
+                      Bone(height: 12, uniRadius: 3),
+                      Spacer(),
+                      FractionallySizedBox(
+                        widthFactor: .55,
+                        alignment: Alignment.centerLeft,
+                        child: Bone(height: 10, uniRadius: 3),
+                      ),
+                      SizedBox(height: PlayraSpace.sm),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      child: const Center(child: Icon(Icons.movie_outlined, size: 22)),
     ),
   );
 }
@@ -1655,6 +1823,7 @@ class _BentoCardState extends State<_BentoCard> {
       curve: Curves.easeOutCubic,
       child: NetworkImgLayer(
         src: widget.item.cover,
+        fallbackTitle: widget.item.title,
         width: width,
         height: height,
         type: 'bg',
@@ -1953,6 +2122,7 @@ class _ContinueCard extends StatelessWidget {
                 children: [
                   NetworkImgLayer(
                     src: homeCover(history.bangumiItem),
+                    fallbackTitle: homeTitle(history.bangumiItem),
                     width: 52,
                     height: 74,
                     type: 'bg',
@@ -2104,6 +2274,7 @@ class _PosterCardState extends State<_PosterCard> {
                             curve: Curves.easeOutCubic,
                             child: NetworkImgLayer(
                               src: item.cover,
+                              fallbackTitle: item.title,
                               width: bounds.maxWidth,
                               height: bounds.maxWidth * 1.42,
                               type: 'bg',
@@ -2132,39 +2303,37 @@ class _PosterCardState extends State<_PosterCard> {
                             ),
                           ),
                         ),
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          child: Container(
-                            key: ValueKey('home-rating-${item.id}'),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: PlayraSpace.compact,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: tokens.rankGold,
-                              borderRadius: const BorderRadius.only(
-                                bottomRight: Radius.circular(
-                                  PlayraRadius.thumbnail,
+                        if (item.ratingScore > 0)
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            child: Container(
+                              key: ValueKey('home-rating-${item.id}'),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: PlayraSpace.compact,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: tokens.rankGold,
+                                borderRadius: const BorderRadius.only(
+                                  bottomRight: Radius.circular(
+                                    PlayraRadius.thumbnail,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                item.ratingScore.toStringAsFixed(1),
+                                semanticsLabel:
+                                    '评分 ${item.ratingScore.toStringAsFixed(1)}',
+                                style: TextStyle(
+                                  color: tokens.warningContainer,
+                                  fontSize: PlayraType.small,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ),
-                            child: Text(
-                              item.ratingScore > 0
-                                  ? item.ratingScore.toStringAsFixed(1)
-                                  : '暂无',
-                              semanticsLabel: item.ratingScore > 0
-                                  ? '评分 ${item.ratingScore.toStringAsFixed(1)}'
-                                  : '暂无评分',
-                              style: TextStyle(
-                                color: tokens.warningContainer,
-                                fontSize: PlayraType.small,
-                                height: 1.2,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
                           ),
-                        ),
                         Positioned(
                           bottom: 6,
                           right: 6,

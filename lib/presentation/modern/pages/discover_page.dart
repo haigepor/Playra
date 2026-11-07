@@ -24,6 +24,8 @@ import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/sdk_rank_controller.dart';
 import 'package:kazumi/services/source/whisklet/whisklet_home_controller.dart';
 import 'package:kazumi/services/source/whisklet/whisklet_playback_provider.dart';
+import 'package:kazumi/services/source/hongguo/hongguo_home_controller.dart';
+import 'package:kazumi/services/source/hongguo/hongguo_playback_provider.dart';
 
 /// 路由适配层：新版视图不直接读取全局容器或启动独立业务仓库。
 class ModernDiscoverPage extends StatefulWidget {
@@ -41,6 +43,11 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
   // 与目录共享同一个客户端；首次访问（进详情页）才真正构造。
   late final WhiskletPlaybackProvider whiskletPlayback = WhiskletPlaybackProvider(
     whisklet.catalog,
+  );
+  // 红果频道：进程级共享客户端由 HongguoEnv 管理，页面只挂控制器与提供方。
+  late final HongguoHomeController hongguo = HongguoHomeController();
+  late final HongguoPlaybackProvider hongguoPlayback = HongguoPlaybackProvider(
+    hongguo.client,
   );
   late final SdkRankController ranking;
   String? _rankingKey;
@@ -87,7 +94,7 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
   void _syncRanking({bool refresh = false}) {
     final feed = controller.feed;
     // 风格频道由第二内容源独立出片，不展示也不预取 Lumina 榜单。
-    if (feed.isWhiskletStyle) return;
+    if (feed.isWhiskletStyle || feed.isHongguoStyle) return;
     final bucket = switch (feed) {
       HomeFeed.japanese => 'japanese',
       HomeFeed.chinese => 'chinese',
@@ -121,7 +128,8 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
         HomeFeed.screen ||
         HomeFeed.movies ||
         HomeFeed.variety => ContentGroup.screen,
-        HomeFeed.television => ContentGroup.series,
+        HomeFeed.television ||
+        HomeFeed.hongguo => ContentGroup.series,
         HomeFeed.comicDrama => ContentGroup.comicDrama,
         _ => controller.feed.isAnimeCategory ? ContentGroup.anime : null,
       },
@@ -183,6 +191,8 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
     animeService?.dispose();
     whiskletPlayback.dispose();
     whisklet.dispose();
+    // 红果客户端由 HongguoEnv 进程级共享，页面销毁不关传输层。
+    hongguo.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -204,6 +214,21 @@ class _ModernDiscoverPageState extends State<ModernDiscoverPage>
               SdkSourceBinding(
                 provider: whiskletPlayback,
                 contentId: '${work.id}',
+              ),
+            ],
+          ),
+        ),
+        hongguo: hongguo,
+        onHongguoDetails: (item) => context.pushNamed(
+          '/info/',
+          arguments: SdkPlaybackEntry(
+            title: item.title,
+            cover: item.coverUrl,
+            autoPlay: false,
+            sources: [
+              SdkSourceBinding(
+                provider: hongguoPlayback,
+                contentId: item.id,
               ),
             ],
           ),

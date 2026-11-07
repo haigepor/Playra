@@ -19,6 +19,7 @@ enum HomeFeed {
   shortDrama('短剧'),
   aiComic('AI漫剧'),
   live('电视直播'),
+  hongguo('红果短剧'),
   animeMovies('动漫电影'),
   season('新番'),
   japanese('日漫'),
@@ -53,6 +54,9 @@ enum HomeFeed {
   /// 由第二内容源（Whisklet）独立出片的风格频道。
   bool get isWhiskletStyle => style != null && this != anime;
 
+  /// 红果短剧频道：由红果源独立出片，不参与 Bangumi/Whisklet 目录。
+  bool get isHongguoStyle => this == hongguo;
+
   /// 是否有 Lumina 内容源出片。第二源风格频道（含短剧/AI漫剧/直播）没有
   /// Lumina 对应分类，放开会把 Lumina 动漫货架混进这些频道。
   bool get hasContentSource =>
@@ -61,7 +65,8 @@ enum HomeFeed {
       this != television &&
       this != variety &&
       this != comicDrama &&
-      !isWhiskletStyle;
+      !isWhiskletStyle &&
+      !isHongguoStyle;
 }
 
 typedef HomeFeedLoader =
