@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
+import 'package:kazumi/utils/image_extension.dart' show isFlutterTestBinding;
 import 'package:kazumi/services/source/sdk_rank_controller.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/source/lumina/lumina_models.dart';
@@ -76,9 +77,9 @@ class SdkRankSection extends StatelessWidget {
                           key: ValueKey('sdk-rank-pending-$index'),
                           width: width,
                           child: loading
-                              ? const ContentSkeleton(
-                                  animate: false,
-                                  child: SkeletonPosterCard(),
+                              ? ContentSkeleton(
+                                  animate: !isFlutterTestBinding,
+                                  child: const SkeletonPosterCard(),
                                 )
                               : Semantics(
                                   label: '此来源暂无推荐',

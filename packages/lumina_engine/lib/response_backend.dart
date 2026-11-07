@@ -18,6 +18,7 @@ class ResponseRouter {
   final LuminaResponseBackend? preferred;
   final bool strict;
   String? _disabledReason;
+  int _consecutiveFailures = 0;
 
   ({Uint8List plain, String backend, String? fallback}) decode(
     Uint8List raw,
@@ -28,13 +29,17 @@ class ResponseRouter {
     final backend = preferred;
     if (backend != null && _disabledReason == null) {
       try {
+        final plain = backend.decrypt(raw, path, budget);
+        _consecutiveFailures = 0;
         return (
-          plain: backend.decrypt(raw, path, budget),
+          plain: plain,
           backend: 'core',
           fallback: null,
         );
       } on ResponseBackendFailure catch (error) {
-        if (error.terminal) _disabledReason = error.code;
+        if (error.terminal || ++_consecutiveFailures >= 2) {
+          _disabledReason = error.code;
+        }
         if (strict) rethrow;
         return (plain: fallback(), backend: 'fuse', fallback: error.code);
       }

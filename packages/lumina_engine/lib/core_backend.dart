@@ -182,10 +182,13 @@ class CoreResponseBackend implements LuminaResponseBackend {
 
   @override
   Uint8List decrypt(Uint8List raw, String path, Duration budget) {
+    final callBudget = Duration(
+      milliseconds: (budget.inMilliseconds ~/ 4).clamp(100, 1500),
+    );
     final reply = _call({
       'action': 'api_decrypt',
       'payload': {'data': utf8.decode(raw), 'path': path},
-    }, budget);
+    }, callBudget);
     final payload = reply['payload'];
     final data = payload is Map ? payload['data'] : null;
     if (data is! String) throw const ResponseBackendFailure('CORE_REPLY');

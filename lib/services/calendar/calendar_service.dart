@@ -1,7 +1,14 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:kazumi/request/clients/bangumi_client.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:kazumi/request/config/api_endpoints.dart';
+import 'package:kazumi/request/core/bangumi_request_policy.dart';
+import 'package:kazumi/request/core/dio_factory.dart';
+import 'package:kazumi/request/core/network_error_mapper.dart';
 import 'package:kazumi/services/network/bangumi_acceleration.dart';
+import 'package:kazumi/utils/bangumi_mirror_credentials.dart';
+import 'package:kazumi/utils/constants.dart';
+import 'package:kazumi/utils/crypto.dart';
 import 'calendar_models.dart';
 
 typedef CalendarGet =
@@ -25,26 +32,131 @@ class CalendarService {
     CalendarPost? post,
     bool Function()? useMirror,
     DateTime Function()? clock,
-  }) : _get =
-           get ??
-           ((url, {queryParameters, cancelToken}) => BangumiClient.instance.get(
-             url,
-             queryParameters: queryParameters,
-             cancelToken: cancelToken,
-           )),
-       _post =
-           post ??
-           ((url, {data, queryParameters, cancelToken}) =>
-               BangumiClient.instance.post(
-                 url,
-                 data: data,
-                 queryParameters: queryParameters,
-                 cancelToken: cancelToken,
-               )),
+  }) : _get = get ?? _defaultGet,
+       _post = post ?? _defaultPost,
        _useMirror =
            useMirror ??
            (() => BangumiAcceleration.current == BangumiAcceleration.mirror),
        _clock = clock ?? DateTime.now;
+
+  static Future<dynamic> _defaultGet(
+    String url, {
+    Map<String, dynamic>? queryParameters,
+    CancelToken? cancelToken,
+    bool officialOnly = false,
+  }) async {
+    try {
+      final response = await DioFactory.bangumiDio.get(
+        url,
+        queryParameters: queryParameters,
+        options: _requestOptions(
+          url: url,
+          method: 'GET',
+          officialOnly: officialOnly,
+        ),
+        cancelToken: cancelToken,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      if (!officialOnly && _canRetryOfficial(url, 'GET', e)) {
+        return _defaultGet(
+          url,
+          queryParameters: queryParameters,
+          cancelToken: cancelToken,
+          officialOnly: true,
+        );
+      }
+      throw await NetworkErrorMapper.mapException(e);
+    }
+  }
+
+  static Future<dynamic> _defaultPost(
+    String url, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    CancelToken? cancelToken,
+    bool officialOnly = false,
+  }) async {
+    try {
+      final response = await DioFactory.bangumiDio.post(
+        url,
+        data: data,
+        queryParameters: queryParameters,
+        options: _requestOptions(
+          url: url,
+          method: 'POST',
+          data: data,
+          officialOnly: officialOnly,
+        ),
+        cancelToken: cancelToken,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      if (!officialOnly && _canRetryOfficial(url, 'POST', e)) {
+        return _defaultPost(
+          url,
+          data: data,
+          queryParameters: queryParameters,
+          cancelToken: cancelToken,
+          officialOnly: true,
+        );
+      }
+      throw await NetworkErrorMapper.mapException(e);
+    }
+  }
+
+  static Options _requestOptions({
+    required String url,
+    required String method,
+    Object? data,
+    bool officialOnly = false,
+  }) {
+    final headers = <String, dynamic>{...bangumiHTTPHeader};
+    final protected = isProtectedBangumiMirrorRequest(url, method);
+    final hasCredentials =
+        (bangumiMirrorCredentials['id'] ?? '').trim().isNotEmpty &&
+        (bangumiMirrorCredentials['value'] ?? '').trim().isNotEmpty;
+    final useOfficial =
+        officialOnly ||
+        (protected &&
+            BangumiAcceleration.current == BangumiAcceleration.mirror &&
+            (!hasCredentials || kIsWeb));
+    if (protected &&
+        !useOfficial &&
+        BangumiAcceleration.current == BangumiAcceleration.mirror) {
+      final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final body = data == null ? '' : jsonEncode(data);
+      headers['X-AppId'] = bangumiMirrorCredentials['id'];
+      headers['X-Timestamp'] = timestamp;
+      headers['X-Signature'] = generateBangumiMirrorSearchSignature(
+        method: method,
+        path: Uri.parse(url).path,
+        body: body,
+        timestamp: timestamp,
+      );
+    }
+    return Options(
+      headers: headers,
+      extra: {
+        if (useOfficial)
+          bangumiAccelerationOverride:
+              kIsWeb ||
+                  BangumiAcceleration.current == BangumiAcceleration.direct
+              ? 'direct'
+              : 'ech',
+      },
+    );
+  }
+
+  static bool _canRetryOfficial(
+    String url,
+    String method,
+    DioException error,
+  ) =>
+      BangumiAcceleration.current == BangumiAcceleration.mirror &&
+      error.requestOptions.extra[bangumiAccelerationOverride] == null &&
+      isProtectedBangumiMirrorRequest(url, method) &&
+      const [401, 403].contains(error.response?.statusCode);
 
   static final instance = CalendarService();
   final CalendarGet _get;

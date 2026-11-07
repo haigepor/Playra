@@ -9,6 +9,7 @@ import 'playra_component_scope.dart';
 export 'playra_component_scope.dart';
 
 enum PlayraButtonKind { primary, secondary, outline, ghost, destructive }
+enum PlayraButtonSize { sm, md, lg }
 
 class PlayraDayButton extends StatelessWidget with PlayraForuiComponent {
   const PlayraDayButton({
@@ -34,6 +35,7 @@ class PlayraDayButton extends StatelessWidget with PlayraForuiComponent {
   );
 }
 
+/// 标准化全站统一按钮（支持小胶囊形态与多尺寸层级规范）
 class PlayraButton extends StatelessWidget with PlayraForuiComponent {
   const PlayraButton({
     super.key,
@@ -42,144 +44,258 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
     this.icon,
     this.trailing,
     this.kind = PlayraButtonKind.primary,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   });
+
   const PlayraButton.tonal({
     super.key,
     required this.onPressed,
     required this.child,
     this.icon,
     this.trailing,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : kind = PlayraButtonKind.secondary;
+
   const PlayraButton.outline({
     super.key,
     required this.onPressed,
     required this.child,
     this.icon,
     this.trailing,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : kind = PlayraButtonKind.outline;
+
   const PlayraButton.ghost({
     super.key,
     required this.onPressed,
     required this.child,
     this.icon,
     this.trailing,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : kind = PlayraButtonKind.ghost;
+
   const PlayraButton.destructive({
     super.key,
     required this.onPressed,
     required this.child,
     this.icon,
     this.trailing,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : kind = PlayraButtonKind.destructive;
+
   const PlayraButton.icon({
     super.key,
     required this.onPressed,
     required Widget label,
     this.icon,
     this.kind = PlayraButtonKind.primary,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : child = label,
        trailing = null;
+
   const PlayraButton.tonalIcon({
     super.key,
     required this.onPressed,
     required Widget label,
     this.icon,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : child = label,
        trailing = null,
        kind = PlayraButtonKind.secondary;
+
   const PlayraButton.outlineIcon({
     super.key,
     required this.onPressed,
     required Widget label,
     this.icon,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : child = label,
        trailing = null,
        kind = PlayraButtonKind.outline;
+
   const PlayraButton.ghostIcon({
     super.key,
     required this.onPressed,
     required Widget label,
     this.icon,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : child = label,
        trailing = null,
        kind = PlayraButtonKind.ghost;
+
   const PlayraButton.destructiveIcon({
     super.key,
     required this.onPressed,
     required Widget label,
     this.icon,
+    this.size = PlayraButtonSize.md,
     this.iconAlignment = IconAlignment.start,
     this.busy = false,
   }) : child = label,
        trailing = null,
        kind = PlayraButtonKind.destructive;
+
   final VoidCallback? onPressed;
   final Widget child;
   final Widget? icon;
   final Widget? trailing;
   final PlayraButtonKind kind;
+  final PlayraButtonSize size;
   final IconAlignment iconAlignment;
   final bool busy;
 
   @override
   Widget buildForui(BuildContext context) {
-    if (!PlayraComponentScope.enabledOf(context)) {
-      final content = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (busy) ...[
-            const SizedBox.square(
-              dimension: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 8),
-          ] else if (icon != null) ...[
-            icon!,
-            const SizedBox(width: 8),
-          ],
-          child,
-        ],
-      );
-      return kind == PlayraButtonKind.ghost
-          ? TextButton(onPressed: busy ? null : onPressed, child: content)
-          : FilledButton.tonal(onPressed: busy ? null : onPressed, child: content);
-    }
-    final variant = switch (kind) {
-      PlayraButtonKind.primary => f.FButtonVariant.primary,
-      PlayraButtonKind.secondary => f.FButtonVariant.secondary,
-      PlayraButtonKind.outline => f.FButtonVariant.outline,
-      PlayraButtonKind.ghost => f.FButtonVariant.ghost,
-      PlayraButtonKind.destructive => f.FButtonVariant.destructive,
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final tokens = context.playraTokens;
+
+    final (height, hPadding, radius, iconSize, fontSize) = switch (size) {
+      PlayraButtonSize.sm => (28.0, 11.0, 14.0, 13.0, 11.5),
+      PlayraButtonSize.md => (32.0, 14.0, 16.0, 15.0, 12.5),
+      PlayraButtonSize.lg => (40.0, 18.0, 20.0, 17.0, 14.0),
     };
+
+    final isEnabled = onPressed != null && !busy;
+
+    final (bgColor, fgColor, borderColor, boxShadow) = switch (kind) {
+      PlayraButtonKind.primary => (
+        isEnabled ? colors.primary : colors.primary.withValues(alpha: 0.45),
+        Colors.white,
+        null,
+        isEnabled
+            ? [
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.32),
+                  blurRadius: 8.0,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      PlayraButtonKind.secondary => (
+        tokens.surfaceRaised.withValues(alpha: isEnabled ? 0.85 : 0.40),
+        colors.onSurface.withValues(alpha: isEnabled ? 0.92 : 0.40),
+        tokens.borderSubtle.withValues(alpha: 0.50),
+        null,
+      ),
+      PlayraButtonKind.outline => (
+        tokens.surface.withValues(alpha: isEnabled ? 0.35 : 0.15),
+        colors.onSurface.withValues(alpha: isEnabled ? 0.88 : 0.40),
+        tokens.borderSubtle.withValues(alpha: isEnabled ? 0.80 : 0.30),
+        null,
+      ),
+      PlayraButtonKind.ghost => (
+        tokens.surfaceRaised.withValues(alpha: isEnabled ? 0.45 : 0.20),
+        colors.onSurfaceVariant.withValues(alpha: isEnabled ? 0.95 : 0.40),
+        tokens.borderSubtle.withValues(alpha: isEnabled ? 0.38 : 0.15),
+        null,
+      ),
+      PlayraButtonKind.destructive => (
+        colors.error.withValues(alpha: isEnabled ? 0.14 : 0.06),
+        colors.error.withValues(alpha: isEnabled ? 1.0 : 0.40),
+        colors.error.withValues(alpha: isEnabled ? 0.28 : 0.12),
+        null,
+      ),
+    };
+
+    final borderRadius = BorderRadius.circular(radius);
+
     final effectivePrefix = busy
-        ? const SizedBox.square(dimension: 16, child: f.FCircularProgress())
-        : (iconAlignment == IconAlignment.start ? icon : null);
-    return f.FButton(
-      onPress: busy ? null : onPressed,
-      variant: variant,
-      size: f.FButtonSizeVariant.lg,
-      mainAxisSize: MainAxisSize.min,
-      prefix: effectivePrefix,
-      suffix: trailing ?? (iconAlignment == IconAlignment.end && !busy ? icon : null),
-      child: child,
+        ? SizedBox.square(
+            dimension: iconSize,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(fgColor),
+            ),
+          )
+        : (iconAlignment == IconAlignment.start && icon != null
+            ? IconTheme(
+                data: IconThemeData(size: iconSize, color: fgColor),
+                child: icon!,
+              )
+            : null);
+
+    final effectiveSuffix = trailing ??
+        (iconAlignment == IconAlignment.end && icon != null && !busy
+            ? IconTheme(
+                data: IconThemeData(size: iconSize, color: fgColor),
+                child: icon!,
+              )
+            : null);
+
+    return Semantics(
+      button: true,
+      enabled: isEnabled,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isEnabled ? onPressed : null,
+          borderRadius: borderRadius,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOutCubic,
+            height: height,
+            padding: EdgeInsets.symmetric(horizontal: hPadding),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: borderRadius,
+              border: borderColor != null
+                  ? Border.all(color: borderColor, width: 1.0)
+                  : null,
+              boxShadow: boxShadow,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (effectivePrefix != null) ...[
+                  effectivePrefix,
+                  const SizedBox(width: 5.0),
+                ],
+                DefaultTextStyle(
+                  style: theme.textTheme.labelMedium?.copyWith(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w600,
+                        color: fgColor,
+                        height: 1.15,
+                      ) ??
+                      TextStyle(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w600,
+                        color: fgColor,
+                        height: 1.15,
+                      ),
+                  child: child,
+                ),
+                if (effectiveSuffix != null) ...[
+                  const SizedBox(width: 5.0),
+                  effectiveSuffix,
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -192,34 +308,63 @@ class PlayraIconButton extends StatelessWidget with PlayraForuiComponent {
     this.tooltip,
     this.isSelected,
     this.selectedIcon,
+    this.size = 32.0,
   });
   final VoidCallback? onPressed;
   final Widget icon;
   final String? tooltip;
   final bool? isSelected;
   final Widget? selectedIcon;
+  final double size;
+
   @override
   Widget buildForui(BuildContext context) {
-    if (!PlayraComponentScope.enabledOf(context)) {
-      return IconButton(
-        onPressed: onPressed,
-        icon: icon,
-        tooltip: tooltip,
-        isSelected: isSelected,
-        selectedIcon: selectedIcon,
-      );
-    }
-    final button = f.FButton.icon(
-      onPress: onPressed,
-      variant: f.FButtonVariant.ghost,
-      size: f.FButtonSizeVariant.lg,
-      selected: isSelected ?? false,
-      semanticsLabel: tooltip,
-      child: isSelected == true ? selectedIcon ?? icon : icon,
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final tokens = context.playraTokens;
+    final selected = isSelected == true;
+    final isEnabled = onPressed != null;
+
+    final effectiveIcon = selected ? (selectedIcon ?? icon) : icon;
+
+    final button = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isEnabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(size / 2),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: selected
+                ? colors.primary.withValues(alpha: 0.18)
+                : tokens.surfaceRaised.withValues(alpha: isEnabled ? 0.40 : 0.15),
+            borderRadius: BorderRadius.circular(size / 2),
+            border: Border.all(
+              color: selected
+                  ? colors.primary.withValues(alpha: 0.40)
+                  : tokens.borderSubtle.withValues(alpha: isEnabled ? 0.35 : 0.15),
+              width: 1.0,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: IconTheme(
+            data: IconThemeData(
+              size: (size * 0.50).clamp(14.0, 18.0),
+              color: selected
+                  ? colors.primary
+                  : colors.onSurface.withValues(alpha: isEnabled ? 0.88 : 0.35),
+            ),
+            child: effectiveIcon,
+          ),
+        ),
+      ),
     );
+
     return tooltip == null
         ? button
-        : f.FTooltip(tipBuilder: (_, _) => Text(tooltip!), child: button);
+        : Tooltip(message: tooltip!, child: button);
   }
 }
 

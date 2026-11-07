@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:kazumi/utils/image_extension.dart' show normalizeImageUrl;
+import '../lumina/lumina_models.dart' show isBlockedSourceNotice;
 
 /// 上游片目：保持来源身份 `whisklet:<vod_id>`，标题/封面临近字段只做展示。
 class WhiskletWork {
@@ -35,20 +37,19 @@ class WhiskletWork {
   static int count(Object? value, [int fallback = 0]) =>
       int.tryParse(value?.toString() ?? '') ?? fallback;
 
-  /// 封面地址只做协议补全：`//host/path` → `https://host/path`。
-  static String image(Object? value) {
-    final text = plain(value);
-    if (text.isEmpty) return '';
-    if (text.startsWith('//')) return 'https:$text';
-    final uri = Uri.tryParse(text);
-    return uri != null && {'http', 'https'}.contains(uri.scheme) ? text : '';
-  }
+  /// 封面地址做协议补全与已迁移采集图床域名归一化。
+  static String image(Object? value) => normalizeImageUrl(plain(value));
 
   static WhiskletWork? fromRow(Map row) {
     final id = count(row['vod_id']);
     final title = plain(row['vod_name']);
-    if (id <= 0 || title.isEmpty) return null;
     final remarks = plain(row['vod_remarks']);
+    final cover = image(row['vod_pic']);
+    if (id <= 0 ||
+        title.isEmpty ||
+        isBlockedSourceNotice(title: title, remarks: remarks, cover: cover)) {
+      return null;
+    }
     final episodes = RegExp(r'(\d+)\s*集').firstMatch(remarks)?.group(1);
     final category = count(row['type_id_1']) > 0
         ? count(row['type_id_1'])
@@ -57,7 +58,7 @@ class WhiskletWork {
       id: id,
       title: title,
       categoryId: category,
-      cover: image(row['vod_pic']),
+      cover: cover,
       remarks: remarks,
       className: plain(row['vod_class']),
       area: plain(row['vod_area']),

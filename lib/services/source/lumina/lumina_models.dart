@@ -2,6 +2,34 @@ import '../sdk_playback_models.dart';
 
 String luminaText(Object? value) => value is String ? value : '';
 int? luminaInteger(Object? value) => value is int ? value : null;
+
+const _blockedSourceNoticeKeywords = <String>[
+  '星空漫剧',
+  '停止维护',
+  '停服公告',
+  '不再修复',
+  '新版官方',
+  '官方地址',
+  '官网地址',
+  '永久地址',
+  '备用地址',
+  '防迷路',
+  'jcy22',
+];
+
+/// 过滤源站下发的停服公告、换壳引流等非正片占位条目。
+bool isBlockedSourceNotice({
+  required String title,
+  String summary = '',
+  String remarks = '',
+  String cover = '',
+}) {
+  final text = '$title\n$summary\n$remarks\n$cover'.toLowerCase();
+  return _blockedSourceNoticeKeywords.any(
+    (keyword) => text.contains(keyword.toLowerCase()),
+  );
+}
+
 String luminaImage(Object? value) {
   final text = luminaText(value), uri = Uri.tryParse(luminaText(value));
   return uri != null &&
@@ -51,7 +79,13 @@ class LuminaVideo extends SdkVideo {
       totalEpisodes = luminaInteger(raw['totalEpisodes']),
       isEnd = raw['isEnd'] == true,
       parts = List.unmodifiable(parts) {
-    if (!RegExp(r'^\d{1,64}$').hasMatch(id) || title.trim().isEmpty) {
+    if (!RegExp(r'^\d{1,64}$').hasMatch(id) ||
+        title.trim().isEmpty ||
+        isBlockedSourceNotice(
+          title: title,
+          summary: description,
+          cover: cover,
+        )) {
       throw const FormatException('Invalid Lumina video');
     }
   }

@@ -10,7 +10,7 @@ import 'package:kazumi/utils/image_extension.dart';
 import 'package:kazumi/services/platform/resource_url.dart';
 import 'package:kazumi/services/network/cached_bytes_image_provider.dart';
 
-class NetworkImgLayer extends StatelessWidget {
+class NetworkImgLayer extends StatefulWidget {
   const NetworkImgLayer({
     super.key,
     this.src,
@@ -25,6 +25,7 @@ class NetworkImgLayer extends StatelessWidget {
     this.color,
     this.colorBlendMode,
     this.borderRadius,
+    this.fallbackTitle,
   });
 
   final String? src;
@@ -39,6 +40,7 @@ class NetworkImgLayer extends StatelessWidget {
   final Color? color;
   final BlendMode? colorBlendMode;
   final BorderRadius? borderRadius;
+  final String? fallbackTitle;
 
   static Widget heroFlightShuttleBuilder(
     BuildContext flightContext,
@@ -63,14 +65,81 @@ class NetworkImgLayer extends StatelessWidget {
   }
 
   @override
+  State<NetworkImgLayer> createState() => _NetworkImgLayerState();
+}
+
+class _NetworkImgLayerState extends State<NetworkImgLayer> {
+  String? _resolvedFallbackUrl;
+  bool _resolvingFallback = false;
+  bool _primaryFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncFallbackState();
+  }
+
+  @override
+  void didUpdateWidget(covariant NetworkImgLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.src != widget.src ||
+        oldWidget.fallbackTitle != widget.fallbackTitle) {
+      _primaryFailed = false;
+      _resolvingFallback = false;
+      _syncFallbackState();
+    }
+  }
+
+  void _syncFallbackState() {
+    final normalized = normalizeImageUrl(widget.src ?? '');
+    final cached = cachedFallbackCoverForTitle(widget.fallbackTitle);
+    _resolvedFallbackUrl = cached;
+    if ((normalized.isEmpty || isDeadImageHost(normalized)) &&
+        (widget.fallbackTitle?.trim().isNotEmpty ?? false) &&
+        !hasTriedFallbackCoverForTitle(widget.fallbackTitle)) {
+      _requestFallbackCover();
+    }
+  }
+
+  void _requestFallbackCover() {
+    final title = widget.fallbackTitle?.trim() ?? '';
+    if (title.isEmpty || _resolvingFallback || isFlutterTestBinding) return;
+    if (hasTriedFallbackCoverForTitle(title)) {
+      _resolvedFallbackUrl = cachedFallbackCoverForTitle(title);
+      return;
+    }
+    _resolvingFallback = true;
+    resolveFallbackCoverByTitle(title).then((url) {
+      if (!mounted) return;
+      setState(() {
+        _resolvingFallback = false;
+        _resolvedFallbackUrl = url;
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final imageUrl = src ?? '';
-    if (imageUrl.isEmpty) {
+    final primaryUrl = normalizeImageUrl(widget.src ?? '');
+    final useFallback =
+        _primaryFailed || primaryUrl.isEmpty || isDeadImageHost(primaryUrl);
+    final effectiveUrl = useFallback
+        ? (_resolvedFallbackUrl ?? '')
+        : primaryUrl;
+
+    if (effectiveUrl.isEmpty) {
+      if (_resolvingFallback) {
+        return ClipRRect(
+          clipBehavior: Clip.antiAlias,
+          borderRadius: _borderRadius,
+          child: _skeletonPlaceholder(),
+        );
+      }
       return _placeholder(context);
     }
 
     final (memCacheWidth, memCacheHeight) = _cacheSize(context);
-    final url = platformResourceUrl(imageUrl);
+    final url = platformResourceUrl(effectiveUrl);
     final headers = httpHeadersForImageUrl(url);
     return ClipRRect(
       clipBehavior: Clip.antiAlias,
@@ -78,49 +147,73 @@ class NetworkImgLayer extends StatelessWidget {
       // 复用 CachedNetworkImage 内部的同一淡入组件与原生缓存 provider。
       // Web 用框架的字节解码分支，确保缩略尺寸生效，坏图片也能结束等待。
       child: OctoImage(
+        key: ValueKey(url),
         image: kIsWeb
             ? CachedBytesImageProvider(url, headers: headers)
             : CachedNetworkImageProvider(url, headers: headers),
-        width: width,
-        height: height,
+        width: widget.width,
+        height: widget.height,
         memCacheWidth: memCacheWidth,
         memCacheHeight: memCacheHeight,
-        fit: fit,
+        fit: widget.fit,
         fadeOutDuration: MediaQuery.disableAnimationsOf(context)
             ? Duration.zero
-            : fadeOutDuration ?? const Duration(milliseconds: 120),
+            : widget.fadeOutDuration ?? const Duration(milliseconds: 140),
         fadeInDuration: MediaQuery.disableAnimationsOf(context)
             ? Duration.zero
-            : fadeInDuration ?? const Duration(milliseconds: 180),
-        filterQuality: filterQuality,
-        color: color,
-        colorBlendMode: colorBlendMode,
+            : widget.fadeInDuration ?? const Duration(milliseconds: 240),
+        fadeInCurve: Curves.easeOutCubic,
+        filterQuality: widget.filterQuality,
+        color: widget.color,
+        colorBlendMode: widget.colorBlendMode,
         errorBuilder: (context, error, stackTrace) {
           _logFailure(url, error);
+          if (!useFallback &&
+              (widget.fallbackTitle?.trim().isNotEmpty ?? false) &&
+              !hasTriedFallbackCoverForTitle(widget.fallbackTitle) &&
+              !isFlutterTestBinding) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              setState(() => _primaryFailed = true);
+              _requestFallbackCover();
+            });
+            return _skeletonPlaceholder();
+          }
+          if (!useFallback && (_resolvedFallbackUrl?.isNotEmpty ?? false)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_primaryFailed) {
+                setState(() => _primaryFailed = true);
+              }
+            });
+            return _skeletonPlaceholder();
+          }
           return _placeholder(context);
         },
-        // 仅请求等待期间使用骨架；失败和空地址继续显示静态回退。
-        placeholderBuilder: (context) => ContentSkeleton(
-          key: const ValueKey('content-skeleton-image'),
-          // 每张图片独立脉冲会在慢源等待期间持续占用绘制预算。
-          animate: false,
-          child: Bone(
-            width: width,
-            height: height,
-            borderRadius: _borderRadius,
-          ),
-        ),
+        placeholderBuilder: (context) => _skeletonPlaceholder(),
       ),
     );
   }
 
-  (int?, int?) _cacheSize(BuildContext context) {
-    final cacheWidth = width.cacheSize(context);
-    final cacheHeight = height.cacheSize(context);
-    final aspectRatio = width / height;
-    final sourceAspectRatio = origAspectRatio;
+  Widget _skeletonPlaceholder() => ContentSkeleton(
+    key: const ValueKey('content-skeleton-image'),
+    animate: !isFlutterTestBinding,
+    child: Bone(
+      width: widget.width.isFinite ? widget.width : null,
+      height: widget.height.isFinite ? widget.height : null,
+      borderRadius: _borderRadius,
+    ),
+  );
 
-    switch (fit) {
+  (int?, int?) _cacheSize(BuildContext context) {
+    if (!widget.width.isFinite || !widget.height.isFinite || widget.height <= 0) {
+      return (null, null);
+    }
+    final cacheWidth = widget.width.cacheSize(context);
+    final cacheHeight = widget.height.cacheSize(context);
+    final aspectRatio = widget.width / widget.height;
+    final sourceAspectRatio = widget.origAspectRatio;
+
+    switch (widget.fit) {
       case BoxFit.none:
       case BoxFit.scaleDown:
         // These modes depend on the original image dimensions.
@@ -150,8 +243,8 @@ class NetworkImgLayer extends StatelessWidget {
   }
 
   BorderRadius get _borderRadius =>
-      borderRadius ??
-      BorderRadius.circular(switch (type) {
+      widget.borderRadius ??
+      BorderRadius.circular(switch (widget.type) {
         'avatar' => 50,
         'emote' => 0,
         _ => StyleString.imgRadius.x,
@@ -171,8 +264,8 @@ class NetworkImgLayer extends StatelessWidget {
 
   Widget _placeholder(BuildContext context) {
     return Container(
-      width: width,
-      height: height,
+      width: widget.width,
+      height: widget.height,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Theme.of(
@@ -180,7 +273,7 @@ class NetworkImgLayer extends StatelessWidget {
         ).colorScheme.onInverseSurface.withValues(alpha: 0.4),
         borderRadius: _borderRadius,
       ),
-      child: type == 'bg'
+      child: widget.type == 'bg'
           ? Center(
               child: Icon(
                 Icons.image_not_supported_outlined,
@@ -190,13 +283,13 @@ class NetworkImgLayer extends StatelessWidget {
             )
           : Center(
               child: Image.asset(
-                type == 'avatar'
+                widget.type == 'avatar'
                     ? 'assets/images/noface.jpeg'
                     : 'assets/images/loading.png',
-                width: width,
-                height: height,
-                cacheWidth: width.cacheSize(context),
-                cacheHeight: height.cacheSize(context),
+                width: widget.width.isFinite ? widget.width : null,
+                height: widget.height.isFinite ? widget.height : null,
+                cacheWidth: widget.width.isFinite ? widget.width.cacheSize(context) : null,
+                cacheHeight: widget.height.isFinite ? widget.height.cacheSize(context) : null,
               ),
             ),
     );

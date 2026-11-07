@@ -344,6 +344,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                     else
                       NetworkImgLayer(
                         src: work.cover,
+                        fallbackTitle: work.title,
                         width: coverWidth,
                         height: coverHeight,
                         borderRadius: BorderRadius.circular(

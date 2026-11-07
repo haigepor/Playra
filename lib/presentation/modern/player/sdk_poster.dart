@@ -57,6 +57,7 @@ class SdkPoster extends StatelessWidget {
                     children: [
                       NetworkImgLayer(
                         src: video.cover.isEmpty ? video.poster : video.cover,
+                        fallbackTitle: video.title,
                         width: bounds.maxWidth,
                         height: bounds.maxWidth * 1.42,
                         type: 'bg',

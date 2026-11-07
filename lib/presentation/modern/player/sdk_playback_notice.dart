@@ -15,29 +15,37 @@ class SdkPlaybackNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final tokens = PlayraTokens.of(context);
     return Semantics(
       liveRegion: true,
       child: Container(
         key: const ValueKey('sdk-playback-notice'),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+        constraints: const BoxConstraints(minHeight: 48),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.fromLTRB(14, 6, 8, 6),
         decoration: BoxDecoration(
-          color: colors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(PlayraRadius.control),
-          border: Border(left: BorderSide(color: colors.primary, width: 3)),
+          color: colors.surfaceContainerHigh.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(PlayraRadius.card),
+          border: Border.all(color: tokens.borderSubtle),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.info_outline_rounded, size: 18, color: colors.primary),
-            const SizedBox(width: 10),
+            Icon(
+              Icons.info_outline_rounded,
+              size: 18,
+              color: colors.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 message,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(height: 1.5),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurface,
+                  height: 1.4,
+                ),
               ),
             ),
             if (onRetry != null)
@@ -45,7 +53,13 @@ class SdkPlaybackNotice extends StatelessWidget {
             if (onSwitch != null)
               PopupMenuButton<String>(
                 tooltip: '更多恢复操作',
-                icon: const Icon(Icons.more_horiz_rounded, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                icon: Icon(
+                  Icons.more_horiz_rounded,
+                  size: 20,
+                  color: colors.onSurfaceVariant,
+                ),
                 onSelected: (_) => onSwitch!(),
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'line', child: Text('切换线路')),

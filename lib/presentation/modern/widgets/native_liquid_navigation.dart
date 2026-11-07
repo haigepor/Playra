@@ -98,11 +98,61 @@ class _NativeLiquidNavigationBarState extends State<NativeLiquidNavigationBar>
     with WidgetsBindingObserver {
   final _surface = GlobalKey();
   bool _foreground = true;
+  Animation<double>? _routeAnimation;
+  Animation<double>? _secondaryAnimation;
+  bool _routeSettled = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    _bindAnimations(route?.animation, route?.secondaryAnimation);
+  }
+
+  void _bindAnimations(
+    Animation<double>? primary,
+    Animation<double>? secondary,
+  ) {
+    if (_routeAnimation != primary) {
+      _routeAnimation?.removeListener(_handleRouteAnimationChanged);
+      _routeAnimation?.removeStatusListener(_handleRouteAnimationStatusChanged);
+      _routeAnimation = primary;
+      _routeAnimation?.addListener(_handleRouteAnimationChanged);
+      _routeAnimation?.addStatusListener(_handleRouteAnimationStatusChanged);
+    }
+    if (_secondaryAnimation != secondary) {
+      _secondaryAnimation?.removeListener(_handleRouteAnimationChanged);
+      _secondaryAnimation?.removeStatusListener(
+        _handleRouteAnimationStatusChanged,
+      );
+      _secondaryAnimation = secondary;
+      _secondaryAnimation?.addListener(_handleRouteAnimationChanged);
+      _secondaryAnimation?.addStatusListener(
+        _handleRouteAnimationStatusChanged,
+      );
+    }
+    _routeSettled = _computeRouteSettled();
+  }
+
+  bool _computeRouteSettled() =>
+      (_routeAnimation?.isCompleted ?? true) &&
+      (_secondaryAnimation?.isDismissed ?? true);
+
+  void _handleRouteAnimationChanged() {
+    final settled = _computeRouteSettled();
+    if (settled != _routeSettled && mounted) {
+      setState(() => _routeSettled = settled);
+    }
+  }
+
+  void _handleRouteAnimationStatusChanged(AnimationStatus _) {
+    _handleRouteAnimationChanged();
   }
 
   @override
@@ -123,6 +173,7 @@ class _NativeLiquidNavigationBarState extends State<NativeLiquidNavigationBar>
 
   @override
   void dispose() {
+    _bindAnimations(null, null);
     WidgetsBinding.instance.removeObserver(this);
     widget.controller.hide();
     super.dispose();
@@ -132,6 +183,7 @@ class _NativeLiquidNavigationBarState extends State<NativeLiquidNavigationBar>
   Widget build(BuildContext context) {
     final visible =
         _foreground &&
+        _routeSettled &&
         !RouteVisibility.isCoveredOf(context) &&
         (ModalRoute.isCurrentOf(context) ?? true) &&
         TickerMode.valuesOf(context).enabled &&
@@ -146,7 +198,17 @@ class _NativeLiquidNavigationBarState extends State<NativeLiquidNavigationBar>
           if (!mounted) return;
           final render = _surface.currentContext?.findRenderObject();
           if (render is! RenderBox || !render.hasSize) return;
-          final offset = render.localToGlobal(Offset.zero) * ratio;
+          final scaffold = Scaffold.maybeOf(
+            context,
+          )?.context.findRenderObject();
+          final offset =
+              render.localToGlobal(
+                Offset.zero,
+                ancestor: scaffold is RenderBox && scaffold.hasSize
+                    ? scaffold
+                    : null,
+              ) *
+              ratio;
           widget.controller.configure({
             'visible': visible,
             'selectedIndex': widget.selectedIndex,

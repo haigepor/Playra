@@ -137,7 +137,7 @@ class WhiskletCatalog {
       final token = entry.substring(split + 1).trim();
       if (token.isEmpty) continue;
       final number = RegExp(
-        r'^(?:第\s*)?(\d+)(?:\s*[集话話])?$',
+        r'^(?:第\s*)?(\d+)(?:\s*[集话話期])?(?:$|[：:\s·\-—_])',
       ).firstMatch(name)?.group(1);
       items.add(WhiskletEpisode(name, token, int.tryParse(number ?? '')));
     }

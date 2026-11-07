@@ -3,14 +3,27 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-PulseEffect _contentEffect(BuildContext context, {bool animate = true}) {
+PaintingEffect _contentEffect(BuildContext context, {bool animate = true}) {
   final colors = Theme.of(context).colorScheme;
-  return PulseEffect(
-    from: Color.lerp(colors.surface, colors.onSurface, .055)!,
-    to: Color.lerp(colors.surface, colors.onSurface, .095)!,
-    duration: !animate || MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 1800),
+  final base = Color.lerp(colors.surfaceContainerLow, colors.onSurface, .06)!;
+  final highlight = Color.lerp(
+    colors.surfaceContainerHigh,
+    colors.onSurface,
+    .14,
+  )!;
+  if (!animate || MediaQuery.disableAnimationsOf(context)) {
+    return PulseEffect(
+      from: base,
+      to: highlight,
+      duration: Duration.zero,
+    );
+  }
+  return ShimmerEffect(
+    baseColor: base,
+    highlightColor: highlight,
+    begin: const Alignment(-1.0, -0.35),
+    end: const Alignment(1.0, 0.35),
+    duration: const Duration(milliseconds: 1350),
   );
 }
 

@@ -130,7 +130,7 @@ class SdkPlaybackCoordinator {
     if (exact.isNotEmpty) return null;
     int? ordinary(String value) {
       final match = RegExp(
-        r'^(?:第\s*)?(\d+)(?:\s*集)?$',
+        r'^(?:第\s*)?(\d+)(?:\s*[集话話期])?(?:$|[：:\s·\-—_])',
       ).firstMatch(value.trim());
       return match == null ? null : int.tryParse(match[1]!);
     }

@@ -145,12 +145,10 @@ void main() {
       final rail = find.byKey(const PageStorageKey('home-channel-lumina:1'));
       final poster = find.byKey(const ValueKey('home-poster-lumina:0'));
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('home-rating-lumina:0')),
-          matching: find.text('暂无'),
-        ),
-        findsOneWidget,
+        find.byKey(const ValueKey('home-rating-lumina:0')),
+        findsNothing,
       );
+      expect(find.text('暂无'), findsNothing);
       expect(
         tester
             .getBottomRight(find.byKey(const ValueKey('home-airing-lumina:0')))

@@ -71,10 +71,10 @@ class WhiskletClient {
     }
     final Map<String, dynamic> result;
     try {
-      result = await compute(decodeWhiskletResponse, (
-        utf8.decode(response.bodyBytes),
-        method.wireName,
-      ));
+      final rawText = utf8.decode(response.bodyBytes);
+      result = response.bodyBytes.length > 16384
+          ? await compute(decodeWhiskletResponse, (rawText, method.wireName))
+          : decodeWhiskletResponse((rawText, method.wireName));
     } catch (_) {
       throw const SourceException('PROTOCOL', '内容源返回不完整或格式已变更');
     }

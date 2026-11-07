@@ -76,4 +76,15 @@ void main() {
     expect(router.decode(raw, '/', budget, () => raw).backend, 'core');
     expect(backend.calls, 2);
   });
+  test('two consecutive non-terminal failures quarantine the backend', () {
+    final backend = _Backend()
+      ..failure = const ResponseBackendFailure('CORE_REPLY');
+    final router = ResponseRouter(backend);
+    expect(router.decode(raw, '/', budget, () => raw).backend, 'fuse');
+    expect(router.decode(raw, '/', budget, () => raw).backend, 'fuse');
+    // After 2 consecutive failures, backend is quarantined and won't be called again.
+    backend.failure = null;
+    expect(router.decode(raw, '/', budget, () => raw).backend, 'fuse');
+    expect(backend.calls, 2);
+  });
 }

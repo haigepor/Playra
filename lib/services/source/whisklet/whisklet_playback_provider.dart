@@ -148,11 +148,8 @@ class WhiskletPlaybackProvider extends SdkPlaybackProvider {
       // 直链线：令牌本身就是可播地址。
       url = token;
     } else if (line.parseApi.contains('/ajiami/')) {
-      final full = _familyFull[line.code];
-      if (full == null) {
-        throw SourceException('UNKNOWN_SOURCE', '未知播放源代号 ${line.code}');
-      }
-      final param = await _fetchParam(token, line.code, full, cancel);
+      final minFull = _familyFull[line.code] ?? 64;
+      final param = await _fetchParam(token, line.code, minFull, cancel);
       final resolved = await _resolveViaGet(
         line.parseApi.split('?url=')[0],
         '?url=',
@@ -180,26 +177,39 @@ class WhiskletPlaybackProvider extends SdkPlaybackProvider {
     };
   }
 
-  /// 家族 param 轮询：截断形态（含 0 长度）不视为错误，满长即返回。
+  /// 家族 param 轮询：信封丢头会截断 `5 + 16k` 字符（导致长度 `mod 4 == 3`），
+  /// 完整未截断的 Base64 参数必满足 `length >= minFull && length % 4 == 0`。
   Future<String> _fetchParam(
     String token,
     String playerCode,
-    int full,
+    int minFull,
     CancelToken? cancel,
   ) async {
     var best = '';
-    for (var attempt = 1; attempt <= 25; attempt++) {
+    for (var round = 1; round <= 10; round++) {
       if (cancel?.isCancelled == true) {
         throw const SourceException('CANCELLED', '请求已取消');
       }
-      best = await _paramRound(token, playerCode, best);
-      if (best.length >= full) return best;
-      if (attempt < 25) {
-        await Future<void>.delayed(const Duration(milliseconds: 350));
+      final batch = await Future.wait(
+        List.generate(3, (_) => _paramRound(token, playerCode, '')),
+      );
+      for (final candidate in batch) {
+        if (candidate.length > best.length) best = candidate;
+        if (_isCompleteParam(candidate, minFull)) return candidate;
+      }
+      if (_isCompleteParam(best, minFull)) return best;
+      if (round < 10) {
+        await Future<void>.delayed(const Duration(milliseconds: 120));
       }
     }
-    throw SourceException('PARAM_INCOMPLETE', '解析参数未达满长（${best.length}/$full）');
+    throw SourceException(
+      'PARAM_INCOMPLETE',
+      '解析参数未达完整长度（${best.length}/$minFull）',
+    );
   }
+
+  static bool _isCompleteParam(String value, int minFull) =>
+      value.length >= minFull && value.length % 4 == 0;
 
   Future<String> _paramRound(
     String token,

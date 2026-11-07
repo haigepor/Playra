@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/pages/menu/route_visibility.dart';
 import 'package:kazumi/presentation/modern/modern_shell.dart';
 import 'package:kazumi/presentation/modern/widgets/native_liquid_navigation.dart';
+import 'package:kazumi/utils/constants.dart';
 
 void main() {
   testWidgets(
@@ -38,6 +39,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           navigatorKey: navigator,
+          theme: ThemeData(pageTransitionsTheme: pageTransitionsTheme2024),
           home: StatefulBuilder(
             builder: (context, setState) {
               update = setState;
@@ -80,6 +82,24 @@ void main() {
       update(() => covered = false);
       await tester.pumpAndSettle();
       expect(lastUpdate()['visible'], isTrue);
+      unawaited(
+        navigator.currentState!.push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => const Scaffold(body: Text('detail page')),
+          ),
+        ),
+      );
+      update(() => covered = true);
+      await tester.pumpAndSettle();
+      expect(lastUpdate()['visible'], isFalse);
+      navigator.currentState!.pop();
+      update(() => covered = false);
+      await tester.pump();
+      expect(lastUpdate()['visible'], isFalse);
+      await tester.pumpAndSettle();
+      expect(lastUpdate()['visible'], isTrue);
+      expect(lastUpdate()['left'], 420);
+      expect(lastUpdate()['width'], 440);
       unawaited(
         showDialog<void>(
           context: navigator.currentContext!,

@@ -54,7 +54,11 @@ class LuminaService {
       for (final raw
           in data['banners'] is List ? data['banners'] as List : const [])
         if (raw is Map &&
-            RegExp(r'^\d{1,64}$').hasMatch(luminaText(raw['videoId'])))
+            RegExp(r'^\d{1,64}$').hasMatch(luminaText(raw['videoId'])) &&
+            !isBlockedSourceNotice(
+              title: luminaText(raw['title']),
+              cover: luminaImage(raw['cover']),
+            ))
           LuminaBanner.fromJson(raw),
     ];
   }

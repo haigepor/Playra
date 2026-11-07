@@ -56,6 +56,12 @@ class WhiskletCodec {
   WhiskletCodec({Uint8List? key}) : key = key ?? WhiskletProfile.key;
   final Uint8List key;
 
+  static const _headerOffsets = [
+    11, 3, 11, 4, 11, 2, 11, 3, 11, 4,
+    11, 3, 11, 3, 11, 4, 11, 3, 11, 3,
+    11, 4, 11, 3, 11, 2, 11, 4, 11, 3,
+  ];
+
   static const configKeys = {
     'img_config',
     'advert_config',
@@ -159,6 +165,41 @@ class WhiskletCodec {
       'secret_parse_api_url',
     }.contains(method)) {
       throw const FormatException('Unexpected envelope method');
+    }
+    final headNums = [
+      for (final part in head.split('0x'))
+        if (part.isNotEmpty) int.parse(part),
+    ];
+    if (headNums.isNotEmpty) {
+      final n = headNums.length;
+      final headBytes = Uint8List(n);
+      for (var i = 0; i < n; i++) {
+        headBytes[i] =
+            (headNums[n - 1 - i] - _headerOffsets[i % _headerOffsets.length]) &
+            0xff;
+      }
+      final full = Uint8List.fromList([...headBytes, ...middle]);
+      if (full.length >= 32 && full.length % 16 == 0) {
+        try {
+          final body = utf8.decode(
+            _crypt(false, full.sublist(0, 16), full.sublist(16)),
+          );
+          if (body.trimRight().endsWith('}')) {
+            final exact = _object(body);
+            exact['_meta'] = {
+              'mode': 'exact',
+              'reconstructed_header': false,
+              'verified': true,
+              'skip': 0,
+            };
+            return exact;
+          }
+        } on ArgumentError {
+          // 退回偏移对齐恢复逻辑
+        } on FormatException {
+          // 退回偏移对齐恢复逻辑
+        }
+      }
     }
     for (var skip = 0; skip < 16; skip++) {
       final length = middle.length - skip - 16;

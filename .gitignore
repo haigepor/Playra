@@ -73,3 +73,7 @@ android/build/reports/problems/
 # 本地运行时生成（不入库）
 /recipes.json
 /tool/source_runtime/
+
+# ZCode 会话目录与恢复锚点
+.zcode/
+RECOVERY-CT.md
