@@ -289,6 +289,9 @@ abstract class _PlayerPlaybackController with Store {
     required bool Function() canInstall,
     int offset = 0,
     VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
+    // CENC 内容密钥（hex）。mov demuxer 在打开媒体时按它解密
+    // cenc-aes-ctr 采样；必须在 player.open 之前设置。
+    String? decryptionKey,
   }) async {
     startOffset = offset;
     superResolutionMode = kIsWeb
@@ -442,8 +445,38 @@ abstract class _PlayerPlaybackController with Store {
       }
 
       bool showPlayerError = GStorage.getSetting(SettingsKeys.showPlayerError);
+      // 采集站直链 CDN 偶发在打开阶段被对端重置/提前断流（AVERROR_EOF），
+      // 重开同一地址通常即可恢复；窗口限制在打开后的几秒内，避免误伤播放中错误。
+      final openStartedAt = DateTime.now();
+      var openRetries = 0;
       player.stream.error.listen((event) {
         if (isCurrentPlayer(player)) {
+          if (DateTime.now().difference(openStartedAt) <
+                  const Duration(seconds: 8) &&
+              openRetries < 2 &&
+              PlayerErrorMapper.isTransientOpenFailure(event)) {
+            openRetries++;
+            KazumiLogger().w(
+              'PlayerController: 媒体打开失败，自动重试（$openRetries/2）',
+              error: event,
+            );
+            unawaited(
+              Future<void>.delayed(const Duration(milliseconds: 1200)).then(
+                (_) async {
+                  if (!isCurrentPlayer(player)) return;
+                  await player.open(
+                    Media(
+                      videoUrl(),
+                      start: Duration(seconds: offset),
+                      httpHeaders: kIsWeb ? null : httpHeaders,
+                    ),
+                    play: autoPlay,
+                  );
+                },
+              ),
+            );
+            return;
+          }
           onMediaError?.call(event.toString());
           final actionableMessage = PlayerErrorMapper.toActionableMessage(
             event,
@@ -477,6 +510,26 @@ abstract class _PlayerPlaybackController with Store {
 
       if (videoSourceFormat == VideoSourceFormat.hls) {
         await pp.setProperty('demuxer-lavf-format', 'hls');
+        if (!isCurrentPlayer(player)) {
+          return await _discardIfNotCurrent(candidate);
+        }
+      }
+
+      // CENC（cenc-aes-ctr）分集解密：mpv 与 ffmpeg 共享 libavformat，
+      // mov demuxer 直接接受 decryption_key。属性只在打开媒体时读取，
+      // 必须先于 player.open 落位。
+      if (!kIsWeb && decryptionKey != null && decryptionKey.isNotEmpty) {
+        try {
+          await pp.setProperty(
+            'demuxer-lavf-o',
+            'decryption_key=$decryptionKey',
+          );
+        } catch (error) {
+          KazumiLogger().w(
+            'PlayerController: 注入解密密钥失败（内核不支持 CENC 解密）',
+            error: error,
+          );
+        }
         if (!isCurrentPlayer(player)) {
           return await _discardIfNotCurrent(candidate);
         }

@@ -51,6 +51,8 @@ class SourceMediaPlayer {
     required bool Function() canInstall,
     required void Function(String) onError,
     VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
+    // CENC 内容密钥；非 web 原生播放器经 mpv 属性注入解密。
+    String? decryptionKey,
     bool? play,
   }) async {
     bool current() => !_closed && canInstall();
@@ -90,6 +92,7 @@ class SourceMediaPlayer {
       false,
       canInstall: current,
       videoSourceFormat: videoSourceFormat,
+      decryptionKey: decryptionKey,
     );
     if (candidate == null) return null;
     if (!current()) {

@@ -402,6 +402,11 @@ class _PlayerItemState extends State<PlayerItem>
     unawaited(PlayerMenuService.dispose());
   }
 
+  /// 竖屏全屏时垂直滑动交给页式切集（PageView），PlayerItem 不再注册
+  /// 垂直识别器，避免抢走手势仲裁；横屏与窗口模式维持亮度/音量手势。
+  bool get _isPortraitFullscreen =>
+      videoPageController.fullscreen.mode == VideoFullscreenMode.portrait;
+
   Future<void> handlePreNextEpisode(String direction) async {
     if (videoPageController.loading) return;
     final selection = videoPageController.selectedEpisode;
@@ -1732,7 +1737,9 @@ class _PlayerItemState extends State<PlayerItem>
                                   );
                                 },
                                 onVerticalDragUpdate:
-                                    (DragUpdateDetails details) async {
+                                    _isPortraitFullscreen
+                                    ? null
+                                    : (DragUpdateDetails details) async {
                                       if (!brightnessVolumeGesture) {
                                         return;
                                       }
@@ -1791,12 +1798,18 @@ class _PlayerItemState extends State<PlayerItem>
                                         );
                                       }
                                     },
-                                onVerticalDragEnd: (_) {
-                                  _finishAdjustmentGesture();
-                                },
-                                onVerticalDragCancel: () {
-                                  _finishAdjustmentGesture();
-                                },
+                                onVerticalDragEnd:
+                                    _isPortraitFullscreen
+                                    ? null
+                                    : (_) {
+                                      _finishAdjustmentGesture();
+                                    },
+                                onVerticalDragCancel:
+                                    _isPortraitFullscreen
+                                    ? null
+                                    : () {
+                                      _finishAdjustmentGesture();
+                                    },
                               ),
                       ),
                     ],

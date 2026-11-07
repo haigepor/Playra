@@ -57,6 +57,7 @@ class _Playback implements PlayerPlaybackController {
     required bool Function() canInstall,
     int offset = 0,
     VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
+    String? decryptionKey,
   }) async {
     opens++;
     receivedHeaders = headers;
