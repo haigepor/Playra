@@ -66,16 +66,18 @@ class _DownloadPageState extends State<DownloadPage> {
           }
           return ListView.builder(
             padding: EdgeInsets.fromLTRB(
-              16,
-              12,
-              16,
-              24 + MediaQuery.paddingOf(context).bottom,
+              PlayraSpace.lg,
+              PlayraSpace.md,
+              PlayraSpace.lg,
+              PlayraSpace.xxl + MediaQuery.paddingOf(context).bottom,
             ),
             itemCount: recordKeys.length + 1,
             itemBuilder: (context, index) {
               return Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 848),
+                  constraints: const BoxConstraints(
+                    maxWidth: PlayraLayout.readingWidth,
+                  ),
                   child: index == 0
                       ? Padding(
                           padding: const EdgeInsets.only(

@@ -28,7 +28,7 @@ Future<RuleAddSource?> showRuleAddDialog(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text('选择一种方式，添加新的番剧来源。'),
-          const SizedBox(height: 20),
+          const SizedBox(height: PlayraSpace.xl),
           for (final option in [
             (
               RuleAddSource.catalog,
@@ -51,7 +51,7 @@ Future<RuleAddSource?> showRuleAddDialog(
             (RuleAddSource.create, Icons.edit_note_rounded, '新建规则', '从模板开始编写'),
           ])
             Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: PlayraSpace.compact),
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: option.$1 == RuleAddSource.catalog
@@ -111,7 +111,7 @@ Future<bool> confirmRuleDeletion(
               names.take(5).join('、') + (names.length > 5 ? ' 等' : ''),
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: PlayraSpace.md),
             const Text('删除后将不再使用这些来源搜索番剧。你可以稍后重新导入规则。'),
           ],
         ),
@@ -141,11 +141,11 @@ Future<void> showRuleShareDialog(BuildContext context, Plugin plugin) async {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(plugin.name, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           const Text('复制规则链接，对方可在「添加规则」中从剪贴板导入。'),
-          const SizedBox(height: 20),
+          const SizedBox(height: PlayraSpace.xl),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(PlayraSpace.lg),
             decoration: BoxDecoration(
               color: PlayraTokens.of(context).surface,
               borderRadius: BorderRadius.circular(PlayraRadius.card),
@@ -268,7 +268,7 @@ class _RuleImportDialogState extends State<_RuleImportDialog> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text('支持多条 kazumi:// 链接、单条 JSON 或 JSON 数组。同名规则会被替换。'),
-          const SizedBox(height: 20),
+          const SizedBox(height: PlayraSpace.xl),
           PlayraTextField(
             controller: _text,
             enabled: !_saving,

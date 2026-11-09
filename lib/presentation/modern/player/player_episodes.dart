@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' as f;
+import 'package:kazumi/presentation/theme/playra_forui_theme.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/presentation/widgets/playra_sheet.dart';
@@ -13,6 +15,8 @@ Future<T?> showModernPlayerSheet<T>(BuildContext context, Widget child) {
   return showPlayraSheet<T>(
     context: context,
     size: PlayraSheetSize.standard,
+    showDragHandle: false,
+    maxHeightFactor: MediaQuery.textScalerOf(context).scale(14) > 20 ? .9 : .8,
     builder: (_) => child,
   );
 }
@@ -29,18 +33,21 @@ class PlayerSheetHeader extends StatelessWidget {
         height: 3,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.outline,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(PlayraSpace.xs),
         ),
       ),
       Padding(
-        padding: const EdgeInsets.only(left: 16, right: 8),
+        padding: const EdgeInsets.only(
+          left: PlayraSpace.lg,
+          right: PlayraSpace.sm,
+        ),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: PlayraType.section,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -57,7 +64,7 @@ class PlayerSheetHeader extends StatelessWidget {
   );
 }
 
-class PlayerEpisodeButton extends StatelessWidget {
+class PlayerEpisodeButton extends StatelessWidget with PlayraForuiComponent {
   const PlayerEpisodeButton({
     super.key,
     required this.title,
@@ -70,55 +77,53 @@ class PlayerEpisodeButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool selected, playing, downloaded;
   @override
-  Widget build(BuildContext context) {
+  Widget buildForui(BuildContext context) {
     final tokens = PlayraTokens.of(context);
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
-      side: BorderSide(
-        color: selected ? tokens.primary : tokens.borderSubtle,
-      ),
-    );
     return Semantics(
+      container: true,
       selected: selected,
       label: playing ? '$title，正在播放' : null,
-      child: Material(
-        color: selected ? tokens.primaryContainer : tokens.surfaceRaised,
-        shape: shape,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          customBorder: shape,
-          child: Container(
-            constraints: const BoxConstraints(minWidth: 60, minHeight: 48),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (selected) ...[
-                  PlayingMark(active: playing, color: tokens.primary),
-                  const SizedBox(width: 5),
-                ],
-                Flexible(
-                  child: Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: selected ? tokens.primary : tokens.foreground,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    ),
+      child: f.FButton.raw(
+        variant: f.FButtonVariant.outline,
+        selected: selected,
+        onPress: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 60, minHeight: 48),
+          padding: const EdgeInsets.symmetric(
+            horizontal: PlayraSpace.md,
+            vertical: PlayraSpace.md,
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (selected) ...[
+                PlayingMark(active: playing, color: tokens.primary),
+                const SizedBox(width: 5),
+              ],
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: PlayraType.caption,
+                    color: selected ? tokens.primary : tokens.foreground,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
-                if (downloaded) ...[
-                  const SizedBox(width: 4),
-                  Icon(LucideIcons.download, size: 12, color: tokens.foregroundSubtle),
-                ],
+              ),
+              if (downloaded) ...[
+                const SizedBox(width: PlayraSpace.xs),
+                Icon(
+                  LucideIcons.download,
+                  size: 12,
+                  color: tokens.foregroundSubtle,
+                ),
               ],
-            ),
+            ],
           ),
         ),
       ),
@@ -148,7 +153,10 @@ class PlayerEpisodesHeader extends StatelessWidget {
           Expanded(
             child: Text(
               sourceVerified ? '选集' : '资料目录',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: PlayraType.item,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Flexible(
@@ -156,7 +164,7 @@ class PlayerEpisodesHeader extends StatelessWidget {
               onPressed: onShowAll,
               child: Text(
                 sourceVerified ? '当前线路 $count 集 · 全部 ›' : '目录 $count 集 ›',
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: PlayraType.caption),
               ),
             ),
           ),
@@ -164,11 +172,11 @@ class PlayerEpisodesHeader extends StatelessWidget {
       ),
       if (!sourceVerified)
         Padding(
-          padding: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.only(bottom: PlayraSpace.sm),
           child: Text(
             '实际可播放集数以匹配来源为准',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: PlayraType.caption,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
@@ -211,11 +219,14 @@ class _PlayerCatalogEpisodesSheetState
       children: [
         const PlayerSheetHeader(title: '资料目录'),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
           child: Row(
             children: [
               const Expanded(
-                child: Text('实际可播放集数以匹配来源为准', style: TextStyle(fontSize: 12)),
+                child: Text(
+                  '实际可播放集数以匹配来源为准',
+                  style: TextStyle(fontSize: PlayraType.caption),
+                ),
               ),
               PlayraButton.ghostIcon(
                 onPressed: () => setState(() => descending = !descending),
@@ -230,13 +241,18 @@ class _PlayerCatalogEpisodesSheetState
         ),
         if (segments > 1)
           SizedBox(
-            height: 48,
+            height: math.max(
+              48,
+              MediaQuery.textScalerOf(context).scale(PlayraType.body) *
+                      PlayraType.bodyHeight +
+                  PlayraSpace.xxl,
+            ),
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
               scrollDirection: Axis.horizontal,
               itemCount: segments,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (_, i) => ChoiceChip(
+              separatorBuilder: (_, _) => const SizedBox(width: PlayraSpace.sm),
+              itemBuilder: (_, i) => PlayraChoice(
                 label: Text(
                   '${episodes[i * 50].episode.toInt()}–${episodes[math.min((i + 1) * 50, episodes.length) - 1].episode.toInt()}',
                 ),
@@ -247,10 +263,16 @@ class _PlayerCatalogEpisodesSheetState
           ),
         Expanded(
           child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 112,
-              mainAxisExtent: 56,
+            padding: const EdgeInsets.all(PlayraSpace.lg),
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: math.max(
+                112,
+                MediaQuery.textScalerOf(context).scale(56),
+              ),
+              mainAxisExtent: math.max(
+                56,
+                MediaQuery.textScalerOf(context).scale(28) + 24,
+              ),
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
             ),
@@ -354,20 +376,26 @@ class _PlayerEpisodesSheetState extends State<PlayerEpisodesSheet> {
       children: [
         PlayerSheetHeader(title: widget.confirmSource ? '确认目标剧集' : '全部选集'),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
           child: Text(
             '${widget.sourceName}${widget.confirmSource ? ' · 选择后从头播放' : ' · 共 $count 集'}',
-            style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: PlayraType.caption,
+              color: c.onSurfaceVariant,
+            ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: PlayraSpace.lg,
+            vertical: PlayraSpace.sm,
+          ),
           child: Wrap(
             spacing: 8,
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (widget.showRoadSelector && widget.roads.isNotEmpty)
+              if (widget.showRoadSelector && widget.roads.length > 1)
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 180),
                   child: DropdownButton<int>(
@@ -380,14 +408,18 @@ class _PlayerEpisodesSheetState extends State<PlayerEpisodesSheet> {
                         DropdownMenuItem(
                           value: i,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: PlayraSpace.md,
+                            ),
                             child: Text(
                               widget.roads[i].name.isEmpty
                                   ? '线路 ${i + 1}'
                                   : widget.roads[i].name,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12),
+                              style: const TextStyle(
+                                fontSize: PlayraType.caption,
+                              ),
                             ),
                           ),
                         ),
@@ -418,18 +450,30 @@ class _PlayerEpisodesSheetState extends State<PlayerEpisodesSheet> {
         ),
         if (count > 50)
           SizedBox(
-            height: 52,
+            height: math.max(
+              52,
+              MediaQuery.textScalerOf(context).scale(PlayraType.body) *
+                      PlayraType.bodyHeight +
+                  PlayraSpace.xxl,
+            ),
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
               scrollDirection: Axis.horizontal,
               itemCount: (count / 50).ceil(),
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (_, i) => PlayraButton.ghost(
-                onPressed: () {
-                  setState(() => segment = i);
-                  if (scroll.hasClients) scroll.jumpTo(0);
-                },
-                child: Text('${i * 50 + 1}–${math.min((i + 1) * 50, count)}'),
+              separatorBuilder: (_, _) => const SizedBox(width: PlayraSpace.sm),
+              itemBuilder: (_, i) => Semantics(
+                container: true,
+                selected: segment == i,
+                child: PlayraButton(
+                  kind: segment == i
+                      ? PlayraButtonKind.secondary
+                      : PlayraButtonKind.ghost,
+                  onPressed: () {
+                    setState(() => segment = i);
+                    if (scroll.hasClients) scroll.jumpTo(0);
+                  },
+                  child: Text('${i * 50 + 1}–${math.min((i + 1) * 50, count)}'),
+                ),
               ),
             ),
           ),
@@ -447,7 +491,7 @@ class _PlayerEpisodesSheetState extends State<PlayerEpisodesSheet> {
               }
               return GridView.builder(
                 controller: scroll,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(PlayraSpace.lg),
                 itemCount: visible.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,

@@ -75,7 +75,7 @@ class SdkPoster extends StatelessWidget {
                                 begin: Alignment.bottomCenter,
                                 end: Alignment.topCenter,
                                 colors: [
-                                  Color(0x80000000),
+                                  PlayraMedia.scrim,
                                   Colors.transparent,
                                 ],
                               ),
@@ -98,8 +98,8 @@ class SdkPoster extends StatelessWidget {
                                     minHeight: 26,
                                   ),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 5,
+                              horizontal: PlayraSpace.compact,
+                              vertical: PlayraSpace.compact,
                             ),
                             decoration: BoxDecoration(
                               color: tokens.rankGold,
@@ -131,8 +131,8 @@ class SdkPoster extends StatelessWidget {
                         textAlign: TextAlign.right,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
+                          color: PlayraMedia.foreground,
+                          fontSize: PlayraType.micro,
                           height: 1.3,
                           fontWeight: FontWeight.w600,
                         ),
@@ -143,13 +143,13 @@ class SdkPoster extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Text(
             video.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: PlayraType.label,
               height: 1.4,
               fontWeight: FontWeight.w600,
             ),
@@ -160,7 +160,7 @@ class SdkPoster extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: PlayraType.small,
               height: 1.3,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),

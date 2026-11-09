@@ -80,7 +80,7 @@ class _LibraryCardState extends State<LibraryCard> {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontSize: 15,
+                                    fontSize: PlayraType.item,
                                     fontWeight: FontWeight.w600,
                                     height: 1.35,
                                   ),
@@ -91,7 +91,7 @@ class _LibraryCardState extends State<LibraryCard> {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
+                                      horizontal: PlayraSpace.sm,
                                       vertical: PlayraSpace.tiny,
                                     ),
                                     decoration: BoxDecoration(
@@ -211,7 +211,7 @@ class _LibraryCardState extends State<LibraryCard> {
                               onPressed: widget.onManage,
                               icon: widget.pending
                                   ? const SizedBox(
-                                      width: 16,
+                                      width: PlayraSpace.lg,
                                       height: 16,
                                       child: PlayraSpinner(),
                                     )

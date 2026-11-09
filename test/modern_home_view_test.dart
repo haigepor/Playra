@@ -1,4 +1,4 @@
-import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/modern/pages/modern_category_list_page.dart';
 import 'package:kazumi/services/source/lumina/lumina_home_controller.dart';
 import 'package:kazumi/services/source/lumina/lumina_service.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
@@ -87,8 +87,10 @@ Future<void> mountHome(
   ValueChanged<WhiskletWork>? onWhiskletDetails,
   SdkRankController? ranking,
   ValueChanged<SdkPlaybackEntry>? onRankDetails,
+  String? sourceErrorCode,
 }) async {
   final anime = _FixtureLuminaHome(controller);
+  anime.errorCode = sourceErrorCode;
   addTearDown(anime.dispose);
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -127,6 +129,85 @@ Future<void> mountHome(
 
 void main() {
   testWidgets(
+    'empty recommendations use a compact refresh notice instead of a source error',
+    (tester) async {
+      final controller = ModernHomeController(
+        loadFeed: (_, _) async => [],
+        readHistory: () => [],
+      );
+      addTearDown(controller.dispose);
+      await controller.refresh();
+      await mountHome(tester, controller);
+      expect(find.text('暂时没有推荐内容'), findsOneWidget);
+      expect(find.text('刷新内容'), findsOneWidget);
+      expect(find.text('Lumina 暂无可展示的内容'), findsNothing);
+      expect(find.text('内容加载失败'), findsNothing);
+      expect(
+        tester.getSize(find.byKey(const ValueKey('home-feed-empty'))).height,
+        lessThanOrEqualTo(100),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'source failure exposes retry and recovers when content arrives',
+    (tester) async {
+      var requests = 0;
+      final controller = ModernHomeController(
+        loadFeed: (_, _) async => ++requests == 1 ? [] : [item(1)],
+        readHistory: () => [],
+      );
+      addTearDown(controller.dispose);
+      await controller.refresh();
+      await mountHome(tester, controller, sourceErrorCode: 'SOURCE_ERROR');
+      expect(find.text('内容加载失败'), findsOneWidget);
+      await tester.tap(find.text('重试'));
+      await tester.pumpAndSettle();
+      expect(requests, greaterThan(1));
+      expect(find.byKey(const ValueKey('home-feed-empty')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('home-poster-lumina:1')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('phone header stays compact without shrinking touch targets', (
+    tester,
+  ) async {
+    final controller = ModernHomeController(
+      loadFeed: (_, _) async => [],
+      readHistory: () => [],
+    );
+    addTearDown(controller.dispose);
+    await mountHome(tester, controller, size: const Size(360, 800));
+    expect(
+      tester.getSize(find.byKey(const ValueKey('home-search-surface'))).height,
+      40,
+    );
+    expect(
+      tester.getSize(find.byKey(const ValueKey('home-search'))).height,
+      greaterThanOrEqualTo(48),
+    );
+    expect(
+      tester.getSize(find.byKey(const ValueKey('home-header'))).height,
+      lessThanOrEqualTo(100),
+    );
+    expect(
+      tester.getSize(find.byKey(const ValueKey('home-feed-more'))).height,
+      greaterThanOrEqualTo(48),
+    );
+    final tabs = tester.getRect(
+      find.byKey(const ValueKey('home-feed-selector')),
+    );
+    final more = tester.getRect(find.byKey(const ValueKey('home-feed-more')));
+    expect(more.left - tabs.right, greaterThanOrEqualTo(8));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
     'category rails scroll independently and expose more and corner metadata',
     (tester) async {
       String? opened;
@@ -144,10 +225,7 @@ void main() {
       await mountHome(tester, controller, onBrowse: (tag) => opened = tag);
       final rail = find.byKey(const PageStorageKey('home-channel-lumina:1'));
       final poster = find.byKey(const ValueKey('home-poster-lumina:0'));
-      expect(
-        find.byKey(const ValueKey('home-rating-lumina:0')),
-        findsNothing,
-      );
+      expect(find.byKey(const ValueKey('home-rating-lumina:0')), findsNothing);
       expect(find.text('暂无'), findsNothing);
       expect(
         tester
@@ -161,10 +239,7 @@ void main() {
       expect(time.data, '更新至 2 集');
       expect(time.style!.backgroundColor, isNull);
       expect(time.style!.shadows, isNull);
-      expect(
-        _tooltip('资料收录的放送安排（原播出地时间），非播放源更新时间；未收录时显示待定。'),
-        findsNothing,
-      );
+      expect(_tooltip('资料收录的放送安排（原播出地时间），非播放源更新时间；未收录时显示待定。'), findsNothing);
       expect(Theme.of(tester.element(poster)).brightness, Brightness.dark);
       expect(tester.widget<InkWell>(poster).hoverColor, Colors.transparent);
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
@@ -236,8 +311,13 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('home-more-lumina:1')));
       await tester.pumpAndSettle();
-      expect(find.byType(DraggableScrollableSheet), findsOneWidget);
-      expect(find.text('推荐·动漫'), findsWidgets);
+      expect(find.byType(ModernCategoryListPage), findsOneWidget);
+      expect(
+        tester
+            .widget<ModernCategoryListPage>(find.byType(ModernCategoryListPage))
+            .channelId,
+        'lumina:1',
+      );
       expect(opened, isNull);
       expect(find.text('左右滑动'), findsNothing);
       expect(find.byKey(const ValueKey('home-load-more')), findsNothing);
@@ -277,22 +357,15 @@ void main() {
     }
     expect(find.byType(TabBar), findsNothing);
 
-    TextStyle labelStyle(String feed) => tester
-        .widget<Text>(
-          find.descendant(
-            of: find.byKey(ValueKey('home-feed-$feed')),
-            matching: find.byType(Text),
-          ),
-        )
-        .style!;
+    bool selectedFeed(String feed) => tester
+        .widget<Semantics>(find.byKey(ValueKey('home-feed-$feed')))
+        .properties
+        .selected!;
 
     // 初始 feed 是 recommended：默认选中「推荐」，「动漫」为未选中态。
-    expect(labelStyle('recommended').fontSize, 16);
-    expect(labelStyle('recommended').fontWeight, FontWeight.w700);
-    expect(labelStyle('anime').fontSize, 15);
-    expect(labelStyle('anime').fontWeight, FontWeight.w500);
-    expect(labelStyle('popular').fontSize, 15);
-    expect(labelStyle('popular').fontWeight, FontWeight.w500);
+    expect(selectedFeed('recommended'), isTrue);
+    expect(selectedFeed('anime'), isFalse);
+    expect(selectedFeed('popular'), isFalse);
 
     await tester.drag(selector, const Offset(-250, 0));
     await tester.pumpAndSettle();
@@ -302,15 +375,33 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('home-feed-popular')));
     await tester.pumpAndSettle();
     expect(controller.feed, HomeFeed.popular);
-    expect(labelStyle('popular').fontWeight, FontWeight.w700);
+    expect(selectedFeed('popular'), isTrue);
     await tester.tap(find.byKey(const ValueKey('home-feed-recommended')));
     await tester.pumpAndSettle();
     expect(controller.feed, HomeFeed.recommended);
     // 风格频道由第二内容源出片；没有第二源时正文为空，但选中态必须切换。
     controller.selectFeed(HomeFeed.shortDrama);
     await tester.pumpAndSettle();
-    expect(labelStyle('shortDrama').fontWeight, FontWeight.w700);
-    expect(labelStyle('anime').fontWeight, FontWeight.w500);
+    expect(selectedFeed('shortDrama'), isTrue);
+    expect(selectedFeed('anime'), isFalse);
+    for (final feed in [
+      HomeFeed.japanese,
+      HomeFeed.chinese,
+      HomeFeed.animeMovies,
+      HomeFeed.season,
+    ]) {
+      controller.selectFeed(feed);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: feed.label);
+      expect(selectedFeed(feed.name), isTrue);
+      expect(
+        find.byKey(ValueKey('home-feed-${feed.name}')).hitTestable(),
+        findsOneWidget,
+      );
+    }
+    controller.selectFeed(HomeFeed.recommended);
+    await tester.pumpAndSettle();
+    expect(selectedFeed('recommended'), isTrue);
     expect(tester.takeException(), isNull);
   });
 
@@ -350,45 +441,46 @@ void main() {
     expect(find.text('动漫 · 第二源'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
-  testWidgets('second-source card tap forwards the work to the details handler', (
-    tester,
-  ) async {
-    final controller = ModernHomeController(
-      loadFeed: (_, _) async => [item(1)],
-      readHistory: () => [],
-    );
-    addTearDown(controller.dispose);
-    final catalog = _SecondSourceCatalog();
-    final source = WhiskletHomeController(catalog: catalog);
-    addTearDown(source.dispose);
-    await controller.refresh();
-    WhiskletWork? opened;
-    await mountHome(
-      tester,
-      controller,
-      whisklet: source,
-      onWhiskletDetails: (work) => opened = work,
-    );
-    controller.selectFeed(HomeFeed.anime);
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('星轨信使'),
-      200,
-      scrollable: find
-          .descendant(
-            of: find.byType(CustomScrollView),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.tap(find.text('星轨信使'));
-    await tester.pumpAndSettle();
-    expect(opened?.id, 401);
-    expect(opened?.title, '星轨信使');
-    // 回调已接管点击：不再弹「播放链路将在下一阶段接入」的占位提示。
-    expect(find.byType(SnackBar), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'second-source card tap forwards the work to the details handler',
+    (tester) async {
+      final controller = ModernHomeController(
+        loadFeed: (_, _) async => [item(1)],
+        readHistory: () => [],
+      );
+      addTearDown(controller.dispose);
+      final catalog = _SecondSourceCatalog();
+      final source = WhiskletHomeController(catalog: catalog);
+      addTearDown(source.dispose);
+      await controller.refresh();
+      WhiskletWork? opened;
+      await mountHome(
+        tester,
+        controller,
+        whisklet: source,
+        onWhiskletDetails: (work) => opened = work,
+      );
+      controller.selectFeed(HomeFeed.anime);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('星轨信使'),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(CustomScrollView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.tap(find.text('星轨信使'));
+      await tester.pumpAndSettle();
+      expect(opened?.id, 401);
+      expect(opened?.title, '星轨信使');
+      // 回调已接管点击：不再弹「播放链路将在下一阶段接入」的占位提示。
+      expect(find.byType(SnackBar), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
   testWidgets('style channels keep only their own second-source content', (
     tester,
   ) async {
@@ -543,14 +635,16 @@ void main() {
       addTearDown(controller.dispose);
       await controller.refresh();
       await mountHome(tester, controller);
-      expect(find.text('这个分类暂时没有符合条件的作品'), findsOneWidget);
+      expect(find.text('暂时没有推荐内容'), findsOneWidget);
       empty = false;
-      await tester.tap(find.text('重试').first);
+      await tester.tap(find.text('刷新内容'));
       await tester.pumpAndSettle();
       final recommendation = tester.widget<ModernFeatureCarousel>(
         find.byKey(const ValueKey('home-primary-recommendations')),
       );
       expect(recommendation.entries.single.title, '番剧 1');
+      await tester.ensureVisible(find.byKey(const ValueKey('home-feed-anime')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('home-feed-anime')));
       await tester.pumpAndSettle();
       expect(controller.items.single.id, HomeFeed.anime.index + 1);
@@ -569,7 +663,8 @@ class _StubTransport extends http.BaseClient {
 
 /// 只覆写目录层；触网由用例断言 `browsed` 记录来验证。
 class _SecondSourceCatalog extends WhiskletCatalog {
-  _SecondSourceCatalog() : super(client: WhiskletClient(transport: _StubTransport()));
+  _SecondSourceCatalog()
+    : super(client: WhiskletClient(transport: _StubTransport()));
   final List<int> browsed = [];
 
   @override
@@ -584,7 +679,11 @@ class _SecondSourceCatalog extends WhiskletCatalog {
           'vod_remarks': '更新至12集',
           'type_id': 4,
         })!,
-        WhiskletWork.fromRow({'vod_id': 402, 'vod_name': '幻夜巡游', 'type_id': 4})!,
+        WhiskletWork.fromRow({
+          'vod_id': 402,
+          'vod_name': '幻夜巡游',
+          'type_id': 4,
+        })!,
       ],
       page: page,
       pages: 1,
@@ -592,6 +691,4 @@ class _SecondSourceCatalog extends WhiskletCatalog {
   }
 }
 
-Finder _tooltip(String message) => find.byWidgetPredicate((widget) =>
-  widget is PlayraIconButton && widget.tooltip == message ||
-  widget is Tooltip && widget.message == message);
+Finder _tooltip(String message) => find.byTooltip(message);

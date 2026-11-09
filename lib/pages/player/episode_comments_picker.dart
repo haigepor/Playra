@@ -19,7 +19,7 @@ class EpisodeCommentsPicker extends StatelessWidget {
     final type = Theme.of(context).textTheme;
     final tokens = PlayraTokens.of(context);
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xl, vertical: PlayraSpace.xxl),
       backgroundColor: tokens.surfaceRaised,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(PlayraRadius.overlay),
@@ -33,14 +33,14 @@ class EpisodeCommentsPicker extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, PlayraSpace.xxl, PlayraSpace.xxl, PlayraSpace.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('选择讨论分集',
                       style: type.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: PlayraSpace.sm),
                   Text('切换想看的讨论，视频会继续播放。',
                       style: type.bodyMedium
                           ?.copyWith(color: colors.onSurfaceVariant)),
@@ -50,7 +50,7 @@ class EpisodeCommentsPicker extends StatelessWidget {
             Flexible(
               child: ListView.separated(
                 shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md),
                 itemCount: episodes.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 3),
                 itemBuilder: (context, index) {
@@ -107,7 +107,7 @@ class EpisodeCommentsPicker extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(PlayraSpace.md),
               child: Align(
                 alignment: Alignment.centerRight,
                 child: PlayraButton.ghost(

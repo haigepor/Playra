@@ -159,7 +159,7 @@ class _PlayerAdjustmentHudState extends State<PlayerAdjustmentHud> {
                 duration: duration,
                 curve: Curves.easeOutCubic,
                 width: 200,
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                padding: const EdgeInsets.symmetric(vertical: PlayraSpace.xs, horizontal: PlayraSpace.sm),
                 decoration: BoxDecoration(
                   color: surface,
                   borderRadius: BorderRadius.circular(PlayraRadius.brand),
@@ -173,7 +173,7 @@ class _PlayerAdjustmentHudState extends State<PlayerAdjustmentHud> {
                       spreadRadius: 1,
                     ),
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.28),
+                      color: PlayraMedia.canvas.withValues(alpha: 0.28),
                       blurRadius: 24,
                       offset: const Offset(0, 12),
                     ),
@@ -189,7 +189,7 @@ class _PlayerAdjustmentHudState extends State<PlayerAdjustmentHud> {
                       height: 32,
                       decoration: BoxDecoration(
                         color: container,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(PlayraRadius.overlay),
                       ),
                       child: AnimatedSwitcher(
                         duration: duration,
@@ -212,7 +212,7 @@ class _PlayerAdjustmentHudState extends State<PlayerAdjustmentHud> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: PlayraSpace.sm),
                     Expanded(
                       child: SliderTheme(
                         data: SliderThemeData(
@@ -673,7 +673,7 @@ class _PlayerSeekHudState extends State<PlayerSeekHud> {
                       spreadRadius: 1,
                     ),
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.28),
+                      color: PlayraMedia.canvas.withValues(alpha: 0.28),
                       blurRadius: 24,
                       offset: const Offset(0, 12),
                     ),
@@ -698,8 +698,8 @@ class _PlayerSeekHudState extends State<PlayerSeekHud> {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 10,
+                        vertical: PlayraSpace.sm,
+                        horizontal: PlayraSpace.md,
                       ),
                       child: Row(
                         children: [
@@ -710,7 +710,7 @@ class _PlayerSeekHudState extends State<PlayerSeekHud> {
                             height: 36,
                             decoration: BoxDecoration(
                               color: container,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(PlayraRadius.overlay),
                             ),
                             child: AnimatedSwitcher(
                               duration: duration,
@@ -876,14 +876,14 @@ class _PlayerSpeedHudState extends State<PlayerSpeedHud> {
                 duration: duration,
                 curve: Curves.easeOutCubic,
                 width: 94,
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                padding: const EdgeInsets.symmetric(vertical: PlayraSpace.xs, horizontal: PlayraSpace.sm),
                 decoration: BoxDecoration(
                   color: surface,
                   borderRadius: BorderRadius.circular(PlayraRadius.hero),
                   border: Border.all(color: border),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.18),
+                      color: PlayraMedia.canvas.withValues(alpha: 0.18),
                       blurRadius: 12,
                       offset: const Offset(0, 5),
                     ),
@@ -899,7 +899,7 @@ class _PlayerSpeedHudState extends State<PlayerSpeedHud> {
                       height: 22,
                       decoration: BoxDecoration(
                         color: container,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(PlayraRadius.control),
                       ),
                       child: Icon(
                         Icons.speed_rounded,
@@ -907,7 +907,7 @@ class _PlayerSpeedHudState extends State<PlayerSpeedHud> {
                         size: 15,
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: PlayraSpace.compact),
                     Expanded(
                       child: Text(
                         _speedText,

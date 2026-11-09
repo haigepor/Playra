@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -52,10 +53,10 @@ class _DisclaimerStepState extends State<DisclaimerStep> {
           ? '欢迎来到 Playra'
           : '欢迎来到 Playra',
       child: TonalCard(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(PlayraSpace.xxl),
         child: _statementsText == null
             ? const Padding(
-                padding: EdgeInsets.all(32),
+                padding: EdgeInsets.all(PlayraSpace.section),
                 child: Center(child: LoadingIndicator()),
               )
             : Column(
@@ -64,17 +65,17 @@ class _DisclaimerStepState extends State<DisclaimerStep> {
                   Row(children: [
                     Icon(Icons.description_outlined,
                         color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: PlayraSpace.md),
                     Expanded(
                       child: Text('免责声明',
                           style: textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.w600)),
                     ),
                   ]),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: PlayraSpace.xl),
                   for (final paragraph in _statementsText!.trim().split('\n'))
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: PlayraSpace.md),
                       child: Text(paragraph.trim(),
                           style: textTheme.bodyMedium?.copyWith(height: 1.7)),
                     ),

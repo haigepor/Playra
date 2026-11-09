@@ -26,7 +26,7 @@ class EditorTextField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(label, style: theme.textTheme.labelLarge),
-        const SizedBox(height: 8),
+        const SizedBox(height: PlayraSpace.sm),
         Semantics(
           label: label,
           child: PlayraTextField(
@@ -38,7 +38,7 @@ class EditorTextField extends StatelessWidget {
             decoration: ruleInputDecoration(context, hint: hint).copyWith(
               fillColor: theme.colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
+                horizontal: PlayraSpace.lg,
                 vertical: 13,
               ),
               enabledBorder: OutlineInputBorder(
@@ -60,7 +60,7 @@ class EditorTextField extends StatelessWidget {
           ),
         ),
         if (helper != null) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: PlayraSpace.compact),
           Text(
             helper!,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -118,17 +118,17 @@ class EditorChoiceGroup<T> extends StatelessWidget {
         choices = Row(
           children: [
             for (var index = 0; index < segments.length; index++) ...[
-              if (index > 0) const SizedBox(width: 4),
+              if (index > 0) const SizedBox(width: PlayraSpace.xs),
               Expanded(child: button(index)),
             ],
           ],
         );
       }
       return Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(PlayraSpace.xs),
         decoration: BoxDecoration(
           color: colors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(PlayraRadius.card),
           border: Border.all(
             color: colors.outlineVariant.withValues(alpha: .45),
           ),
@@ -160,14 +160,14 @@ class EditorSegmentedField<T> extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       Text(label, style: Theme.of(context).textTheme.labelLarge),
-      const SizedBox(height: 8),
+      const SizedBox(height: PlayraSpace.sm),
       EditorChoiceGroup<T>(
         value: value,
         segments: segments,
         onChanged: onChanged,
       ),
       if (description != null) ...[
-        const SizedBox(height: 8),
+        const SizedBox(height: PlayraSpace.sm),
         Text(
           description!(value),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -205,7 +205,7 @@ class EditorSubheader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 24, bottom: 12),
+    padding: const EdgeInsets.only(top: PlayraSpace.xxl, bottom: PlayraSpace.md),
     child: Text(
       label,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(

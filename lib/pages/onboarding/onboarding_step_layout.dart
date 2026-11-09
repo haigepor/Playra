@@ -34,7 +34,7 @@ class OnboardingStepLayout extends StatelessWidget {
     final theme = Theme.of(context);
     if (ModernSecondaryScope.isActiveOf(context)) {
       return Padding(
-        padding: EdgeInsets.only(bottom: compact ? 16 : 20),
+        padding: EdgeInsets.only(bottom: compact ? PlayraSpace.lg : PlayraSpace.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -53,7 +53,7 @@ class OnboardingStepLayout extends StatelessWidget {
               ),
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: PlayraSpace.sm),
               Text(
                 subtitle!,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -86,7 +86,7 @@ class OnboardingStepLayout extends StatelessWidget {
             ));
     if (compact) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: PlayraSpace.xxl),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -94,14 +94,14 @@ class OnboardingStepLayout extends StatelessWidget {
               child: SizedBox.square(
                   dimension: 48, child: FittedBox(child: leading)),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: PlayraSpace.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   titleWidget,
                   if (description != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: PlayraSpace.sm),
                     description,
                   ],
                 ],
@@ -112,16 +112,16 @@ class OnboardingStepLayout extends StatelessWidget {
       );
     }
     return Padding(
-      padding: EdgeInsets.only(bottom: wide ? 0 : 28),
+      padding: EdgeInsets.only(bottom: wide ? 0 : PlayraSpace.xxl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           ExcludeSemantics(child: leading),
-          const SizedBox(height: 24),
+          const SizedBox(height: PlayraSpace.xxl),
           titleWidget,
           if (description != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: PlayraSpace.md),
             description,
           ],
         ],
@@ -143,7 +143,7 @@ class OnboardingStepLayout extends StatelessWidget {
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+                padding: const EdgeInsets.fromLTRB(0, PlayraSpace.xl, 0, PlayraSpace.xxl),
                 sliver: SliverMainAxisGroup(slivers: [
                   if (!wide)
                     SliverToBoxAdapter(
@@ -160,7 +160,7 @@ class OnboardingStepLayout extends StatelessWidget {
               SizedBox(
                 width: constraints.maxWidth * 0.34,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 40, bottom: 24),
+                  padding: const EdgeInsets.only(top: 40, bottom: PlayraSpace.xxl),
                   child: _intro(context, wide: true),
                 ),
               ),
@@ -250,7 +250,7 @@ class OnboardingHint extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.sm, vertical: PlayraSpace.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

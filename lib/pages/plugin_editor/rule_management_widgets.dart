@@ -58,7 +58,7 @@ class RuleSection extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: EdgeInsets.all(modern ? 16 : 20),
+        padding: EdgeInsets.all(modern ? PlayraSpace.lg : PlayraSpace.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -66,7 +66,7 @@ class RuleSection extends StatelessWidget {
               children: [
                 if (icon != null) ...[
                   Icon(icon, color: tokens.primary),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: PlayraSpace.md),
                 ],
                 Expanded(
                   child: Text(
@@ -79,7 +79,7 @@ class RuleSection extends StatelessWidget {
               ],
             ),
             if (description != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: PlayraSpace.compact),
               Text(
                 description!,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -113,8 +113,8 @@ InputDecoration ruleInputDecoration(
     filled: true,
     fillColor: tokens.surface,
     contentPadding: EdgeInsets.symmetric(
-      horizontal: modern ? 14 : 20,
-      vertical: modern ? 14 : 18,
+      horizontal: modern ? PlayraSpace.lg : PlayraSpace.xl,
+      vertical: modern ? PlayraSpace.lg : PlayraSpace.xl,
     ),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(modern ? 14 : PlayraRadius.card),

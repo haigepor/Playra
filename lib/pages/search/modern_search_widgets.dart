@@ -27,7 +27,7 @@ extension _ModernSearch on _SearchPageState {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               slivers: [
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(inset, 8, inset, 24),
+                  padding: EdgeInsets.fromLTRB(inset, PlayraSpace.sm, inset, PlayraSpace.xxl),
                   sliver: SliverMainAxisGroup(
                     slivers: _hasSearched
                         ? _modernResults(width)
@@ -50,19 +50,19 @@ extension _ModernSearch on _SearchPageState {
       children: [
         InkWell(
           onTap: _showFilters,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(PlayraRadius.control),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: PlayraSpace.md),
             child: Row(
               children: [
                 Icon(LucideIcons.slidersHorizontal, size: 20, color: c.primary),
-                const SizedBox(width: 12),
+                const SizedBox(width: PlayraSpace.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('按条件查找'),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: PlayraSpace.xs),
                       Text(
                         '题材 · 季度 · 评分',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -72,7 +72,7 @@ extension _ModernSearch on _SearchPageState {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: PlayraSpace.sm),
                 Icon(
                   LucideIcons.chevronRight,
                   size: 16,
@@ -83,7 +83,7 @@ extension _ModernSearch on _SearchPageState {
           ),
         ),
         if (histories.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: PlayraSpace.lg),
           Row(
             children: [
               const Expanded(child: Text('最近搜索')),
@@ -188,7 +188,7 @@ extension _ModernSearch on _SearchPageState {
             ),
             if (_filterSummary(filters).isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: PlayraSpace.md),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 4,
@@ -288,14 +288,14 @@ extension _ModernSearch on _SearchPageState {
       if (busy && all.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.only(top: 20),
+            padding: const EdgeInsets.only(top: PlayraSpace.xl),
             child: _modernSearchSkeleton(width, count: 3),
           ),
         ),
       if (all.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.only(top: 20),
+            padding: const EdgeInsets.only(top: PlayraSpace.xl),
             child: Center(
               child: busy
                   ? const SizedBox.shrink()
@@ -378,7 +378,7 @@ class _ModernSearchGrid extends StatelessWidget {
         final item = items[index];
         final title = item.nameCn.isNotEmpty ? item.nameCn : item.name;
         return InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(PlayraRadius.control),
           onTap: () => context.pushNamed('/info/', arguments: item),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -392,7 +392,7 @@ class _ModernSearchGrid extends StatelessWidget {
                   showRating: false,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: PlayraSpace.sm),
               SizedBox(
                 height: titleHeight,
                 child: Text(
@@ -402,7 +402,7 @@ class _ModernSearchGrid extends StatelessWidget {
                   style: titleStyle,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: PlayraSpace.xs),
               Wrap(
                 spacing: 8,
                 children: [

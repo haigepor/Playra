@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 
 Duration sdkMotion(BuildContext context, [int milliseconds = 220]) =>
-    MediaQuery.disableAnimationsOf(context)
-    ? Duration.zero
-    : Duration(milliseconds: milliseconds);
+    PlayraMotion.duration(context, Duration(milliseconds: milliseconds));
 
 /// 两类播放页共用紧凑来源栏：左右布局，左侧「播放源」标签，右侧当前源。
 ///
@@ -30,72 +29,62 @@ class PlaybackSourcePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return Material(
-      color: colors.surfaceContainerHigh,
-      shape: const StadiumBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox(
-        height: height,
-        child: Row(
-          children: [
-            Expanded(
-              // 无障碍节点与点击目标挂在同一层：读屏与自动化都只命中一个按钮。
-              child: Semantics(
-                key: selectorKey,
-                container: true,
-                button: true,
-                label: '$title ${sourceLabel.isEmpty ? "未设置" : sourceLabel}',
-                child: InkWell(
-                  onTap: onSelectSource,
-                  customBorder: const StadiumBorder(),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.cast_rounded,
-                          size: 18,
-                          color: colors.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          title,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // 源名独占剩余宽度并右对齐：Spacer 与 Flexible 平分会把
-                        // 「动漫 · Lumina」这类长源名提前截断。
-                        Expanded(
-                          child: Text(
-                            sourceLabel.isEmpty ? '选择播放源' : sourceLabel,
-                            maxLines: 1,
-                            textAlign: TextAlign.right,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.expand_more_rounded,
-                          size: 18,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ],
+    final colors = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme.labelLarge;
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: height),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              key: selectorKey,
+              container: true,
+              button: true,
+              enabled: onSelectSource != null,
+              excludeSemantics: true,
+              onTap: onSelectSource,
+              label: '$title ${sourceLabel.isEmpty ? "未设置" : sourceLabel}',
+              child: PlayraListTile(
+                enabled: onSelectSource != null,
+                onTap: onSelectSource,
+                leading: Icon(
+                  Icons.video_library_outlined,
+                  size: PlayraLayout.icon,
+                  color: colors.onSurfaceVariant,
+                ),
+                title: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: text?.copyWith(color: colors.onSurfaceVariant),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: PlayraSpace.md),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        sourceLabel.isEmpty ? '选择播放源' : sourceLabel,
+                        maxLines: 1,
+                        textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        style: text?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: Icon(
+                  Icons.expand_more_rounded,
+                  size: PlayraLayout.icon,
+                  color: colors.onSurfaceVariant,
                 ),
               ),
             ),
-            ?trailing,
-            const SizedBox(width: 6),
-          ],
-        ),
+          ),
+          ?trailing,
+        ],
       ),
     );
   }
@@ -112,9 +101,8 @@ class PlaybackSdkChip extends StatelessWidget {
   final bool selected;
   final VoidCallback? onSelected;
   @override
-  Widget build(BuildContext context) => ChoiceChip(
+  Widget build(BuildContext context) => PlayraChoice(
     label: Text(name),
-    showCheckmark: false,
     selected: selected,
     onSelected: onSelected == null ? null : (_) => onSelected!(),
   );
@@ -153,20 +141,28 @@ class PlaybackLineSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            padding: const EdgeInsets.only(
+              top: PlayraSpace.sm,
+              bottom: PlayraSpace.xs,
+            ),
             child: Center(
               child: Container(
                 width: 32,
                 height: 4,
                 decoration: BoxDecoration(
                   color: Theme.of(context).bottomSheetTheme.dragHandleColor,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(PlayraRadius.indicator),
                 ),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+            padding: const EdgeInsets.fromLTRB(
+              PlayraSpace.lg,
+              0,
+              PlayraSpace.sm,
+              0,
+            ),
             child: Row(
               children: [
                 Text(
@@ -196,26 +192,41 @@ class PlaybackLineSheet extends StatelessWidget {
           ),
           if (sources != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                PlayraSpace.lg,
+                0,
+                PlayraSpace.lg,
+                PlayraSpace.sm,
+              ),
               child: sources!,
             ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
             child: automaticOption,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: PlayraSpace.xs),
           const PlayraDivider(),
           Flexible(
             child: ListView(
               shrinkWrap: true,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              padding: const EdgeInsets.fromLTRB(
+                PlayraSpace.lg,
+                PlayraSpace.md,
+                PlayraSpace.lg,
+                PlayraSpace.md,
+              ),
               children: children,
             ),
           ),
           if (quality != null) ...[
             const PlayraDivider(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              padding: const EdgeInsets.fromLTRB(
+                PlayraSpace.lg,
+                PlayraSpace.md,
+                PlayraSpace.lg,
+                PlayraSpace.lg,
+              ),
               child: quality!,
             ),
           ],
@@ -244,39 +255,17 @@ class PlaybackRouteChip extends StatelessWidget {
     excludeFromSemantics: true,
     child: Semantics(
       label: '$name，$episodeCount 集${current ? "，当前使用" : ""}',
-      child: ChoiceChip(
+      child: PlayraChoice(
         selected: selected,
-        showCheckmark: false,
-        avatar: current
-            ? Icon(
-                Icons.play_arrow_rounded,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
-              )
-            : selected
-            ? const Icon(Icons.check_rounded, size: 16)
-            : null,
+        icon: current ? const Icon(Icons.play_arrow_rounded) : null,
         label: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style:
-                    (selected || current
-                            ? Theme.of(context).chipTheme.secondaryLabelStyle
-                            : Theme.of(context).chipTheme.labelStyle)
-                        ?.copyWith(
-                          color: selected || current
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurface,
-                        ),
-              ),
+              child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
             if (current) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: PlayraSpace.compact),
               Text(
                 '当前',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -286,20 +275,6 @@ class PlaybackRouteChip extends StatelessWidget {
             ],
           ],
         ),
-        color: current
-            ? WidgetStatePropertyAll(
-                Theme.of(
-                  context,
-                ).chipTheme.color?.resolve({WidgetState.selected}),
-              )
-            : null,
-        side: BorderSide(
-          color: selected || current
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.outline,
-        ),
-        materialTapTargetSize: MaterialTapTargetSize.padded,
-        visualDensity: VisualDensity.standard,
         onSelected: (_) => onTap(),
       ),
     ),
@@ -362,11 +337,12 @@ class SdkLineOption extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     return Semantics(
+      container: true,
       selected: selected,
       button: true,
       inMutuallyExclusiveGroup: true,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.only(bottom: PlayraSpace.xs),
         child: Material(
           color: selected
               ? colors.secondaryContainer
@@ -376,7 +352,10 @@ class SdkLineOption extends StatelessWidget {
             onTap: onTap,
             customBorder: theme.chipTheme.shape,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: PlayraSpace.md,
+                vertical: PlayraSpace.sm,
+              ),
               child: Row(
                 children: [
                   if (automatic) ...[
@@ -413,7 +392,7 @@ class SdkLineOption extends StatelessWidget {
                     ),
                   ),
                   if (selected) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: PlayraSpace.sm),
                     ExcludeSemantics(
                       child: Icon(
                         Icons.check_rounded,

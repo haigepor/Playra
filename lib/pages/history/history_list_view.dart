@@ -113,11 +113,16 @@ class _HistoryListViewState extends State<HistoryListView> {
         autofocus: true,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final contentWidth = constraints.maxWidth.clamp(0.0, 880.0);
+            final contentWidth = constraints.maxWidth.clamp(
+              0.0,
+              PlayraLayout.readingWidth,
+            );
             // Preserve full-width scrolling while centering the content.
             final inset =
                 (constraints.maxWidth - contentWidth) / 2 +
-                (constraints.maxWidth < 600 ? 16.0 : 24.0);
+                PlayraLayout.pageInset(
+                  Size(constraints.maxWidth, constraints.maxHeight),
+                );
             return Scrollbar(
               controller: _scrollController,
               child: CustomScrollView(
@@ -133,7 +138,12 @@ class _HistoryListViewState extends State<HistoryListView> {
                       widget.sdkEntries.isNotEmpty ||
                       filtered)
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(inset, 16, inset, 0),
+                      padding: EdgeInsets.fromLTRB(
+                        inset,
+                        PlayraSpace.lg,
+                        inset,
+                        0,
+                      ),
                       sliver: SliverToBoxAdapter(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +155,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                                   '共 ${widget.entries.length + widget.sdkEntries.length} 条观看记录 · 按最近观看排列',
                               artwork: 'modern-history-art',
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: PlayraSpace.lg),
                             PlayraTextField(
                               controller: _searchController,
                               focusNode: _searchFocus,
@@ -166,8 +176,8 @@ class _HistoryListViewState extends State<HistoryListView> {
                                   minHeight: 48,
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
+                                  horizontal: PlayraSpace.lg,
+                                  vertical: PlayraSpace.lg,
                                 ),
                                 border: searchBorder,
                                 enabledBorder: searchBorder,
@@ -182,7 +192,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                                   _updateFilters(() => _query = value),
                               onSubmitted: (_) => _searchFocus.unfocus(),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: PlayraSpace.lg),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -191,7 +201,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                                   _filter(source),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: PlayraSpace.lg),
                             Semantics(
                               liveRegion: true,
                               child: Text(
@@ -220,7 +230,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                         inset,
                         0,
                         inset,
-                        24 + MediaQuery.paddingOf(context).bottom,
+                        PlayraSpace.xxl + MediaQuery.paddingOf(context).bottom,
                       ),
                       sliver: SliverList.builder(
                         itemCount: rows.length,
@@ -245,13 +255,18 @@ class _HistoryListViewState extends State<HistoryListView> {
       final theme = Theme.of(context);
       return Padding(
         key: row.key,
-        padding: const EdgeInsets.fromLTRB(4, 24, 4, 12),
+        padding: const EdgeInsets.fromLTRB(
+          PlayraSpace.xs,
+          PlayraSpace.xxl,
+          PlayraSpace.xs,
+          PlayraSpace.md,
+        ),
         child: Semantics(
           header: true,
           child: Row(
             children: [
               const UtilitySvgIcon(UtilityIconKind.history, size: 18),
-              const SizedBox(width: 8),
+              const SizedBox(width: PlayraSpace.sm),
               Expanded(
                 child: Text(
                   group.label(now),
@@ -274,7 +289,7 @@ class _HistoryListViewState extends State<HistoryListView> {
     const shape = BorderRadius.all(Radius.circular(PlayraRadius.card));
     return Padding(
       key: row.key,
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: PlayraSpace.sm),
       child: group.entries[entryIndex].sdk != null
           ? widget.sdkItemBuilder!(group.entries[entryIndex].sdk!)
           : widget.itemBuilder(group.entries[entryIndex].history!, shape),
@@ -315,8 +330,8 @@ class _HistoryListViewState extends State<HistoryListView> {
               constraints: const BoxConstraints(minHeight: 48),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: PlayraSpace.lg,
+                  vertical: PlayraSpace.md,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -327,7 +342,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                         size: 18,
                         color: colors.primary,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: PlayraSpace.sm),
                     ],
                     Text(
                       source.label,

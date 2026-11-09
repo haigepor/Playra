@@ -311,7 +311,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                         Padding(
                           padding: EdgeInsets.fromLTRB(
                             padding,
-                            compact ? 8 : 16,
+                            compact ? PlayraSpace.sm : PlayraSpace.lg,
                             padding,
                             0,
                           ),
@@ -319,15 +319,15 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                             color: Theme.of(
                               context,
                             ).colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(PlayraRadius.overlay),
                             clipBehavior: Clip.antiAlias,
                             child: Column(
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    8,
-                                    16,
+                                    PlayraSpace.lg,
+                                    PlayraSpace.sm,
+                                    PlayraSpace.lg,
                                     0,
                                   ),
                                   child: Row(
@@ -375,7 +375,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
       math.max(208.0, MediaQuery.textScalerOf(context).scale(160)),
     );
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(PlayraSpace.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -383,17 +383,17 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
             child: Column(
               children: [
                 Expanded(child: Center(child: _preview())),
-                const SizedBox(height: 8),
+                const SizedBox(height: PlayraSpace.sm),
                 Material(
                   color: Theme.of(context).colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(PlayraRadius.card),
                   clipBehavior: Clip.antiAlias,
                   child: _thumbnails(compact: true),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: PlayraSpace.lg),
           SizedBox(
             width: panelWidth,
             child: Column(
@@ -411,7 +411,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: PlayraSpace.xs),
                         Text(
                           '${current!.episode} · ${current!.timeLabel}',
                           maxLines: 1,
@@ -435,7 +435,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
   Widget _preview() => AspectRatio(
     key: _previewKey,
     aspectRatio: _aspectRatio,
-    child: ClipRRect(borderRadius: BorderRadius.circular(16), child: _stage()),
+    child: ClipRRect(borderRadius: BorderRadius.circular(PlayraRadius.card), child: _stage()),
   );
 
   Widget _navigation() => Row(
@@ -467,8 +467,8 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
   }) => Padding(
     padding: EdgeInsets.fromLTRB(
       padding,
-      compact ? 4 : 16,
-      math.max(0, padding - 8),
+      compact ? PlayraSpace.xs : PlayraSpace.lg,
+      math.max(0, padding - PlayraSpace.sm),
       compact ? 4 : 16,
     ),
     child: Row(
@@ -653,9 +653,9 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
       child: Material(
         color: colors.inverseSurface,
         elevation: 6,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(PlayraRadius.control),
         child: Padding(
-          padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
+          padding: const EdgeInsets.only(left: PlayraSpace.lg, top: PlayraSpace.xs, bottom: PlayraSpace.xs),
           child: Row(
             children: [
               Icon(
@@ -665,7 +665,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                 size: 20,
                 color: colors.onInverseSurface,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: PlayraSpace.md),
               Expanded(
                 child: Text(
                   _notice!,
@@ -718,9 +718,9 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         padding,
-        compact ? 8 : 16,
+        compact ? PlayraSpace.sm : PlayraSpace.lg,
         padding,
-        compact ? 8 : 24,
+        compact ? PlayraSpace.sm : PlayraSpace.xxl,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -744,11 +744,11 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                 Row(
                   children: [
                     Expanded(child: pick),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: PlayraSpace.sm),
                     selectAll,
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: PlayraSpace.sm),
                 save,
               ],
             );
@@ -758,7 +758,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
               pick,
               const Spacer(),
               selectAll,
-              const SizedBox(width: 8),
+              const SizedBox(width: PlayraSpace.sm),
               SizedBox(width: saveWidth, child: save),
             ],
           );
@@ -799,7 +799,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
 
   Widget _empty(BuildContext context) => Center(
     child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(PlayraSpace.xxl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -808,15 +808,15 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
             size: 40,
             color: Theme.of(context).colorScheme.primary,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: PlayraSpace.xl),
           Text('暂无待处理截图', style: Theme.of(context).textTheme.titleLarge),
-          if (_notice != null) ...[const SizedBox(height: 16), _noticeView()],
-          const SizedBox(height: 8),
+          if (_notice != null) ...[const SizedBox(height: PlayraSpace.lg), _noticeView()],
+          const SizedBox(height: PlayraSpace.sm),
           const Text(
             '返回视频，点击相机收集喜欢的画面。\n保存或移除截图后，可以继续截图。',
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: PlayraSpace.xxl),
           PlayraButton.tonal(
             onPressed: _close,
             child: const Text('返回视频截图'),
@@ -911,7 +911,7 @@ class _ScreenshotFilmstripState extends State<_ScreenshotFilmstrip> {
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(
                   horizontal: padding,
-                  vertical: widget.compact ? 2 : 8,
+                  vertical: widget.compact ? PlayraSpace.tiny : PlayraSpace.sm,
                 ),
                 itemExtent: extent,
                 itemCount: items.length,
@@ -964,14 +964,14 @@ class _FrameThumbnail extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(PlayraRadius.control),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xs),
             child: AnimatedContainer(
               duration: duration,
               curve: Curves.easeInOutCubicEmphasized,
-              padding: const EdgeInsets.all(3),
+              padding: const EdgeInsets.all(PlayraSpace.xs),
               decoration: BoxDecoration(
                 border: Border.all(
                   color: active ? colors.primary : Colors.transparent,
@@ -980,7 +980,7 @@ class _FrameThumbnail extends StatelessWidget {
                 borderRadius: BorderRadius.circular(active ? 12 : 8),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(PlayraSpace.compact),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1003,7 +1003,7 @@ class _FrameThumbnail extends StatelessWidget {
                             ),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(2),
+                            padding: const EdgeInsets.all(PlayraSpace.tiny),
                             child: Icon(
                               Icons.check_rounded,
                               size: 14,

@@ -33,6 +33,8 @@ Future<T?> showPlayraSheet<T>({
     context: context,
     useRootNavigator: useRootNavigator,
     isScrollControlled: true,
+    useSafeArea: true,
+    sheetAnimationStyle: PlayraMotion.sheet(context),
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black54,
     routeSettings: routeSettings,
@@ -52,7 +54,9 @@ Future<T?> showPlayraSheet<T>({
         final theme = Theme.of(context);
         final tokens = context.playraTokens;
 
-        return Center(
+        return Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 1,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: width),
             child: Padding(
@@ -61,6 +65,9 @@ Future<T?> showPlayraSheet<T>({
                 constraints: BoxConstraints(maxHeight: maxHeight),
                 child: PlayraCard(
                   kind: PlayraCardKind.hero,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(PlayraRadius.overlay),
+                  ),
                   padding: EdgeInsets.zero,
                   child: Theme(
                     data: theme.copyWith(
@@ -100,20 +107,24 @@ Future<T?> showPlayraSheet<T>({
                                   Expanded(
                                     child: Text(
                                       title,
-                                      style: theme.textTheme.titleLarge?.copyWith(
-                                        fontSize: PlayraType.section,
-                                        color: tokens.foreground,
-                                      ),
+                                      style: theme.textTheme.titleLarge
+                                          ?.copyWith(
+                                            fontSize: PlayraType.section,
+                                            color: tokens.foreground,
+                                          ),
                                     ),
                                   ),
                                   PlayraIconButton(
                                     tooltip: '关闭',
-                                    onPressed: () => Navigator.of(context).pop(),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
                                     icon: const Icon(Icons.close_rounded),
                                   ),
                                 ],
                               ),
                             ),
+                          if (title != null)
+                            const SizedBox(height: PlayraSpace.sm),
                           Flexible(
                             fit: FlexFit.loose,
                             child: Builder(builder: builder),

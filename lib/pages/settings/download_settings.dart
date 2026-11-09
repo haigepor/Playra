@@ -159,7 +159,7 @@ class _DownloadSettingsPageState extends State<DownloadSettingsPage> {
                 ),
                 trailing: isSelectingDirectory
                     ? const SizedBox(
-                        width: 20,
+                        width: PlayraSpace.xl,
                         height: 20,
                         child: LoadingIndicator(),
                       )

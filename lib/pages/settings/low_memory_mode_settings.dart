@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
@@ -73,12 +74,12 @@ class _LowMemoryModeDialogState extends State<_LowMemoryModeDialog> {
                 Semantics(
                   liveRegion: true,
                   child: Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(PlayraSpace.lg),
                     decoration: BoxDecoration(
                       color: enabled
                           ? colors.secondaryContainer
                           : colors.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(PlayraRadius.card),
                     ),
                     child: Row(
                       children: [
@@ -88,7 +89,7 @@ class _LowMemoryModeDialogState extends State<_LowMemoryModeDialog> {
                               : Icons.data_usage_rounded,
                           color: foreground,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: PlayraSpace.md),
                         Expanded(
                           child: Text(
                             mode.statusDescription(isMetered),
@@ -101,7 +102,7 @@ class _LowMemoryModeDialogState extends State<_LowMemoryModeDialog> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: PlayraSpace.lg),
                 RadioGroup<LowMemoryMode>(
                   groupValue: mode,
                   onChanged: _selectMode,
@@ -121,7 +122,7 @@ class _LowMemoryModeDialogState extends State<_LowMemoryModeDialog> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: PlayraSpace.lg),
                 Text(
                   '减少缓存可降低内存占用和额外流量，网络不稳定时可能更容易缓冲。'
                   '\n选择后立即生效并记住选择；跟随网络仅影响在线播放。',

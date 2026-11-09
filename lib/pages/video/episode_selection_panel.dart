@@ -118,7 +118,7 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+                  padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.xl, PlayraSpace.lg, PlayraSpace.xs),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -134,7 +134,7 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: PlayraSpace.lg),
                       _RoadSelector(
                         roads: widget.roads,
                         visibleRoad: _visibleRoad,
@@ -152,7 +152,7 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
                   height: _toolbarHeight,
                   color: colors.surface,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                    padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.xs, PlayraSpace.sm, PlayraSpace.xs),
                     child: Row(
                       children: [
                         Expanded(
@@ -199,10 +199,10 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
               else
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(
-                    16,
+                    PlayraSpace.lg,
                     0,
-                    16,
-                    16 + MediaQuery.paddingOf(context).bottom,
+                    PlayraSpace.lg,
+                    PlayraSpace.lg + MediaQuery.paddingOf(context).bottom,
                   ),
                   sliver: SliverList.builder(
                     itemCount: count,
@@ -342,7 +342,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
     final selected = index == widget.visibleRoad;
     final last = index == widget.roads.length - 1;
     return Padding(
-      padding: EdgeInsets.only(bottom: last ? 0 : 2),
+      padding: EdgeInsets.only(bottom: last ? 0 : PlayraSpace.tiny),
       child: Semantics(
         selected: selected,
         inMutuallyExclusiveGroup: true,
@@ -352,7 +352,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
           style: ButtonStyle(
             minimumSize: WidgetStatePropertyAll(Size(width, 56)),
             padding: const WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                EdgeInsets.symmetric(horizontal: PlayraSpace.lg, vertical: PlayraSpace.md)),
             visualDensity: VisualDensity.standard,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: WidgetStatePropertyAll(
@@ -368,7 +368,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
             ),
             shape: WidgetStatePropertyAll(RoundedRectangleBorder(
               borderRadius: selected
-                  ? BorderRadius.circular(20)
+                  ? BorderRadius.circular(PlayraRadius.overlay)
                   : BorderRadius.vertical(
                       top: Radius.circular(index == 0 ? 20 : 4),
                       bottom: Radius.circular(last ? 20 : 4),
@@ -385,7 +385,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(_name(index), maxLines: 2, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 4),
+              const SizedBox(height: PlayraSpace.xs),
               Text(
                 '${road.data.length} 集',
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -426,7 +426,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
           backgroundColor: WidgetStatePropertyAll(PlayraTokens.of(context).surfaceOverlay),
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
           elevation: const WidgetStatePropertyAll(4),
-          padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
+          padding: const WidgetStatePropertyAll(EdgeInsets.all(PlayraSpace.sm)),
           shape: WidgetStatePropertyAll(RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(PlayraRadius.overlay),
             side: BorderSide(color: PlayraTokens.of(context).borderSubtle),
@@ -438,7 +438,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
         ),
         menuChildren: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.md, PlayraSpace.sm, PlayraSpace.md, PlayraSpace.md),
             child: Text(
               '选择播放线路',
               style: theme.textTheme.labelLarge?.copyWith(
@@ -469,7 +469,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
                 onTap: canSwitch ? () => _toggleMenu(controller) : null,
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: PlayraSpace.lg, vertical: PlayraSpace.md),
                   child: Row(
                     children: [
                       Expanded(
@@ -481,7 +481,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
                               style: theme.textTheme.labelMedium
                                   ?.copyWith(color: foreground),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: PlayraSpace.tiny),
                             Text(
                               _name(widget.visibleRoad),
                               maxLines: 1,
@@ -495,7 +495,7 @@ class _RoadSelectorState extends State<_RoadSelector> {
                         ),
                       ),
                       if (canSwitch) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: PlayraSpace.sm),
                         AnimatedRotation(
                           turns: open ? 0.5 : 0,
                           duration: duration,
@@ -618,14 +618,14 @@ class _EpisodeRowState extends State<_EpisodeRow>
           animation: _press,
           builder: (context, child) {
             final restShape = widget.selected
-                ? BorderRadius.circular(20)
+                ? BorderRadius.circular(PlayraRadius.overlay)
                 : BorderRadius.vertical(
                     top: Radius.circular(widget.first ? 20 : 4),
                     bottom: Radius.circular(widget.last ? 20 : 4),
                   );
             final press = _press.value.clamp(0.0, 1.0);
             return Padding(
-              padding: EdgeInsets.only(bottom: widget.last ? 0 : 2),
+              padding: EdgeInsets.only(bottom: widget.last ? 0 : PlayraSpace.tiny),
               child: Material(
                 animationDuration: _reduceMotion
                     ? Duration.zero
@@ -635,7 +635,7 @@ class _EpisodeRowState extends State<_EpisodeRow>
                     : tokens.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.lerp(
-                      restShape, BorderRadius.circular(12), press)!,
+                      restShape, BorderRadius.circular(PlayraRadius.control), press)!,
                   side: BorderSide(
                     color: widget.selected ? tokens.primary : tokens.borderSubtle,
                   ),
@@ -656,7 +656,7 @@ class _EpisodeRowState extends State<_EpisodeRow>
                 constraints: const BoxConstraints(minHeight: 56),
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      const EdgeInsets.symmetric(horizontal: PlayraSpace.xl, vertical: PlayraSpace.lg),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,7 +673,7 @@ class _EpisodeRowState extends State<_EpisodeRow>
                         ),
                       ),
                       if (supportingText.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: PlayraSpace.xs),
                         Text(
                           supportingText,
                           style: theme.textTheme.bodySmall?.copyWith(

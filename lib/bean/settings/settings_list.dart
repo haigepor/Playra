@@ -235,7 +235,7 @@ class SettingsCategoryTile extends StatelessWidget {
       onHighlightChanged: SplitListRow.pressReporterOf(context),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: modern ? 14 : PlayraSpace.lg,
+          horizontal: modern ? PlayraSpace.lg : PlayraSpace.lg,
           vertical: PlayraSpace.md,
         ),
         child: Row(
@@ -246,8 +246,8 @@ class SettingsCategoryTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colorScheme.secondaryContainer,
                 borderRadius: modern
-                    ? BorderRadius.circular(10)
-                    : BorderRadius.circular(18),
+                    ? BorderRadius.circular(PlayraRadius.control)
+                    : BorderRadius.circular(PlayraRadius.overlay),
               ),
               child: Icon(
                 modern ? modernSettingsIcon(icon) : icon,
@@ -336,7 +336,7 @@ class SettingsSliderTile extends StatelessWidget {
               const SizedBox(width: PlayraSpace.md),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
+                  horizontal: PlayraSpace.md,
                   vertical: PlayraSpace.xs,
                 ),
                 decoration: BoxDecoration(
@@ -460,7 +460,7 @@ class SettingsTile<T> extends StatelessWidget {
       padding: forui
           ? EdgeInsets.zero
           : EdgeInsets.symmetric(
-              horizontal: modern ? 14 : PlayraSpace.lg,
+              horizontal: modern ? PlayraSpace.lg : PlayraSpace.lg,
               vertical: PlayraSpace.md,
             ),
       child: ConstrainedBox(
@@ -553,6 +553,13 @@ class SettingsTile<T> extends StatelessWidget {
         ),
       ),
     );
+    if (forui) {
+      return PlayraListTile(
+        title: content,
+        enabled: enabled,
+        onTap: _tapHandler(context),
+      );
+    }
     return InkWell(
       onTap: _tapHandler(context),
       onHighlightChanged: SplitListRow.pressReporterOf(context),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' as f;
 import 'package:shadcn_ui/shadcn_ui.dart' show LucideIcons;
 import 'home/home_theme.dart';
-import 'modern_layout.dart';
-import 'widgets/liquid_glass_navigation.dart';
-import 'widgets/native_liquid_navigation.dart';
+import '../theme/playra_forui_theme.dart';
+import '../theme/playra_tokens.dart';
 
-class ModernShell extends StatefulWidget {
+class ModernShell extends StatelessWidget {
   const ModernShell({
     super.key,
     required this.selectedIndex,
@@ -24,72 +24,114 @@ class ModernShell extends StatefulWidget {
   ];
 
   @override
-  State<ModernShell> createState() => _ModernShellState();
-}
-
-class _ModernShellState extends State<ModernShell> {
-  final _backdrop = LiquidGlassBackdropController();
-  late final _native = NativeLiquidNavigationController(
-    onSelected: (index) => widget.selectDestination(index),
+  Widget build(BuildContext context) => Theme(
+    data: modernHomeTheme(Theme.of(context), forceDark: true),
+    child: PlayraForuiScope(
+      child: LayoutBuilder(
+        builder: (context, bounds) {
+          final wide = bounds.maxWidth >= PlayraLayout.compactWidth;
+          final design = f.FTheme.of(context);
+          return Scaffold(
+            backgroundColor: design.colors.background,
+            extendBody: false,
+            body: Row(
+              children: [
+                if (wide) _navigation(context, bounds.maxWidth),
+                Expanded(key: const ValueKey('modern-content'), child: outlet),
+              ],
+            ),
+            bottomNavigationBar:
+                wide || MediaQuery.viewInsetsOf(context).bottom > 0
+                ? null
+                : f.FBottomNavigationBar(
+                    key: const ValueKey('modern-navigation'),
+                    index: selectedIndex,
+                    onChange: selectDestination,
+                    safeAreaBottom: true,
+                    style: f.FBottomNavigationBarStyleDelta.delta(
+                      decoration: f.DecorationDelta.value(
+                        BoxDecoration(
+                          color: design.colors.background,
+                          border: Border(
+                            top: BorderSide(color: design.colors.border),
+                          ),
+                        ),
+                      ),
+                    ),
+                    children: [
+                      for (final destination in destinations)
+                        f.FBottomNavigationBarItem(
+                          icon: destination.icon,
+                          label: Text(destination.label),
+                        ),
+                    ],
+                  ),
+          );
+        },
+      ),
+    ),
   );
 
-  @override
-  void initState() {
-    super.initState();
-    _native.addListener(_nativeChanged);
-    _native.initialize();
-  }
-
-  void _nativeChanged() {
-    if (!mounted) return;
-    _backdrop.setNativeSourceFrame(
-      _native.supported ? _native.invalidateBackdrop : null,
-    );
-    setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _native.removeListener(_nativeChanged);
-    _native.dispose();
-    _backdrop.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = modernHomeTheme(Theme.of(context), forceDark: true);
-    final compact = isCompactModernViewport(MediaQuery.sizeOf(context));
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      extendBody: !compact,
-      body: LiquidGlassBackdrop(controller: _backdrop, child: widget.outlet),
-      bottomNavigationBar: Theme(
-        data: theme,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: SafeArea(
-            top: false,
-            child: Center(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: _native.supported
-                    ? NativeLiquidNavigationBar(
-                        controller: _native,
-                        selectedIndex: widget.selectedIndex,
-                        destinations: ModernShell.destinations,
-                      )
-                    : LiquidGlassNavigationBar(
-                        backdrop: _backdrop,
-                        selectedIndex: widget.selectedIndex,
-                        onDestinationSelected: widget.selectDestination,
-                        destinations: ModernShell.destinations,
+  Widget _navigation(BuildContext context, double width) {
+    final design = f.FTheme.of(context);
+    final expanded = width >= PlayraLayout.catalogWidth;
+    return Container(
+      key: const ValueKey('modern-side-navigation'),
+      width: expanded ? 208 : 88,
+      decoration: BoxDecoration(
+        border: Border(right: BorderSide(color: design.colors.border)),
+      ),
+      child: SafeArea(
+        child: expanded
+            ? f.FSidebar(
+                header: Padding(
+                  padding: const EdgeInsets.all(PlayraSpace.xxl),
+                  child: Text('Playra', style: design.typography.display.xl),
+                ),
+                children: [
+                  f.FSidebarGroup(
+                    children: [
+                      for (final entry in destinations.indexed)
+                        f.FSidebarItem(
+                          icon: entry.$2.icon,
+                          label: Text(entry.$2.label),
+                          selected: selectedIndex == entry.$1,
+                          onPress: () => selectDestination(entry.$1),
+                        ),
+                    ],
+                  ),
+                ],
+              )
+            : ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: PlayraSpace.sm,
+                  vertical: PlayraSpace.lg,
+                ),
+                children: [
+                  for (final entry in destinations.indexed)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: PlayraSpace.sm),
+                      child: f.FButton(
+                        selected: selectedIndex == entry.$1,
+                        variant: selectedIndex == entry.$1
+                            ? f.FButtonVariant.secondary
+                            : f.FButtonVariant.ghost,
+                        onPress: () => selectDestination(entry.$1),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            entry.$2.icon,
+                            const SizedBox(height: PlayraSpace.xs),
+                            Text(
+                              entry.$2.label,
+                              style: design.typography.body.xs2,
+                            ),
+                          ],
+                        ),
                       ),
+                    ),
+                ],
               ),
-            ),
-          ),
-        ),
       ),
     );
   }

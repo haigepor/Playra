@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -28,7 +29,7 @@ class _PlayerItemSurfaceState extends State<PlayerItemSurface> {
       if (playerController.playback.loading ||
           playerController.playback.videoController == null) {
         return Container(
-          color: Colors.black,
+          color: PlayraMedia.canvas,
           child: const Center(
             child: CircularProgressIndicator(),
           ),
@@ -51,7 +52,7 @@ class _PlayerItemSurfaceState extends State<PlayerItemSurface> {
         subtitleViewConfiguration: SubtitleViewConfiguration(
           style: TextStyle(
             color: Colors.pink,
-            fontSize: 48.0,
+            fontSize: PlayraType.display,
             background: Paint()..color = Colors.transparent,
             decoration: TextDecoration.none,
             fontWeight: FontWeight.bold,
@@ -69,7 +70,7 @@ class _PlayerItemSurfaceState extends State<PlayerItemSurface> {
             ],
           ),
           textAlign: TextAlign.center,
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(PlayraSpace.xxl),
         ),
       );
 

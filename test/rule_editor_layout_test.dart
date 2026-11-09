@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/pages/plugin_editor/editor_form_widgets.dart';
@@ -50,7 +51,7 @@ void main() {
           of: find.byWidgetPredicate(
             (w) => w is EditorTextField && w.label == '规则名称',
           ),
-          matching: find.byType(TextField),
+          matching: find.byType(EditableText),
         );
         await tester.ensureVisible(name);
         await tester.enterText(name, '保留的规则草稿');
@@ -61,12 +62,12 @@ void main() {
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull, reason: label);
         }
-        expect(tester.widget<TextField>(name).controller!.text, '保留的规则草稿');
+        expect(tester.widget<EditableText>(name).controller.text, '保留的规则草稿');
         expect(
-          find.widgetWithText(OutlinedButton, scale > 1.4 ? '测试' : '测试规则'),
+          find.widgetWithText(PlayraButton, scale > 1.4 ? '测试' : '测试规则'),
           findsOneWidget,
         );
-        expect(find.widgetWithText(FilledButton, '保存'), findsOneWidget);
+        expect(find.widgetWithText(PlayraButton, '保存'), findsOneWidget);
       });
     }
   }

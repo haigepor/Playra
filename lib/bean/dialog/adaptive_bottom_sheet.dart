@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 // Adapted from m3e_core 1.1.2's M3EBottomSheet (MIT).
 // Copyright (c) 2026 Mudit Purohit. See licenses/m3e_core.txt.
 import 'dart:math' as math;
@@ -14,11 +15,12 @@ BoxConstraints _adaptiveBottomSheetConstraints(
 }) {
   final size = MediaQuery.sizeOf(context);
   final isLandscape = size.width > size.height;
-  final useFullWidth = !isLandscape && size.width < 600;
+  final useFullWidth = !isLandscape && size.width < PlayraLayout.compactWidth;
   final maxWidth = useFullWidth
       ? size.width
-      : math.min(size.width * 0.72, 640.0);
-  final useExpandedLandscapeHeight = isLandscape && size.height < 600;
+      : math.min(size.width * 0.72, PlayraLayout.sheetWidth);
+  final useExpandedLandscapeHeight =
+      isLandscape && size.height < PlayraLayout.compactWidth;
   final maxHeight =
       size.height *
       (useExpandedLandscapeHeight
@@ -29,7 +31,9 @@ BoxConstraints _adaptiveBottomSheetConstraints(
 }
 
 const ShapeBorder _materialSheetShape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+  borderRadius: BorderRadius.vertical(
+    top: Radius.circular(PlayraRadius.overlay),
+  ),
 );
 
 // Native route motion and the extra surface entrance spring are separate.
@@ -162,7 +166,9 @@ class _MaterialSheetSurfaceState extends State<_MaterialSheetSurface>
                       height: 4,
                       decoration: BoxDecoration(
                         color: colors.onSurfaceVariant.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(
+                          PlayraRadius.indicator,
+                        ),
                       ),
                     ),
                   ),

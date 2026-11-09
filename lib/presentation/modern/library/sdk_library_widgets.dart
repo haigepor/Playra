@@ -84,18 +84,21 @@ class SdkLibraryTile extends StatelessWidget {
       label:
           '${compact ? '继续观看 ' : ''}${record.title}，${record.progressLabel}，${record.sourceName}',
       child: PlayraCard(
+        borderRadius: compact
+            ? BorderRadius.circular(PlayraRadius.control)
+            : null,
         padding: EdgeInsets.zero,
         child: InkWell(
           onTap: onOpen,
           child: Padding(
-            padding: const EdgeInsets.all(PlayraSpace.md),
+            padding: EdgeInsets.all(compact ? PlayraSpace.sm : PlayraSpace.md),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 NetworkImgLayer(
                   src: record.cover,
-                  width: compact ? 44 : 64,
-                  height: compact ? 66 : 96,
+                  width: compact ? 40 : 64,
+                  height: compact ? 60 : 96,
                   type: 'bg',
                   borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
                 ),
@@ -110,6 +113,7 @@ class SdkLibraryTile extends StatelessWidget {
                         maxLines: compact ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontSize: compact ? PlayraType.label : null,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -164,7 +168,7 @@ class SdkLibraryTile extends StatelessWidget {
                   Icon(
                     Icons.play_arrow_rounded,
                     color: colors.primary,
-                    size: 24,
+                    size: compact ? PlayraLayout.compactIcon : PlayraSpace.xxl,
                   ),
               ],
             ),

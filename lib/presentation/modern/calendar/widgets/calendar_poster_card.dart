@@ -69,7 +69,7 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: PlayraType.item,
                             fontWeight: FontWeight.w600,
                             height: 1.35,
                           ),
@@ -80,7 +80,7 @@ class _CalendarPosterCardState extends State<CalendarPosterCard> {
                             if (widget.collection != CollectType.none) ...[
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
+                                  horizontal: PlayraSpace.sm,
                                   vertical: PlayraSpace.tiny,
                                 ),
                                 decoration: BoxDecoration(

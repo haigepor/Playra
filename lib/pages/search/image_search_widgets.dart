@@ -89,13 +89,13 @@ class _ScreenshotTip extends StatelessWidget {
           size: ModernSecondaryScope.isActiveOf(context) ? 20 : 24,
           color: colors.primary,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: PlayraSpace.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('保留完整画面，识别更准确', style: type.titleSmall),
-              const SizedBox(height: 4),
+              const SizedBox(height: PlayraSpace.xs),
               Text(
                 '保持原始比例，尽量避开黑边、水印和拼图。',
                 style: type.bodyMedium?.copyWith(
@@ -169,13 +169,13 @@ class _ImageSearchResults extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: PlayraSpace.compact),
         Text(
           '按画面相似度排序，先对照截图再确认。',
           style: type.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
         ),
         if (error.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           Text(error, style: type.bodyMedium?.copyWith(color: colors.error)),
         ],
         SizedBox(height: modern ? 16 : 20),
@@ -190,13 +190,13 @@ class _ImageSearchResults extends StatelessWidget {
             '其他相似片段',
             style: type.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           ...results
               .skip(1)
               .indexed
               .map(
                 (entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.only(bottom: PlayraSpace.xs),
                   child: _OtherMatch(
                     result: entry.$2,
                     first: entry.$1 == 0,
@@ -219,20 +219,20 @@ class _ImageSearchLoadingState extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 32),
+        padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.sm, vertical: PlayraSpace.section),
         child: Column(
           children: [
             LoadingIndicator(
               size: ModernSecondaryScope.isActiveOf(context) ? 32 : 72,
               semanticsLabel: '正在匹配动画画面',
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: PlayraSpace.xxl),
             Text(
               '正在寻找这一幕',
               textAlign: TextAlign.center,
               style: type.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: PlayraSpace.md),
             Text(
               '正在比对动画画面，匹配番名、集数与时间。\n请稍等片刻。',
               textAlign: TextAlign.center,
@@ -267,7 +267,7 @@ class _BestMatch extends StatelessWidget {
         similarity == null || !similarity.isFinite || similarity < .87;
     final video = _parseHttpUrl(result.video ?? '');
     final details = Padding(
-      padding: EdgeInsets.all(modern ? 16 : 20),
+      padding: EdgeInsets.all(modern ? PlayraSpace.lg : PlayraSpace.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -286,13 +286,13 @@ class _BestMatch extends StatelessWidget {
             ],
           ),
           if (lowSimilarity) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: PlayraSpace.md),
             Text(
               '相似度偏低，建议对照画面，或换一张截图。',
               style: type.bodyMedium?.copyWith(color: colors.onSurface),
             ),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: PlayraSpace.lg),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -322,7 +322,7 @@ class _BestMatch extends StatelessWidget {
       ),
     );
     final frame = ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(PlayraRadius.card),
       child: SizedBox(
         height: MediaQuery.sizeOf(context).height < 500 ? 112 : 200,
         child: _TraceFrame(result: result),
@@ -343,7 +343,7 @@ class _BestMatch extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: EdgeInsets.all(modern ? 16 : 20),
+            padding: EdgeInsets.all(modern ? PlayraSpace.lg : PlayraSpace.xl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -370,7 +370,7 @@ class _BestMatch extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: PlayraSpace.sm),
                 Text(
                   _title(result),
                   style: type.headlineSmall?.copyWith(
@@ -390,8 +390,8 @@ class _BestMatch extends StatelessWidget {
                     Expanded(
                       child: Padding(
                         padding: EdgeInsets.only(
-                          left: modern ? 16 : 12,
-                          bottom: modern ? 16 : 12,
+                          left: modern ? PlayraSpace.lg : PlayraSpace.md,
+                          bottom: modern ? PlayraSpace.lg : PlayraSpace.md,
                         ),
                         child: frame,
                       ),
@@ -404,7 +404,7 @@ class _BestMatch extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: modern ? 16 : 12),
+                    padding: EdgeInsets.symmetric(horizontal: modern ? PlayraSpace.lg : PlayraSpace.md),
                     child: frame,
                   ),
                   details,
@@ -437,7 +437,7 @@ class _OtherMatch extends StatelessWidget {
     return Material(
       color: modern ? colors.surfaceContainerLow : colors.surface,
       borderRadius: modern
-          ? BorderRadius.circular(12)
+          ? BorderRadius.circular(PlayraRadius.control)
           : BorderRadius.vertical(
               top: Radius.circular(first ? 20 : 8),
               bottom: Radius.circular(last ? 20 : 8),
@@ -449,7 +449,7 @@ class _OtherMatch extends StatelessWidget {
           button: true,
           label: '搜索 ${_title(result)}',
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(PlayraSpace.lg),
             child: LayoutBuilder(
               builder: (context, constraints) => Row(
                 children: [
@@ -458,11 +458,11 @@ class _OtherMatch extends StatelessWidget {
                     SizedBox(
                       width: constraints.maxWidth >= 400 ? 112 : 80,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(PlayraRadius.control),
                         child: _TraceFrame(result: result),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: PlayraSpace.lg),
                   ],
                   Expanded(
                     child: Column(
@@ -476,14 +476,14 @@ class _OtherMatch extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: PlayraSpace.compact),
                         Text(
                           '${_episode(result.episode)} · ${_similarity(result)} 相似',
                           style: type.bodyMedium?.copyWith(
                             color: colors.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: PlayraSpace.xs),
                         Text(
                           _timeRange(result),
                           style: type.bodySmall?.copyWith(
@@ -493,7 +493,7 @@ class _OtherMatch extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: PlayraSpace.sm),
                   Icon(
                     modern
                         ? LucideIcons.chevronRight
@@ -521,8 +521,8 @@ class _Metadata extends StatelessWidget {
     final modern = ModernSecondaryScope.isActiveOf(context);
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: modern ? 0 : 10,
-        vertical: modern ? 4 : 6,
+        horizontal: modern ? 0 : PlayraSpace.md,
+        vertical: modern ? PlayraSpace.xs : PlayraSpace.compact,
       ),
       child: Text.rich(
         TextSpan(

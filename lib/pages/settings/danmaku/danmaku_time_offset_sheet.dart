@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 
@@ -91,7 +92,7 @@ class _DanmakuTimeOffsetSheetState extends State<DanmakuTimeOffsetSheet> {
               children: [
                 TonalCard(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(PlayraSpace.lg),
                     child: Column(
                       children: [
                         Text(
@@ -100,7 +101,7 @@ class _DanmakuTimeOffsetSheetState extends State<DanmakuTimeOffsetSheet> {
                             color: colors.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: PlayraSpace.sm),
                         Row(
                           children: [
                             PlayraIconButton(
@@ -133,7 +134,7 @@ class _DanmakuTimeOffsetSheetState extends State<DanmakuTimeOffsetSheet> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: PlayraSpace.lg),
                         PlayraSlider(
                           value: _offset,
                           min: _minDanmakuTimeOffset,
@@ -153,7 +154,7 @@ class _DanmakuTimeOffsetSheetState extends State<DanmakuTimeOffsetSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: PlayraSpace.md),
                 PlayraButton.ghost(
                   onPressed: _offset != 0 ? () => _updateOffset(0) : null,
                   child: const Text('恢复同步'),

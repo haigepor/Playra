@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'dart:ui';
@@ -370,7 +371,7 @@ class _InfoPageState extends State<InfoPage>
                   ),
                   if (isDesktop() && !showWindowButton)
                     CloseButton(onPressed: () => windowManager.close()),
-                  SizedBox(width: 8),
+                  SizedBox(width: PlayraSpace.sm),
                 ],
                 toolbarHeight: kToolbarHeight + topOffset,
                 stretch: true,
@@ -410,9 +411,9 @@ class _InfoPageState extends State<InfoPage>
                                 alignment: Alignment.topCenter,
                                 child: Padding(
                                   padding: const EdgeInsets.fromLTRB(
-                                    16,
+                                    PlayraSpace.lg,
                                     kToolbarHeight,
-                                    16,
+                                    PlayraSpace.lg,
                                     0,
                                   ),
                                   child: BangumiInfoCardV(
@@ -530,7 +531,7 @@ class _InfoHeaderBackground extends StatelessWidget {
                   return const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.white, Colors.transparent],
+                    colors: [PlayraMedia.foreground, Colors.transparent],
                     stops: [0.8, 1],
                   ).createShader(bounds);
                 },
@@ -556,7 +557,7 @@ class _InfoHeaderBackground extends StatelessWidget {
                             fadeInDuration: Duration.zero,
                             fadeOutDuration: Duration.zero,
                             filterQuality: FilterQuality.low,
-                            color: Colors.white.withValues(alpha: _opacity),
+                            color: PlayraMedia.foreground.withValues(alpha: _opacity),
                             colorBlendMode: BlendMode.modulate,
                           ),
                         ),

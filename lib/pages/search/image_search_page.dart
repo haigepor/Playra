@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
@@ -359,7 +360,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
       // Keep the right gutter inside the viewport for edge scrolling.
       return Center(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(inset, 0, showResults ? 0 : inset, 16),
+          padding: EdgeInsets.fromLTRB(inset, 0, showResults ? 0 : inset, PlayraSpace.lg),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,7 +385,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                     child: SingleChildScrollView(
                       key: const PageStorageKey('image-search-results'),
                       controller: _resultScroll,
-                      padding: EdgeInsets.only(right: inset, bottom: 8),
+                      padding: EdgeInsets.only(right: inset, bottom: PlayraSpace.sm),
                       child: resultContent,
                     ),
                   ),
@@ -400,7 +401,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         key: const PageStorageKey('image-search-page'),
         controller: _pageScroll,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: EdgeInsets.fromLTRB(padding, 0, padding, 24),
+        padding: EdgeInsets.fromLTRB(padding, 0, padding, PlayraSpace.xxl),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: showResults ? 640 : 520),
@@ -425,7 +426,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
       child: SingleChildScrollView(
         key: const PageStorageKey('image-search-source'),
         controller: _sourceScroll,
-        padding: EdgeInsets.only(bottom: action == null ? 0 : 16),
+        padding: EdgeInsets.only(bottom: action == null ? 0 : PlayraSpace.lg),
         child: source,
       ),
     );
@@ -481,7 +482,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             style: type.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
           ),
         ] else if (!showResults && !short) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Text(
             '用一张截图，找到番名与出现的集数。',
             style: type.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
@@ -493,7 +494,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
           enabled: !busy,
           onChanged: _changeSource,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: PlayraSpace.lg),
         if (_useUrl) ...[
           PlayraTextField(
             controller: _urlController,
@@ -525,13 +526,13 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Text(
             '使用可直接访问的 HTTP 或 HTTPS 图片地址',
             style: type.bodySmall?.copyWith(color: colors.onSurfaceVariant),
           ),
           if (_previewUrl.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: PlayraSpace.lg),
             _buildPreview(short: short),
           ],
         ] else ...[
@@ -540,14 +541,14 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
           else
             Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: short ? 12 : 24,
+                horizontal: PlayraSpace.lg,
+                vertical: short ? PlayraSpace.md : PlayraSpace.xxl,
               ),
               child: short
                   ? Row(
                       children: [
                         const _ImageSearchEmblem(size: 48),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: PlayraSpace.md),
                         Expanded(
                           child: Text(
                             '截图预览',
@@ -566,7 +567,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                           )
                         else
                           const _ImageSearchEmblem(size: 72),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: PlayraSpace.md),
                         Text(
                           widget.modern ? '选择一张动画截图' : '截图预览',
                           textAlign: TextAlign.center,
@@ -577,7 +578,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                       ],
                     ),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           if (_imageFile != null)
             Row(
               children: [
@@ -611,7 +612,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             ),
         ],
         if (_inputError != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           Semantics(
             liveRegion: true,
             child: Text(
@@ -620,16 +621,16 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
             ),
           ),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: PlayraSpace.lg),
         if (inlineAction) _buildPrimaryAction(searching),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         Text(
           widget.modern ? '识别时，图片或链接会发送至 trace.moe' : '由 trace.moe 识别动画截图',
           textAlign: TextAlign.center,
           style: type.bodySmall?.copyWith(color: colors.onSurfaceVariant),
         ),
         if (!showResults && !short) ...[
-          const SizedBox(height: 24),
+          const SizedBox(height: PlayraSpace.xxl),
           const _ScreenshotTip(),
         ],
       ],
@@ -680,7 +681,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
     Widget fallback(BuildContext context, Object error, StackTrace? stack) =>
         const Center(
           child: Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(PlayraSpace.lg),
             child: Text('暂时无法预览\n仍可尝试识别，或更换图片', textAlign: TextAlign.center),
           ),
         );

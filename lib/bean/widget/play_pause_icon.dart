@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 
 class PlayPauseIcon extends StatefulWidget {
   final bool playing;
   final double iconSize;
   final Color? iconColor;
 
-  const PlayPauseIcon(
-      {super.key, required this.playing, this.iconSize = 25, this.iconColor});
+  const PlayPauseIcon({
+    super.key,
+    required this.playing,
+    this.iconSize = 25,
+    this.iconColor,
+  });
 
   @override
   State<PlayPauseIcon> createState() => _PlayPauseIconState();
@@ -33,11 +38,21 @@ class _PlayPauseIconState extends State<PlayPauseIcon>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (PlayraMotion.reduceOf(context)) {
+      _controller.value = widget.playing ? 1 : 0;
+    }
+  }
+
+  @override
   void didUpdateWidget(covariant PlayPauseIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.playing != widget.playing) {
-      if (widget.playing) {
+      if (PlayraMotion.reduceOf(context)) {
+        _controller.value = widget.playing ? 1 : 0;
+      } else if (widget.playing) {
         _controller.forward();
       } else {
         _controller.reverse();

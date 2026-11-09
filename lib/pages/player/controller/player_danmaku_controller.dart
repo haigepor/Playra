@@ -102,6 +102,7 @@ abstract class _PlayerDanmakuController with Store {
 
   int bangumiID = 0;
   int _scheduledDanmakuGeneration = 0;
+  int? _lastEmittedSecond;
 
   int get scheduledDanmakuGeneration => _scheduledDanmakuGeneration;
 
@@ -125,13 +126,25 @@ abstract class _PlayerDanmakuController with Store {
     return danDanmakus[danmakuSecond] ?? const [];
   }
 
+  List<DanmakuEntry> takeDanmakusForPlaybackPosition(Duration position) {
+    final second = resolveDanmakuSecond(position);
+    if (second == null || second == _lastEmittedSecond) return const [];
+    _lastEmittedSecond = second;
+    return danDanmakus[second] ?? const [];
+  }
+
   @action
   void setDanmakuEnabled(bool value) {
+    if (danmakuOn != value) {
+      _scheduledDanmakuGeneration++;
+      _lastEmittedSecond = null;
+    }
     danmakuOn = value;
   }
 
   void clearAndInvalidateScheduledDanmakus() {
     _scheduledDanmakuGeneration++;
+    _lastEmittedSecond = null;
     canvasController.clear();
   }
 
@@ -156,6 +169,8 @@ abstract class _PlayerDanmakuController with Store {
 
   @action
   void beginDanmakuLoad() {
+    _scheduledDanmakuGeneration++;
+    _lastEmittedSecond = null;
     danDanmakus.clear();
     danmakuLoading = true;
   }

@@ -96,34 +96,44 @@ class _PlayerBufferingOverlayState extends State<PlayerBufferingOverlay> {
         : progress == null
         ? '正在缓冲'
         : '缓冲 ${progress.round()}%';
-    final tokens = PlayraTokens.of(context);
+    final reduceMotion = PlayraMotion.reduceOf(context);
     return IgnorePointer(
       child: Center(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: tokens.background.withValues(alpha: 0.8),
+            // 视频上的提示始终使用深色底，不能跟随浅色页面主题。
+            color: PlayraMedia.canvas.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(PlayraRadius.card),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xl, vertical: PlayraSpace.lg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: 32,
+                  width: PlayraSpace.section,
                   height: 32,
-                  child: CircularProgressIndicator(
-                    value: progress == null ? null : progress / 100,
-                    semanticsLabel: label,
-                    strokeWidth: 3,
-                  ),
+                  child: reduceMotion && progress == null
+                      ? Icon(
+                          widget.resolving
+                              ? Icons.video_library_outlined
+                              : Icons.hourglass_top_rounded,
+                          color: PlayraMedia.foreground,
+                        )
+                      : CircularProgressIndicator(
+                          value: progress == null ? null : progress / 100,
+                          color: PlayraMedia.foreground,
+                          backgroundColor: PlayraMedia.border,
+                          semanticsLabel: label,
+                          strokeWidth: 3,
+                        ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   label,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                  ).textTheme.bodySmall?.copyWith(color: PlayraMedia.foreground),
                 ),
               ],
             ),

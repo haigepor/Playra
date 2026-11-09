@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:async';
 
@@ -228,7 +229,10 @@ class _LoadingDialog extends StatelessWidget {
           children: [
             const LoadingIndicator(),
             const SizedBox(height: 16),
-            Text(message ?? 'Loading...', style: const TextStyle(fontSize: 16)),
+            Text(
+              message ?? 'Loading...',
+              style: const TextStyle(fontSize: PlayraType.body),
+            ),
           ],
         ),
       ),

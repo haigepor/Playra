@@ -20,8 +20,7 @@ class ModernFeatureEntry {
   final VoidCallback onTap;
 }
 
-/// 卡片叠层轮播图（Stacked Cards Carousel - 模式 A：居中景深层叠）
-/// 主卡片居中高亮呈现，左右相邻卡片景深缩放与层级叠放，纯粹沉浸式展示，无底部冗余控制栏。
+/// A single horizontal feature shelf, sized from the current content pane.
 class ModernFeatureCarousel extends StatefulWidget {
   const ModernFeatureCarousel({super.key, required this.entries});
   final List<ModernFeatureEntry> entries;
@@ -168,10 +167,7 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
     final end = _page + delta;
     _animController.stop();
     _pageAnim = Tween<double>(begin: start, end: end).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: Curves.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
     );
     _animController.forward(from: 0.0);
   }
@@ -272,14 +268,14 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
             builder: (context, bounds) {
               final availableWidth = bounds.maxWidth;
               final availableHeight = bounds.maxHeight;
-              final cardWidth = (availableWidth * (compact ? 0.88 : 0.62))
-                  .clamp(310.0, 720.0);
+              final cardWidth = math.max(1.0, availableWidth);
               final cardHeight = availableHeight - (compact ? 6.0 : 8.0);
 
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragStart: _onHorizontalDragStart,
-                onHorizontalDragUpdate: (d) => _onHorizontalDragUpdate(d, cardWidth),
+                onHorizontalDragUpdate: (d) =>
+                    _onHorizontalDragUpdate(d, cardWidth),
                 onHorizontalDragEnd: _onHorizontalDragEnd,
                 child: Center(
                   child: SizedBox(
@@ -323,7 +319,6 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
             cardWidth: cardWidth,
             cardHeight: cardHeight,
             compact: compact,
-            absD: 0.0,
             onCardTap: entries.first.onTap,
           ),
         ),
@@ -345,21 +340,23 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
     // 核心叠层渲染规则：按距离绝对值从大到小排序（绝对值越大在底层，活跃卡片在最顶层）
     cardDataList.sort((a, b) => b.diff.abs().compareTo(a.diff.abs()));
 
-    final stepX = compact ? cardWidth * 0.74 : cardWidth * 0.52;
+    final stepX = cardWidth + PlayraSpace.md;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        for (final data in cardDataList)
-          _buildTransformCard(
-            context,
-            data: data,
-            cardWidth: cardWidth,
-            cardHeight: cardHeight,
-            stepX: stepX,
-            compact: compact,
-          ),
-      ],
+    return ClipRect(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          for (final data in cardDataList)
+            _buildTransformCard(
+              context,
+              data: data,
+              cardWidth: cardWidth,
+              cardHeight: cardHeight,
+              stepX: stepX,
+              compact: compact,
+            ),
+        ],
+      ),
     );
   }
 
@@ -372,12 +369,10 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
     required bool compact,
   }) {
     final absD = data.diff.abs();
-    // 景深缩放：当前卡片 1.0，侧边递减至 0.86 ~ 0.74
-    final scale = (1.0 - 0.13 * math.min(absD, 2.0)).clamp(0.74, 1.0);
+    const scale = 1.0;
     // 横向位移
     final offsetX = data.diff * stepX;
-    // 透明度过渡
-    final opacity = (1.0 - 0.35 * math.min(absD, 2.0)).clamp(0.0, 1.0);
+    const opacity = 1.0;
 
     return Transform.translate(
       offset: Offset(offsetX, 0),
@@ -393,7 +388,6 @@ class _ModernFeatureCarouselState extends State<ModernFeatureCarousel>
               cardWidth: cardWidth,
               cardHeight: cardHeight,
               compact: compact,
-              absD: absD,
               onCardTap: () {
                 if (absD < 0.28) {
                   data.entry.onTap();
@@ -428,218 +422,103 @@ class _FeatureCard extends StatelessWidget {
     required this.cardWidth,
     required this.cardHeight,
     required this.compact,
-    required this.absD,
     required this.onCardTap,
   });
-
   final ModernFeatureEntry entry;
-  final double cardWidth;
-  final double cardHeight;
+  final double cardWidth, cardHeight;
   final bool compact;
-  final double absD;
   final VoidCallback onCardTap;
 
   @override
-  Widget build(BuildContext context) {
-    final tokens = context.playraTokens;
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final isActive = absD < 0.35;
-    // 侧边卡片文字平滑淡出，避免露出截断文字
-    final textOpacity = (1.0 - absD * 3.0).clamp(0.0, 1.0);
-
-    final posterWidth = math.min(
-      cardWidth * 0.24,
-      (cardHeight - 32.0) / 1.42,
-    ).clamp(88.0, 132.0);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(PlayraRadius.card),
-        border: Border.all(
-          color: isActive
-              ? Colors.white.withValues(alpha: 0.16)
-              : tokens.borderSubtle.withValues(alpha: 0.35),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isActive ? 0.60 : 0.32),
-            blurRadius: isActive ? 26 : 14,
-            offset: Offset(0, isActive ? 8 : 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(PlayraRadius.card),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onCardTap,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // 1. 沉浸式高清背景图（整卡完整铺底，两侧卡片均能看清画面）
-                if (entry.cover.isNotEmpty)
-                  Positioned.fill(
-                    child: NetworkImgLayer(
-                      src: entry.cover,
-                      type: 'bg',
-                      width: cardWidth,
-                      height: cardHeight,
-                      fit: BoxFit.cover,
-                      borderRadius: BorderRadius.zero,
-                    ),
-                  ),
-                // 2. 纵深暗色渐变蒙版（左深右透，保护主卡片文字对比度）
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          tokens.surface.withValues(alpha: 0.96),
-                          tokens.surface.withValues(alpha: 0.88),
-                          tokens.surface.withValues(alpha: 0.40),
-                          tokens.surface.withValues(alpha: 0.15),
-                        ],
-                        stops: const [0.0, 0.42, 0.74, 1.0],
-                      ),
-                    ),
-                  ),
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(PlayraRadius.card),
+    child: Material(
+      color: PlayraMedia.canvas,
+      child: InkWell(
+        onTap: onCardTap,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (entry.cover.isNotEmpty)
+              NetworkImgLayer(
+                src: entry.cover,
+                type: 'bg',
+                width: cardWidth,
+                height: cardHeight,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.zero,
+              ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    PlayraMedia.canvas,
+                    PlayraMedia.scrimMedium,
+                    PlayraMedia.scrimSoft,
+                  ],
+                  stops: [0, .65, 1],
                 ),
-                // 3. 卡片前景文字与交互区（中心主卡片才呈现，侧方卡片平滑淡出，绝不露出截断文字）
-                if (textOpacity > 0.01)
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: textOpacity,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: compact ? PlayraSpace.md : PlayraSpace.xl,
-                          vertical: compact ? PlayraSpace.sm : PlayraSpace.md,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const PlayraBadge.secondary(
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.auto_awesome_rounded, size: 12),
-                                        SizedBox(width: PlayraSpace.xs),
-                                        Text('精选推荐', style: TextStyle(fontSize: PlayraType.small)),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(height: compact ? PlayraSpace.xs : PlayraSpace.sm),
-                                  Text(
-                                    entry.title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontSize: compact ? PlayraType.section : 22.0,
-                                      height: 1.25,
-                                      fontWeight: FontWeight.w800,
-                                      color: colors.onSurface,
-                                    ),
-                                  ),
-                                  if (entry.subtitle.trim().isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      entry.subtitle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        fontSize: PlayraType.caption,
-                                        color: colors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                  const Spacer(),
-                                  // 标准化小胶囊按钮组
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      PlayraButton(
-                                        onPressed: onCardTap,
-                                        icon: const Icon(Icons.play_arrow_rounded, size: 16),
-                                        child: const Text('立即播放'),
-                                      ),
-                                      const SizedBox(width: PlayraSpace.md),
-                                      PlayraButton.outline(
-                                        onPressed: onCardTap,
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text('详情'),
-                                            SizedBox(width: 3),
-                                            Icon(Icons.arrow_forward_ios_rounded, size: 10),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // 右侧微立体竖版海报（仅在大屏或足够宽度展示）
-                            if (!compact) ...[
-                              const SizedBox(width: PlayraSpace.lg),
-                              Semantics(
-                                button: true,
-                                label: '查看 ${entry.title}',
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(PlayraRadius.poster),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.50),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 5),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(PlayraRadius.poster),
-                                    child: NetworkImgLayer(
-                                      src: entry.cover,
-                                      type: entry.imageType,
-                                      width: posterWidth,
-                                      height: posterWidth * 1.42,
-                                      borderRadius: BorderRadius.circular(PlayraRadius.poster),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                // 4. 景深暗化层（侧方卡片稍微调暗）
-                if (absD > 0.15)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: ColoredBox(
-                        color: Colors.black.withValues(
-                          alpha: (0.42 * math.min(absD, 1.5)).clamp(0.0, 0.55),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.all(PlayraSpace.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Text(
+                    '精选推荐',
+                    style: TextStyle(
+                      fontSize: PlayraType.caption,
+                      color: PlayraMedia.foregroundMuted,
+                    ),
+                  ),
+                  const SizedBox(height: PlayraSpace.xs),
+                  Text(
+                    entry.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact
+                          ? PlayraType.section
+                          : PlayraType.pageTitle,
+                      height: 1.25,
+                      fontWeight: FontWeight.w700,
+                      color: PlayraMedia.foreground,
+                    ),
+                  ),
+                  if (entry.subtitle.trim().isNotEmpty) ...[
+                    const SizedBox(height: PlayraSpace.xs),
+                    Text(
+                      entry.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: PlayraType.caption,
+                        color: PlayraMedia.foregroundMuted,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: PlayraSpace.md),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: PlayraButton(
+                      onPressed: onCardTap,
+                      icon: const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: PlayraLayout.compactIcon,
+                      ),
+                      child: const Text('查看详情'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }

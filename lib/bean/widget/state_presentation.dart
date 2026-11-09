@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
-import 'package:shadcn_ui/shadcn_ui.dart' show ShadButton;
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:material_new_shapes/material_new_shapes.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
@@ -123,16 +122,6 @@ class StateActionButton extends StatelessWidget {
       return button(
         onPressed: onPressed,
         icon: icon == null ? null : Icon(icon, size: PlayraLayout.compactIcon),
-        child: content,
-      );
-    }
-    if (ModernSettingsScope.isActiveOf(context)) {
-      final button = _tonal ? ShadButton.secondary : ShadButton.new;
-      return button(
-        onPressed: onPressed,
-        leading: icon == null
-            ? null
-            : Icon(icon, size: PlayraLayout.compactIcon),
         child: content,
       );
     }

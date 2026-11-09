@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -10,7 +11,7 @@ class DanmakuShieldEditor extends StatefulWidget {
   const DanmakuShieldEditor({
     super.key,
     required this.controller,
-    this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 24),
+    this.padding = const EdgeInsets.fromLTRB(PlayraSpace.xxl, 0, PlayraSpace.xxl, PlayraSpace.xxl),
   });
 
   final MyController controller;
@@ -54,7 +55,7 @@ class _DanmakuShieldEditorState extends State<DanmakuShieldEditor> {
                 decoration: InputDecoration(
                   hintText: '关键词或 /正则表达式/',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(PlayraRadius.card),
                   ),
                   suffixIcon: PlayraIconButton(
                     tooltip: '添加规则',
@@ -64,7 +65,7 @@ class _DanmakuShieldEditorState extends State<DanmakuShieldEditor> {
                 ),
                 onSubmitted: (_) => _addRule(),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: PlayraSpace.sm),
               Text(
                 '包含关键词的弹幕会被隐藏。用 / / 包裹正则表达式。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -74,7 +75,7 @@ class _DanmakuShieldEditorState extends State<DanmakuShieldEditor> {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: PlayraSpace.xxl),
         Observer(
           builder: (context) {
             final rules = myController.shieldList.toList();

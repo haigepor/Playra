@@ -28,10 +28,10 @@ class _TimelineWeekSelector extends StatelessWidget {
         return DecoratedBox(
           decoration: BoxDecoration(
             color: colors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(PlayraRadius.card),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(PlayraSpace.xs),
             child: PlayraTabBar(
               isScrollable: scrollable,
 
@@ -53,7 +53,7 @@ class _TimelineWeekSelector extends StatelessWidget {
                             Text(
                               day == todayIndex ? '今天' : '周${_weekdays[day]}',
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: PlayraSpace.xs),
                             Text(
                               isLoading ? '—' : '${counts[day]}',
                               style: TextStyle(

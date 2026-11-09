@@ -210,7 +210,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth > LayoutBreakpoint.compact['width']!;
+        final wide = ModernSettingsScope.isActiveOf(context)
+            ? constraints.maxWidth >= PlayraLayout.expandedWidth
+            : constraints.maxWidth > LayoutBreakpoint.compact['width']!;
         return NavigatorPopHandler<Object?>(
           onPopWithResult: (_) => _goBack(),
           child: Scaffold(
@@ -331,9 +333,9 @@ class _SettingsMenu extends StatelessWidget {
             if (wide) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  28,
+                  PlayraSpace.xxl,
                   PlayraSpace.lg,
-                  28,
+                  PlayraSpace.xxl,
                   PlayraSpace.sm,
                 ),
                 child: SectionHeader(title: Text(group.title)),
@@ -401,7 +403,7 @@ class _RailDestination extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 56),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: PlayraSpace.md),
               child: Row(
                 children: [
                   const SizedBox(width: PlayraSpace.lg),

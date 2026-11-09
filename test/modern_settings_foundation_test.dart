@@ -1,4 +1,4 @@
-import 'package:forui/forui.dart' show FTileGroup;
+import 'package:forui/forui.dart' show FTileGroup, FTheme;
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -153,7 +153,10 @@ void main() {
     expect(find.byType(FTileGroup), findsOneWidget);
     final theme = Theme.of(tester.element(find.text('第一项')));
     expect(theme.brightness, Brightness.dark);
-    expect(theme.scaffoldBackgroundColor, const Color(0xff11141c));
+    expect(
+      theme.scaffoldBackgroundColor,
+      FTheme.neutral.dark.touch.colors.background,
+    );
     expect(theme.colorScheme.primary, const Color(0xffa7b7ff));
     expect(tester.takeException(), isNull);
   });
@@ -311,6 +314,17 @@ void main() {
         expect(speed, greaterThan(1));
         await tester.ensureVisible(find.text('较长的设置名称'));
         await tester.pumpAndSettle();
+        expect(
+          tester
+              .getSize(
+                find.ancestor(
+                  of: find.text('较长的设置名称'),
+                  matching: find.byType(PlayraListTile),
+                ),
+              )
+              .height,
+          greaterThanOrEqualTo(48),
+        );
         await tester.tap(find.text('较长的设置名称'));
         await tester.pumpAndSettle();
         expect(find.text('第二个选项'), findsOneWidget);
@@ -342,12 +356,15 @@ void main() {
       if (modern) {
         expect(find.byType(ModernBackButton), findsOneWidget);
         expect(find.byType(BackButton), findsNothing);
-        expect(tester.getSize(_tooltip('返回')).height, greaterThanOrEqualTo(48));
+        expect(
+          tester.getSize(_tooltip('返回').first).height,
+          greaterThanOrEqualTo(48),
+        );
       } else {
         expect(find.byType(ModernBackButton), findsNothing);
         expect(find.byType(BackButton), findsOneWidget);
       }
-      await tester.tap(modern ? _tooltip('返回') : find.byType(BackButton));
+      await tester.tap(modern ? _tooltip('返回').first : find.byType(BackButton));
       await tester.pumpAndSettle();
       expect(count, 1);
       expect(tester.takeException(), isNull);

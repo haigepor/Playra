@@ -57,12 +57,12 @@ class SecondaryEmptyState extends StatelessWidget {
   final Widget? action;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+    padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xl, vertical: PlayraSpace.xxl),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         artwork ?? SecondaryArtwork(asset: asset),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         Semantics(
           header: true,
           liveRegion: true,
@@ -70,13 +70,13 @@ class SecondaryEmptyState extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontSize: 16,
+              fontSize: PlayraType.item,
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
         if (description != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Text(
             description!,
             textAlign: TextAlign.center,
@@ -85,7 +85,7 @@ class SecondaryEmptyState extends StatelessWidget {
             ),
           ),
         ],
-        if (action != null) ...[const SizedBox(height: 12), action!],
+        if (action != null) ...[const SizedBox(height: PlayraSpace.md), action!],
       ],
     ),
   );
@@ -180,7 +180,7 @@ class SecondaryFailureView extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(PlayraSpace.xxl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -190,19 +190,19 @@ class SecondaryFailureView extends StatelessWidget {
                 size: 36,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: PlayraSpace.xl),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: PlayraSpace.md),
               Text(
                 message,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: PlayraSpace.xxl),
               Center(
                 child: PlayraButton.icon(
                   onPressed: action,
@@ -211,12 +211,12 @@ class SecondaryFailureView extends StatelessWidget {
                 ),
               ),
               if (details != null) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: PlayraSpace.xl),
                 PlayraExpansionTile(
                   title: const Text('查看详细信息'),
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: PlayraSpace.lg),
                       child: SelectableText(
                         details!,
                         style: Theme.of(context).textTheme.bodySmall,

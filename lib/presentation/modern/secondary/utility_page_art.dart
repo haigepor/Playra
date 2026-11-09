@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/modern_page_art.dart';
@@ -98,7 +99,7 @@ class UtilityPageIntro extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: colors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(PlayraRadius.card),
         border: Border.all(color: colors.outlineVariant.withValues(alpha: .35)),
       ),
       child: Stack(
@@ -116,7 +117,7 @@ class UtilityPageIntro extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(PlayraSpace.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -129,11 +130,11 @@ class UtilityPageIntro extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: colors.primary.withValues(alpha: .1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(PlayraRadius.control),
                       ),
                       child: UtilitySvgIcon(icon, size: 22),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: PlayraSpace.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,12 +144,12 @@ class UtilityPageIntro extends StatelessWidget {
                             child: Text(
                               title,
                               style: theme.textTheme.titleMedium?.copyWith(
-                                fontSize: 17,
+                                fontSize: PlayraType.section,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: PlayraSpace.compact),
                           Text(
                             description,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -162,7 +163,7 @@ class UtilityPageIntro extends StatelessWidget {
                   ],
                 ),
                 if (actions.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: PlayraSpace.lg),
                   Wrap(spacing: 8, runSpacing: 8, children: actions),
                 ],
               ],

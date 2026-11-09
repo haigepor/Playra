@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:ui';
 
@@ -149,7 +150,7 @@ class _CharacterPageState extends State<CharacterPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Bone(height: 132, width: double.infinity, uniRadius: 12),
-                SizedBox(height: 16),
+                SizedBox(height: PlayraSpace.lg),
                 Bone.multiText(lines: 5),
               ],
             ),
@@ -163,7 +164,7 @@ class _CharacterPageState extends State<CharacterPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Bone(height: 300, width: double.infinity, uniRadius: 28),
-              SizedBox(height: 24),
+              SizedBox(height: PlayraSpace.xxl),
               Bone.multiText(lines: 5),
             ],
           ),

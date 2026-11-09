@@ -178,7 +178,7 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
             description: '浏览社区规则，为你的番剧搜索添加更多选择。',
             icon: Icons.travel_explore_rounded,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: PlayraSpace.xl),
           PlayraTextField(
             controller: _search,
             onChanged: (_) => setState(() {}),
@@ -195,7 +195,7 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
                     ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           Wrap(
             spacing: 8,
             runSpacing: 4,
@@ -239,15 +239,15 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
         ),
         if (_loading && total > 0)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: PlayraSpace.sm),
             child: PlayraProgress(),
           ),
         if (_loadFailed && total > 0)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: PlayraSpace.sm),
             child: Text('刷新失败，正在显示上次获取的规则。', style: theme.textTheme.bodySmall),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: PlayraSpace.sm),
       ],
     );
   }
@@ -305,7 +305,7 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
         SliverPadding(
           padding: widget._onboarding
               ? EdgeInsets.zero
-              : const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              : const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.md, PlayraSpace.lg, PlayraSpace.xxl),
           sliver: SliverMainAxisGroup(
             slivers: [
               SliverToBoxAdapter(
@@ -380,12 +380,12 @@ class _CatalogRuleAction extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     if (!busy && status == PluginCatalogItemStatus.installed) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg, vertical: PlayraSpace.lg),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.check_rounded, size: 18, color: colors.onSurfaceVariant),
-            const SizedBox(width: 6),
+            const SizedBox(width: PlayraSpace.compact),
             Text(
               '已安装',
               style: Theme.of(
@@ -406,7 +406,7 @@ class _CatalogRuleAction extends StatelessWidget {
             const LoadingIndicator(size: 20)
           else
             Icon(installing ? Icons.add_rounded : Icons.sync_rounded, size: 18),
-          const SizedBox(width: 6),
+          const SizedBox(width: PlayraSpace.compact),
           Text(installing ? (busy ? '安装中' : '安装') : (busy ? '更新中' : '更新')),
         ],
       ),

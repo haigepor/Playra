@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' as f;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/presentation/modern/home/home_theme.dart';
 import 'package:kazumi/presentation/modern/player/player_theme.dart';
@@ -40,26 +41,25 @@ void main() {
         expect(theme.textTheme.titleLarge?.fontSize, 16);
         expect(theme.iconTheme.size, 20);
         expect(theme.bottomSheetTheme.modalBackgroundColor, colors.card);
-        final chip = tester.widget<ChoiceChip>(find.byType(ChoiceChip));
-        final selected = {WidgetState.selected};
-        final actual =
-            chip.color?.resolve(selected) ??
-            theme.chipTheme.color?.resolve(selected);
-        expect(
-          actual,
-          theme.chipTheme.color?.resolve(selected),
-          reason: 'SDK标签须继承新页面选中态，不再自定另一组透明度',
+        final button = find.descendant(
+          of: find.byType(PlaybackSdkChip),
+          matching: find.byType(f.FButton),
         );
-        final inks = tester.widgetList<Ink>(
-          find.descendant(of: find.byType(RawChip), matching: find.byType(Ink)),
+        expect(button, findsOneWidget);
+        expect(tester.widget<f.FButton>(button).selected, isTrue);
+        final forui = f.FTheme.of(tester.element(button));
+        final expected = forui.buttonStyles.secondary.lg.decoration.resolve({
+          f.FTappableVariant.selected,
+        });
+        final surfaces = tester.widgetList<DecoratedBox>(
+          find.descendant(of: button, matching: find.byType(DecoratedBox)),
         );
         expect(
-          inks.any(
-            (ink) => (ink.decoration as ShapeDecoration?)?.color == actual,
-          ),
+          surfaces.any((surface) => surface.decoration == expected),
           isTrue,
-          reason: '须检查实际绘制色，Material2不会读取Chip的状态颜色',
+          reason: 'Source selections use the actual Forui selected surface',
         );
+        expect(find.byType(ChoiceChip), findsNothing);
       },
     );
   }

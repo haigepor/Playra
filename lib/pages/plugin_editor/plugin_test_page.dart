@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:convert';
 
@@ -14,8 +15,8 @@ import 'package:kazumi/plugins/api_rule_config.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/services/logging/logger.dart';
 
-const _h8 = SizedBox(height: 8.0);
-const _h12 = SizedBox(height: 12.0);
+const _h8 = SizedBox(height: PlayraSpace.sm);
+const _h12 = SizedBox(height: PlayraSpace.md);
 
 class PluginTestPage extends StatefulWidget {
   const PluginTestPage({super.key, required this.plugin});
@@ -163,12 +164,12 @@ class _PluginTestPageState extends State<PluginTestPage> {
           icon: const Icon(Icons.restart_alt_rounded),
           tooltip: '重置测试',
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: PlayraSpace.sm),
       ],
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+          padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.md, PlayraSpace.lg, PlayraSpace.section),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 900),
@@ -180,7 +181,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
                     description: '一次测试，检查搜索请求、结果解析和播放线路。',
                     icon: Icons.science_outlined,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: PlayraSpace.xl),
                   RuleSection(
                     title: '试着搜索一部番剧',
                     description: '选集测试会使用第一条搜索结果。',
@@ -188,7 +189,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildKeywordInput(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: PlayraSpace.lg),
                         Align(
                           alignment: AlignmentDirectional.centerEnd,
                           child: PlayraButton.icon(
@@ -202,17 +203,17 @@ class _PluginTestPageState extends State<PluginTestPage> {
                           ),
                         ),
                         if (isTesting) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: PlayraSpace.lg),
                           const PlayraProgress(),
                         ],
                       ],
                     ),
                   ),
                   if (errorMsg.isNotEmpty && !isTesting) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: PlayraSpace.lg),
                     _buildErrorWidget(theme),
                   ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: PlayraSpace.xl),
                   _buildExpansionTile(
                     theme: theme,
                     number: 1,
@@ -277,7 +278,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
         : colors.onSurfaceVariant;
     return Material(
       color: colors.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(PlayraRadius.card),
       clipBehavior: Clip.antiAlias,
       child: PlayraExpansionTile(
         key: ValueKey('$number-$_hasRun-$completed'),
@@ -339,16 +340,16 @@ class _PluginTestPageState extends State<PluginTestPage> {
   );
 
   Widget _buildErrorWidget(ThemeData theme) => Container(
-    padding: const EdgeInsets.all(12.0),
+    padding: const EdgeInsets.all(PlayraSpace.md),
     decoration: BoxDecoration(
       color: theme.colorScheme.errorContainer,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(PlayraRadius.overlay),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
-        const SizedBox(width: 12),
+        const SizedBox(width: PlayraSpace.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,7 +382,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
   Widget _buildEmpty(String text, ThemeData theme, {bool isError = false}) =>
       Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: PlayraSpace.lg),
           child: Text(
             text,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -407,13 +408,13 @@ class _PluginTestPageState extends State<PluginTestPage> {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(PlayraRadius.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 16, right: 4, top: 4),
+            padding: const EdgeInsets.only(left: PlayraSpace.lg, right: PlayraSpace.xs, top: PlayraSpace.xs),
             child: Row(
               children: [
                 Expanded(
@@ -450,7 +451,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
               controller: controller,
               child: SingleChildScrollView(
                 controller: controller,
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.xs, PlayraSpace.lg, PlayraSpace.lg),
                 child: SelectableText(
                   raw,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -509,11 +510,11 @@ class _PluginTestPageState extends State<PluginTestPage> {
     if (diagnostics.isEmpty) return const SizedBox.shrink();
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8.0),
-      padding: const EdgeInsets.all(12.0),
+      margin: const EdgeInsets.only(bottom: PlayraSpace.sm),
+      padding: const EdgeInsets.all(PlayraSpace.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(PlayraRadius.overlay),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -525,7 +526,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
                 color: theme.colorScheme.error,
                 size: 20,
               ),
-              const SizedBox(width: 8.0),
+              const SizedBox(width: PlayraSpace.sm),
               Expanded(
                 child: Text(
                   '部分节点被跳过（${diagnostics.length}）',
@@ -540,7 +541,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
           _h8,
           ...diagnostics.map(
             (message) => Padding(
-              padding: const EdgeInsets.only(bottom: 4.0),
+              padding: const EdgeInsets.only(bottom: PlayraSpace.xs),
               child: SelectableText(
                 message,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -561,10 +562,10 @@ class _PluginTestPageState extends State<PluginTestPage> {
     return Column(
       children: [
         PlayraSurface(
-          margin: const EdgeInsets.only(bottom: 8.0),
+          margin: const EdgeInsets.only(bottom: PlayraSpace.sm),
 
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(PlayraSpace.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -607,7 +608,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
         ),
         if (isShowingFragment)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: PlayraSpace.sm),
             child: _codePanel(
               fragment,
               theme,
@@ -642,7 +643,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
         _buildDiagnosticsWidget(chapterDiagnostics, theme),
         if (chapterRaw.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: PlayraSpace.md),
             child: _codePanel(
               _formattedRaw(
                 chapterRaw,
@@ -652,7 +653,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
             ),
           ),
         Container(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(PlayraSpace.sm),
           height: 280,
           child: ListView.builder(
             controller: chapterScrollController,
@@ -674,10 +675,10 @@ class _PluginTestPageState extends State<PluginTestPage> {
   }
 
   Widget _buildChapterCard(Road road, int i, ThemeData theme) => PlayraSurface(
-    margin: const EdgeInsets.only(bottom: 8.0),
+    margin: const EdgeInsets.only(bottom: PlayraSpace.sm),
 
     child: Padding(
-      padding: const EdgeInsets.all(12.0),
+      padding: const EdgeInsets.all(PlayraSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -705,7 +706,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
                 children: [
                   ...road.identifier.asMap().entries.map(
                     (e) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.only(bottom: PlayraSpace.compact),
                       child: SelectableText(
                         '${e.key + 1}. ${e.value}\n'
                         '${e.key < road.data.length ? road.data[e.key] : ''}',

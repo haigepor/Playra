@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -93,7 +94,7 @@ class _PlayingMarkState extends State<PlayingMark>
                                 )),
                 decoration: BoxDecoration(
                   color: widget.color,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(PlayraRadius.indicator),
                 ),
               ),
             ),

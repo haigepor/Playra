@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
@@ -18,7 +19,7 @@ enum MyDestination {
   about,
 }
 
-const _tileRadius = BorderRadius.all(Radius.circular(28));
+const _tileRadius = BorderRadius.all(Radius.circular(PlayraRadius.card));
 
 class MySpaceView extends StatelessWidget {
   const MySpaceView({super.key, required this.stats, required this.onOpen});
@@ -36,7 +37,7 @@ class MySpaceView extends StatelessWidget {
         final wide = width >= 840 && !largeText;
         return SingleChildScrollView(
           key: const PageStorageKey('my-space'),
-          padding: EdgeInsets.fromLTRB(inset, 12, inset, 32),
+          padding: EdgeInsets.fromLTRB(inset, PlayraSpace.md, inset, PlayraSpace.section),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1120),
@@ -99,7 +100,7 @@ class _WideSpaceLayout extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         _AdaptivePair(
           first: _PreferencesPanel(onOpen: onOpen),
           second: _AdaptivePair(
@@ -121,7 +122,7 @@ class _WideSpaceLayout extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: PlayraSpace.xxl),
         Align(
           alignment: Alignment.center,
           child: _ExpressiveAction(
@@ -129,12 +130,12 @@ class _WideSpaceLayout extends StatelessWidget {
             foreground: colors.onSurfaceVariant,
             onTap: () => onOpen(MyDestination.about),
             child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: PlayraSpace.xl, vertical: PlayraSpace.lg),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.info_outline_rounded, size: 20),
-                  SizedBox(width: 8),
+                  SizedBox(width: PlayraSpace.sm),
                   Flexible(child: Text('关于 Playra')),
                 ],
               ),
@@ -168,7 +169,7 @@ class _CompactSpaceLayout extends StatelessWidget {
           episodeCount: stats.watchedEpisodeCount,
           compact: true,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         _AdaptivePair(
           stack: stackTools,
           first: _ToolTile(
@@ -192,7 +193,7 @@ class _CompactSpaceLayout extends StatelessWidget {
             onTap: () => onOpen(MyDestination.downloads),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: PlayraSpace.xxl),
         ContentSection.group(
           title: '内容与偏好',
           children: [
@@ -202,7 +203,7 @@ class _CompactSpaceLayout extends StatelessWidget {
             _entry('弹幕设置', Icons.subtitles_rounded, MyDestination.danmaku),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: PlayraSpace.xxl),
         ContentSection.group(
           title: '数据与应用',
           children: [
@@ -250,7 +251,7 @@ class _WatchStatsPanel extends StatelessWidget {
       color: compact ? colors.primaryContainer : colors.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(compact ? 28 : 48),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xxl, vertical: PlayraSpace.lg),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -286,7 +287,7 @@ class _WatchStatsPanel extends StatelessWidget {
                   color: colors.onSurfaceVariant,
                 ),
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: PlayraSpace.sm),
             Row(
               children: [
                 Expanded(
@@ -298,7 +299,7 @@ class _WatchStatsPanel extends StatelessWidget {
                 ),
                 if (compact)
                   SizedBox(
-                    height: 32,
+                    height: PlayraSpace.section,
                     child: VerticalDivider(
                       width: 24,
                       color: colors.onPrimaryContainer.withValues(alpha: .16),
@@ -306,7 +307,7 @@ class _WatchStatsPanel extends StatelessWidget {
                   )
                 else
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md),
                     child: Icon(
                       Icons.auto_awesome_rounded,
                       color: colors.primary,
@@ -353,7 +354,7 @@ class _StatCount extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: PlayraSpace.tiny),
         Text(
           label,
           textAlign: TextAlign.center,
@@ -384,7 +385,7 @@ class _SpaceHeading extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: PlayraSpace.md),
         _ShapeIcon(
           shape: _SpaceShape.sun,
           icon: Icons.sentiment_satisfied_alt_rounded,
@@ -410,14 +411,14 @@ class _RulesTile extends StatelessWidget {
       color: colors.primary,
       foreground: colors.onPrimary,
       radius: const BorderRadius.only(
-        topLeft: Radius.circular(28),
-        topRight: Radius.circular(64),
-        bottomLeft: Radius.circular(28),
-        bottomRight: Radius.circular(28),
+        topLeft: Radius.circular(PlayraRadius.card),
+        topRight: Radius.circular(PlayraRadius.brand),
+        bottomLeft: Radius.circular(PlayraRadius.card),
+        bottomRight: Radius.circular(PlayraRadius.card),
       ),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(PlayraSpace.xxl),
         child: Row(
           children: [
             Expanded(
@@ -432,12 +433,12 @@ class _RulesTile extends StatelessWidget {
                       color: colors.onPrimary,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: PlayraSpace.compact),
                   Text(
                     '管理番剧来源',
                     style: text.bodyMedium?.copyWith(color: colors.onPrimary),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: PlayraSpace.xl),
                   _ArrowCue(
                     color: colors.onPrimary,
                     foreground: colors.primary,
@@ -445,7 +446,7 @@ class _RulesTile extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: PlayraSpace.md),
             _ShapeIcon(
               shape: _SpaceShape.clover,
               icon: Icons.extension_rounded,
@@ -487,7 +488,7 @@ class _ToolTile extends StatelessWidget {
       foreground: foreground,
       onTap: onTap,
       child: Padding(
-        padding: EdgeInsets.all(compact ? 16 : 20),
+        padding: EdgeInsets.all(compact ? PlayraSpace.lg : PlayraSpace.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -537,7 +538,7 @@ class _PreferencesPanel extends StatelessWidget {
       color: colors.surfaceContainerLow,
       borderRadius: _tileRadius,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(PlayraSpace.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -552,13 +553,13 @@ class _PreferencesPanel extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: PlayraSpace.lg),
             IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   for (var i = 0; i < _entries.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 4),
+                    if (i > 0) const SizedBox(width: PlayraSpace.xs),
                     Expanded(child: _button(i)),
                   ],
                 ],
@@ -609,7 +610,7 @@ class _PreferenceAction extends StatelessWidget {
       ),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md, vertical: PlayraSpace.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -661,7 +662,7 @@ class _ArrowCue extends StatelessWidget {
       height: 32,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(PlayraRadius.overlay),
       ),
       child: Icon(Icons.arrow_forward_rounded, color: foreground, size: 20),
     ),
@@ -758,7 +759,7 @@ class _ExpressiveActionState extends State<_ExpressiveAction> {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: widget.color,
-            borderRadius: _pressed ? BorderRadius.circular(16) : widget.radius,
+            borderRadius: _pressed ? BorderRadius.circular(PlayraRadius.card) : widget.radius,
           ),
           child: Material(
             type: MaterialType.transparency,

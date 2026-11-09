@@ -183,7 +183,7 @@ class SkeletonFeature extends StatelessWidget {
                             color: Theme.of(
                               context,
                             ).colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(PlayraRadius.card),
                           ),
                           child: Row(
                             children: [
@@ -227,10 +227,10 @@ class SkeletonFeature extends StatelessWidget {
         }
         return Container(
           height: height,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(PlayraSpace.xl),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(PlayraRadius.brand),
           ),
           child: Row(
             children: [
@@ -289,7 +289,7 @@ class SkeletonInfoList extends StatelessWidget {
               padding: const EdgeInsets.all(PlayraSpace.md),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(PlayraRadius.card),
               ),
               child: const Row(
                 children: [

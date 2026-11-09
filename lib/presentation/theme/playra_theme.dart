@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart'
 import 'package:shadcn_ui/shadcn_ui.dart' hide FadeEffect, ScaleEffect;
 
 import 'playra_tokens.dart';
+import 'playra_design.dart';
 
 ShadColorScheme playraShadColors(PlayraTokens t, Brightness brightness) {
   return brightness == Brightness.dark
@@ -43,17 +44,19 @@ ShadColorScheme playraShadColors(PlayraTokens t, Brightness brightness) {
         );
 }
 
-/// Legacy palettes stay user-controlled; the modern product uses its dark brand.
+/// Material is a consumer of the same Forui tokens used by native controls.
 ThemeData playraTheme(
   ThemeData base, {
   bool modern = true,
   bool forceDark = true,
 }) {
   final brightness = modern && forceDark ? Brightness.dark : base.brightness;
+  final design = playraDesign(
+    brightness,
+    fontFamily: base.textTheme.bodyMedium?.fontFamily,
+  );
   final t = modern
-      ? brightness == Brightness.dark
-            ? PlayraTokens.dark
-            : PlayraTokens.light
+      ? PlayraTokens.fromForui(design.colors)
       : PlayraTokens.fromScheme(base.colorScheme);
   final extensions =
       base.extensions.values
@@ -66,8 +69,14 @@ ThemeData playraTheme(
     brightness: brightness,
     primary: t.primary,
     onPrimary: t.primaryForeground,
-    secondary: t.primary,
+    secondary: design.colors.secondary,
+    onSecondary: design.colors.secondaryForeground,
     tertiary: t.primary,
+    onTertiary: t.primaryForeground,
+    error: design.colors.error,
+    onError: design.colors.errorForeground,
+    errorContainer: design.colors.error.withValues(alpha: .1),
+    onErrorContainer: design.colors.error,
     surface: t.background,
     onSurface: t.foreground,
     surfaceContainer: t.surface,
@@ -90,40 +99,36 @@ ThemeData playraTheme(
     bodyColor: t.foreground,
     displayColor: t.foreground,
   );
+  final body = design.typography.body;
+  final display = design.typography.display;
+  // Material needs complete text styles (including baseline/spacing) for fields
+  // and interpolates inherit=false styles when switching appearance.
+  TextStyle bridge(TextStyle? material, TextStyle forui) => material!
+      .merge(forui)
+      .copyWith(inherit: false, textBaseline: TextBaseline.alphabetic);
   final typography = text.copyWith(
-    headlineLarge: text.headlineLarge?.copyWith(fontSize: PlayraType.pageTitle),
-    headlineMedium: text.headlineMedium?.copyWith(
-      fontSize: PlayraType.pageTitle,
-    ),
-    headlineSmall: text.headlineSmall?.copyWith(fontSize: PlayraType.title),
-    titleLarge: text.titleLarge?.copyWith(
-      fontSize: PlayraType.item,
-      fontWeight: FontWeight.w600,
-    ),
-    titleMedium: text.titleMedium?.copyWith(fontSize: PlayraType.body),
-    titleSmall: text.titleSmall?.copyWith(fontSize: PlayraType.label),
-    bodyLarge: text.bodyLarge?.copyWith(
-      fontSize: PlayraType.body,
-      height: PlayraType.bodyHeight,
-    ),
-    bodyMedium: text.bodyMedium?.copyWith(
-      fontSize: PlayraType.body,
-      height: PlayraType.bodyHeight,
-    ),
-    bodySmall: text.bodySmall?.copyWith(
-      fontSize: PlayraType.caption,
-      height: PlayraType.bodyHeight,
-    ),
-    labelLarge: text.labelLarge?.copyWith(fontSize: PlayraType.label),
-    labelMedium: text.labelMedium?.copyWith(fontSize: PlayraType.caption),
-    labelSmall: text.labelSmall?.copyWith(fontSize: PlayraType.small),
+    headlineLarge: bridge(text.headlineLarge, display.xl),
+    headlineMedium: bridge(text.headlineMedium, display.xl),
+    headlineSmall: bridge(text.headlineSmall, display.lg),
+    titleLarge: bridge(
+      text.titleLarge,
+      body.sm,
+    ).copyWith(fontWeight: FontWeight.w600),
+    titleMedium: bridge(text.titleMedium, body.sm),
+    titleSmall: bridge(text.titleSmall, body.xs),
+    bodyLarge: bridge(text.bodyLarge, body.sm),
+    bodyMedium: bridge(text.bodyMedium, body.sm),
+    bodySmall: bridge(text.bodySmall, body.xs2),
+    labelLarge: bridge(text.labelLarge, body.xs),
+    labelMedium: bridge(text.labelMedium, body.xs2),
+    labelSmall: bridge(text.labelSmall, body.xs2),
   );
   final controlShape = RoundedRectangleBorder(
     borderRadius: BorderRadius.circular(PlayraRadius.control),
   );
   final button = ButtonStyle(
     minimumSize: const WidgetStatePropertyAll(
-      Size(PlayraLayout.touchTarget, PlayraLayout.compactControl),
+      Size(PlayraLayout.touchTarget, PlayraLayout.touchTarget),
     ),
     padding: const WidgetStatePropertyAll(
       EdgeInsets.symmetric(horizontal: PlayraSpace.lg, vertical: 10),
@@ -150,12 +155,23 @@ ThemeData playraTheme(
     textTheme: typography,
     iconTheme: IconThemeData(color: t.mutedForeground, size: PlayraLayout.icon),
     splashFactory: NoSplash.splashFactory,
-    // 交互反馈交给控件自身的选中态/缩放/文字变化，不叠加按压、悬停或焦点底色。
-    highlightColor: Colors.transparent,
-    hoverColor: Colors.transparent,
-    focusColor: Colors.transparent,
+    // 保留轻量状态底色，让触控、鼠标和键盘都有可见反馈。
+    highlightColor: t.primary.withValues(alpha: .12),
+    hoverColor: t.primary.withValues(alpha: .08),
+    focusColor: t.primary.withValues(alpha: .18),
     tabBarTheme: base.tabBarTheme.copyWith(
-      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+      overlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.focused)) {
+          return t.primary.withValues(alpha: .18);
+        }
+        if (states.contains(WidgetState.pressed)) {
+          return t.primary.withValues(alpha: .12);
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return t.primary.withValues(alpha: .08);
+        }
+        return null;
+      }),
       splashFactory: NoSplash.splashFactory,
     ),
     dividerColor: t.border.withValues(alpha: .4),
@@ -367,12 +383,12 @@ ThemeData playraTheme(
       surfaceTintColor: Colors.transparent,
       indicatorColor: t.muted,
       indicatorShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(PlayraRadius.control),
       ),
       labelTextStyle: WidgetStateProperty.resolveWith(
         (states) => TextStyle(
           fontFamily: base.textTheme.bodyMedium?.fontFamily,
-          fontSize: 12,
+          fontSize: PlayraType.caption,
           fontWeight: states.contains(WidgetState.selected)
               ? FontWeight.w600
               : FontWeight.w400,

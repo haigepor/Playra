@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' as f;
+
+import 'playra_design.dart';
 
 abstract final class PlayraSpace {
   static const tiny = 2.0;
@@ -12,28 +15,51 @@ abstract final class PlayraSpace {
   static const section = 32.0;
 }
 
+/// Const aliases of Forui FBorderRadius for const page layouts.
 abstract final class PlayraRadius {
+  static const none = 0.0;
+  static const indicator = 4.0;
   static const thumbnail = 8.0;
-  static const control = 12.0;
-  static const poster = 12.0;
-  static const card = 16.0;
-  static const hero = 20.0;
-  static const overlay = 20.0;
-  static const brand = 24.0;
+  static const control = 10.0;
+  static const poster = 10.0;
+  static const card = 14.0;
+  static const hero = 18.0;
+  static const overlay = 18.0;
+  static const brand = 22.0;
 }
 
+/// Const aliases of Forui touch FTypeface: xl/lg/md/sm/xs/xs2/xs3.
 abstract final class PlayraType {
   static const pageTitle = 22.0;
   static const title = 20.0;
   static const section = 18.0;
   static const item = 16.0;
-  static const body = 14.0;
-  static const label = 13.0;
+  static const body = 16.0;
+  static const label = 14.0;
   static const caption = 12.0;
-  static const small = 11.0;
+  static const small = 12.0;
   static const micro = 10.0;
+  static const heroTitle = 30.0;
+  static const statistic = 36.0;
+  static const display = 48.0;
   static const bodyHeight = 1.5;
   static const readingHeight = 1.8;
+}
+
+/// Video and poster overlays need fixed contrast independently of page brightness.
+abstract final class PlayraMedia {
+  static const canvas = Colors.black;
+  static const foreground = Colors.white;
+  static const foregroundMuted = Colors.white70;
+  static const foregroundDisabled = Colors.white38;
+  static const border = Colors.white24;
+  static const borderStrong = Colors.white60;
+  static const edgeScrim = Colors.black45;
+  static const scrim = Color(0x80000000);
+  static const scrimSoft = Color(0x50000000);
+  static const scrimMedium = Color(0x65000000);
+  static const scrimDeep = Color(0x85000000);
+  static const scrimStrong = Color(0x95000000);
 }
 
 abstract final class PlayraLayout {
@@ -53,10 +79,28 @@ abstract final class PlayraLayout {
   static const readingWidth = 880.0;
   static const catalogWidth = 1120.0;
 
-  static bool isCompact(Size size) => size.width < 380 || size.height < 700;
+  static bool isCompact(Size size) => size.width < 380;
 
-  static double pageInset(Size size) =>
-      isCompact(size) ? PlayraSpace.lg : PlayraSpace.xl;
+  static double pageInset(Size size) => switch (size.width) {
+    < compactWidth => PlayraSpace.lg,
+    < expandedWidth => PlayraSpace.xxl,
+    _ => PlayraSpace.section,
+  };
+
+  /// Recompute from the current content width, including split-screen windows.
+  static int columns(
+    double width, {
+    double minimum = 320,
+    double gap = 16,
+    double textScale = 1,
+    int maximum = 3,
+  }) => ((width + gap) / (minimum * textScale.clamp(1, 2) + gap)).floor().clamp(
+    1,
+    maximum,
+  );
+
+  static double textScaleOf(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(PlayraType.body) / PlayraType.body;
 
   static EdgeInsets pagePadding(
     BuildContext context, {
@@ -69,6 +113,9 @@ abstract final class PlayraLayout {
 }
 
 abstract final class PlayraMotion {
+  static bool reduceOf(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context) ||
+      MediaQuery.accessibleNavigationOf(context);
   static const press = Duration(milliseconds: 120);
   static const state = Duration(milliseconds: 200);
   static const dialogEnter = Duration(milliseconds: 220);
@@ -79,10 +126,10 @@ abstract final class PlayraMotion {
   static const reverseCurve = Curves.easeInCubic;
 
   static Duration duration(BuildContext context, Duration normal) =>
-      MediaQuery.disableAnimationsOf(context) ? Duration.zero : normal;
+      reduceOf(context) ? Duration.zero : normal;
 
   static AnimationStyle dialog(BuildContext context, {Duration? duration}) =>
-      MediaQuery.disableAnimationsOf(context)
+      reduceOf(context)
       ? AnimationStyle.noAnimation
       : AnimationStyle(
           duration: duration ?? dialogEnter,
@@ -91,8 +138,7 @@ abstract final class PlayraMotion {
           reverseCurve: reverseCurve,
         );
 
-  static AnimationStyle sheet(BuildContext context) =>
-      MediaQuery.disableAnimationsOf(context)
+  static AnimationStyle sheet(BuildContext context) => reduceOf(context)
       ? AnimationStyle.noAnimation
       : const AnimationStyle(
           duration: sheetEnter,
@@ -131,23 +177,23 @@ abstract final class PlayraColors {
   static const shimmerHighlight = Color(0xff2a3245);
 }
 
-/// Product colors are resolved once; component and platform themes consume them.
+/// Forui semantic aliases plus media-specific status colors for custom layouts.
 @immutable
 class PlayraTokens extends ThemeExtension<PlayraTokens> {
   const PlayraTokens({
     required this.background,
     required this.foreground,
     required this.surface,
-    this.surfaceRaised = const Color(0xff222838),
-    this.surfaceOverlay = const Color(0xff283042),
+    required this.surfaceRaised,
+    required this.surfaceOverlay,
     required this.muted,
     required this.mutedForeground,
-    this.foregroundSubtle = const Color(0xff737f99),
+    required this.foregroundSubtle,
     required this.primary,
     required this.primaryForeground,
-    this.primaryContainer = const Color(0xff242c4c),
+    required this.primaryContainer,
     required this.border,
-    this.borderSubtle = const Color(0xff222a3a),
+    required this.borderSubtle,
     this.success = PlayraColors.success,
     this.successContainer = PlayraColors.successContainer,
     this.warning = PlayraColors.warning,
@@ -166,102 +212,87 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
     this.abandoned = PlayraColors.abandoned,
     this.shimmerBase = PlayraColors.shimmerBase,
     this.shimmerHighlight = PlayraColors.shimmerHighlight,
+    this.barrier = const Color(0x99000000),
     this.modern = false,
   });
 
-  static const dark = PlayraTokens(
-    background: Color(0xff11141c),
-    foreground: Color(0xffedf0f8),
-    surface: Color(0xff1b202c),
-    surfaceRaised: Color(0xff222838),
-    surfaceOverlay: Color(0xff283042),
-    muted: Color(0xff202638),
-    mutedForeground: Color(0xffa5afc5),
-    foregroundSubtle: Color(0xff737f99),
-    primary: Color(0xffa7b7ff),
-    primaryForeground: Color(0xff182142),
-    primaryContainer: Color(0xff242c4c),
-    border: Color(0xff30384a),
-    borderSubtle: Color(0xff222a3a),
-    success: PlayraColors.success,
-    successContainer: PlayraColors.successContainer,
-    warning: PlayraColors.warning,
-    warningContainer: PlayraColors.warningContainer,
-    destructive: PlayraColors.destructive,
-    destructiveContainer: PlayraColors.destructiveContainer,
-    info: PlayraColors.info,
-    infoContainer: PlayraColors.infoContainer,
-    rankGold: PlayraColors.rankGold,
-    rankSilver: PlayraColors.rankSilver,
-    rankBronze: PlayraColors.rankBronze,
-    watching: PlayraColors.watching,
-    planToWatch: PlayraColors.planToWatch,
-    watched: PlayraColors.watched,
-    onHold: PlayraColors.onHold,
-    abandoned: PlayraColors.abandoned,
-    shimmerBase: PlayraColors.shimmerBase,
-    shimmerHighlight: PlayraColors.shimmerHighlight,
-    modern: true,
+  static final dark = PlayraTokens.fromForui(
+    playraDesign(Brightness.dark).colors,
+  );
+  static final light = PlayraTokens.fromForui(
+    playraDesign(Brightness.light).colors,
   );
 
-  static const light = PlayraTokens(
-    background: Color(0xfff7f8fc),
-    foreground: Color(0xff22293c),
-    surface: Colors.white,
-    surfaceRaised: Color(0xfff0f3fa),
-    surfaceOverlay: Color(0xffe8ecf6),
-    muted: Color(0xffe9edfb),
-    mutedForeground: Color(0xff647087),
-    foregroundSubtle: Color(0xff939eb5),
-    primary: Color(0xff5267d9),
-    primaryForeground: Colors.white,
-    primaryContainer: Color(0xffe0e6ff),
-    border: Color(0xffe3e7f0),
-    borderSubtle: Color(0xffedf0f7),
-    success: Color(0xff16a34a),
-    successContainer: Color(0xffdcfce7),
-    warning: Color(0xffd97706),
-    warningContainer: Color(0xfffef3c7),
-    destructive: Color(0xffdc2626),
-    destructiveContainer: Color(0xfffee2e2),
-    info: Color(0xff2563eb),
-    infoContainer: Color(0xffdbeafe),
-    rankGold: Color(0xffd97706),
-    rankSilver: Color(0xff64748b),
-    rankBronze: Color(0xffc2410c),
-    watching: Color(0xff059669),
-    planToWatch: Color(0xff4f46e5),
-    watched: Color(0xff64748b),
-    onHold: Color(0xffd97706),
-    abandoned: Color(0xffdc2626),
-    shimmerBase: Color(0xffe2e8f0),
-    shimmerHighlight: Color(0xfff1f5f9),
-    modern: true,
-  );
+  /// Semantic aliases for custom media layouts and Material interoperability.
+  /// Ordinary controls consume FThemeData directly.
+  factory PlayraTokens.fromForui(f.FColors c) {
+    final dark = c.brightness == Brightness.dark;
+    return PlayraTokens(
+      background: c.background,
+      foreground: c.foreground,
+      surface: c.card,
+      surfaceRaised: c.secondary,
+      surfaceOverlay: c.muted,
+      muted: c.muted,
+      mutedForeground: c.mutedForeground,
+      foregroundSubtle: c.mutedForeground,
+      primary: c.primary,
+      primaryForeground: c.primaryForeground,
+      primaryContainer: c.secondary,
+      border: c.border,
+      borderSubtle: c.border,
+      barrier: c.barrier,
+      destructive: c.destructive,
+      destructiveContainer: c.destructive.withValues(alpha: dark ? .2 : .1),
+      success: dark ? PlayraColors.success : const Color(0xff16a34a),
+      successContainer: dark
+          ? PlayraColors.successContainer
+          : const Color(0xffdcfce7),
+      warning: dark ? PlayraColors.warning : const Color(0xffd97706),
+      warningContainer: dark
+          ? PlayraColors.warningContainer
+          : const Color(0xfffef3c7),
+      info: c.primary,
+      infoContainer: c.secondary,
+      rankGold: dark ? PlayraColors.rankGold : const Color(0xffd97706),
+      rankSilver: dark ? PlayraColors.rankSilver : const Color(0xff64748b),
+      rankBronze: dark ? PlayraColors.rankBronze : const Color(0xffc2410c),
+      watching: dark ? PlayraColors.watching : const Color(0xff059669),
+      planToWatch: c.primary,
+      watched: c.mutedForeground,
+      onHold: dark ? PlayraColors.onHold : const Color(0xffd97706),
+      abandoned: c.destructive,
+      shimmerBase: c.secondary,
+      shimmerHighlight: c.muted,
+      modern: true,
+    );
+  }
 
-  factory PlayraTokens.fromScheme(ColorScheme c) => PlayraTokens(
-    background: c.surface,
-    foreground: c.onSurface,
-    surface: c.surfaceContainerLow,
-    surfaceRaised: c.surfaceContainer,
-    surfaceOverlay: c.surfaceContainerHigh,
-    muted: c.surfaceContainerHighest,
-    mutedForeground: c.onSurfaceVariant,
-    foregroundSubtle: c.onSurfaceVariant.withValues(alpha: .75),
-    primary: c.primary,
-    primaryForeground: c.onPrimary,
-    primaryContainer: c.primaryContainer,
-    border: c.outlineVariant,
-    borderSubtle: c.outlineVariant.withValues(alpha: .5),
-    destructive: c.error,
-    destructiveContainer: c.errorContainer,
-  );
+  factory PlayraTokens.fromScheme(ColorScheme c) =>
+      PlayraTokens.fromForui(playraDesign(c.brightness).colors).copyWith(
+        background: c.surface,
+        foreground: c.onSurface,
+        surface: c.surfaceContainerLow,
+        surfaceRaised: c.surfaceContainer,
+        surfaceOverlay: c.surfaceContainerHigh,
+        muted: c.surfaceContainerHighest,
+        mutedForeground: c.onSurfaceVariant,
+        foregroundSubtle: c.onSurfaceVariant,
+        primary: c.primary,
+        primaryForeground: c.onPrimary,
+        primaryContainer: c.primaryContainer,
+        border: c.outlineVariant,
+        borderSubtle: c.outlineVariant,
+        destructive: c.error,
+        destructiveContainer: c.errorContainer,
+        modern: false,
+      );
 
-  static const radiusXs = 4.0;
-  static const radiusSm = 8.0;
-  static const radiusMd = 12.0;
-  static const radiusLg = 16.0;
-  static const radiusXl = 20.0;
+  static const radiusXs = PlayraSpace.xs;
+  static const radiusSm = PlayraRadius.thumbnail;
+  static const radiusMd = PlayraRadius.control;
+  static const radiusLg = PlayraRadius.card;
+  static const radiusXl = PlayraRadius.overlay;
 
   static PlayraTokens of(BuildContext context) {
     final theme = Theme.of(context);
@@ -304,7 +335,7 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
   final Color shimmerHighlight;
   final bool modern;
 
-  Color get barrier => Colors.black.withValues(alpha: .6);
+  final Color barrier;
 
   @override
   PlayraTokens copyWith({
@@ -340,6 +371,7 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
     Color? abandoned,
     Color? shimmerBase,
     Color? shimmerHighlight,
+    Color? barrier,
     bool? modern,
   }) => PlayraTokens(
     background: background ?? this.background,
@@ -373,6 +405,7 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
     abandoned: abandoned ?? this.abandoned,
     shimmerBase: shimmerBase ?? this.shimmerBase,
     shimmerHighlight: shimmerHighlight ?? this.shimmerHighlight,
+    barrier: barrier ?? this.barrier,
     modern: modern ?? this.modern,
   );
 
@@ -387,20 +420,36 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
       surfaceOverlay: Color.lerp(surfaceOverlay, other.surfaceOverlay, t)!,
       muted: Color.lerp(muted, other.muted, t)!,
       mutedForeground: Color.lerp(mutedForeground, other.mutedForeground, t)!,
-      foregroundSubtle: Color.lerp(foregroundSubtle, other.foregroundSubtle, t)!,
+      foregroundSubtle: Color.lerp(
+        foregroundSubtle,
+        other.foregroundSubtle,
+        t,
+      )!,
       primary: Color.lerp(primary, other.primary, t)!,
       primaryForeground: Color.lerp(
         primaryForeground,
         other.primaryForeground,
         t,
       )!,
-      primaryContainer: Color.lerp(primaryContainer, other.primaryContainer, t)!,
+      primaryContainer: Color.lerp(
+        primaryContainer,
+        other.primaryContainer,
+        t,
+      )!,
       border: Color.lerp(border, other.border, t)!,
       borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
       success: Color.lerp(success, other.success, t)!,
-      successContainer: Color.lerp(successContainer, other.successContainer, t)!,
+      successContainer: Color.lerp(
+        successContainer,
+        other.successContainer,
+        t,
+      )!,
       warning: Color.lerp(warning, other.warning, t)!,
-      warningContainer: Color.lerp(warningContainer, other.warningContainer, t)!,
+      warningContainer: Color.lerp(
+        warningContainer,
+        other.warningContainer,
+        t,
+      )!,
       destructive: Color.lerp(destructive, other.destructive, t)!,
       destructiveContainer: Color.lerp(
         destructiveContainer,
@@ -418,7 +467,12 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
       onHold: Color.lerp(onHold, other.onHold, t)!,
       abandoned: Color.lerp(abandoned, other.abandoned, t)!,
       shimmerBase: Color.lerp(shimmerBase, other.shimmerBase, t)!,
-      shimmerHighlight: Color.lerp(shimmerHighlight, other.shimmerHighlight, t)!,
+      shimmerHighlight: Color.lerp(
+        shimmerHighlight,
+        other.shimmerHighlight,
+        t,
+      )!,
+      barrier: Color.lerp(barrier, other.barrier, t)!,
       modern: t < .5 ? modern : other.modern,
     );
   }

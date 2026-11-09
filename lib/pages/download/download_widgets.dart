@@ -81,7 +81,7 @@ class DownloadRecordCard extends StatelessWidget {
             InkWell(
               onTap: onToggle,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                padding: const EdgeInsets.fromLTRB(PlayraSpace.md, PlayraSpace.md, PlayraSpace.sm, PlayraSpace.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -93,7 +93,7 @@ class DownloadRecordCard extends StatelessWidget {
                           width: 56,
                           height: 75,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: PlayraSpace.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +106,7 @@ class DownloadRecordCard extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: PlayraSpace.compact),
                               Text(
                                 '来源 · ${record.pluginName}',
                                 maxLines: 1,
@@ -142,7 +142,7 @@ class DownloadRecordCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: PlayraSpace.md),
                     Row(
                       children: [
                         Expanded(
@@ -153,14 +153,14 @@ class DownloadRecordCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: PlayraSpace.sm),
                         Text(
                           expanded ? '收起分集' : '查看分集',
                           style: textTheme.labelSmall?.copyWith(
                             color: colorScheme.primary,
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: PlayraSpace.xs),
                         AnimatedRotation(
                           turns: expanded ? 0.5 : 0,
                           duration: MediaQuery.disableAnimationsOf(context)
@@ -182,7 +182,7 @@ class DownloadRecordCard extends StatelessWidget {
             // 收起时显示作品总进度；展开后由分集进度承担主要反馈。
             if (!allCompleted && !expanded)
               Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, expanded ? 4 : 16),
+                padding: EdgeInsets.fromLTRB(PlayraSpace.lg, 0, PlayraSpace.lg, expanded ? PlayraSpace.xs : PlayraSpace.lg),
                 child: PlayraProgress(value: aggregateProgress),
               ),
             AnimatedSize(
@@ -193,7 +193,7 @@ class DownloadRecordCard extends StatelessWidget {
               alignment: Alignment.topCenter,
               child: expanded
                   ? Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      padding: const EdgeInsets.fromLTRB(PlayraSpace.md, 0, PlayraSpace.md, PlayraSpace.sm),
                       child: Column(children: episodeTileBuilder()),
                     )
                   : const SizedBox(width: double.infinity),
@@ -241,7 +241,7 @@ class DownloadEpisodeTile extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: PlayraSpace.xs),
         Text(
           statusText,
           style: textTheme.bodySmall?.copyWith(
@@ -251,7 +251,7 @@ class DownloadEpisodeTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         if (showProgress || episode.status == DownloadStatus.resolving) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           PlayraProgress(
             value: episode.status == DownloadStatus.resolving
                 ? null
@@ -261,10 +261,10 @@ class DownloadEpisodeTile extends StatelessWidget {
       ],
     );
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(PlayraRadius.control),
       onTap: onPlay,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.sm, vertical: PlayraSpace.sm),
         child: LayoutBuilder(
           builder: (context, bounds) {
             final stacked =
@@ -277,9 +277,9 @@ class DownloadEpisodeTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _EpisodeStatusBadge(episode: episode),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: PlayraSpace.md),
                     Expanded(child: body),
-                    if (!stacked) ...[const SizedBox(width: 8), ...actions],
+                    if (!stacked) ...[const SizedBox(width: PlayraSpace.sm), ...actions],
                   ],
                 ),
                 if (stacked && actions.isNotEmpty)

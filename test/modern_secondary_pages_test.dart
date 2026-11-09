@@ -197,7 +197,7 @@ void main() {
     await mount(tester, SearchPage(controller: controller, modern: true));
     await tester.tap(find.text('管理'));
     await tester.pump();
-    await tester.tap(_tooltip('删除这条搜索记录'));
+    await tester.tap(_tooltip('删除这条搜索记录').first);
     await tester.pump();
     expect(controller.histories.values, isEmpty);
     await tester.enterText(find.byType(PlayraTextField), '芙莉莲');
@@ -221,7 +221,7 @@ void main() {
     expect(controller.queries, hasLength(1));
     expect(controller.queries.single, contains('日常'));
     expect(find.byType(InputChip), findsOneWidget);
-    await tester.tap(_tooltip('移除“日常”条件'));
+    await tester.tap(_tooltip('移除“日常”条件').first);
     await tester.pumpAndSettle();
     expect(controller.queries, hasLength(2));
     expect(controller.queries.last, isNot(contains('日常')));

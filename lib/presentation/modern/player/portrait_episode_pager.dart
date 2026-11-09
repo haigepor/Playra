@@ -5,6 +5,7 @@
 /// 仍在播放的那一集（currentIndex 不变，didUpdateWidget 会拉回来）。
 library;
 
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 
 class PortraitEpisodePager extends StatefulWidget {
@@ -98,7 +99,7 @@ class _PlaceholderPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      color: Colors.black,
+      color: PlayraMedia.canvas,
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -107,7 +108,7 @@ class _PlaceholderPage extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 320, maxHeight: 420),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(PlayraRadius.card),
                 child: Image.network(
                   cover,
                   fit: BoxFit.contain,
@@ -115,13 +116,13 @@ class _PlaceholderPage extends StatelessWidget {
                 ),
               ),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: PlayraSpace.lg),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.play_circle_fill_rounded,
                   size: 20, color: colors.onSurface.withValues(alpha: 0.8)),
-              const SizedBox(width: 8),
+              const SizedBox(width: PlayraSpace.sm),
               Flexible(
                 child: Text(
                   title,
@@ -129,7 +130,7 @@ class _PlaceholderPage extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.onSurface.withValues(alpha: 0.9),
-                    fontSize: 15,
+                    fontSize: PlayraType.item,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

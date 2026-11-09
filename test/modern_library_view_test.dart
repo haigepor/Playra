@@ -165,8 +165,4 @@ void main() {
   });
 }
 
-Finder _tooltip(String message) => find.byWidgetPredicate(
-  (widget) =>
-      widget is PlayraIconButton && widget.tooltip == message ||
-      widget is Tooltip && widget.message == message,
-);
+Finder _tooltip(String message) => find.byTooltip(message);

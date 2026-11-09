@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
@@ -32,11 +33,11 @@ class SdkRankSection extends StatelessWidget {
           Row(
             children: [
               const ModernSectionMark(kind: ModernSectionKind.ranking),
-              const SizedBox(width: 8),
+              const SizedBox(width: PlayraSpace.sm),
               const Expanded(
                 child: Text(
                   '热播推荐',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: PlayraType.section, fontWeight: FontWeight.w700),
                 ),
               ),
               // 状态入口留在标题行，失败提示不能把已显示的海报向下挤动。
@@ -51,13 +52,13 @@ class SdkRankSection extends StatelessWidget {
                     onPressed: loading ? null : controller.retry,
                     child: Text(
                       failed ? '重试' : '刷新',
-                      style: const TextStyle(fontSize: 12),
+                      style: const TextStyle(fontSize: PlayraType.caption),
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           if (slots.isNotEmpty)
             LayoutBuilder(
               builder: (context, bounds) {
@@ -69,7 +70,7 @@ class SdkRankSection extends StatelessWidget {
                     key: const PageStorageKey('sdk-rank'),
                     scrollDirection: Axis.horizontal,
                     itemCount: slots.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 12),
+                    separatorBuilder: (_, _) => const SizedBox(width: PlayraSpace.md),
                     itemBuilder: (context, index) {
                       final entry = slots[index];
                       if (entry == null) {
@@ -110,7 +111,7 @@ class SdkRankSection extends StatelessWidget {
                 );
               },
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: PlayraSpace.xl),
         ],
       );
     },

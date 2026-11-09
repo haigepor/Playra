@@ -119,7 +119,7 @@ class _SyncServiceCard extends StatelessWidget {
       padding: EdgeInsets.all(modern ? PlayraSpace.lg : PlayraSpace.xxl),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(PlayraRadius.card),
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withValues(alpha: .3),
         ),
@@ -224,7 +224,7 @@ class _SyncStatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: PlayraSpace.md,
-        vertical: 7,
+        vertical: PlayraSpace.sm,
       ),
       decoration: BoxDecoration(
         color: background,

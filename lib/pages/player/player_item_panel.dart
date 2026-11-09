@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -184,46 +185,46 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             constraints: _desktop
                 ? const BoxConstraints(maxWidth: 500, maxHeight: 33)
                 : const BoxConstraints(maxHeight: 33),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.sm),
             child: TextField(
               focusNode: textFieldFocus,
               style: TextStyle(
                 fontSize: _desktop ? 15 : 13,
-                color: Colors.white,
+                color: PlayraMedia.foreground,
               ),
               controller: textController,
               textAlignVertical: TextAlignVertical.center,
               decoration: InputDecoration(
                 enabled: playerController.danmaku.danmakuOn,
                 filled: true,
-                fillColor: Colors.black.withValues(alpha: 0.35),
+                fillColor: PlayraMedia.canvas.withValues(alpha: 0.35),
                 floatingLabelBehavior: FloatingLabelBehavior.never,
                 hintText: playerController.danmaku.danmakuOn
                     ? '发个友善的弹幕见证当下'
                     : '已关闭弹幕',
                 hintStyle: TextStyle(
                   fontSize: _desktop ? 15 : 13,
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: PlayraMedia.foreground.withValues(alpha: 0.5),
                 ),
                 alignLabelWithHint: true,
                 contentPadding: EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: _desktop ? 8 : 12,
+                  vertical: PlayraSpace.sm,
+                  horizontal: _desktop ? PlayraSpace.sm : PlayraSpace.md,
                 ),
                 border: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.white24),
+                  borderSide: const BorderSide(color: PlayraMedia.border),
                   borderRadius: BorderRadius.all(
                     Radius.circular(_desktop ? 8 : 20),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.white24),
+                  borderSide: const BorderSide(color: PlayraMedia.border),
                   borderRadius: BorderRadius.all(
                     Radius.circular(_desktop ? 8 : 20),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.white60),
+                  borderSide: const BorderSide(color: PlayraMedia.borderStrong),
                   borderRadius: BorderRadius.all(
                     Radius.circular(_desktop ? 8 : 20),
                   ),
@@ -233,7 +234,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xs),
                       child: PlayraButton(
                         kind: playerController.danmaku.danmakuOn
                             ? PlayraButtonKind.primary
@@ -351,7 +352,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         final danmakuLoading = playerController.danmaku.danmakuLoading;
         final danmakuOn = playerController.danmaku.danmakuOn;
         return IconButton(
-          color: Colors.white,
+          color: PlayraMedia.foreground,
           icon: danmakuLoading
               ? SizedBox(
                   width: _danmakuIconSize,
@@ -376,7 +377,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         child: IconButton(
           icon: Image.asset(
             'assets/images/forward_80.png',
-            color: Colors.white,
+            color: PlayraMedia.foreground,
             height: 24,
           ),
           onPressed: widget.skipOP,
@@ -410,7 +411,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           right: 0,
           child: _buildScrim(
             height: 50,
-            colors: const [Colors.black45, Colors.transparent],
+            colors: const [PlayraMedia.edgeScrim, Colors.transparent],
             offset: _topOffsetAnimation,
           ),
         ),
@@ -420,7 +421,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           right: 0,
           child: _buildScrim(
             height: 100,
-            colors: const [Colors.transparent, Colors.black45],
+            colors: const [Colors.transparent, PlayraMedia.edgeScrim],
             offset: _bottomOffsetAnimation,
           ),
         ),
@@ -643,7 +644,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
   Widget get _danmakuSettingsButton => IconButton(
     onPressed: _showDanmakuSettings,
-    color: Colors.white,
+    color: PlayraMedia.foreground,
     icon: _cachedDanmakuSettingsIcon,
     tooltip: '弹幕设置',
   );
@@ -674,7 +675,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       if (_desktop) Expanded(child: _desktopDanmakuControls),
       if (!_desktop && videoPageController.hasBangumiContext) ...[
         IconButton(
-          color: Colors.white,
+          color: PlayraMedia.foreground,
           icon: playerController.danmaku.danmakuOn
               ? _danmakuOnIcon(context)
               : _cachedDanmakuOffIcon,
@@ -689,7 +690,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       ],
       if (!_desktop && !videoPageController.hasBangumiContext) const Spacer(),
       _menuButton(
-        child: const Text('超分辨率', style: TextStyle(color: Colors.white)),
+        child: const Text('超分辨率', style: TextStyle(color: PlayraMedia.foreground)),
         items: _superResolutionItems,
       ),
       _menuButton(
@@ -697,18 +698,18 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           playerController.playback.playerSpeed == 1
               ? '倍速'
               : '${playerController.playback.playerSpeed}x',
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: PlayraMedia.foreground),
         ),
         items: _speedItems,
       ),
       _menuButton(
-        child: const Icon(Icons.aspect_ratio_rounded, color: Colors.white),
+        child: const Icon(Icons.aspect_ratio_rounded, color: PlayraMedia.foreground),
         tooltip: '视频比例',
         items: _aspectRatioItems,
       ),
       if (widget.onToggleSidePanel != null)
         IconButton(
-          color: Colors.white,
+          color: PlayraMedia.foreground,
           icon: const Icon(Icons.menu_open_rounded),
           tooltip: '选集面板',
           onPressed: widget.onToggleSidePanel,
@@ -738,41 +739,46 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           tooltip: playerController.playback.playing ? '暂停' : '播放',
           onPressed: () => playerController.playOrPause(),
           icon: PlayPauseIcon(
-            iconColor: Colors.white,
+            iconColor: PlayraMedia.foreground,
             playing: playerController.playback.playing,
           ),
         ),
         nextEpisode: IconButton(
-          color: Colors.white,
+          color: PlayraMedia.foreground,
           icon: const Icon(Icons.skip_next_rounded),
           tooltip: '下一集',
           onPressed: widget.onNextEpisode,
         ),
         // Playback ticks only rebuild the progress bar and its time labels.
         progressBuilder: (location) => Observer(
-          builder: (context) => ProgressBar(
-            thumbRadius: 8,
-            thumbGlowRadius: 18,
-            timeLabelLocation: location,
-            timeLabelTextStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
+          builder: (context) => PlayerProgressSemantics(
             progress: playerController.playback.currentPosition,
-            buffered: playerController.playback.buffer,
             total: playerController.playback.duration,
             onSeek: widget.handleProgressBarSeek,
-            onDragStart: (_) => widget.handleProgressBarDragStart(),
-            onDragUpdate: (details) => playerController.seeking
-                .updateInteractiveSeek(details.timeStamp),
+            child: ProgressBar(
+              thumbRadius: 8,
+              thumbGlowRadius: 18,
+              timeLabelLocation: location,
+              timeLabelTextStyle: const TextStyle(
+                color: PlayraMedia.foreground,
+                fontSize: PlayraType.caption,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+              progress: playerController.playback.currentPosition,
+              buffered: playerController.playback.buffer,
+              total: playerController.playback.duration,
+              onSeek: widget.handleProgressBarSeek,
+              onDragStart: (_) => widget.handleProgressBarDragStart(),
+              onDragUpdate: (details) => playerController.seeking
+                  .updateInteractiveSeek(details.timeStamp),
+            ),
           ),
         ),
         timeLabel: Observer(
           builder: (context) => Text(
-            '${compact ? '    ' : ''}${durationToString(playerController.playback.currentPosition)} / ${durationToString(playerController.playback.duration)}',
+            '${durationToString(playerController.playback.currentPosition)} / ${durationToString(playerController.playback.duration)}',
             style: TextStyle(
-              color: Colors.white,
+              color: PlayraMedia.foreground,
               fontSize: !compact && _desktop ? 16 : 12,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
@@ -792,7 +798,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       return const SizedBox.shrink();
     }
     return IconButton(
-      color: Colors.white,
+      color: PlayraMedia.foreground,
       icon: Icon(
         videoPageController.isFullscreen
             ? Icons.fullscreen_exit_rounded
@@ -823,7 +829,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           child: Row(
             children: [
               IconButton(
-                color: Colors.white,
+                color: PlayraMedia.foreground,
                 icon: const Icon(Icons.arrow_back_rounded),
                 tooltip: '返回',
                 onPressed: widget.onBackPressed,
@@ -835,7 +841,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       : Text(
                           ' ${videoPageController.title} [${videoPageController.roadList[videoPageController.selectedEpisode.road].identifier[videoPageController.selectedEpisode.episode - 1]}]',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: PlayraMedia.foreground,
                             fontSize: Theme.of(
                               context,
                             ).textTheme.titleMedium!.fontSize,
@@ -864,7 +870,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                             VideoFullscreenMode.portrait
                         ? Icons.fullscreen_exit_rounded
                         : Icons.stay_current_portrait,
-                    color: Colors.white,
+                    color: PlayraMedia.foreground,
                   ),
                 ),
               if (kIsWeb ||
@@ -894,7 +900,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   tooltip: '画中画',
                   icon: const Icon(
                     Icons.picture_in_picture,
-                    color: Colors.white,
+                    color: PlayraMedia.foreground,
                   ),
                 ),
               if (compact) _buildDanmakuToggleButton(context),
@@ -910,7 +916,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   return IconButton(
                     onPressed: toggle,
                     tooltip: '更多选项',
-                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    icon: const Icon(Icons.more_vert, color: PlayraMedia.foreground),
                   );
                 },
                 menuChildren: [
@@ -1045,7 +1051,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               IconButton(
                 icon: const Icon(
                   Icons.photo_camera_outlined,
-                  color: Colors.white,
+                  color: PlayraMedia.foreground,
                 ),
                 tooltip: '截图',
                 onPressed: widget.handleScreenShot,
@@ -1055,7 +1061,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                 playerController.panel.lockPanel
                     ? Icons.lock_outline
                     : Icons.lock_open,
-                color: Colors.white,
+                color: PlayraMedia.foreground,
               ),
               tooltip: playerController.panel.lockPanel ? '解锁面板' : '锁定面板',
               onPressed: () {

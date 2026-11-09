@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
@@ -95,8 +96,8 @@ class LegacyNavigation extends StatelessWidget {
     Widget outlet,
   ) {
     const borderRadius = BorderRadius.only(
-      topLeft: Radius.circular(16),
-      bottomLeft: Radius.circular(16),
+      topLeft: Radius.circular(PlayraRadius.card),
+      bottomLeft: Radius.circular(PlayraRadius.card),
     );
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainer,

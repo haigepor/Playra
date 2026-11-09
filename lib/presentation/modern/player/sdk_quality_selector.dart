@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/source/sdk_playback_models.dart';
@@ -45,7 +46,7 @@ class SdkQualitySelector extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 10, right: 10),
+              padding: const EdgeInsets.only(top: PlayraSpace.md, right: PlayraSpace.md),
               child: Text('画质', style: theme.textTheme.labelLarge),
             ),
             Expanded(
@@ -58,7 +59,7 @@ class SdkQualitySelector extends StatelessWidget {
                   if (known.isNotEmpty || selectedCode != null)
                     Tooltip(
                       message: automaticLabel,
-                      child: ChoiceChip(
+                      child: PlayraChoice(
                         key: const ValueKey('sdk-quality-auto'),
                         label: const Text('自动'),
                         selected: selectedCode == null,
@@ -68,7 +69,7 @@ class SdkQualitySelector extends StatelessWidget {
                       ),
                     ),
                   for (final quality in known)
-                    ChoiceChip(
+                    PlayraChoice(
                       key: ValueKey('sdk-quality-${quality.code}'),
                       label: Text(quality.choiceLabel),
                       selected: selectedCode == quality.code,
@@ -99,7 +100,7 @@ class SdkQualitySelector extends StatelessWidget {
           ),
         if (message != null && showStatus)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: PlayraSpace.xs),
             child: Text(
               message,
               style: theme.textTheme.bodySmall?.copyWith(

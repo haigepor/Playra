@@ -164,7 +164,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
       labelText: label,
       filled: true,
       fillColor: tokens.surfaceRaised,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg, vertical: PlayraSpace.md),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(PlayraRadius.control),
         borderSide: BorderSide(color: tokens.borderSubtle),
@@ -248,7 +248,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
                         () => _draft = _draft.copyWith(sort: value ?? 'heat'),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: PlayraSpace.lg),
                     _SearchFilterGroup(
                       title: '题材标签',
                       summary: _draft.tags.isEmpty
@@ -282,7 +282,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: PlayraSpace.md),
                         PlayraTextField(
                           // Separate scroll offsets from the expansion's boolean state.
                           key: const PageStorageKey('custom-tag-input'),
@@ -332,7 +332,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: PlayraSpace.sm),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Wrap(
@@ -357,7 +357,7 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: PlayraSpace.sm),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Wrap(
@@ -460,14 +460,14 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
               ),
               if (!shortWindow)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, PlayraSpace.md, PlayraSpace.xxl, PlayraSpace.xxl),
                   child: Row(
                     children: [
                       PlayraButton.ghost(
                         onPressed: _reset,
                         child: const Text('重置'),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: PlayraSpace.lg),
                       Expanded(
                         child: PlayraButton(
                           onPressed: _apply,

@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 
 typedef KazumiMenuBuilder =
@@ -5,7 +6,7 @@ typedef KazumiMenuBuilder =
 
 const _menuItemStyle = ButtonStyle(
   minimumSize: WidgetStatePropertyAll(Size(144, 48)),
-  padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),
+  padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: PlayraSpace.lg)),
   alignment: AlignmentDirectional.centerStart,
   visualDensity: VisualDensity.standard,
 );

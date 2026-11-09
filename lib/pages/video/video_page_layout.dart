@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -100,7 +101,7 @@ class PortraitVideoCanvas extends StatelessWidget {
     final aspect = aspectRatio ?? 9 / 16;
     final width = math.min(size.width, size.height * aspect);
     return ColoredBox(
-      color: Colors.black,
+      color: PlayraMedia.canvas,
       child: Center(
         child: SizedBox(width: width, height: size.height, child: child),
       ),

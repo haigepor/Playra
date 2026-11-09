@@ -10,7 +10,6 @@ import 'package:kazumi/services/source/content_providers.dart';
 import 'package:kazumi/services/source/content_search.dart';
 import '../secondary/secondary_theme.dart';
 import '../settings/modern_back_button.dart';
-import '../widgets/modern_page_art.dart';
 import 'package:kazumi/services/source/sdk_playback_entry.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
@@ -84,21 +83,24 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     child: Builder(
       builder: (context) => Scaffold(
         appBar: AppBar(
-          toolbarHeight: 56,
+          toolbarHeight: 72,
+          leadingWidth: 48,
           leading: const ModernBackButton(),
-          title: const Text('搜索作品'),
-          titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontSize: PlayraType.title,
-            fontWeight: FontWeight.w700,
+          titleSpacing: 0,
+          title: Padding(
+            padding: const EdgeInsets.only(right: PlayraSpace.lg),
+            child: _searchField(context),
           ),
         ),
         body: SafeArea(
           top: false,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: ModernPageArt(
-                kind: ModernPageArtKind.discover,
+              constraints: const BoxConstraints(
+                maxWidth: PlayraLayout.catalogWidth,
+              ),
+              child: Padding(
+                padding: EdgeInsets.zero,
                 child: AnimatedBuilder(
                   animation: session,
                   builder: (context, _) {
@@ -138,13 +140,51 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                                           PlayraSpace.lg,
                                           PlayraSpace.md,
                                         ),
-                                        sliver: SliverList.builder(
-                                          itemCount: works.length,
-                                          itemBuilder: (context, index) =>
-                                              _resultTile(
-                                                context,
-                                                works[index],
-                                              ),
+                                        sliver: SliverLayoutBuilder(
+                                          builder: (context, bounds) {
+                                            final scale =
+                                                PlayraLayout.textScaleOf(
+                                                  context,
+                                                );
+                                            final columns =
+                                                PlayraLayout.columns(
+                                                  bounds.crossAxisExtent,
+                                                  minimum: 320,
+                                                  textScale: scale,
+                                                  maximum: 2,
+                                                );
+                                            Widget item(
+                                              BuildContext context,
+                                              int index,
+                                            ) => _resultTile(
+                                              context,
+                                              works[index],
+                                            );
+                                            return columns == 1
+                                                ? SliverList.builder(
+                                                    itemCount: works.length,
+                                                    itemBuilder: item,
+                                                  )
+                                                : SliverGrid.builder(
+                                                    itemCount: works.length,
+                                                    gridDelegate:
+                                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                                          crossAxisCount:
+                                                              columns,
+                                                          mainAxisExtent:
+                                                              164 +
+                                                              112 *
+                                                                  (scale - 1)
+                                                                      .clamp(
+                                                                        0,
+                                                                        1,
+                                                                      ),
+                                                          crossAxisSpacing:
+                                                              PlayraSpace.lg,
+                                                        ),
+                                                    itemBuilder: item,
+                                                  );
+                                          },
                                         ),
                                       ),
                                       if (session.hasMore)
@@ -187,8 +227,6 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _searchField(context),
-        const SizedBox(height: 10),
         _groupFilters(context),
         if (group == ContentGroup.series) ...[
           const SizedBox(height: PlayraSpace.sm),
@@ -205,30 +243,16 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
       ...ContentGroup.values.where(available.contains),
     ];
     // 只呈现已登记来源覆盖的分类；退役 SDK 不留下空入口。
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (var index = 0; index < groups.length; index++) ...[
-            if (index > 0) const SizedBox(width: PlayraSpace.compact),
-            Semantics(
-              selected: group == groups[index],
-              inMutuallyExclusiveGroup: true,
-              child: PlayraButton.ghost(
-                onPressed: () {
-                  setState(() {
-                    group = groups[index];
-                    region = '';
-                  });
-                  if (submitted) unawaited(_search());
-                },
-
-                child: Text(groups[index]?.label ?? '全部'),
-              ),
-            ),
-          ],
-        ],
-      ),
+    return PlayraTabSelector(
+      labels: [for (final value in groups) Text(value?.label ?? '全部')],
+      index: groups.indexOf(group).clamp(0, groups.length - 1),
+      onChange: (index) {
+        setState(() {
+          group = groups[index];
+          region = '';
+        });
+        if (submitted) unawaited(_search());
+      },
     );
   }
 
@@ -308,7 +332,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         .length;
     return Padding(
       key: ValueKey(work.id),
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: PlayraSpace.md),
       child: PlayraCard(
         padding: EdgeInsets.zero,
         child: InkWell(
@@ -365,7 +389,7 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                    fontSize: 15,
+                                    fontSize: PlayraType.item,
                                     height: 1.4,
                                     fontWeight: FontWeight.w600,
                                     color: c.onSurface,
@@ -565,7 +589,11 @@ class _ContentSearchScreenState extends State<ContentSearchScreen> {
         style: Theme.of(context).textTheme.bodySmall,
       ),
       leading: session.searching
-          ? const SizedBox(width: 16, height: 16, child: PlayraSpinner())
+          ? const SizedBox(
+              width: PlayraSpace.lg,
+              height: 16,
+              child: PlayraSpinner(),
+            )
           : const Icon(LucideIcons.listFilter, size: 16),
       children: [
         ConstrainedBox(

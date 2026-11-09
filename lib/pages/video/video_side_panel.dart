@@ -92,7 +92,7 @@ class VideoSidePanelState extends State<VideoSidePanel>
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                             colors: [
-                              Colors.black.withValues(alpha: 0.5),
+                              PlayraMedia.canvas.withValues(alpha: 0.5),
                               Colors.transparent,
                             ],
                           ),

@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/pages/onboarding/onboarding_step_layout.dart';
@@ -36,7 +37,7 @@ class UpdateSourceStep extends StatelessWidget {
             selected: useGithubUpdate,
             recommended: true,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           _OptionCard(
             icon: Icons.storefront_rounded,
             title: '手动更新',
@@ -112,8 +113,8 @@ class _OptionCard extends StatelessWidget {
               if (recommended)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: PlayraSpace.md,
+                    vertical: PlayraSpace.xs,
                   ),
                   decoration: ShapeDecoration(
                     color: colors.tertiaryContainer,
@@ -129,7 +130,7 @@ class _OptionCard extends StatelessWidget {
             ],
           ),
           subtitle: Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: PlayraSpace.sm),
             child: Text(
               description,
               style: theme.textTheme.bodyMedium?.copyWith(

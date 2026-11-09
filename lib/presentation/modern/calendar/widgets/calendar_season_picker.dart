@@ -134,7 +134,17 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, body) {
-                    final quarterHeight = 136.0 + (scale - 1).clamp(0, 2) * 48;
+                    final textScale = MediaQuery.textScalerOf(context);
+                    final quarterHeight =
+                        2 *
+                            ((textScale.scale(PlayraType.body) * 1.25)
+                                    .ceilToDouble() +
+                                (textScale.scale(PlayraType.small) * 1.25)
+                                    .ceilToDouble() +
+                                PlayraSpace.xs +
+                                PlayraSpace.md * 2 +
+                                2) +
+                        PlayraSpace.sm;
                     // 矮屏/超大字体滚动主体，底部确认按钮不随内容滚走。
                     final scrollBody =
                         body.maxHeight < 44 + 44 + 28 + quarterHeight + 156;
@@ -376,7 +386,7 @@ class _CalendarSeasonPickerState extends State<CalendarSeasonPicker> {
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: PlayraSpace.md,
-                vertical: 10,
+                vertical: PlayraSpace.md,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

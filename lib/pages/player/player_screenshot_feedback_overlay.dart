@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 
 class PlayerScreenshotFeedbackOverlay extends StatelessWidget {
@@ -41,7 +42,7 @@ class PlayerScreenshotFeedbackOverlay extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               ColoredBox(
-                color: Colors.black.withValues(alpha: dimOpacity),
+                color: PlayraMedia.canvas.withValues(alpha: dimOpacity),
               ),
               CustomPaint(
                 painter: _ScreenshotFramePainter(
@@ -126,7 +127,7 @@ class _ScreenshotFramePainter extends CustomPainter {
         (rect.shortestSide * 0.12).clamp(22.0, 54.0).toDouble();
     final strokeWidth = (1.4 + 0.8 * (1 - progress)).clamp(1.4, 2.2);
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: opacity)
+      ..color = PlayraMedia.foreground.withValues(alpha: opacity)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = strokeWidth;

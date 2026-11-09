@@ -61,15 +61,18 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
         return;
       }
       _pageAnimating = true;
-      final duration = MediaQuery.disableAnimationsOf(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 260);
+      final duration = PlayraMotion.duration(context, PlayraMotion.state);
+      if (duration == Duration.zero) {
+        _pages.jumpToPage(day - 1);
+        _pageAnimating = false;
+        return;
+      }
       unawaited(
         _pages
             .animateToPage(
               day - 1,
               duration: duration,
-              curve: Curves.easeOutCubic,
+              curve: PlayraMotion.curve,
             )
             .whenComplete(() {
               if (mounted && version == _pageAnimationVersion) {
@@ -102,11 +105,11 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
               bottom: false,
               child: ModernPageArt(
                 kind: ModernPageArtKind.calendar,
-                contentMaxWidth: 760,
+                contentMaxWidth: PlayraLayout.catalogWidth,
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
-                      maxWidth: PlayraLayout.formWidth,
+                      maxWidth: PlayraLayout.catalogWidth,
                     ),
                     child: ListenableBuilder(
                       listenable: widget.controller,
@@ -114,104 +117,17 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                         final controller = widget.controller;
                         return Column(
                           children: [
+                            _header(context, controller),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                PlayraSpace.xl,
-                                0,
-                                PlayraSpace.md,
-                                0,
-                              ),
-                              child: Row(
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      '放送日历',
-                                      style: TextStyle(
-                                        fontSize: PlayraType.pageTitle,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  PlayraButton.ghost(
-                                    key: const ValueKey('calendar-season'),
-
-                                    onPressed: () => _showSeason(context),
-                                    trailing: const Icon(
-                                      LucideIcons.chevronDown,
-                                      size: 14,
-                                    ),
-                                    child: Text(
-                                      controller.seasonLabel,
-                                      style: const TextStyle(
-                                        fontSize: PlayraType.caption,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: PlayraSpace.xl,
-                              ),
+                              padding: PlayraLayout.pagePadding(context),
                               child: _weekSelector(context),
                             ),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                PlayraSpace.xl,
-                                PlayraSpace.xs,
-                                PlayraSpace.md,
-                                0,
+                              padding: PlayraLayout.pagePadding(
+                                context,
+                                top: PlayraSpace.xs,
                               ),
-                              child: Row(
-                                children: [
-                                  _filterButton(
-                                    context,
-                                    '全部',
-                                    !controller.watchingOnly,
-                                    () => controller.setFilters(
-                                      watchingOnly: false,
-                                    ),
-                                  ),
-                                  const SizedBox(width: PlayraSpace.compact),
-                                  _filterButton(
-                                    context,
-                                    '仅追番',
-                                    controller.watchingOnly,
-                                    () => controller.setFilters(
-                                      watchingOnly: true,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  if (!controller.isToday)
-                                    PlayraButton.ghost(
-                                      onPressed: controller.goToday,
-
-                                      child: const Text(
-                                        '今天',
-                                        style: TextStyle(
-                                          fontSize: PlayraType.caption,
-                                        ),
-                                      ),
-                                    ),
-                                  PlayraIconButton(
-                                    key: const ValueKey('calendar-filters'),
-                                    tooltip: '筛选与排序',
-                                    onPressed: () => _showFilters(context),
-                                    icon: Badge(
-                                      isLabelVisible: controller.hasFilters,
-                                      smallSize: 5,
-                                      child: Icon(
-                                        LucideIcons.slidersHorizontal,
-                                        size: 19,
-                                        color: controller.hasFilters
-                                            ? colors.primary
-                                            : colors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              child: _toolbar(context, controller),
                             ),
                             Expanded(
                               child: ScrollConfiguration(
@@ -251,12 +167,61 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
     ),
   );
 
+  Widget _header(BuildContext context, ModernCalendarController controller) =>
+      Padding(
+        padding: PlayraLayout.pagePadding(context),
+        child: LayoutBuilder(
+          builder: (context, bounds) {
+            const title = Text(
+              '放送日历',
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: PlayraType.pageTitle,
+                fontWeight: FontWeight.w700,
+              ),
+            );
+            final period = PlayraButton.ghost(
+              key: const ValueKey('calendar-season'),
+              onPressed: () => _showSeason(context),
+              trailing: const Icon(
+                LucideIcons.chevronDown,
+                size: PlayraLayout.compactIcon,
+              ),
+              child: Text(
+                controller.seasonLabel,
+                style: const TextStyle(fontSize: PlayraType.caption),
+              ),
+            );
+            final stacked =
+                bounds.maxWidth < 480 &&
+                PlayraLayout.textScaleOf(context) > 1.4;
+            return stacked
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      Align(alignment: Alignment.centerRight, child: period),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      const Expanded(child: title),
+                      period,
+                    ],
+                  );
+          },
+        ),
+      );
+
   Widget _weekSelector(BuildContext context) => LayoutBuilder(
     builder: (context, bounds) {
       final controller = widget.controller;
       final colors = Theme.of(context).colorScheme;
       final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-      final width = (bounds.maxWidth / 7).clamp(44.0 * scale, double.infinity);
+      final width = (bounds.maxWidth / 7).clamp(
+        PlayraLayout.touchTarget * scale,
+        double.infinity,
+      );
       if (_revealedDay != controller.weekday || _revealedWidth != width) {
         final initial = _revealedDay == null;
         _revealedDay = controller.weekday;
@@ -274,8 +239,8 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
             unawaited(
               _weekScroll.animateTo(
                 offset,
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOutCubic,
+                duration: PlayraMotion.duration(context, PlayraMotion.state),
+                curve: PlayraMotion.curve,
               ),
             );
           }
@@ -290,104 +255,55 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
             PlayraLayout.touchTarget,
             MediaQuery.textScalerOf(context).scale(PlayraType.body) *
                     PlayraType.bodyHeight +
-                MediaQuery.textScalerOf(context).scale(PlayraType.micro) *
+                MediaQuery.textScalerOf(context).scale(PlayraType.caption) *
                     PlayraType.bodyHeight +
                 PlayraSpace.md,
           ),
-          child: Stack(
+          child: Row(
             children: [
-              Row(
-                children: [
-                  for (var day = 1; day <= 7; day++)
-                    SizedBox(
-                      width: width,
-                      child: Semantics(
-                        selected: controller.weekday == day,
-                        child: PlayraDayButton(
-                          key: ValueKey('calendar-weekday-$day'),
-                          onPressed: () {
-                            controller.selectWeekday(day);
-                            if (_weekScroll.hasClients) {
-                              _weekScroll.animateTo(
-                                ((day - 1) * width -
-                                        bounds.maxWidth / 2 +
-                                        width / 2)
-                                    .clamp(
-                                      0.0,
-                                      _weekScroll.position.maxScrollExtent,
-                                    ),
-                                duration: const Duration(milliseconds: 250),
-                                curve: Curves.easeOutCubic,
-                              );
-                            }
-                          },
+              for (var day = 1; day <= 7; day++)
+                SizedBox(
+                  width: width,
+                  child: Semantics(
+                    selected: controller.weekday == day,
+                    child: PlayraDayButton(
+                      key: ValueKey('calendar-weekday-$day'),
+                      selected: controller.weekday == day,
+                      onPressed: () => controller.selectWeekday(day),
 
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '周${'一二三四五六日'[day - 1]}',
-                                style: TextStyle(
-                                  fontSize: PlayraType.body,
-                                  fontWeight: controller.weekday == day
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                controller.currentSeason &&
-                                        controller.today == day
-                                    ? '今天'
-                                    : '${controller.dayEntries(day).length}部',
-                                style: TextStyle(
-                                  fontSize: PlayraType.micro,
-                                  color:
-                                      controller.currentSeason &&
-                                          controller.today == day
-                                      ? colors.primary
-                                      : colors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 4,
-                child: AnimatedBuilder(
-                  animation: _pages,
-                  builder: (context, _) {
-                    final page =
-                        _pages.hasClients &&
-                            _pages.position.hasContentDimensions
-                        ? _pages.page ?? controller.weekday - 1.0
-                        : controller.weekday - 1.0;
-                    return Stack(
-                      children: [
-                        Positioned(
-                          left: width * page + (width - 22) / 2,
-                          top: 0,
-                          child: Container(
-                            width: 22,
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(3),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '周${'一二三四五六日'[day - 1]}',
+                            style: TextStyle(
+                              fontSize: PlayraType.body,
+                              fontWeight: controller.weekday == day
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
+                          const SizedBox(height: PlayraSpace.xs),
+                          Text(
+                            controller.currentSeason && controller.today == day
+                                ? '今天'
+                                : controller.snapshot == null
+                                ? '—'
+                                : '${controller.dayEntries(day).length}部',
+                            style: TextStyle(
+                              fontSize: PlayraType.caption,
+                              color:
+                                  controller.currentSeason &&
+                                      controller.today == day
+                                  ? colors.primary
+                                  : colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -395,18 +311,74 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
     },
   );
 
+  Widget _toolbar(BuildContext context, ModernCalendarController controller) {
+    final filters = [
+      if (controller.region != ScheduleRegion.all)
+        controller.region == ScheduleRegion.japanese ? '日漫' : '国漫',
+      if (controller.hideWatched) '隐藏看过',
+      if (controller.hideAbandoned) '隐藏抛弃',
+    ];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: PlayraSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: PlayraSpace.sm,
+            runSpacing: PlayraSpace.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              PlayraChoice(
+                label: const Text('全部'),
+                selected: !controller.watchingOnly,
+                onSelected: (_) => controller.setFilters(watchingOnly: false),
+              ),
+              PlayraChoice(
+                label: const Text('仅追番'),
+                selected: controller.watchingOnly,
+                onSelected: (_) => controller.setFilters(watchingOnly: true),
+              ),
+              PlayraButton.ghost(
+                key: const ValueKey('calendar-filters'),
+                icon: const Icon(
+                  LucideIcons.slidersHorizontal,
+                  size: PlayraLayout.compactIcon,
+                ),
+                onPressed: () => _showFilters(context),
+                child: Text(filters.isEmpty ? '筛选' : '筛选 · ${filters.length}'),
+              ),
+              if (!controller.isToday)
+                PlayraButton.ghost(
+                  onPressed: controller.goToday,
+                  child: const Text('今天'),
+                ),
+            ],
+          ),
+          if (filters.isNotEmpty) ...[
+            const SizedBox(height: PlayraSpace.sm),
+            Text(
+              filters.join(' · '),
+              style: TextStyle(
+                fontSize: PlayraType.caption,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _filterButton(
     BuildContext context,
     String label,
     bool selected,
     VoidCallback? onTap,
-  ) {
-    return PlayraButton.ghost(
-      onPressed: onTap,
-
-      child: Text(label, style: const TextStyle(fontSize: PlayraType.caption)),
-    );
-  }
+  ) => PlayraChoice(
+    label: Text(label),
+    selected: selected,
+    onSelected: onTap == null ? null : (_) => onTap(),
+  );
 
   Widget _dayList(BuildContext context, int day) {
     final controller = widget.controller;
@@ -447,7 +419,11 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                     ),
                   ),
                   Text(
-                    '${items.length}部',
+                    controller.snapshot == null
+                        ? controller.loading
+                              ? '加载中'
+                              : '加载失败'
+                        : '${items.length}部',
                     style: TextStyle(
                       fontSize: PlayraType.small,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -457,7 +433,8 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
               ),
             ),
           ),
-          if (controller.error != null || controller.snapshot?.notice != null)
+          if (controller.snapshot != null &&
+              (controller.error != null || controller.snapshot?.notice != null))
             SliverPadding(
               padding: PlayraLayout.pagePadding(
                 context,
@@ -490,12 +467,13 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
               padding: PlayraLayout.pagePadding(context),
               sliver: const SliverToBoxAdapter(child: SkeletonInfoList()),
             ),
-          if (!controller.loading && items.isEmpty)
+          if (items.isEmpty &&
+              (controller.snapshot != null || !controller.loading))
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: PlayraSpace.xl,
-                  vertical: 28,
+                  vertical: PlayraSpace.xxl,
                 ),
                 child: Column(
                   children: [
@@ -506,13 +484,33 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                     ),
                     const SizedBox(height: PlayraSpace.md),
                     Text(
-                      controller.error != null && controller.snapshot == null
-                          ? '暂时无法加载'
+                      controller.snapshot == null
+                          ? '暂时无法获取放送日历'
                           : controller.hasFilters
                           ? '没有符合筛选的番剧'
                           : '这一天暂无放送',
+                      textAlign: TextAlign.center,
                     ),
-                    if (controller.hasFilters)
+                    const SizedBox(height: PlayraSpace.sm),
+                    Text(
+                      controller.snapshot == null
+                          ? '请检查网络连接后重试'
+                          : controller.watchingOnly
+                          ? '当前筛选下没有正在追看的番剧，可以查看全部放送'
+                          : '可以切换星期或调整筛选条件',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: PlayraType.caption,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: PlayraSpace.lg),
+                    if (controller.snapshot == null)
+                      PlayraButton.outline(
+                        onPressed: controller.refresh,
+                        child: const Text('重新加载'),
+                      )
+                    else if (controller.hasFilters)
                       PlayraButton.ghost(
                         onPressed: controller.clearFilters,
                         child: const Text('清除筛选'),
@@ -553,7 +551,7 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                   height: 13,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(PlayraRadius.indicator),
                   ),
                 ),
                 const SizedBox(width: PlayraSpace.sm),
@@ -578,27 +576,50 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
         ),
       SliverPadding(
         padding: PlayraLayout.pagePadding(context),
-        sliver: SliverList.builder(
-          itemCount: entries.length,
-          itemBuilder: (context, index) {
-            final entry = entries[index];
-            final history = controller.historyFor(entry.item.id);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: PlayraSpace.md),
-              child: CalendarPosterCard(
-                key: ValueKey(
-                  'calendar-card-${entry.weekday}-${entry.item.id}',
-                ),
-                entry: entry,
-                collection: controller.collectionFor(entry.item.id),
-                history: history,
-                onVisible: () => controller.queueDetail(entry),
-                onDetails: () => widget.onDetails(entry.item),
-                onResume: history == null
-                    ? null
-                    : () => widget.onResume(history),
-              ),
+        sliver: SliverLayoutBuilder(
+          builder: (context, bounds) {
+            final scale = PlayraLayout.textScaleOf(context);
+            final columns = PlayraLayout.columns(
+              bounds.crossAxisExtent,
+              minimum: 310,
+              textScale: scale,
+              maximum: 2,
             );
+            Widget buildItem(BuildContext context, int index) {
+              final entry = entries[index];
+              final history = controller.historyFor(entry.item.id);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: PlayraSpace.md),
+                child: CalendarPosterCard(
+                  key: ValueKey(
+                    'calendar-card-${entry.weekday}-${entry.item.id}',
+                  ),
+                  entry: entry,
+                  collection: controller.collectionFor(entry.item.id),
+                  history: history,
+                  onVisible: () => controller.queueDetail(entry),
+                  onDetails: () => widget.onDetails(entry.item),
+                  onResume: history == null
+                      ? null
+                      : () => widget.onResume(history),
+                ),
+              );
+            }
+
+            return columns == 1
+                ? SliverList.builder(
+                    itemCount: entries.length,
+                    itemBuilder: buildItem,
+                  )
+                : SliverGrid.builder(
+                    itemCount: entries.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      mainAxisExtent: 158 + 100 * math.max(0, scale - 1),
+                      crossAxisSpacing: PlayraSpace.lg,
+                    ),
+                    itemBuilder: buildItem,
+                  );
           },
         ),
       ),
@@ -622,8 +643,8 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
               ),
               const SizedBox(height: PlayraSpace.sm),
               Wrap(
-                spacing: 8,
-                runSpacing: 6,
+                spacing: PlayraSpace.sm,
+                runSpacing: PlayraSpace.compact,
                 children: [
                   for (final option in [
                     (ScheduleRegion.all, '全部'),
@@ -638,7 +659,7 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                     ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: PlayraSpace.xl),
               const Text(
                 '排序',
                 style: TextStyle(
@@ -648,8 +669,8 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
               ),
               const SizedBox(height: PlayraSpace.sm),
               Wrap(
-                spacing: 8,
-                runSpacing: 6,
+                spacing: PlayraSpace.sm,
+                runSpacing: PlayraSpace.compact,
                 children: [
                   for (final option in [
                     (CalendarSort.schedule, '放送时间'),
@@ -665,24 +686,29 @@ class _ModernCalendarViewState extends State<ModernCalendarView> {
                 ],
               ),
               const SizedBox(height: PlayraSpace.md),
-              PlayraSwitchTile(
-                title: const Text(
-                  '隐藏看过',
-                  style: TextStyle(fontSize: PlayraType.body),
-                ),
-                value: controller.hideWatched,
-                onChanged: (value) => controller.setFilters(hideWatched: value),
+              PlayraListGroup(
+                children: [
+                  PlayraSwitchTile(
+                    title: const Text(
+                      '隐藏看过',
+                      style: TextStyle(fontSize: PlayraType.body),
+                    ),
+                    value: controller.hideWatched,
+                    onChanged: (value) =>
+                        controller.setFilters(hideWatched: value),
+                  ),
+                  PlayraSwitchTile(
+                    title: const Text(
+                      '隐藏抛弃',
+                      style: TextStyle(fontSize: PlayraType.body),
+                    ),
+                    value: controller.hideAbandoned,
+                    onChanged: (value) =>
+                        controller.setFilters(hideAbandoned: value),
+                  ),
+                ],
               ),
-              PlayraSwitchTile(
-                title: const Text(
-                  '隐藏抛弃',
-                  style: TextStyle(fontSize: PlayraType.body),
-                ),
-                value: controller.hideAbandoned,
-                onChanged: (value) =>
-                    controller.setFilters(hideAbandoned: value),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: PlayraSpace.lg),
               PlayraButton.outline(
                 onPressed: controller.clearFilters,
                 child: const Text('重置筛选'),

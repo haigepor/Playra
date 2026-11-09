@@ -131,7 +131,7 @@ class _CollectPosterCard extends StatelessWidget {
                         hasRating ? item.ratingScore.toStringAsFixed(1) : '',
                       ),
                     if (showStatus) ...[
-                      if (showRating) const SizedBox(height: 2),
+                      if (showRating) const SizedBox(height: PlayraSpace.tiny),
                       detailLine(type.label, status: true),
                     ],
                   ],
@@ -146,12 +146,12 @@ class _CollectPosterCard extends StatelessWidget {
         final menu = _CollectEntryMenu(entry: entry, onChanged: onChangeType);
         final footer = compact
             ? Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                padding: const EdgeInsets.only(top: PlayraSpace.sm, bottom: PlayraSpace.xs),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.sm),
                       child: titleBlock,
                     ),
                     SizedBox(
@@ -173,7 +173,7 @@ class _CollectPosterCard extends StatelessWidget {
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
+                                    horizontal: PlayraSpace.sm,
                                   ),
                                   child: detailsBlock,
                                 ),
@@ -209,7 +209,7 @@ class _CollectPosterCard extends StatelessWidget {
                         children: [
                           titleBlock,
                           if (showDetails) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(height: PlayraSpace.xs),
                             detailsBlock,
                           ],
                         ],
@@ -293,12 +293,12 @@ class _CollectListTile extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: tokens.surfaceRaised,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(PlayraRadius.brand),
         border: Border.all(color: tokens.borderSubtle),
       ),
       child: Material(
         type: MaterialType.transparency,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(PlayraRadius.brand),
         clipBehavior: Clip.antiAlias,
         child: Stack(
         children: [
@@ -311,7 +311,7 @@ class _CollectListTile extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 16, 8),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.md, PlayraSpace.md, PlayraSpace.lg, PlayraSpace.sm),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -322,12 +322,12 @@ class _CollectListTile extends StatelessWidget {
                       height: 120,
                       child: _CollectCover(
                         item: item,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(PlayraRadius.card),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: PlayraSpace.lg),
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -338,7 +338,7 @@ class _CollectListTile extends StatelessWidget {
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(minHeight: 76),
                             child: Padding(
-                              padding: const EdgeInsets.only(top: 4, bottom: 8),
+                              padding: const EdgeInsets.only(top: PlayraSpace.xs, bottom: PlayraSpace.sm),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -354,7 +354,7 @@ class _CollectListTile extends StatelessWidget {
                                   ),
                                   if (metadata.isNotEmpty)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 8),
+                                      padding: const EdgeInsets.only(top: PlayraSpace.sm),
                                       child: Text(
                                         metadata.join('  ·  '),
                                         style: theme.textTheme.bodySmall

@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +15,7 @@ class SyncPageBody extends StatelessWidget {
   Widget build(BuildContext context) => SafeArea(
     top: false,
     child: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, PlayraSpace.md, PlayraSpace.xl, PlayraSpace.section),
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -61,7 +62,7 @@ class SyncPageIntro extends StatelessWidget {
       );
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: PlayraSpace.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -71,7 +72,7 @@ class SyncPageIntro extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(PlayraRadius.control),
             ),
             child: const UtilitySvgIcon(
               UtilityIconKind.synchronization,
@@ -92,7 +93,7 @@ class SyncPageIntro extends StatelessWidget {
                         : theme.textTheme.headlineSmall,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: PlayraSpace.compact),
                 Text(
                   description,
                   style:
@@ -130,7 +131,7 @@ class SyncFeedback extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(PlayraSpace.lg),
         decoration: BoxDecoration(
           color: error ? colors.errorContainer : colors.secondaryContainer,
           borderRadius: BorderRadius.circular(
@@ -168,7 +169,7 @@ class SyncFeedback extends StatelessWidget {
               ],
             ),
             if (busy) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: PlayraSpace.md),
               PlayraProgress(value: progress),
             ],
           ],

@@ -2,7 +2,6 @@ import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/presentation/widgets/playra_sheet.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -149,10 +148,12 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                 bottom: false,
                 child: ModernPageArt(
                   kind: ModernPageArtKind.library,
-                  contentMaxWidth: 1200,
+                  contentMaxWidth: PlayraLayout.catalogWidth,
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1200),
+                      constraints: const BoxConstraints(
+                        maxWidth: PlayraLayout.catalogWidth,
+                      ),
                       child: ListenableBuilder(
                         listenable: Listenable.merge([
                           widget.controller,
@@ -206,12 +207,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                             children: [
                               Padding(
                                 key: const ValueKey('library-header'),
-                                padding: const EdgeInsets.fromLTRB(
-                                  PlayraSpace.xl,
-                                  0,
-                                  PlayraSpace.md,
-                                  0,
-                                ),
+                                padding: PlayraLayout.pagePadding(context),
                                 child: Row(
                                   children: [
                                     const Expanded(
@@ -320,7 +316,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                 padding: const EdgeInsets.fromLTRB(
                                   PlayraSpace.xl,
                                   0,
-                                  14,
+                                  PlayraSpace.lg,
                                   0,
                                 ),
                                 child: Row(
@@ -368,21 +364,20 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                                           context,
                                         ).scale(14) /
                                         14;
-                                    final minimumWidth =
-                                        310 * math.max(1, scale);
-                                    final columns =
-                                        controller.layout == CollectLayout.cards
-                                        ? ((constraints.maxWidth - 28) /
-                                                  minimumWidth)
-                                              .floor()
-                                              .clamp(1, 3)
-                                        : (constraints.maxWidth >=
-                                                  math.max(
-                                                    900,
-                                                    minimumWidth * 2 + 40,
-                                                  )
-                                              ? 2
-                                              : 1);
+                                    final columns = PlayraLayout.columns(
+                                      constraints.maxWidth -
+                                          PlayraLayout.pageInset(
+                                                MediaQuery.sizeOf(context),
+                                              ) *
+                                              2,
+                                      minimum:
+                                          controller.layout ==
+                                              CollectLayout.cards
+                                          ? 310
+                                          : 400,
+                                      gap: PlayraSpace.md,
+                                      textScale: scale,
+                                    );
                                     return CustomScrollView(
                                       key: const ValueKey('library-results'),
                                       controller: _scroll,
@@ -512,7 +507,10 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
                   ? '还没有追番'
                   : '这里还没有${controller.category?.label ?? '收藏'}的番剧',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: PlayraType.section,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: PlayraSpace.sm),
             Text(
@@ -571,11 +569,12 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
   Future<void> _showSort(BuildContext context) => _sheet(
     context,
     '排序方式',
-    (context) => Column(
+    (context) => PlayraListGroup(
       children: [
         for (final sort in LibrarySort.values)
           PlayraListTile(
             title: Text(sort.label),
+            selected: widget.controller.sort == sort,
             trailing: widget.controller.sort == sort
                 ? Icon(
                     LucideIcons.check,
@@ -598,7 +597,7 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
     '追番管理',
     (context) => ListenableBuilder(
       listenable: widget.controller,
-      builder: (context, _) => Column(
+      builder: (context, _) => PlayraListGroup(
         children: [
           PlayraListTile(
             leading: Icon(
@@ -671,38 +670,42 @@ class _ModernLibraryViewState extends State<ModernLibraryView>
             ),
           ),
           const SizedBox(height: 10),
-          for (final type in CollectType.values.where(
-            (type) => type.isCollected,
-          ))
-            PlayraListTile(
-              key: ValueKey('library-status-${type.value}'),
-              title: Text(type.label),
-              enabled: widget.controller.canEdit(entry.item.id),
-              trailing: entry.status == type
-                  ? Icon(
-                      LucideIcons.check,
-                      size: 18,
-                      color: Theme.of(sheetContext).colorScheme.primary,
-                    )
-                  : null,
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                unawaited(widget.onChangeType(entry.item, type));
-              },
-            ),
-          const Divider(),
-          PlayraListTile(
-            leading: Icon(
-              LucideIcons.trash2,
-              size: 18,
-              color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
-            ),
-            title: const Text('移除收藏'),
-            enabled: widget.controller.canEdit(entry.item.id),
-            onTap: () {
-              Navigator.of(sheetContext).pop();
-              unawaited(_confirmRemove(context, entry));
-            },
+          PlayraListGroup(
+            children: [
+              for (final type in CollectType.values.where(
+                (type) => type.isCollected,
+              ))
+                PlayraListTile(
+                  key: ValueKey('library-status-${type.value}'),
+                  title: Text(type.label),
+                  selected: entry.status == type,
+                  enabled: widget.controller.canEdit(entry.item.id),
+                  trailing: entry.status == type
+                      ? Icon(
+                          LucideIcons.check,
+                          size: 18,
+                          color: Theme.of(sheetContext).colorScheme.primary,
+                        )
+                      : null,
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    unawaited(widget.onChangeType(entry.item, type));
+                  },
+                ),
+              PlayraListTile(
+                leading: Icon(
+                  LucideIcons.trash2,
+                  size: 18,
+                  color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                ),
+                title: const Text('移除收藏'),
+                enabled: widget.controller.canEdit(entry.item.id),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  unawaited(_confirmRemove(context, entry));
+                },
+              ),
+            ],
           ),
         ],
       ),

@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
@@ -27,10 +28,10 @@ class PlayerScreenshotControls extends StatelessWidget {
                   dimension: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: PlayraMedia.foreground,
                   ),
                 )
-              : const Icon(Icons.photo_camera_outlined, color: Colors.white),
+              : const Icon(Icons.photo_camera_outlined, color: PlayraMedia.foreground),
         ),
         if (controller.candidates.isNotEmpty)
           PlayraIconButton(
@@ -40,7 +41,7 @@ class PlayerScreenshotControls extends StatelessWidget {
               count: controller.candidates.length,
               backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
               textColor: Theme.of(context).colorScheme.onSecondaryContainer,
-              child: const Icon(Icons.photo_library_outlined, color: Colors.white),
+              child: const Icon(Icons.photo_library_outlined, color: PlayraMedia.foreground),
             ),
           ),
       ],

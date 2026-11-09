@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:kazumi/services/platform/browser_display.dart';
@@ -161,7 +162,10 @@ class _PlayerItemState extends State<PlayerItem>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused && !backgroundPlayback) {
+    if (state == AppLifecycleState.paused &&
+        !backgroundPlayback &&
+        !videoPageController.isPip &&
+        !_pipEnterRequested) {
       // Suspend before awaiting pause so a later resume wins; pause alone keeps prefetching.
       final suspend = playerController.playback.setPrefetchSuspended(true);
       if (playerController.playback.mediaPlayer != null &&
@@ -289,14 +293,19 @@ class _PlayerItemState extends State<PlayerItem>
       }
       return;
     }
-    if (!Platform.isAndroid || !mounted) {
+    if (!Platform.isAndroid ||
+        !mounted ||
+        _pipEnterRequested ||
+        videoPageController.isPip) {
       return;
     }
+    _pipEnterRequested = true;
     final bool supported = await PipUtils.isAndroidPIPSupported();
     if (!mounted) {
       return;
     }
     if (!supported) {
+      _pipEnterRequested = false;
       KazumiDialog.showToast(message: '当前设备不支持画中画');
       return;
     }
@@ -322,14 +331,15 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void _handleAndroidPIPModeChanged(bool inPipMode) {
-    if (!mounted || videoPageController.isPip == inPipMode) {
+    if (!mounted ||
+        (videoPageController.isPip == inPipMode && !_pipEnterRequested)) {
       return;
     }
     setState(() {
       videoPageController.isPip = inPipMode;
+      _pipEnterRequested = false;
     });
     if (!inPipMode) {
-      _pipEnterRequested = false;
       _scheduleAndroidPIPSourceRectSync();
     }
   }
@@ -592,7 +602,7 @@ class _PlayerItemState extends State<PlayerItem>
 
   void handleDanmaku() {
     if (!videoPageController.hasBangumiContext) return;
-    playerController.danmaku.canvasController.clear();
+    playerController.danmaku.clearAndInvalidateScheduledDanmakus();
     if (playerController.danmaku.danmakuOn) {
       playerController.danmaku.setDanmakuEnabled(false);
       GStorage.putSetting(SettingsKeys.danmakuEnabledByDefault, false);
@@ -690,7 +700,7 @@ class _PlayerItemState extends State<PlayerItem>
   void _handleFullscreenChange() async {
     playerController.panel.lockPanel = false;
     _releasePlayerPanelHolds();
-    playerController.danmaku.canvasController.clear();
+    playerController.danmaku.clearAndInvalidateScheduledDanmakus();
     _scheduleAndroidPIPSourceRectSync();
 
     await _syncHistoryWithWebDav();
@@ -934,7 +944,7 @@ class _PlayerItemState extends State<PlayerItem>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('启用超分辨率（质量档）可能会造成设备卡顿，是否继续？'),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: PlayraSpace.md),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1184,7 +1194,7 @@ class _PlayerItemState extends State<PlayerItem>
       return;
     }
 
-    final danmakus = playerController.danmaku.danmakusForPlaybackPosition(
+    final danmakus = playerController.danmaku.takeDanmakusForPlaybackPosition(
       playerController.playback.currentPosition,
     );
     final danmakuCount = danmakus.length;
@@ -1195,7 +1205,7 @@ class _PlayerItemState extends State<PlayerItem>
         continue;
       }
 
-      final color = _danmakuColor ? danmaku.color : Colors.white;
+      final color = _danmakuColor ? danmaku.color : PlayraMedia.foreground;
       final delay = DanmakuTimeline.staggerDelayMilliseconds(
         index: idx,
         total: danmakuCount,
@@ -1348,6 +1358,7 @@ class _PlayerItemState extends State<PlayerItem>
     );
     if (Platform.isAndroid) {
       PipUtils.initPipHandler(
+        owner: this,
         onAction: (action) async {
           if (!mounted) return;
 
@@ -1439,6 +1450,7 @@ class _PlayerItemState extends State<PlayerItem>
     WidgetsBinding.instance.removeObserver(this);
     windowManager.removeListener(this);
     playerController.seeking.invalidateInteractiveSeek();
+    playerController.danmaku.setDanmakuEnabled(false);
     playerTimer?.cancel();
     hideTimer?.cancel();
     mouseScrollerTimer?.cancel();
@@ -1448,7 +1460,11 @@ class _PlayerItemState extends State<PlayerItem>
     _disposePlayerMenu();
     if (Platform.isAndroid) {
       unawaited(_syncAndroidPIPPlayerPageState(false));
-      PipUtils.disposePipHandler();
+      PipUtils.disposePipHandler(this);
+    }
+    if (isDesktop() && videoPageController.isPip) {
+      videoPageController.isPip = false;
+      unawaited(PipUtils.exitDesktopPIPWindow(restoreFullscreen: false));
     }
     playerController.panel.reset();
     super.dispose();
@@ -1502,7 +1518,7 @@ class _PlayerItemState extends State<PlayerItem>
             child: PlayraIconButton(
               tooltip: '返回',
               onPressed: widget.onBackPressed,
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back, color: PlayraMedia.foreground),
             ),
           ),
         ],
@@ -1512,7 +1528,7 @@ class _PlayerItemState extends State<PlayerItem>
       builder: (context) {
         return ClipRect(
           child: Container(
-            color: Colors.black,
+            color: PlayraMedia.canvas,
             child: MouseRegion(
               cursor:
                   (videoPageController.isFullscreen &&

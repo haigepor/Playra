@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/card/comments_card.dart';
@@ -96,7 +97,7 @@ class InfoCommentsView extends StatelessWidget {
                 if (header != null) SliverToBoxAdapter(child: header),
                 if (ownComment == null && !showEmpty)
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(gutter, 12, gutter, 8),
+                    padding: EdgeInsets.fromLTRB(gutter, PlayraSpace.md, gutter, PlayraSpace.sm),
                     sliver: SliverToBoxAdapter(
                       child: _reviewEntry(context, editing: hasReview),
                     ),
@@ -155,7 +156,7 @@ class InfoCommentsView extends StatelessWidget {
                     sliver: SliverList.builder(
                       itemCount: 4,
                       itemBuilder: (_, __) => const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: PlayraSpace.lg),
                         child: CommentsCard.bone(),
                       ),
                     ),
@@ -181,7 +182,7 @@ class InfoCommentsView extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text(editing ? '编辑' : _writeReviewLabel)),
-          const SizedBox(width: 8),
+          const SizedBox(width: PlayraSpace.sm),
           const Icon(Icons.chevron_right_rounded, size: 20),
         ],
       ),
@@ -190,7 +191,7 @@ class InfoCommentsView extends StatelessWidget {
 
   Widget _ownReview(CommentItem comment) {
     return PlayraSurface(
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      margin: const EdgeInsets.symmetric(vertical: PlayraSpace.md),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -200,7 +201,7 @@ class InfoCommentsView extends StatelessWidget {
             numericRating: numericRatings,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.sm, 0, PlayraSpace.sm, PlayraSpace.sm),
             child: Align(
               alignment: Alignment.centerRight,
               child: PlayraButton.ghost(

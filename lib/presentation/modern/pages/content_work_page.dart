@@ -223,7 +223,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                   matchingSearch,
                 ]),
                 builder: (context, _) => ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(PlayraSpace.lg),
                   children: [
                     AspectRatio(
                       aspectRatio: 16 / 9,
@@ -233,17 +233,17 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.surfaceContainer,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(PlayraRadius.control),
                               ),
                               child: const Center(child: Text('选择来源、线路和剧集后播放')),
                             )
                           : WebPlayerSurface(controller: media.controller!),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: PlayraSpace.md),
                     if (busy) const LinearProgressIndicator(),
                     if (message != null)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: PlayraSpace.md),
                         child: Text(message!),
                       ),
                     Row(
@@ -252,14 +252,14 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                           child: Text(
                             '播放源',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: PlayraType.section,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                         if (widget.session.searching ||
                             matchingSearch.searching)
-                          const Text('仍在检索…', style: TextStyle(fontSize: 12)),
+                          const Text('仍在检索…', style: TextStyle(fontSize: PlayraType.caption)),
                       ],
                     ),
                     const SizedBox(height: PlayraSpace.sm),
@@ -277,7 +277,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                     ),
                     const Text(
                       '同名候选保留匹配证据；目录有效不代表已经试播。',
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: PlayraType.caption),
                     ),
                     for (final binding in sources.bindings)
                       Padding(
@@ -299,7 +299,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                                 ),
                               Text(
                                 '${matchContent(widget.work.primary, binding.hit) == ContentMatch.possible ? '同名候选 · 手动选择' : '作品匹配'} · ${_status(binding)}',
-                                style: const TextStyle(fontSize: 12),
+                                style: const TextStyle(fontSize: PlayraType.caption),
                               ),
                               if (binding.status ==
                                   ContentDirectoryStatus.ready)
@@ -312,26 +312,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                                     runSpacing: 4,
                                     children: [
                                       for (final line in binding.lines)
-                                        ChoiceChip(
-                                          backgroundColor: Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainerLow,
-                                          selectedColor: Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainerHighest,
-                                          side: BorderSide(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.outline,
-                                          ),
-                                          labelStyle: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                              ),
+                                        PlayraChoice(
                                           label: Text(line.name),
                                           selected:
                                               identical(
@@ -366,7 +347,7 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                       ),
                     if (sources.bindings.isEmpty)
                       const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
+                        padding: EdgeInsets.symmetric(vertical: PlayraSpace.xl),
                         child: Text('暂未找到来源，可以返回修改名称或等待其他检索结果'),
                       ),
                     if (sources.loadingEpisodes)
@@ -374,21 +355,21 @@ class _ContentWorkPageState extends State<ContentWorkPage> {
                     if (sources.episodeError != null)
                       Text('剧集加载失败（${sources.episodeError}），请重新选择线路'),
                     if (sources.selected != null) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: PlayraSpace.lg),
                       const Text(
                         '选集',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: PlayraType.section,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: PlayraSpace.sm),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
                           for (final episode in sources.episodes)
-                            ShadButton.outline(
+                            PlayraButton.outline(
                               onPressed: () => _playEpisode(episode),
                               child: Text(episode.title),
                             ),

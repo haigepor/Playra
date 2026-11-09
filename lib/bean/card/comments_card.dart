@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/bangumi_avatar.dart';
 import 'package:kazumi/modules/comments/comment_item.dart';
@@ -14,10 +15,10 @@ class CommentsCard extends StatelessWidget {
   }) : _isOwn = false;
 
   const CommentsCard.bone({super.key})
-      : commentItem = null,
-        showRating = true,
-        numericRating = false,
-        _isOwn = false;
+    : commentItem = null,
+      showRating = true,
+      numericRating = false,
+      _isOwn = false;
 
   const CommentsCard.own({
     super.key,
@@ -70,9 +71,7 @@ class CommentsCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                BangumiAvatar(
-                  imageUrl: item.user.avatar.large,
-                ),
+                BangumiAvatar(imageUrl: item.user.avatar.large),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -86,37 +85,48 @@ class CommentsCard extends StatelessWidget {
                           Text(item.user.nickname),
                           if (_isOwn)
                             Container(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 2),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  borderRadius: BorderRadius.circular(4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(
+                                  PlayraRadius.indicator,
                                 ),
-                                child: Text(
-                                  '我的吐槽',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primaryContainer),
-                                ))
+                              ),
+                              child: Text(
+                                '我的吐槽',
+                                style: TextStyle(
+                                  fontSize: PlayraType.caption,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                       Text(dateFormat(item.comment.updatedAt)),
                     ],
                   ),
                 ),
-                if(showRating) const SizedBox(width: 8),
-                if(showRating && numericRating) Text('${item.comment.rate}/10',
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary)),
-                if(showRating && !numericRating) RatingBarIndicator(
-                  itemCount: 5,
-                  rating: item.comment.rate.toDouble() / 2,
-                  itemBuilder: (context, index) => const Icon(
-                    Icons.star_rounded,
+                if (showRating) const SizedBox(width: 8),
+                if (showRating && numericRating)
+                  Text(
+                    '${item.comment.rate}/10',
+                    style: TextStyle(
+                      fontSize: PlayraType.caption,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
-                  itemSize: 20.0,
-                ),
+                if (showRating && !numericRating)
+                  RatingBarIndicator(
+                    itemCount: 5,
+                    rating: item.comment.rate.toDouble() / 2,
+                    itemBuilder: (context, index) =>
+                        const Icon(Icons.star_rounded),
+                    itemSize: 20.0,
+                  ),
               ],
             ),
             const SizedBox(height: 8),

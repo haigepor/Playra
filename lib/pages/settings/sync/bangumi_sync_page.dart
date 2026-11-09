@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -275,7 +276,7 @@ class _BangumiSyncPageState extends State<BangumiSyncPage> {
       ),
       if (configured)
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
+          padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.xs, PlayraSpace.sm, 0),
           child: Row(
             children: [
               Expanded(
@@ -288,7 +289,7 @@ class _BangumiSyncPageState extends State<BangumiSyncPage> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: PlayraSpace.sm),
               PlayraButton.ghost(
                 onPressed: _busy ? null : () => _connect(_bangumi.ping),
                 child: Text(_bangumi.lastError != null ? '重试连接' : '测试连接'),
@@ -313,7 +314,7 @@ class _BangumiSyncPageState extends State<BangumiSyncPage> {
             : '使用 Access Token 授权',
       ),
       children: [
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         PlayraTextField(
           controller: _tokenController,
           enabled: !_busy,
@@ -346,7 +347,7 @@ class _BangumiSyncPageState extends State<BangumiSyncPage> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: PlayraSpace.lg),
         Wrap(
           alignment: WrapAlignment.end,
           spacing: 12,

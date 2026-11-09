@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:forui/forui.dart' as f;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
@@ -197,8 +198,8 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
   );
   late final _press = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 120),
-    reverseDuration: const Duration(milliseconds: 220),
+    duration: PlayraMotion.press,
+    reverseDuration: PlayraMotion.dialogEnter,
   );
   late Listenable _updates;
   ui.FragmentShader? _shader;
@@ -233,7 +234,7 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
   void _settle(int index) {
     if (_target == index && _position.isAnimating) return;
     _target = index;
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (PlayraMotion.reduceOf(context)) {
       _position.value = index.toDouble();
     } else {
       _position.animateWith(
@@ -276,10 +277,20 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
 
   @override
   Widget build(BuildContext context) {
-    final scale = MediaQuery.textScalerOf(context).scale(12) / 12;
-    final height = 60.0 + 20 * (scale - 1).clamp(0, 2);
     final theme = Theme.of(context);
     final tokens = PlayraTokens.of(context);
+    final navigation = f.FTheme.of(context).bottomNavigationBarStyle;
+    final item = navigation.itemStyle;
+    final label = item.textStyle.resolve({});
+    final direction = Directionality.of(context);
+    final height = math.max(
+      PlayraLayout.touchTarget,
+      navigation.padding.resolve(direction).vertical +
+          item.padding.resolve(direction).vertical +
+          (item.iconStyle.resolve({}).size ?? PlayraLayout.icon) +
+          item.spacing +
+          MediaQuery.textScalerOf(context).scale(label.fontSize!) * (label.height ?? 1),
+    ).ceilToDouble();
     _syncSurface();
     return LayoutBuilder(
       builder: (context, bounds) {
@@ -292,7 +303,7 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
               borderRadius: BorderRadius.circular(height / 2),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x65000000),
+                  color: PlayraMedia.scrimMedium,
                   blurRadius: 24,
                   spreadRadius: -4,
                   offset: Offset(0, 8),
@@ -302,8 +313,12 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(height / 2),
               child: Listener(
-                onPointerDown: (_) => _press.forward(),
-                onPointerUp: (_) => _press.reverse(),
+                onPointerDown: (_) {
+                  if (!PlayraMotion.reduceOf(context)) _press.forward();
+                },
+                onPointerUp: (_) {
+                  if (!PlayraMotion.reduceOf(context)) _press.reverse();
+                },
                 onPointerCancel: (_) => _press.reverse(),
                 child: GestureDetector(
                   onHorizontalDragStart: (_) {
@@ -379,49 +394,25 @@ class _LiquidGlassNavigationBarState extends State<LiquidGlassNavigationBar>
                           );
                         },
                       ),
-                      NavigationBarTheme(
-                        data: theme.navigationBarTheme.copyWith(
-                          backgroundColor: Colors.transparent,
-                          surfaceTintColor: Colors.transparent,
-                          indicatorColor: Colors.transparent,
-                          elevation: 0,
-                          iconTheme: WidgetStateProperty.resolveWith(
-                            (states) => IconThemeData(
-                              size: 20,
-                              color: states.contains(WidgetState.selected)
-                                  ? tokens.primary
-                                  : tokens.mutedForeground,
-                            ),
-                          ),
-                          labelTextStyle: WidgetStateProperty.resolveWith(
-                            (states) => theme.textTheme.labelMedium?.copyWith(
-                              fontSize: 11.5,
-                              fontWeight: states.contains(WidgetState.selected)
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
-                              color: states.contains(WidgetState.selected)
-                                  ? tokens.primary
-                                  : tokens.mutedForeground,
-                            ),
-                          ),
+                      f.FBottomNavigationBar(
+                        key: const ValueKey('modern-navigation'),
+                        index: widget.selectedIndex,
+                        safeAreaBottom: true,
+                        style: const f.FBottomNavigationBarStyleDelta.delta(
+                          decoration: f.DecorationDelta.value(BoxDecoration()),
+                          backgroundFilter: null,
                         ),
-                        child: NavigationBar(
-                          key: const ValueKey('modern-navigation'),
-                          height: height,
-                          backgroundColor: Colors.transparent,
-                          surfaceTintColor: Colors.transparent,
-                          indicatorColor: Colors.transparent,
-                          overlayColor: const WidgetStatePropertyAll(
-                            Colors.transparent,
-                          ),
-                          elevation: 0,
-                          selectedIndex: widget.selectedIndex,
-                          onDestinationSelected: (index) {
-                            _settle(index);
-                            widget.onDestinationSelected(index);
-                          },
-                          destinations: widget.destinations,
-                        ),
+                        onChange: (index) {
+                          _settle(index);
+                          widget.onDestinationSelected(index);
+                        },
+                        children: [
+                          for (final destination in widget.destinations)
+                            f.FBottomNavigationBarItem(
+                              icon: destination.icon,
+                              label: Text(destination.label),
+                            ),
+                        ],
                       ),
                     ],
                   ),

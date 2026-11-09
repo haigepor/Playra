@@ -9,6 +9,7 @@ import 'package:kazumi/navigation.dart';
 import 'package:kazumi/presentation/modern/settings/modern_settings_scope.dart';
 import 'package:kazumi/presentation/theme/playra_theme.dart';
 import 'package:kazumi/presentation/widgets/playra_sheet.dart';
+import 'package:kazumi/presentation/widgets/playra_card.dart';
 import 'package:kazumi/presentation/modern/library/sdk_library_widgets.dart';
 import 'package:kazumi/services/storage/sdk_library_models.dart';
 import 'package:kazumi/modules/download/download_module.dart';
@@ -17,6 +18,86 @@ import 'package:forui/forui.dart' as f;
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 
 void main() {
+  for (final enabled in [true, false]) {
+    testWidgets('icon label and tap semantics stay together, enabled=$enabled', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: PlayraIconButton(
+        key: const ValueKey('accessible-action'),
+        tooltip: '打开设置',
+        icon: const Icon(Icons.settings),
+        onPressed: enabled ? () {} : null,
+      ))));
+      await tester.pumpAndSettle();
+      expect(tester.getSemantics(find.bySemanticsLabel('打开设置')), matchesSemantics(
+        label: '打开设置',
+        isButton: true,
+        hasEnabledState: true,
+        isEnabled: enabled,
+        hasTapAction: enabled,
+      ));
+      semantics.dispose();
+    });
+  }
+
+  testWidgets('mobile controls retain touch targets, contrast and large text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var actions = 0;
+    final theme = playraTheme(ThemeData());
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(2), disableAnimations: true),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: Column(
+            children: [
+              for (final size in PlayraButtonSize.values)
+                PlayraButton(
+                  size: size,
+                  onPressed: () => actions++,
+                  child: Text('保存 ${size.name}'),
+                ),
+              PlayraIconButton(
+                size: 32,
+                tooltip: '搜索',
+                onPressed: () => actions++,
+                icon: const Icon(Icons.search),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final size in PlayraButtonSize.values) {
+      final button = find.widgetWithText(PlayraButton, '保存 ${size.name}');
+      expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
+      final text = tester.widget<RichText>(
+        find.descendant(of: button, matching: find.byType(RichText)),
+      );
+      expect(text.text.style!.color, theme.colorScheme.onPrimary);
+      await tester.tapAt(
+        tester.getTopLeft(button) +
+            Offset(2, tester.getSize(button).height / 2),
+      );
+    }
+    final icon = find.byType(PlayraIconButton);
+    expect(tester.getSize(icon), const Size(48, 48));
+    await tester.tapAt(tester.getTopLeft(icon) + const Offset(2, 24));
+    await tester.pumpAndSettle();
+    expect(actions, 4);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('SDK history and download cards retain their real actions', (
     tester,
   ) async {
@@ -63,7 +144,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(f.FCard), findsNWidgets(2));
+    expect(find.byType(PlayraCard), findsNWidgets(2));
     await tester.tap(find.text('较长作品名称的真实历史卡片'));
     await tester.tap(find.text('离线缓存作品'));
     expect(opened, 1);
@@ -127,12 +208,12 @@ void main() {
                 .first,
           );
           final decoration = surface.decoration as ShapeDecoration;
-          expect(decoration.color, const Color(0xff1b202c));
-          expect(
-            (decoration.shape as RoundedSuperellipseBorder).borderRadius,
-            BorderRadius.circular(16),
-          );
-          final action = find.widgetWithText(f.FButton, '执行操作');
+          final expected =
+              f.FTheme.neutral.dark.touch.tileGroupStyle.decoration
+                  as ShapeDecoration;
+          expect(decoration.color, expected.color);
+          expect(decoration.shape, expected.shape);
+          final action = find.widgetWithText(PlayraButton, '执行操作');
           expect(action, findsOneWidget);
           expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
           await tester.tap(find.byType(PlayraSwitch));
@@ -188,7 +269,7 @@ void main() {
           (m) =>
               m.decoration is ShapeDecoration &&
               (m.decoration as ShapeDecoration).color ==
-                  const Color(0xff1b202c),
+                  f.FTheme.neutral.dark.touch.colors.card,
         ),
         isTrue,
       );
@@ -250,8 +331,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), '保留草稿');
       expect(find.text('保留草稿'), findsOneWidget);
-      expect(tester.getBottomRight(_tooltip('关闭')).dy, lessThanOrEqualTo(380));
-      await tester.tap(_tooltip('关闭'));
+      expect(
+        tester.getBottomRight(_tooltip('关闭').first).dy,
+        lessThanOrEqualTo(380),
+      );
+      await tester.tap(_tooltip('关闭').first);
       await tester.pumpAndSettle();
       expect(find.text('筛选条件'), findsNothing);
       expect(tester.takeException(), isNull);

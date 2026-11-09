@@ -129,12 +129,12 @@ class _AliasPickerDialogState extends State<_AliasPickerDialog> {
           shrinkWrap: true,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+              padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, PlayraSpace.xxl, PlayraSpace.xxl, PlayraSpace.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('别名检索', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: PlayraSpace.sm),
                   Text(
                     '仅检索来源：${widget.sourceName}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(

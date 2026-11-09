@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -57,7 +58,7 @@ class EpisodeCommentsView extends StatelessWidget {
           ),
           slivers: [
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(gutter, 16, gutter, 0),
+              padding: EdgeInsets.fromLTRB(gutter, PlayraSpace.lg, gutter, 0),
               sliver: SliverToBoxAdapter(
                 child: _EpisodeHeader(
                   episode: episode,
@@ -67,7 +68,7 @@ class EpisodeCommentsView extends StatelessWidget {
               ),
             ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(gutter + 4, 16, gutter, 12),
+              padding: EdgeInsets.fromLTRB(gutter + PlayraSpace.xs, PlayraSpace.lg, gutter, PlayraSpace.md),
               sliver: SliverToBoxAdapter(child: _buildToolbar(context)),
             ),
             if (isLoading && comments.isEmpty)
@@ -95,13 +96,13 @@ class EpisodeCommentsView extends StatelessWidget {
             else if (comments.isNotEmpty) ...[
               if (hasError)
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(gutter, 0, gutter, 12),
+                  padding: EdgeInsets.fromLTRB(gutter, 0, gutter, PlayraSpace.md),
                   sliver: SliverToBoxAdapter(
                     child: Material(
                       color: colors.errorContainer,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(PlayraRadius.card),
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                        padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.xs, PlayraSpace.sm, PlayraSpace.xs),
                         child: Row(children: [
                           Expanded(
                             child: Text('刷新失败，已保留现有讨论',
@@ -144,7 +145,7 @@ class EpisodeCommentsView extends StatelessWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.sm, PlayraSpace.lg, PlayraSpace.xxl),
                   child: Text('已显示全部 ${comments.length} 条讨论 · 来自 Bangumi',
                       textAlign: TextAlign.center,
                       style: Theme.of(context)
@@ -171,12 +172,12 @@ class EpisodeCommentsView extends StatelessWidget {
         Text('讨论',
             style: type.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         if ((!isLoading && !hasError) || comments.isNotEmpty) ...[
-          const SizedBox(width: 8),
+          const SizedBox(width: PlayraSpace.sm),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md, vertical: PlayraSpace.xs),
             decoration: BoxDecoration(
               color: colors.secondaryContainer,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(PlayraRadius.overlay),
             ),
             child: Text('${comments.length}',
                 style: type.labelLarge
@@ -194,7 +195,7 @@ class EpisodeCommentsView extends StatelessWidget {
               size: 18),
           label: Text(isAscending ? '最早优先' : '最新优先'),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: PlayraSpace.xs),
         PlayraIconButton(
           tooltip: isLoading ? '正在加载评论' : '刷新评论',
           onPressed: isLoading ? null : onRefresh,
@@ -211,7 +212,7 @@ class EpisodeCommentsView extends StatelessWidget {
           MediaQuery.textScalerOf(context).scale(14) > 19) {
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           title,
-          const SizedBox(height: 4),
+          const SizedBox(height: PlayraSpace.xs),
           Align(alignment: Alignment.centerRight, child: actions),
         ]);
       }
@@ -250,10 +251,10 @@ class _EpisodeHeader extends StatelessWidget {
 
     return Material(
       color: colors.primaryContainer,
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(PlayraRadius.card),
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(PlayraSpace.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -267,10 +268,10 @@ class _EpisodeHeader extends StatelessWidget {
                 children: [
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        const EdgeInsets.symmetric(horizontal: PlayraSpace.md, vertical: PlayraSpace.sm),
                     decoration: BoxDecoration(
                       color: colors.primary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(PlayraRadius.control),
                     ),
                     child: Text('$episodeType $number'.trim(),
                         style: type.titleSmall?.copyWith(
@@ -285,7 +286,7 @@ class _EpisodeHeader extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: PlayraSpace.lg),
             Semantics(
               header: true,
               child: Text(title,
@@ -295,7 +296,7 @@ class _EpisodeHeader extends StatelessWidget {
                     height: 1.3,
                   )),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: PlayraSpace.compact),
             // Reserve one line to prevent jumps when metadata arrives.
             Tooltip(
               message: subtitle,

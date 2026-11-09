@@ -64,14 +64,14 @@ class CharacterInfoView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TonalCard(
-          padding: EdgeInsets.all(modern ? 12 : 20),
+          padding: EdgeInsets.all(modern ? PlayraSpace.md : PlayraSpace.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (relation.isNotEmpty && relation != '未知') ...[
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      const EdgeInsets.symmetric(horizontal: PlayraSpace.md, vertical: PlayraSpace.compact),
                   decoration: ShapeDecoration(
                     color: theme.colorScheme.secondaryContainer,
                     shape: const StadiumBorder(),
@@ -81,7 +81,7 @@ class CharacterInfoView extends StatelessWidget {
                         color: theme.colorScheme.onSecondaryContainer,
                       )),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: PlayraSpace.md),
               ],
               SelectableText(
                 name.isEmpty ? '人物' : name,
@@ -91,21 +91,21 @@ class CharacterInfoView extends StatelessWidget {
                 ),
               ),
               if (originalName.isNotEmpty && originalName != name) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: PlayraSpace.sm),
                 SelectableText(originalName,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     )),
               ],
               if (actorNames.isNotEmpty) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: PlayraSpace.xl),
                 _buildInfoField(context, '配音', actorNames.join(' / ')),
               ],
             ],
           ),
         ),
         if (quickFields.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: PlayraSpace.lg),
           ContentSection(
             title: '基本资料',
             child: LayoutBuilder(builder: (context, constraints) {
@@ -154,17 +154,17 @@ class CharacterInfoView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(width: portraitWidth, child: portrait),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: PlayraSpace.lg),
                   Expanded(child: profile),
                 ],
               )
             else ...[
               portrait,
-              const SizedBox(height: 16),
+              const SizedBox(height: PlayraSpace.lg),
               profile,
             ],
             if (character.summary.isNotEmpty) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: PlayraSpace.xxl),
               ContentSection(
                 title: '人物简介',
                 child: SelectableText(character.summary,
@@ -172,20 +172,20 @@ class CharacterInfoView extends StatelessWidget {
               ),
             ],
             if (moreFields.isNotEmpty) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: PlayraSpace.xxl),
               ContentSection.group(
                 title: '更多资料',
                 children: [
                   for (final field in moreFields)
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(PlayraSpace.lg),
                       child: _buildInfoField(context, field.key, field.value),
                     ),
                 ],
               ),
             ],
             if (character.unstructuredInfo.isNotEmpty) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: PlayraSpace.xxl),
               ContentSection(
                 title: '人物资料',
                 child: SelectableText(character.unstructuredInfo,
@@ -195,7 +195,7 @@ class CharacterInfoView extends StatelessWidget {
             if (fields.isEmpty &&
                 character.unstructuredInfo.isEmpty &&
                 character.summary.isEmpty) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: PlayraSpace.xxl),
               const TonalCard(
                 child: GeneralEmptyState(
                   icon: Icons.person_outline_rounded,
@@ -226,26 +226,26 @@ class CharacterInfoView extends StatelessWidget {
           Text(relation,
               style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 6),
+          const SizedBox(height: PlayraSpace.compact),
         ],
         SelectableText(name.isEmpty ? '人物' : name,
             style: theme.textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.w700)),
         if (originalName.isNotEmpty && originalName != name) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: PlayraSpace.compact),
           SelectableText(originalName,
               style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant)),
         ],
         if (actorNames.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           _buildInfoField(context, '配音', actorNames.join(' / ')),
         ],
       ],
     );
     return SingleChildScrollView(
       key: const PageStorageKey('character-info'),
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, 0, PlayraSpace.xl, PlayraSpace.xxl),
       child: LayoutBuilder(builder: (context, constraints) {
         final compactColumns = MediaQuery.textScalerOf(context).scale(14) <= 20;
         final sideBySide = constraints.maxWidth >= 260 && compactColumns;
@@ -257,12 +257,12 @@ class CharacterInfoView extends StatelessWidget {
             if (sideBySide)
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 portrait,
-                const SizedBox(width: 16),
+                const SizedBox(width: PlayraSpace.lg),
                 Expanded(child: identity),
               ])
             else ...[
               Align(alignment: Alignment.centerLeft, child: portrait),
-              const SizedBox(height: 12),
+              const SizedBox(height: PlayraSpace.md),
               identity,
             ],
             // 基本资料独占整行，避免被头像右侧的窄列压缩。
@@ -288,7 +288,7 @@ class CharacterInfoView extends StatelessWidget {
                       children: [
                         for (final field in moreFields)
                           Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.only(bottom: PlayraSpace.md),
                               child: _buildInfoField(
                                   context, field.key, field.value)),
                       ])),
@@ -300,7 +300,7 @@ class CharacterInfoView extends StatelessWidget {
                 moreFields.isEmpty &&
                 character.summary.isEmpty &&
                 character.unstructuredInfo.isEmpty) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: PlayraSpace.xl),
               const GeneralEmptyState(
                   icon: LucideIcons.userRound,
                   title: '暂无人物资料',
@@ -314,7 +314,7 @@ class CharacterInfoView extends StatelessWidget {
 
   Widget _modernSection(BuildContext context, String title,
       {required Widget child}) => Padding(
-        padding: const EdgeInsets.only(top: 20),
+        padding: const EdgeInsets.only(top: PlayraSpace.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -337,7 +337,7 @@ Widget _buildInfoField(BuildContext context, String label, String value) {
           style: theme.textTheme.labelLarge?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           )),
-      const SizedBox(height: 4),
+      const SizedBox(height: PlayraSpace.xs),
       SelectableText(value,
           style: theme.textTheme.bodyLarge?.copyWith(height: 1.5)),
     ],
@@ -371,7 +371,7 @@ class _CharacterPortrait extends StatelessWidget {
             excludeFromSemantics: true,
             child: Material(
               color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(PlayraRadius.control),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: hasImage
@@ -405,7 +405,7 @@ class _CharacterPortrait extends StatelessWidget {
                                   ),
                                 ),
                                 child: Padding(
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(PlayraSpace.xs),
                                   child: Icon(
                                     LucideIcons.maximize2,
                                     size: 14,
@@ -455,7 +455,7 @@ class _CharacterPortrait extends StatelessWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                padding: const EdgeInsets.fromLTRB(PlayraSpace.md, PlayraSpace.md, PlayraSpace.md, 0),
                 child: Hero(
                   tag: heroTag,
                   child: NetworkImgLayer(
@@ -467,14 +467,14 @@ class _CharacterPortrait extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(PlayraSpace.lg),
                 child: ExcludeSemantics(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.zoom_in_rounded,
                           size: 20, color: colors.primary),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: PlayraSpace.sm),
                       Flexible(
                         child: Text('查看原图',
                             style: Theme.of(context)

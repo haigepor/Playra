@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/services/platform/desktop_window_config.dart';
@@ -20,7 +21,7 @@ class EmbeddedNativeControlArea extends StatelessWidget {
         requireOffset &&
         DesktopWindowConfig.showWindowButton;
     return Padding(
-      padding: needsOffset ? const EdgeInsets.only(top: 22) : EdgeInsets.zero,
+      padding: needsOffset ? const EdgeInsets.only(top: PlayraSpace.xxl) : EdgeInsets.zero,
       child: child,
     );
   }

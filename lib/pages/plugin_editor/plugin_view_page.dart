@@ -240,7 +240,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
             onPressed: () => setState(() => _selecting = true),
             icon: const Icon(Icons.checklist_rounded),
           ),
-        const SizedBox(width: 8),
+        const SizedBox(width: PlayraSpace.sm),
       ],
       body: SafeArea(
         top: false,
@@ -303,7 +303,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                     !_selecting &&
                     _domain.isEmpty;
                 return ReorderableListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.md, PlayraSpace.lg, PlayraSpace.xxl),
                   buildDefaultDragHandles: false,
                   proxyDecorator: (child, index, animation) => Material(
                     elevation: 0,
@@ -334,7 +334,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: PlayraSpace.xl),
                       PlayraTextField(
                         controller: _search,
                         onChanged: (_) => setState(() {}),
@@ -351,9 +351,9 @@ class _PluginViewPageState extends State<PluginViewPage> {
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: PlayraSpace.md),
                       Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(PlayraSpace.compact),
                         decoration: BoxDecoration(
                           color: PlayraTokens.of(context).surfaceRaised,
                           borderRadius: BorderRadius.circular(PlayraRadius.card),
@@ -451,7 +451,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                       ),
                       if (_catalogFailed)
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: PlayraSpace.sm),
                           child: Text(
                             '暂时无法检查更新，已安装的规则仍可使用。',
                             style: Theme.of(context).textTheme.bodySmall
@@ -459,7 +459,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                           ),
                         ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(2, 20, 2, 10),
+                        padding: const EdgeInsets.fromLTRB(PlayraSpace.tiny, PlayraSpace.xl, PlayraSpace.tiny, PlayraSpace.md),
                         child: Row(
                           children: [
                             Expanded(
@@ -563,7 +563,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                           foreground: PlayraTokens.of(context).foregroundMuted,
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          padding: const EdgeInsets.symmetric(vertical: PlayraSpace.xs),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -576,7 +576,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                                     ? PlayraTokens.of(context).primary
                                     : PlayraTokens.of(context).foregroundMuted,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: PlayraSpace.xs),
                               Text(
                                 plugin.enabled ? '已启用' : '已停用',
                                 style: Theme.of(context).textTheme.labelSmall
@@ -611,7 +611,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                             )
                           else if (_updatingNames.contains(plugin.name))
                             const Padding(
-                              padding: EdgeInsets.all(12),
+                              padding: EdgeInsets.all(PlayraSpace.md),
                               child: LoadingIndicator(size: 24),
                             )
                           else
@@ -643,9 +643,9 @@ class _PluginViewPageState extends State<PluginViewPage> {
   Widget _menu(Plugin plugin, int index) => KazumiMenuButton(
     style: MenuStyle(
       shape: WidgetStatePropertyAll(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(PlayraRadius.overlay)),
       ),
-      padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
+      padding: const WidgetStatePropertyAll(EdgeInsets.all(PlayraSpace.sm)),
     ),
     builder: (context, toggle) => PlayraIconButton(
       tooltip: '${plugin.name} 的更多操作',

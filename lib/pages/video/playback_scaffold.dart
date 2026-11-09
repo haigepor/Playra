@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
@@ -450,7 +451,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                 portraitFullscreen: mode == VideoFullscreenMode.portrait,
                 portraitAspectRatio: portraitAspectRatio,
                 playerBuilder: (context, layout) => ColoredBox(
-                  color: Colors.black,
+                  color: PlayraMedia.canvas,
                   child: Focus(
                     focusNode: keyboardFocus,
                     autofocus: true,
@@ -598,14 +599,14 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                     PlayraIconButton(
                       tooltip: '播放当前选集',
                       onPressed: _onlineArgs == null ? null : playPrepared,
-                      icon: const Icon(Icons.play_arrow, color: Colors.white),
+                      icon: const Icon(Icons.play_arrow, color: PlayraMedia.foreground),
                     ),
                     Text(
                       isPreparing
                           ? '正在准备播放链接…'
                           : preparationError ??
                                 (isPrepared ? '播放链接已准备，点击播放' : '点击播放'),
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: PlayraMedia.foreground),
                     ),
                   ],
                 ),
@@ -616,7 +617,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                 child: PlayraIconButton(
                   tooltip: '返回',
                   onPressed: _onBackPressed,
-                  icon: const Icon(Icons.chevron_left, color: Colors.white),
+                  icon: const Icon(Icons.chevron_left, color: PlayraMedia.foreground),
                 ),
               ),
             ],
@@ -632,7 +633,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                   playerLoading ||
                   videoPageController.errorMessage != null)
                 Container(
-                  color: Colors.black,
+                  color: PlayraMedia.canvas,
                   child: Observer(
                     builder: (context) {
                       final errorMessage = videoPageController.errorMessage;
@@ -668,7 +669,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                               videoPageController.loading
                                   ? '视频资源解析中'
                                   : '视频资源解析成功, 播放器加载中',
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(color: PlayraMedia.foreground),
                             ),
                           ],
                         ),
@@ -681,7 +682,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                     (videoPageController.loading || playerLoading) &&
                     showDebugLog,
                 child: Container(
-                  color: Colors.black,
+                  color: PlayraMedia.canvas,
                   child: Align(
                     alignment: Alignment.center,
                     child: ListView.builder(
@@ -690,7 +691,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                       itemBuilder: (context, index) {
                         return Text(
                           webviewLogLines[index],
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: PlayraMedia.foreground),
                           textAlign: TextAlign.center,
                         );
                       },
@@ -711,7 +712,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                           PlayraIconButton(
                             icon: const Icon(
                               Icons.arrow_back,
-                              color: Colors.white,
+                              color: PlayraMedia.foreground,
                             ),
                             onPressed: _onBackPressed,
                           ),
@@ -723,7 +724,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                           PlayraIconButton(
                             icon: const Icon(
                               Icons.refresh_outlined,
-                              color: Colors.white,
+                              color: PlayraMedia.foreground,
                             ),
                             onPressed: () {
                               changeEpisode(
@@ -738,7 +739,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                               onPressed: _toggleSidePanel,
                               icon: const Icon(
                                 Icons.menu_open_rounded,
-                                color: Colors.white,
+                                color: PlayraMedia.foreground,
                               ),
                             ),
                           PlayraIconButton(
@@ -746,7 +747,7 @@ class PlaybackScaffoldState extends State<PlaybackScaffold>
                               showDebugLog
                                   ? Icons.bug_report
                                   : Icons.bug_report_outlined,
-                              color: Colors.white,
+                              color: PlayraMedia.foreground,
                             ),
                             onPressed: _toggleDebugConsole,
                           ),

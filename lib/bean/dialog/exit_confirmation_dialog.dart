@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 
@@ -41,7 +42,7 @@ class _ExitConfirmationDialogState extends State<ExitConfirmationDialog> {
           height: 56,
           decoration: BoxDecoration(
             color: colors.primaryContainer,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(PlayraRadius.card),
           ),
           child: Icon(
             Icons.exit_to_app_rounded,

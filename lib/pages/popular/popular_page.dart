@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -77,7 +78,7 @@ class _PopularPageState extends State<PopularPage> {
                 duration: const Duration(milliseconds: 300),
                 child: popularController.isLoadingMore
                     ? const PlayraProgress()
-                    : const SizedBox(height: 4),
+                    : const SizedBox(height: PlayraSpace.xs),
               ),
             ),
           ),
@@ -142,7 +143,7 @@ class _PopularPageState extends State<PopularPage> {
       crossCount = 6;
     }
     return SliverPadding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(PlayraSpace.sm),
       sliver: SliverGrid(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           // 行间距
@@ -193,9 +194,9 @@ class _PopularPageState extends State<PopularPage> {
                 alignment: Alignment.centerLeft,
                 child: Padding(
                   padding: const EdgeInsets.only(
-                    left: 16,
-                    top: 8,
-                    bottom: 8,
+                    left: PlayraSpace.lg,
+                    top: PlayraSpace.sm,
+                    bottom: PlayraSpace.sm,
                     right: 60,
                   ),
                   child: SizedBox(
@@ -217,7 +218,7 @@ class _PopularPageState extends State<PopularPage> {
                               ),
                           ],
                           builder: (context, toggle) => InkWell(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
                             onTap: toggle,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -232,7 +233,7 @@ class _PopularPageState extends State<PopularPage> {
                                         fontSize: fontSize,
                                       ),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: PlayraSpace.xs),
                                 Icon(
                                   Icons.keyboard_arrow_down,
                                   size: fontSize,

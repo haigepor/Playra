@@ -20,7 +20,7 @@ class AboutContent extends StatelessWidget {
   Widget build(BuildContext context) => SafeArea(
     top: false,
     child: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.md, PlayraSpace.lg, PlayraSpace.section),
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -78,8 +78,8 @@ class AboutLinkTile extends StatelessWidget {
       onHighlightChanged: SplitListRow.pressReporterOf(context),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: modern ? 14 : 16,
-          vertical: modern ? 12 : 16,
+          horizontal: modern ? PlayraSpace.lg : PlayraSpace.lg,
+          vertical: modern ? PlayraSpace.md : PlayraSpace.lg,
         ),
         child: Row(
           children: [
@@ -97,7 +97,7 @@ class AboutLinkTile extends StatelessWidget {
                 children: [
                   Text(title, style: theme.textTheme.titleMedium),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: PlayraSpace.xs),
                     Text(
                       subtitle!,
                       style:
@@ -110,7 +110,7 @@ class AboutLinkTile extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: PlayraSpace.md),
             Icon(
               Icons.chevron_right_rounded,
               size: modern ? 16 : 20,

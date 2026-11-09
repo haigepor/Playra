@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 
@@ -230,20 +231,20 @@ class _CollectSyncDialogState extends State<CollectSyncDialog> {
                     color: colors.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: PlayraSpace.xxl),
               ],
               if (!widget.plan.canSync) ...[
                 _setupRow(CollectSyncDestination.webDavSettings),
-                const SizedBox(height: 4),
+                const SizedBox(height: PlayraSpace.xs),
                 _setupRow(CollectSyncDestination.bangumiSettings),
               ] else ...[
                 for (var i = 0; i < _steps.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 4),
+                  if (i > 0) const SizedBox(height: PlayraSpace.xs),
                   _stepRow(_steps[i], i),
                 ],
                 if (_phase == _SyncPhase.ready &&
                     widget.plan.shouldSyncBangumi) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: PlayraSpace.lg),
                   Text(
                     '冲突处理：${widget.priority.label}',
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -354,15 +355,15 @@ class _CollectSyncDialogState extends State<CollectSyncDialog> {
             : colors.surfaceContainerLow,
         borderRadius: _rowRadius(index, _steps.length),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(PlayraSpace.lg),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.only(top: PlayraSpace.tiny),
                 child: Icon(icon, size: 24, color: foreground),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: PlayraSpace.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,7 +390,7 @@ class _CollectSyncDialogState extends State<CollectSyncDialog> {
                       ],
                     ),
                     if (detail != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: PlayraSpace.xs),
                       Text(
                         detail,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -400,7 +401,7 @@ class _CollectSyncDialogState extends State<CollectSyncDialog> {
                       ),
                     ],
                     if (failed && _finished) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: PlayraSpace.xs),
                       PlayraButton.ghostIcon(
                         onPressed: () =>
                             Navigator.of(context).pop(state.step._settings),
@@ -409,7 +410,7 @@ class _CollectSyncDialogState extends State<CollectSyncDialog> {
                       ),
                     ],
                     if (active && state.progress != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: PlayraSpace.md),
                       PlayraProgress(
                         value: state.progress,
 

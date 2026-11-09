@@ -365,7 +365,7 @@ class _KeyCap extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: 10,
+            horizontal: PlayraSpace.md,
             vertical: PlayraSpace.compact,
           ),
           child: Row(

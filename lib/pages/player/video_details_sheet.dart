@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -132,23 +133,23 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(resolution, style: theme.textTheme.headlineSmall),
-              const SizedBox(height: 16),
+              const SizedBox(height: PlayraSpace.lg),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(
                     child: _metric(context, '视频码率', debug.playerVideoBitrate)),
-                const SizedBox(width: 16),
+                const SizedBox(width: PlayraSpace.lg),
                 Expanded(
                     child: _metric(context, '音频码率', debug.playerAudioBitrate)),
               ]),
             ]),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: PlayraSpace.xxl),
           ContentSection.group(title: '媒体', children: [
             _statusField(context, '媒体地址', playerController.videoUrl,
                 compact: true),
             _statusField(context, '播放列表', debug.playerPlaylist, compact: true),
           ]),
-          const SizedBox(height: 24),
+          const SizedBox(height: PlayraSpace.xxl),
           ContentSection.group(title: '技术信息', children: [
             ExpansionTile(
               key: const PageStorageKey('video-parameters'),
@@ -182,7 +183,7 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
       Text(label,
           style: theme.textTheme.labelMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      const SizedBox(height: 4),
+      const SizedBox(height: PlayraSpace.xs),
       Text(value.isEmpty ? '—' : value, style: theme.textTheme.titleMedium),
     ]);
   }
@@ -248,7 +249,7 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
               label: const Text('复制全部'),
             ),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Expanded(
               child: TonalCard(
             child: logs.isEmpty
@@ -260,7 +261,7 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
                 : ListView.builder(
                     key: const PageStorageKey('videoDetailsLogList'),
                     controller: _logScrollController,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: PlayraSpace.md),
                     itemCount: logs.length,
                     itemBuilder: (context, index) =>
                         _buildLogRow(context, _LogEntry.parse(logs[index])),
@@ -284,7 +285,7 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
     return InkWell(
       onTap: () => _copyToClipboard(context, entry.raw),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg, vertical: PlayraSpace.compact),
         child: Text.rich(
           TextSpan(
             children: [

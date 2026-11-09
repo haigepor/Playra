@@ -118,7 +118,7 @@ class _DownloadEpisodeSheetState extends State<DownloadEpisodeSheet> {
                     controller: _observerController,
                     child: GridView.builder(
                       controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                      padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, 0, PlayraSpace.xxl, PlayraSpace.lg),
                       gridDelegate:
                           const SliverGridDelegateWithMaxCrossAxisExtent(
                             maxCrossAxisExtent: 160,
@@ -157,7 +157,7 @@ class _DownloadEpisodeSheetState extends State<DownloadEpisodeSheet> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, 0, PlayraSpace.xxl, PlayraSpace.xxl),
                   child: SafeArea(
                     top: false,
                     child: Row(
@@ -184,7 +184,7 @@ class _DownloadEpisodeSheetState extends State<DownloadEpisodeSheet> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 24),
+                        const SizedBox(width: PlayraSpace.xxl),
                         Expanded(
                           child: PlayraButton.icon(
                             onPressed: _selectedEpisodes.isEmpty
@@ -288,7 +288,7 @@ class _EpisodeTile extends StatelessWidget {
             children: [
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.sm),
                   child: Text(
                     identifier,
                     maxLines: 2,

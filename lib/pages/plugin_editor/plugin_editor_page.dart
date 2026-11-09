@@ -462,7 +462,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
         bottom: false,
         child: SingleChildScrollView(
           controller: _formScroll,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.md, PlayraSpace.lg, PlayraSpace.xxl),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 880),
@@ -476,15 +476,15 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                     description: '配置站点与检索方式，测试通过后保存。',
                     icon: Icons.edit_note_rounded,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: PlayraSpace.lg),
                   if (_editorError != null) ...[
                     Semantics(
                       liveRegion: true,
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(PlayraSpace.lg),
                         decoration: BoxDecoration(
                           color: colors.errorContainer,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(PlayraRadius.overlay),
                         ),
                         child: Text(
                           _editorError!,
@@ -492,7 +492,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: PlayraSpace.lg),
                   ],
                   EditorChoiceGroup<int>(
                     value: _section,
@@ -504,7 +504,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                     ],
                     onChanged: (value) => setState(() => _section = value),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: PlayraSpace.lg),
                   _buildCurrentSection(),
                 ],
               ),
@@ -517,7 +517,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.md, PlayraSpace.lg, PlayraSpace.md),
             child: Align(
               heightFactor: 1,
               child: ConstrainedBox(
@@ -535,7 +535,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: PlayraSpace.md),
                     Expanded(
                       child: PlayraButton.icon(
                         onPressed: _saving ? null : _save,
@@ -584,7 +584,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text('内容分类', style: Theme.of(context).textTheme.labelLarge),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: PlayraSpace.sm),
                     DropdownButtonFormField<String>(
                       isExpanded: true,
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -603,7 +603,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                       decoration: ruleInputDecoration(context).copyWith(
                         fillColor: Theme.of(context).colorScheme.surface,
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
+                          horizontal: PlayraSpace.lg,
                           vertical: 13,
                         ),
                         enabledBorder: OutlineInputBorder(
@@ -661,14 +661,14 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                         MediaQuery.textScalerOf(context).scale(14) > 20) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [name, const SizedBox(height: 16), version],
+                        children: [name, const SizedBox(height: PlayraSpace.lg), version],
                       );
                     }
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(flex: 2, child: name),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: PlayraSpace.lg),
                         Expanded(child: version),
                       ],
                     );
@@ -750,7 +750,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
             label: _RuleEditorText.userAgent,
             helper: _RuleEditorText.userAgentHelper,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: PlayraSpace.lg),
           EditorTextField(
             controller: refererController,
             label: _RuleEditorText.referer,
@@ -768,7 +768,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
               activeKey: antiCrawlerEnabled,
               child: antiCrawlerEnabled
                   ? Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.only(top: PlayraSpace.sm),
                       child: Column(
                         spacing: 16,
                         crossAxisAlignment: CrossAxisAlignment.stretch,

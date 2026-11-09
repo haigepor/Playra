@@ -330,7 +330,7 @@ class _OnboardingProgress extends StatelessWidget {
                           color: i <= currentIndex
                               ? colors.primary
                               : colors.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(PlayraRadius.indicator),
                         ),
                       ),
                     ),

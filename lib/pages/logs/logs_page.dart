@@ -198,12 +198,12 @@ class _LogsPageState extends State<LogsPage> {
           width: MediaQuery.of(context).size.width.clamp(600, double.infinity),
           child: ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(PlayraSpace.lg),
             shrinkWrap: false,
             itemCount: _logLines.length,
             itemBuilder: (context, index) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
+                padding: const EdgeInsets.only(bottom: PlayraSpace.xs),
                 child: Text(
                   _logLines[index],
                   softWrap: false,

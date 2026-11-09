@@ -145,7 +145,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
           ),
           if (widget.onAutomatic != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xxl, vertical: PlayraSpace.sm),
               child: SizedBox(
                 width: double.infinity,
                 child: PlayraButton.tonalIcon(
@@ -180,7 +180,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xxl),
                       sliver: SliverList.builder(
                         itemCount: widget.groups.length,
                         findChildIndexCallback: (key) {
@@ -193,14 +193,14 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                           final group = widget.groups[index];
                           return Padding(
                             key: ValueKey(group.name),
-                            padding: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.only(bottom: PlayraSpace.md),
                             child: _buildSourceGroup(group),
                           );
                         },
                       ),
                     ),
                   const SliverToBoxAdapter(
-                    child: SafeArea(top: false, child: SizedBox(height: 24)),
+                    child: SafeArea(top: false, child: SizedBox(height: PlayraSpace.xxl)),
                   ),
                 ],
               ),
@@ -243,12 +243,12 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                   child: Material(
                     type: MaterialType.transparency,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(PlayraRadius.card),
                       onTap: toggle,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(minHeight: 48),
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                          padding: const EdgeInsets.fromLTRB(PlayraSpace.md, PlayraSpace.sm, PlayraSpace.xs, PlayraSpace.sm),
                           child: Row(
                             children: [
                               Expanded(
@@ -259,14 +259,14 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: PlayraSpace.sm),
                               Text(
                                 group.statusLabel,
                                 style: theme.textTheme.labelMedium?.copyWith(
                                   color: colors.onSurfaceVariant,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: PlayraSpace.sm),
                               AnimatedRotation(
                                 turns: collapsed ? 0 : 0.5,
                                 duration: duration,
@@ -291,7 +291,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
         ),
         if (!collapsed && group.keyword != widget.keyword)
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.md, 0, PlayraSpace.md, PlayraSpace.sm),
             child: Text(
               '检索词：${group.keyword}',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -368,8 +368,8 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
               constraints: const BoxConstraints(minHeight: 48),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: PlayraSpace.lg,
+                  vertical: PlayraSpace.md,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -383,7 +383,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: PlayraSpace.sm),
                     Icon(
                       showAll
                           ? Icons.unfold_less_rounded
@@ -447,7 +447,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 64),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg, vertical: PlayraSpace.lg),
             child: Row(
               children: [
                 Expanded(
@@ -458,7 +458,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: PlayraSpace.lg),
                 Icon(
                   Icons.play_arrow_rounded,
                   color: theme.colorScheme.primary,
@@ -474,11 +474,11 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
   Widget _buildSearching() => ConstrainedBox(
     constraints: const BoxConstraints(minHeight: 64),
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg, vertical: PlayraSpace.lg),
       child: Row(
         children: [
           const LoadingIndicator(size: 20, semanticsLabel: '正在检索'),
-          const SizedBox(width: 12),
+          const SizedBox(width: PlayraSpace.md),
           Expanded(
             child: Text('正在检索…', style: Theme.of(context).textTheme.bodyMedium),
           ),
@@ -509,7 +509,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
             () => widget.onRetry(sourceName),
           );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.lg, PlayraSpace.lg, PlayraSpace.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -517,7 +517,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.only(top: PlayraSpace.tiny),
                 child: Icon(
                   icon,
                   size: 20,
@@ -537,7 +537,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: PlayraSpace.tiny),
                     Text(
                       hint,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -549,7 +549,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Wrap(
             spacing: 8,
             runSpacing: 4,

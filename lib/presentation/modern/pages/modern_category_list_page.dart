@@ -267,7 +267,7 @@ class _ModernCategoryListPageState extends State<ModernCategoryListPage> {
                   onPressed: isLoading ? null : _handleRefresh,
                   icon: isLoading
                       ? const SizedBox(
-                          width: 16,
+                          width: PlayraSpace.lg,
                           height: 16,
                           child: PlayraSpinner(),
                         )
@@ -423,7 +423,7 @@ class _ModernCategoryListPageState extends State<ModernCategoryListPage> {
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.only(
-                                bottom: PlayraSpace.xxl * 2,
+                                bottom: PlayraSpace.xxl * PlayraSpace.tiny,
                                 top: PlayraSpace.sm,
                               ),
                               child: Center(
@@ -481,7 +481,7 @@ class _ModernCategoryListPageState extends State<ModernCategoryListPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(
-              width: 16,
+              width: PlayraSpace.lg,
               height: 16,
               child: PlayraSpinner(),
             ),
@@ -654,7 +654,7 @@ class _CategoryPosterCardState extends State<_CategoryPosterCard> {
                                 begin: Alignment.bottomCenter,
                                 end: Alignment.topCenter,
                                 colors: [
-                                  Color(0x75000000),
+                                  PlayraMedia.scrim,
                                   Colors.transparent,
                                 ],
                               ),
@@ -670,7 +670,7 @@ class _CategoryPosterCardState extends State<_CategoryPosterCard> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: PlayraSpace.compact,
-                              vertical: 4,
+                              vertical: PlayraSpace.xs,
                             ),
                             decoration: BoxDecoration(
                               color: tokens.rankGold,
@@ -704,13 +704,13 @@ class _CategoryPosterCardState extends State<_CategoryPosterCard> {
                               textAlign: TextAlign.right,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: PlayraMedia.foreground,
                                 fontSize: PlayraType.micro,
                                 height: 1.2,
                                 fontWeight: FontWeight.w600,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.black54,
+                                    color: PlayraMedia.scrim,
                                     blurRadius: 4,
                                     offset: Offset(0, 1),
                                   ),

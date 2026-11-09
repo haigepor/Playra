@@ -1,3 +1,4 @@
+import '../player/sdk_playback_hero.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show ImageFilter;
@@ -6,12 +7,13 @@ import 'package:kazumi/app_brand.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' as f;
+import 'package:kazumi/presentation/theme/playra_forui_theme.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:kazumi/pages/player/player_item.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
-import 'package:kazumi/pages/video/video_page_layout.dart';
 import 'package:kazumi/pages/video/video_system_bars.dart';
 import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
@@ -20,7 +22,6 @@ import 'package:kazumi/bean/widget/content_skeleton.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/services/player/source_media_player.dart';
 import 'package:kazumi/services/player/web_player_surface.dart';
 import 'package:kazumi/services/source/sdk_playback_models.dart';
@@ -36,7 +37,6 @@ import 'package:kazumi/presentation/widgets/playra_sheet.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import '../player/playing_mark.dart';
 import '../player/player_theme.dart';
-import '../settings/modern_back_button.dart';
 import '../player/sdk_source_widgets.dart';
 import '../player/sdk_quality_selector.dart';
 import '../player/sdk_playback_notice.dart';
@@ -419,11 +419,11 @@ class _SdkDetailPageState extends State<SdkDetailPage>
     final target = previous == null
         ? episodes.firstOrNull
         : SdkPlaybackCoordinator.match(
-            previous,
-            episodes,
-            singleMovie: video.singleMovie && previousSingle,
-          ) ??
-          (previous.number == null ? episodes.firstOrNull : null);
+                previous,
+                episodes,
+                singleMovie: video.singleMovie && previousSingle,
+              ) ??
+              (previous.number == null ? episodes.firstOrNull : null);
     if (target == null) {
       setState(
         () => playMessage = episodes.isEmpty
@@ -857,9 +857,10 @@ class _SdkDetailPageState extends State<SdkDetailPage>
       }
       final mediaClock = Stopwatch()..start();
       final decryptionKey =
-          media['decryptionKey'] is String && (media['decryptionKey'] as String).isNotEmpty
-              ? media['decryptionKey'] as String
-              : null;
+          media['decryptionKey'] is String &&
+              (media['decryptionKey'] as String).isNotEmpty
+          ? media['decryptionKey'] as String
+          : null;
       final player = await _mediaSession.open(
         media['url'] as String,
         headers,
@@ -1020,6 +1021,31 @@ class _SdkDetailPageState extends State<SdkDetailPage>
     }
   }
 
+  Widget _collectionControl(BuildContext context) {
+    final saved = _library.get(service.id, source.contentId);
+    final colors = Theme.of(context).colorScheme;
+    return PopupMenuButton<int>(
+      tooltip: '设置收藏状态',
+      enabled: !_collectBusy,
+      initialValue: saved?.collectionType ?? 0,
+      onSelected: (type) => unawaited(_collect(type)),
+      itemBuilder: (_) => [
+        for (final type in CollectType.values)
+          PopupMenuItem(
+            value: type.value,
+            child: Text(type == CollectType.none ? '取消收藏' : type.label),
+          ),
+      ],
+      icon: Icon(
+        saved != null && CollectType.fromValue(saved.collectionType).isCollected
+            ? Icons.bookmark_rounded
+            : Icons.bookmark_border_rounded,
+        size: 20,
+        color: colors.onSurfaceVariant,
+      ),
+    );
+  }
+
   Widget _sourceControls(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final saved = _library.get(service.id, source.contentId);
@@ -1028,7 +1054,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
       children: [
         if (saved?.lastWatch != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.only(bottom: PlayraSpace.compact),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1037,7 +1063,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                   size: 14,
                   color: colors.onSurfaceVariant,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: PlayraSpace.xs),
                 Text(
                   '上次看到 ${saved!.progressLabel}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1058,39 +1084,21 @@ class _SdkDetailPageState extends State<SdkDetailPage>
             anime: video.isAnime,
           ),
           onSelectSource: video.lines.isEmpty ? null : () => showLines(context),
-          trailing: PopupMenuButton<int>(
-            tooltip: '设置收藏状态',
-            enabled: !_collectBusy,
-            initialValue: saved?.collectionType ?? 0,
-            onSelected: (type) => unawaited(_collect(type)),
-            itemBuilder: (_) => [
-              for (final type in CollectType.values)
-                PopupMenuItem(
-                  value: type.value,
-                  child: Text(type == CollectType.none ? '取消收藏' : type.label),
-                ),
-            ],
-            icon: Icon(
-              saved != null &&
-                      CollectType.fromValue(saved.collectionType).isCollected
-                  ? Icons.bookmark_rounded
-                  : Icons.bookmark_border_rounded,
-              size: 20,
-              color: colors.onSurfaceVariant,
-            ),
-          ),
         ),
         if (video.lines.isEmpty && !detailLoading && detailError == null)
           const Padding(
-            padding: EdgeInsets.only(top: 8),
+            padding: EdgeInsets.only(top: PlayraSpace.sm),
             child: Text('该作品暂无播放线路'),
           ),
         if (resumeNotice != null)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: PlayraSpace.sm),
             child: Text(
               resumeNotice!,
-              style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: PlayraType.caption,
+                color: colors.onSurfaceVariant,
+              ),
             ),
           ),
       ],
@@ -1139,16 +1147,18 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                       ],
                     ),
               // 画质从卡片行移入弹窗：弹窗内选择后关闭并立即切换。
-              quality: service.supportsQualities &&
+              quality:
+                  service.supportsQualities &&
                       episodes.isNotEmpty &&
                       _requestedEpisode != null &&
                       _requestedEpisode?.code == line?.code
                   ? SdkQualitySelector(
-                      qualities: [...?_qualityCandidate?.qualities]..sort(
-                        (a, b) => service
-                            .qualityPreference(b)
-                            .compareTo(service.qualityPreference(a)),
-                      ),
+                      qualities: [...?_qualityCandidate?.qualities]
+                        ..sort(
+                          (a, b) => service
+                              .qualityPreference(b)
+                              .compareTo(service.qualityPreference(a)),
+                        ),
                       automaticLabel: service.automaticQualityLabel,
                       selectedCode: _manualQualityCode,
                       status: switch (_qualityCandidate?.status) {
@@ -1199,7 +1209,9 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                     sdkLineOption(sheetContext, candidate),
                 if (video.lines.every(_lineUnavailable))
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: PlayraSpace.md,
+                    ),
                     child: Text(
                       '当前选集没有可用线路，可换一集或换来源',
                       style: Theme.of(sheetContext).textTheme.bodySmall
@@ -1254,7 +1266,12 @@ class _SdkDetailPageState extends State<SdkDetailPage>
       size: PlayraSheetSize.standard,
       title: video.title,
       builder: (context) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        padding: const EdgeInsets.fromLTRB(
+          PlayraSpace.xl,
+          0,
+          PlayraSpace.xl,
+          PlayraSpace.xxl,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1335,10 +1352,9 @@ class _SdkDetailPageState extends State<SdkDetailPage>
               final contentWidth = constraints.maxWidth > 0
                   ? constraints.maxWidth
                   : MediaQuery.sizeOf(context).width - 32;
-              final columns =
-                  (contentWidth / (82 * textScale.scale(1)))
-                      .floor()
-                      .clamp(2, 6);
+              final columns = (contentWidth / (82 * textScale.scale(1)))
+                  .floor()
+                  .clamp(2, 6);
               final tileHeight = 48 + (textScale.scale(12) - 12).clamp(0, 24);
               final tileWidth = (contentWidth - 8 * (columns - 1)) / columns;
               final rows = _episodeRows(
@@ -1354,7 +1370,12 @@ class _SdkDetailPageState extends State<SdkDetailPage>
               return ModernPlayerScope(
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(
+                      PlayraSpace.lg,
+                      0,
+                      PlayraSpace.lg,
+                      PlayraSpace.lg,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1364,8 +1385,10 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                               child: Text(
                                 '${line?.label ?? ''} · 共 ${ascending.length} 集',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: PlayraTokens.of(context).foregroundMuted,
+                                  fontSize: PlayraType.caption,
+                                  color: PlayraTokens.of(
+                                    context,
+                                  ).foregroundMuted,
                                 ),
                               ),
                             ),
@@ -1394,81 +1417,82 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                               ),
                           ],
                         ),
-                      if (groups > 1)
-                        _SdkEpisodeSegments(
-                          labels: [
-                            for (var i = 0; i < groups; i++)
-                              // 有真实集号时保留非连续编号；原文 part 不伪造数字身份。
-                              '${ordered[i * 50].number ?? i * 50 + 1}–${ordered[((i + 1) * 50).clamp(1, ordered.length) - 1].number ?? ((i + 1) * 50).clamp(1, ordered.length)}',
-                          ],
-                          selected: segment,
-                          onChanged: (index) => update(() => segment = index),
-                        ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: hasWide
-                            ? ListView.separated(
-                                key: ValueKey(
-                                  'mio-episode-rows-$segment-$descending',
+                        if (groups > 1)
+                          _SdkEpisodeSegments(
+                            labels: [
+                              for (var i = 0; i < groups; i++)
+                                // 有真实集号时保留非连续编号；原文 part 不伪造数字身份。
+                                '${ordered[i * 50].number ?? i * 50 + 1}–${ordered[((i + 1) * 50).clamp(1, ordered.length) - 1].number ?? ((i + 1) * 50).clamp(1, ordered.length)}',
+                            ],
+                            selected: segment,
+                            onChanged: (index) => update(() => segment = index),
+                          ),
+                        const SizedBox(height: PlayraSpace.md),
+                        Expanded(
+                          child: hasWide
+                              ? ListView.separated(
+                                  key: ValueKey(
+                                    'mio-episode-rows-$segment-$descending',
+                                  ),
+                                  itemCount: rows.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: PlayraSpace.sm),
+                                  itemBuilder: (context, index) {
+                                    final row = rows[index];
+                                    Widget button(SdkEpisode episode) =>
+                                        _SdkEpisodeButton(
+                                          episode: episode,
+                                          activity: _activity,
+                                          size: row.size,
+                                          selected:
+                                              episode.code == playingCode &&
+                                              episode.identityKey ==
+                                                  playingIdentity,
+                                          onPressed: () {
+                                            Navigator.of(sheetContext).pop();
+                                            unawaited(selectEpisode(episode));
+                                          },
+                                        );
+                                    return _episodeRow(row, button);
+                                  },
+                                )
+                              : GridView.builder(
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: columns,
+                                        mainAxisExtent: tileHeight.toDouble(),
+                                        crossAxisSpacing: 8,
+                                        mainAxisSpacing: 8,
+                                      ),
+                                  itemCount: visible.length,
+                                  itemBuilder: (context, index) {
+                                    final episode = visible[index];
+                                    return _SdkEpisodeButton(
+                                      episode: episode,
+                                      activity: _activity,
+                                      selected:
+                                          episode.code == playingCode &&
+                                          episode.identityKey ==
+                                              playingIdentity,
+                                      onPressed: () {
+                                        Navigator.of(sheetContext).pop();
+                                        unawaited(selectEpisode(episode));
+                                      },
+                                    );
+                                  },
                                 ),
-                                itemCount: rows.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 8),
-                                itemBuilder: (context, index) {
-                                  final row = rows[index];
-                                  Widget button(SdkEpisode episode) =>
-                                      _SdkEpisodeButton(
-                                        episode: episode,
-                                        activity: _activity,
-                                        size: row.size,
-                                        selected:
-                                            episode.code == playingCode &&
-                                            episode.identityKey ==
-                                                playingIdentity,
-                                        onPressed: () {
-                                          Navigator.of(sheetContext).pop();
-                                          unawaited(selectEpisode(episode));
-                                        },
-                                      );
-                                  return _episodeRow(row, button);
-                                },
-                              )
-                            : GridView.builder(
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: columns,
-                                      mainAxisExtent: tileHeight.toDouble(),
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                    ),
-                                itemCount: visible.length,
-                                itemBuilder: (context, index) {
-                                  final episode = visible[index];
-                                  return _SdkEpisodeButton(
-                                    episode: episode,
-                                    activity: _activity,
-                                    selected:
-                                        episode.code == playingCode &&
-                                        episode.identityKey == playingIdentity,
-                                    onPressed: () {
-                                      Navigator.of(sheetContext).pop();
-                                      unawaited(selectEpisode(episode));
-                                    },
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    ),
-  );
-}
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -1505,8 +1529,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
             final fullscreen = _nativeView?.isFullscreen == true;
             final pip = _nativeView?.isPip == true;
             final portrait =
-                _nativeView?.fullscreen.mode ==
-                VideoFullscreenMode.portrait;
+                _nativeView?.fullscreen.mode == VideoFullscreenMode.portrait;
             if (_nativePlayer != null &&
                 // 竖屏翻页时播放器表面会随切集重建（_videoController 短暂为
                 // null），不能因此退回详情页布局——保持全屏分支避免闪屏。
@@ -1525,7 +1548,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                           currentIndex: playingIndex,
                           itemCount: episodes.length,
                           titleFor: (index) => episodes[index].label,
-                          coverFor: (index) => video?.cover ?? '',
+                          coverFor: (index) => video.cover,
                           surfaceBuilder: () =>
                               _nativePlayerSurface(fillsWindow: true),
                           onPageSelected: (index) =>
@@ -1552,8 +1575,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
     if (requested != null) {
       final j = episodes.indexWhere(
         (e) =>
-            e.code == requested.code &&
-            e.identityKey == requested.identityKey,
+            e.code == requested.code && e.identityKey == requested.identityKey,
       );
       if (j >= 0) return j;
     }
@@ -1599,7 +1621,7 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(PlayraRadius.card),
+                    borderRadius: BorderRadius.zero,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -1618,305 +1640,126 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                                           );
                                           if (index >= 0 &&
                                               index + 1 < episodes.length) {
-                                            unawaited(play(episodes[index + 1]));
+                                            unawaited(
+                                              play(episodes[index + 1]),
+                                            );
                                           }
                                         },
                                 )
                               : _nativePlayerSurface(fillsWindow: false)
                         else
-                          LayoutBuilder(
-                            builder: (context, size) {
-                              final hasPoster = video.poster.isNotEmpty;
-                              final hasCover = video.cover.isNotEmpty;
-                              final targetEpisode =
-                                  _requestedEpisode ?? episodes.firstOrNull;
-                              final episodeLabel = targetEpisode != null
-                                  ? '播放 ${targetEpisode.name}'
-                                  : episodes.isNotEmpty
-                                      ? '播放 ${episodes.first.name}'
-                                      : '立即播放';
-
-                              return DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: Colors.black,
-                                  border: Border.all(
-                                    color: PlayraTokens.of(context)
-                                        .borderSubtle
-                                        .withValues(alpha: 0.5),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    // 1. 底层画面：若有横版剧照则直接全景铺满；若为竖版封面则采用高斯模糊环境光，避免粗暴裁切
-                                    if (hasPoster)
-                                      NetworkImgLayer(
-                                        src: video.poster,
-                                        fallbackTitle: video.title,
-                                        width: size.maxWidth,
-                                        height: size.maxHeight,
-                                        type: 'bg',
-                                        borderRadius: BorderRadius.zero,
-                                      )
-                                    else if (hasCover) ...[
-                                      ImageFiltered(
-                                        imageFilter: ImageFilter.blur(
-                                          sigmaX: 30,
-                                          sigmaY: 30,
-                                        ),
-                                        child: Transform.scale(
-                                          scale: 1.2,
-                                          child: NetworkImgLayer(
-                                            src: video.cover,
-                                            fallbackTitle: video.title,
-                                            width: size.maxWidth,
-                                            height: size.maxHeight,
-                                            type: 'bg',
-                                            borderRadius: BorderRadius.zero,
-                                          ),
-                                        ),
-                                      ),
-                                      const ColoredBox(color: Color(0x65000000)),
-                                      Center(
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 10,
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              PlayraRadius.poster,
-                                            ),
-                                            child: DecoratedBox(
-                                              decoration: BoxDecoration(
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black.withValues(
-                                                      alpha: 0.65,
-                                                    ),
-                                                    blurRadius: 24,
-                                                    spreadRadius: 2,
-                                                    offset: const Offset(0, 6),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: NetworkImgLayer(
-                                                src: video.cover,
-                                                fallbackTitle: video.title,
-                                                width: size.maxHeight * 0.68,
-                                                height: size.maxHeight * 0.92,
-                                                type: 'cover',
-                                                borderRadius: BorderRadius.zero,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                    // 2. 顶部和底部电影感平滑阴影蒙层
-                                    Positioned(
-                                      top: 0,
-                                      left: 0,
-                                      right: 0,
-                                      height: 76,
-                                      child: const IgnorePointer(
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                              colors: [
-                                                Color(0x85000000),
-                                                Colors.transparent,
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      height: 80,
-                                      child: const IgnorePointer(
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.bottomCenter,
-                                              end: Alignment.topCenter,
-                                              colors: [
-                                                Color(0x95000000),
-                                                Colors.transparent,
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    // 3. 居中微光毛玻璃小胶囊播放按钮
-                                    Center(
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          onTap: episodes.isEmpty
-                                              ? null
-                                              : () => play(
-                                                  _requestedEpisode ??
-                                                      episodes.first,
-                                                ),
-                                          borderRadius:
-                                              BorderRadius.circular(28),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 22,
-                                              vertical: 10,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(28),
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withValues(alpha: 0.92),
-                                              border: Border.all(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.35,
-                                                ),
-                                                width: 1.2,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                      .withValues(alpha: 0.45),
-                                                  blurRadius: 20,
-                                                  spreadRadius: 2,
-                                                  offset: const Offset(0, 4),
-                                                ),
-                                                const BoxShadow(
-                                                  color: Colors.black45,
-                                                  blurRadius: 10,
-                                                  offset: Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(
-                                                  Icons.play_arrow_rounded,
-                                                  size: 26,
-                                                  color: Colors.white,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  episodeLabel,
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Colors.white,
-                                                    letterSpacing: 0.4,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                          SdkPlaybackHero(
+                            cover: video.cover,
+                            backdrop: video.poster,
+                            title: video.title,
+                            episodeLabel: detailLoading || episodesLoading
+                                ? '正在加载剧集'
+                                : episodes.isEmpty
+                                ? '暂无可播放剧集'
+                                : '播放 ${(_requestedEpisode ?? episodes.first).name}',
+                            onPlay: episodes.isEmpty
+                                ? null
+                                : () =>
+                                      play(_requestedEpisode ?? episodes.first),
                           ),
-                      if (playingLoading && !_preparingOnly)
-                        Center(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: PlayraTokens.of(
-                                context,
-                              ).background.withValues(alpha: 0.8),
-                              borderRadius: const BorderRadius.all(
-                                Radius.circular(PlayraRadius.card),
+                        if (playingLoading && !_preparingOnly)
+                          Center(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: PlayraTokens.of(
+                                  context,
+                                ).background.withValues(alpha: 0.8),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(PlayraRadius.card),
+                                ),
                               ),
-                            ),
-                            child: const Padding(
-                              padding: EdgeInsets.all(14),
-                              child: LoadingIndicator(
-                                size: 38,
-                                semanticsLabel: '正在解析并加载视频',
+                              child: const Padding(
+                                padding: EdgeInsets.all(PlayraSpace.lg),
+                                child: LoadingIndicator(
+                                  size: 38,
+                                  semanticsLabel: '正在解析并加载视频',
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      if (_videoController != null &&
-                          playMessage != null &&
-                          !playingLoading &&
-                          _requestedEpisode != null &&
-                          _requestedEpisode!.code == line?.code)
-                        Center(
-                          child: PlayraIconButton(
-                            tooltip: '重试当前集',
-                            onPressed: () => play(_requestedEpisode!),
-                            icon: const Icon(Icons.replay_rounded, size: 28),
+                        if (_videoController != null &&
+                            playMessage != null &&
+                            !playingLoading &&
+                            _requestedEpisode != null &&
+                            _requestedEpisode!.code == line?.code)
+                          Center(
+                            child: PlayraIconButton(
+                              tooltip: '重试当前集',
+                              onPressed: () => play(_requestedEpisode!),
+                              icon: const Icon(Icons.replay_rounded, size: 28),
+                            ),
                           ),
-                        ),
-                      if (kIsWeb || _videoController == null)
-                        Positioned(
-                          left: 14,
-                          top: 14,
-                          child: ClipOval(
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.black.withValues(alpha: 0.45),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.22),
-                                    width: 1,
-                                  ),
+                        if (kIsWeb || _videoController == null)
+                          Positioned(
+                            left: 14,
+                            top: 14,
+                            child: ClipOval(
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
                                 ),
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  tooltip: '返回',
-                                  onPressed: () {
-                                    if (_nativeView != null &&
-                                        _nativeView!.isFullscreen) {
-                                      unawaited(
-                                        _nativeView!.fullscreen.setFullscreen(
-                                          false,
-                                        ),
-                                      );
-                                    } else {
-                                      Navigator.of(context).maybePop();
-                                    }
-                                  },
-                                  icon: const Icon(
-                                    LucideIcons.chevronLeft,
-                                    size: 20,
-                                    color: Colors.white,
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: PlayraMedia.canvas.withValues(
+                                      alpha: 0.45,
+                                    ),
+                                    border: Border.all(
+                                      color: PlayraMedia.foreground.withValues(
+                                        alpha: 0.22,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    tooltip: '返回',
+                                    onPressed: () {
+                                      if (_nativeView != null &&
+                                          _nativeView!.isFullscreen) {
+                                        unawaited(
+                                          _nativeView!.fullscreen.setFullscreen(
+                                            false,
+                                          ),
+                                        );
+                                      } else {
+                                        Navigator.of(context).maybePop();
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      LucideIcons.chevronLeft,
+                                      size: 20,
+                                      color: PlayraMedia.foreground,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
+              Expanded(
                 child: RefreshIndicator(
                   onRefresh: loadDetail,
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      PlayraSpace.lg,
+                      PlayraSpace.lg,
+                      PlayraSpace.lg,
+                      PlayraSpace.xxl,
+                    ),
                     children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1925,25 +1768,25 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                             child: Text(
                               video.title,
                               style: const TextStyle(
-                                fontSize: 20,
+                                fontSize: PlayraType.title,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          PlayraButton.ghost(
-                            onPressed: () => showDescription(context),
-                            child: const Text('简介 ›'),
-                          ),
+                          _collectionControl(context),
                         ],
                       ),
-                      Text(
-                        video.subtitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      if (video.subtitle.isNotEmpty)
+                        Text(
+                          video.subtitle,
+                          style: TextStyle(
+                            fontSize: PlayraType.body,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: PlayraSpace.md),
                       if (detailError != null)
                         Row(
                           children: [
@@ -1968,14 +1811,14 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                               : () => selectEpisode(_requestedEpisode!),
                         ),
                       _sourceControls(context),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: PlayraSpace.sm),
                       Row(
                         children: [
                           const Expanded(
                             child: Text(
                               '选集',
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: PlayraType.item,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -1986,14 +1829,18 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                                 : () => showEpisodes(context),
                             child: Text(
                               '全部 ${episodes.length}集 ›',
-                              style: const TextStyle(fontSize: 12),
+                              style: const TextStyle(
+                                fontSize: PlayraType.caption,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       if (episodesLoading && episodes.isEmpty)
                         const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(
+                            vertical: PlayraSpace.lg,
+                          ),
                           child: SkeletonEpisodes(),
                         ),
                       if (episodesError != null)
@@ -2008,18 +1855,16 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                             ),
                           ],
                         ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: PlayraSpace.xs),
                       LayoutBuilder(
                         builder: (context, bounds) {
-                          final columns =
-                              ((bounds.maxWidth + 8) /
-                                      (104 *
-                                          (MediaQuery.textScalerOf(
-                                                context,
-                                              ).scale(12) /
-                                              12)))
-                                  .floor()
-                                  .clamp(2, 6);
+                          final columns = PlayraLayout.columns(
+                            bounds.maxWidth,
+                            minimum: 104,
+                            gap: PlayraSpace.sm,
+                            textScale: PlayraLayout.textScaleOf(context),
+                            maximum: 6,
+                          );
                           final tileWidth =
                               (bounds.maxWidth - 8 * (columns - 1)) / columns;
                           final rows = _episodeRows(
@@ -2032,7 +1877,8 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                           return Column(
                             children: [
                               for (var i = 0; i < rows.length; i++) ...[
-                                if (i > 0) const SizedBox(height: 8),
+                                if (i > 0)
+                                  const SizedBox(height: PlayraSpace.sm),
                                 _episodeRow(
                                   rows[i],
                                   (episode) => episodeButton(
@@ -2050,6 +1896,19 @@ class _SdkDetailPageState extends State<SdkDetailPage>
                           episodesError == null &&
                           line != null)
                         const Text('该线路暂无剧集'),
+                      const SizedBox(height: PlayraSpace.xxl),
+                      PlayraListTile(
+                        title: const Text('作品简介'),
+                        subtitle: Text(
+                          video.description.isEmpty
+                              ? '暂无简介'
+                              : video.description,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => showDescription(context),
+                      ),
                     ],
                   ),
                 ),
@@ -2076,7 +1935,9 @@ _EpisodeCardSize _episodeSize(
   final painter = TextPainter(
     text: TextSpan(
       text: _episodeLabel(episode),
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12),
+      style: Theme.of(
+        context,
+      ).textTheme.labelLarge?.copyWith(fontSize: PlayraType.caption),
     ),
     textDirection: Directionality.of(context),
     textScaler: MediaQuery.textScalerOf(context),
@@ -2113,7 +1974,7 @@ class _EpisodeRow {
 Widget _episodeRow(_EpisodeRow row, Widget Function(SdkEpisode) button) => Row(
   children: [
     for (var i = 0; i < row.columns; i++) ...[
-      if (i > 0) const SizedBox(width: 8),
+      if (i > 0) const SizedBox(width: PlayraSpace.sm),
       Expanded(
         child: i < row.episodes.length
             ? button(row.episodes[i])
@@ -2212,57 +2073,18 @@ class _SdkEpisodeSegmentsState extends State<_SdkEpisodeSegments>
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 48,
-      child: TabBar(
-        key: const ValueKey('mio-episode-segments'),
-        controller: _tabs,
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        indicatorSize: TabBarIndicatorSize.tab,
-        indicatorPadding: const EdgeInsets.symmetric(
-          horizontal: 3,
-          vertical: 6,
-        ),
-        indicator: BoxDecoration(
-          color: colors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: colors.primary.withValues(alpha: .35)),
-        ),
-        automaticIndicatorColorAdjustment: false,
-        dividerColor: Colors.transparent,
-        labelPadding: EdgeInsets.zero,
-        labelColor: colors.primary,
-        unselectedLabelColor: colors.onSurfaceVariant,
-        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-        splashFactory: NoSplash.splashFactory,
-        onTap: widget.onChanged,
-        tabs: [
-          for (final label in widget.labels)
-            Tab(
-              height: 48,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 88),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Center(child: Text(label)),
-                ),
-              ),
-            ),
-        ],
-      ),
+    return PlayraTabBar(
+      key: const ValueKey('mio-episode-segments'),
+      controller: _tabs,
+      isScrollable: true,
+      onTap: widget.onChanged,
+      tabs: [for (final label in widget.labels) Tab(text: label)],
     );
   }
 }
 
 /// 页面内与弹层共用剧集样式；长名称单独占一行，最多显示两行。
-class _SdkEpisodeButton extends StatelessWidget {
+class _SdkEpisodeButton extends StatelessWidget with PlayraForuiComponent {
   const _SdkEpisodeButton({
     required this.episode,
     required this.selected,
@@ -2277,62 +2099,52 @@ class _SdkEpisodeButton extends StatelessWidget {
   final _EpisodeCardSize size;
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildForui(BuildContext context) {
     final tokens = PlayraTokens.of(context);
     final expanded = size == _EpisodeCardSize.full;
     final wide = size != _EpisodeCardSize.compact;
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(PlayraRadius.control),
-      side: BorderSide(
-        color: selected ? tokens.primary : tokens.borderSubtle,
-      ),
-    );
-    return Material(
-      color: selected ? tokens.primaryContainer : tokens.surfaceRaised,
-      shape: shape,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: shape,
-        child: Container(
-          constraints: BoxConstraints(minHeight: _episodeHeight(context, size)),
-          padding: EdgeInsets.symmetric(
-            horizontal: wide ? PlayraSpace.md : PlayraSpace.sm,
-            vertical: expanded ? 10 : 0,
-          ),
-          alignment: wide ? Alignment.centerLeft : Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: wide
-                ? MainAxisAlignment.start
-                : MainAxisAlignment.center,
-            children: [
-              if (selected) ...[
-                if (activity == null)
-                  PlayingMark(active: false, color: tokens.primary)
-                else
-                  ValueListenableBuilder<bool>(
-                    valueListenable: activity!,
-                    builder: (_, active, _) =>
-                        PlayingMark(active: active, color: tokens.primary),
-                  ),
-                const SizedBox(width: 4),
-              ],
-              Flexible(
-                child: Text(
-                  '${episode.vip ? 'VIP · ' : ''}${episode.label}',
-                  maxLines: expanded ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.4,
-                    color: selected ? tokens.primary : tokens.foreground,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  ),
+    return f.FButton.raw(
+      variant: f.FButtonVariant.outline,
+      selected: selected,
+      onPress: onPressed,
+      child: Container(
+        constraints: BoxConstraints(minHeight: _episodeHeight(context, size)),
+        padding: EdgeInsets.symmetric(
+          horizontal: wide ? PlayraSpace.md : PlayraSpace.sm,
+          vertical: expanded ? PlayraSpace.md : 0,
+        ),
+        alignment: wide ? Alignment.centerLeft : Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: wide
+              ? MainAxisAlignment.start
+              : MainAxisAlignment.center,
+          children: [
+            if (selected) ...[
+              if (activity == null)
+                PlayingMark(active: false, color: tokens.primary)
+              else
+                ValueListenableBuilder<bool>(
+                  valueListenable: activity!,
+                  builder: (_, active, _) =>
+                      PlayingMark(active: active, color: tokens.primary),
+                ),
+              const SizedBox(width: PlayraSpace.xs),
+            ],
+            Flexible(
+              child: Text(
+                '${episode.vip ? 'VIP · ' : ''}${episode.label}',
+                maxLines: expanded ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: PlayraType.caption,
+                  height: 1.4,
+                  color: selected ? tokens.primary : tokens.foreground,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

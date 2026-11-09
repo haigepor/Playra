@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -70,7 +71,7 @@ InputDecoration _sheetInputDecoration({
     hintText: hintText,
     helperText: helperText,
     errorText: errorText,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(PlayraRadius.overlay)),
   );
 }
 
@@ -113,7 +114,7 @@ class _SyncPlaySheetScaffold extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       primaryAction!,
-                      const SizedBox(width: 8),
+                      const SizedBox(width: PlayraSpace.sm),
                       PlayraIconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         tooltip: '关闭',
@@ -125,15 +126,15 @@ class _SyncPlaySheetScaffold extends StatelessWidget {
           ),
           Flexible(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xxl),
               child: bodyBuilder(context, compact),
             ),
           ),
           if (compact)
-            const SizedBox(height: 12)
+            const SizedBox(height: PlayraSpace.md)
           else if (showCancel || primaryAction != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, PlayraSpace.lg, PlayraSpace.xxl, PlayraSpace.xxl),
               child: Row(
                 children: [
                   if (showCancel)
@@ -147,7 +148,7 @@ class _SyncPlaySheetScaffold extends StatelessWidget {
               ),
             )
           else
-            const SizedBox(height: 24),
+            const SizedBox(height: PlayraSpace.xxl),
         ],
       ),
     );
@@ -201,14 +202,14 @@ class _SyncPlayHomeSheet extends StatelessWidget {
 
     return TonalCard(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(PlayraSpace.lg),
         child: Row(
           children: [
             const SizedBox.square(
               dimension: 22,
               child: LoadingIndicator(),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: PlayraSpace.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +222,7 @@ class _SyncPlayHomeSheet extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: PlayraSpace.tiny),
                   Text(
                     _readEndPoint(),
                     overflow: TextOverflow.ellipsis,
@@ -254,7 +255,7 @@ class _SyncPlayHomeSheet extends StatelessWidget {
               onTap: () =>
                   Navigator.of(context).pop(_SyncPlayDestination.create),
             )),
-            const SizedBox(width: 12),
+            const SizedBox(width: PlayraSpace.md),
             Expanded(
                 child: _ChoiceCard(
               icon: Icons.login_rounded,
@@ -264,7 +265,7 @@ class _SyncPlayHomeSheet extends StatelessWidget {
             )),
           ],
         )),
-        const SizedBox(height: 16),
+        const SizedBox(height: PlayraSpace.lg),
         PlayraListTile(
           title: const Text('同步服务器'),
           subtitle: Text(_readEndPoint(), overflow: TextOverflow.ellipsis),
@@ -291,7 +292,7 @@ class _SyncPlayHomeSheet extends StatelessWidget {
           label: '当前房间',
           trailing: [_CopyButton(value: room)],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         TonalCard(
           child: Column(
             children: [
@@ -311,7 +312,7 @@ class _SyncPlayHomeSheet extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         Text(
           '分享房间号，好友即可加入',
           style: theme.textTheme.bodySmall?.copyWith(
@@ -332,18 +333,18 @@ class _SyncPlayHomeSheet extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(PlayraSpace.lg),
       child: Row(
         children: [
           Icon(icon, size: 22, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 16),
+          const SizedBox(width: PlayraSpace.lg),
           Text(
             label,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: PlayraSpace.lg),
           Expanded(
             child: Text(
               value,
@@ -379,14 +380,14 @@ class _ChoiceCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(PlayraSpace.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(icon, color: theme.colorScheme.primary, size: 28),
-              const SizedBox(height: 20),
+              const SizedBox(height: PlayraSpace.xl),
               Text(title, style: theme.textTheme.titleMedium),
-              const SizedBox(height: 4),
+              const SizedBox(height: PlayraSpace.xs),
               Text(description,
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
@@ -508,7 +509,7 @@ class _SyncPlayRoomSheetState extends State<_SyncPlayRoomSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(child: lead),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: PlayraSpace.md),
                     Expanded(child: _buildUsernameField(compact: true)),
                   ],
                 )
@@ -516,7 +517,7 @@ class _SyncPlayRoomSheetState extends State<_SyncPlayRoomSheet> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     lead,
-                    const SizedBox(height: 16),
+                    const SizedBox(height: PlayraSpace.lg),
                     _buildUsernameField(),
                   ],
                 ),
@@ -648,7 +649,7 @@ class _SyncPlayServerSheetState extends State<_SyncPlayServerSheet> {
                 _buildEndPointTile(context, endPoint),
             ]),
             if (_selectedEndPoint == _customOption) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: PlayraSpace.lg),
               PlayraTextField(
                 controller: _customEndPointController,
                 autofocus: _focusCustomEndPoint,
@@ -719,7 +720,7 @@ class _RoomNumberCard extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return TonalCard(
-      padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
+      padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, PlayraSpace.lg, PlayraSpace.sm, PlayraSpace.lg),
       child: Row(
         children: [
           Expanded(
@@ -733,7 +734,7 @@ class _RoomNumberCard extends StatelessWidget {
                     color: colorScheme.onSurface.withValues(alpha: 0.75),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: PlayraSpace.tiny),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,

@@ -149,7 +149,7 @@ class _VerifyDialogFrame extends StatelessWidget {
                 size: 20,
                 color: colors.onSurfaceVariant,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: PlayraSpace.sm),
               Expanded(
                 child: Text(
                   pluginName,
@@ -160,7 +160,7 @@ class _VerifyDialogFrame extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: PlayraSpace.lg),
           Text(title, style: theme.textTheme.headlineSmall),
         ],
       ),
@@ -175,9 +175,9 @@ class _VerifyDialogFrame extends StatelessWidget {
                 color: colors.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: PlayraSpace.xxl),
             child,
-            if (actions.isEmpty) const SizedBox(height: 24),
+            if (actions.isEmpty) const SizedBox(height: PlayraSpace.xxl),
           ],
         ),
       ),
@@ -316,10 +316,10 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
         children: [
           Container(
             constraints: const BoxConstraints(minHeight: 128),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(PlayraSpace.lg),
             decoration: BoxDecoration(
               color: colors.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(PlayraRadius.overlay),
             ),
             child: _buildImage(),
           ),
@@ -349,7 +349,7 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
                 errorText: _inputError,
                 errorMaxLines: 2,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(PlayraRadius.control),
                 ),
               ),
             ),
@@ -368,7 +368,7 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
             Icons.broken_image_outlined,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Text(_imageError!, textAlign: TextAlign.center),
           PlayraButton.ghostIcon(
             onPressed: _reload,
@@ -387,7 +387,7 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
             size: 40,
             semanticsLabel: _submitting ? '正在验证' : '正在加载验证码',
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           Text(
             _submitting ? '正在等待验证结果…' : '正在加载验证码…',
             textAlign: TextAlign.center,
@@ -397,7 +397,7 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
     }
     return Center(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
         child: ColoredBox(
           color: Colors.white,
           child: Image.memory(
@@ -430,7 +430,7 @@ class _AutomatedVerifyDialog extends StatelessWidget {
       ),
     ],
     child: const Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(vertical: PlayraSpace.lg),
       child: Center(child: LoadingIndicator(size: 72, semanticsLabel: '正在验证')),
     ),
   );

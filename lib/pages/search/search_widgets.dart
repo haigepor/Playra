@@ -158,14 +158,14 @@ class _SearchResultCard extends StatelessWidget {
     return Material(
       type: MaterialType.transparency,
       clipBehavior: Clip.antiAlias,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(PlayraRadius.card),
       child: InkWell(
         onTap: () => context.pushNamed('/info/', arguments: item),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(PlayraRadius.card),
               child: AspectRatio(
                 aspectRatio: coverAspectRatio,
                 child: LayoutBuilder(
@@ -229,11 +229,11 @@ class _SearchLoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: PlayraSpace.lg),
       child: Column(
         children: [
           const LoadingIndicator(size: 40),
-          const SizedBox(height: 20),
+          const SizedBox(height: PlayraSpace.xl),
           Semantics(
             liveRegion: true,
             child: Text(

@@ -629,11 +629,11 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         ),
         if (automaticSourceError != null)
           Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: PlayraSpace.compact),
             child: Text(
               automaticSourceError!,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: PlayraType.caption,
                 color: Theme.of(context).colorScheme.error,
               ),
             ),
@@ -723,8 +723,8 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     final colors = theme.colorScheme;
     final cardShape = theme.cardTheme.shape ?? const RoundedRectangleBorder();
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(bottom: PlayraSpace.sm),
+      padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md, vertical: PlayraSpace.sm),
       decoration: ShapeDecoration(
         color: colors.surfaceContainerLow,
         // 自定义 ShapeBorder 未必支持改描边，保留其形状实现。
@@ -769,7 +769,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               ),
               if (loading)
                 const Padding(
-                  padding: EdgeInsets.all(12),
+                  padding: EdgeInsets.all(PlayraSpace.md),
                   child: LoadingIndicator(size: 16),
                 )
               else if (!ready) ...[
@@ -796,7 +796,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
             ],
           ),
           if (ready && !loading && roads.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: PlayraSpace.compact),
             Wrap(
               spacing: 8,
               runSpacing: 2,
@@ -996,12 +996,11 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         historyController: widget.historyController,
         downloadController: widget.downloadController,
         idlePlayerBuilder: (context) {
-          final tokens = PlayraTokens.of(context);
           return Stack(
             fit: StackFit.expand,
             children: [
               PlayerCover(url: item.images['large'] ?? '', player: true),
-              const ColoredBox(color: Color(0x66000000)),
+              const ColoredBox(color: PlayraMedia.scrimMedium),
               Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1017,24 +1016,15 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                       enabled: !choosingSource,
                       excludeSemantics: true,
                       onTap: choosingSource ? null : () => resume(context),
-                      child: ShadButton(
-                        onPressed:
-                            choosingSource ? null : () => resume(context),
-                        width: 52,
-                        height: 52,
-                        padding: EdgeInsets.zero,
-                        decoration: ShadDecoration(
-                          border: ShadBorder(radius: BorderRadius.circular(26)),
-                        ),
+                      child: PlayraButton(
+                        onPressed: choosingSource ? null : () => resume(context),
+                        busy: choosingSource,
                         child: choosingSource
-                            ? LoadingIndicator(
-                                size: 26,
-                                color: tokens.primaryForeground,
-                              )
+                            ? const SizedBox.shrink()
                             : const Icon(LucideIcons.play, size: 22),
                       ),
                     ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: PlayraSpace.sm),
                   Text(
                     choosingSource ||
                             playbackKey.currentState?.isPreparing == true
@@ -1046,7 +1036,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                         : resumeCandidate != null
                         ? '继续观看 · ${resumeCandidate!.lastWatchEpisodeName}'
                         : '开始观看 · 自动选源',
-                    style: const TextStyle(fontSize: 12, color: Colors.white),
+                    style: const TextStyle(fontSize: PlayraType.caption, color: PlayraMedia.foreground),
                   ),
                 ],
               ),
@@ -1057,7 +1047,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               child: PlayraIconButton(
                 tooltip: '返回',
                 onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(LucideIcons.chevronLeft, size: 22, color: Colors.white),
+                icon: const Icon(LucideIcons.chevronLeft, size: 22, color: PlayraMedia.foreground),
               ),
             ),
             Positioned(top: 0, right: 4, child: actionsMenu(context)),
@@ -1070,7 +1060,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                   key: const ValueKey('modern-player-open-details'),
                   tooltip: '详情与选集',
                   onPressed: () => playbackKey.currentState?.toggleDetails(),
-                  icon: const Icon(Icons.view_sidebar_outlined, size: 22, color: Colors.white),
+                  icon: const Icon(Icons.view_sidebar_outlined, size: 22, color: PlayraMedia.foreground),
                 ),
               ),
             ],
@@ -1147,7 +1137,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     final start = math.max(0, selection.episode - 3);
     return ListView(
       key: const PageStorageKey('modern-player-detail'),
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+      padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.xl, PlayraSpace.lg, PlayraSpace.xxl),
       children: [
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -1157,26 +1147,26 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: PlayraType.title, fontWeight: FontWeight.w600),
             ),
             if (showRating && item.votes > 0)
               Text(
                 '☆ ${item.ratingScore.toStringAsFixed(1)}',
                 style: TextStyle(
                   color: c.primary,
-                  fontSize: 20,
+                  fontSize: PlayraType.title,
                   fontWeight: FontWeight.w600,
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: PlayraSpace.compact),
         Text(
           [
             if (item.airDate.isNotEmpty) item.airDate,
             ...item.metaTags,
           ].join(' · '),
-          style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
+          style: TextStyle(fontSize: PlayraType.caption, color: c.onSurfaceVariant),
         ),
         InkWell(
           borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
@@ -1199,13 +1189,13 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: PlayraType.caption,
                       color: c.onSurfaceVariant,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text('简介', style: TextStyle(color: c.primary, fontSize: 12)),
+                const SizedBox(width: PlayraSpace.md),
+                Text('简介', style: TextStyle(color: c.primary, fontSize: PlayraType.caption)),
                 Icon(LucideIcons.chevronRight, size: 16, color: c.onSurfaceVariant),
               ],
             ),
@@ -1254,7 +1244,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: math.min(8, math.max(0, count - start)),
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: PlayraSpace.sm),
               itemBuilder: (_, i) {
                 final index = start + i;
                 final selected = VideoEpisodeSelection(
@@ -1284,13 +1274,13 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               },
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Text(
             video.errorMessage ??
                 (video.loading
                     ? '正在解析选中的剧集'
                     : video.resolveEpisode(selection)?.displayTitle ?? ''),
-            style: TextStyle(fontSize: 11, color: c.onSurfaceVariant),
+            style: TextStyle(fontSize: PlayraType.small, color: c.onSurfaceVariant),
           ),
           if (video.errorMessage != null)
             Wrap(
@@ -1315,7 +1305,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: math.min(8, catalogEpisodes.length),
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: PlayraSpace.sm),
                 itemBuilder: (_, i) {
                   final episode = catalogEpisodes[i];
                   return PlayerEpisodeButton(
@@ -1333,14 +1323,14 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
             label: const Text('自动播放'),
           ),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: PlayraSpace.xxl),
         const PlayraDivider(),
-        const SizedBox(height: 16),
+        const SizedBox(height: PlayraSpace.lg),
         const Text(
           '关联作品',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: PlayraType.item, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         if (relationsLoading && info.relationList.isEmpty)
           const SkeletonPosters(count: 3)
         else if (relationsError)
@@ -1351,7 +1341,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
         else if (info.relationList.isEmpty)
           Text(
             '暂无关联作品',
-            style: TextStyle(color: c.onSurfaceVariant, fontSize: 12),
+            style: TextStyle(color: c.onSurfaceVariant, fontSize: PlayraType.caption),
           )
         else
           PlayerRelations(
@@ -1377,13 +1367,13 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
     final c = Theme.of(context).colorScheme;
     if (item.votes <= 0) {
       return Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(PlayraSpace.lg),
         child: Text('暂无评分', style: TextStyle(color: c.onSurfaceVariant)),
       );
     }
     final maxVotes = item.votesCount.fold<int>(1, math.max);
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(PlayraSpace.lg),
       child: Wrap(
         spacing: 24,
         runSpacing: 16,
@@ -1396,13 +1386,13 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                 item.ratingScore.toStringAsFixed(1),
                 style: TextStyle(
                   color: c.primary,
-                  fontSize: 36,
+                  fontSize: PlayraType.statistic,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               Text(
                 '${item.votes} 人评分 · 十分制',
-                style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
+                style: TextStyle(fontSize: PlayraType.caption, color: c.onSurfaceVariant),
               ),
             ],
           ),
@@ -1412,7 +1402,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
               children: [
                 for (var i = 9; i >= 0; i--)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    padding: const EdgeInsets.symmetric(vertical: PlayraSpace.tiny),
                     child: Row(
                       children: [
                         SizedBox(
@@ -1420,7 +1410,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                           child: Text(
                             '${i + 1}',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: PlayraType.micro,
                               color: c.onSurfaceVariant,
                             ),
                           ),
@@ -1431,7 +1421,7 @@ class _ModernPlayerDetailPageState extends State<ModernPlayerDetailPage>
                                 ? item.votesCount[i] / maxVotes
                                 : 0,
                             minHeight: 3,
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: BorderRadius.circular(PlayraRadius.indicator),
                             backgroundColor: c.surfaceContainerLow,
                           ),
                         ),

@@ -84,19 +84,19 @@ class PlayerRelations extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: PlayraSpace.sm),
                     Text(
                       relation.toBangumiItem().nameCn.isEmpty
                           ? relation.toBangumiItem().name
                           : relation.toBangumiItem().nameCn,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
+                      style: const TextStyle(fontSize: PlayraType.caption),
                     ),
                     Text(
                       relation.relation,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: PlayraType.small,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -162,10 +162,9 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
     return Column(
       children: [
         const PlayerSheetHeader(title: '作品资料'),
-        TabBar(
+        PlayraTabBar(
           controller: tabs,
           isScrollable: true,
-          tabAlignment: TabAlignment.start,
           tabs: const [
             Tab(text: '简介'),
             Tab(text: '角色'),
@@ -178,18 +177,18 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
             controller: tabs,
             children: [
               ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(PlayraSpace.lg),
                 children: [
                   Text(
                     item.nameCn.isEmpty ? item.name : item.nameCn,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: PlayraType.title,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   if (item.nameCn.isNotEmpty && item.name != item.nameCn)
                     Padding(
-                      padding: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.only(top: PlayraSpace.compact),
                       child: Text(
                         item.name,
                         style: TextStyle(
@@ -197,21 +196,21 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
                         ),
                       ),
                     ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: PlayraSpace.xl),
                   SelectableText(
                     item.summary.isEmpty ? '暂无简介' : item.summary,
-                    style: const TextStyle(fontSize: 14, height: 1.8),
+                    style: const TextStyle(fontSize: PlayraType.body, height: 1.8),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: PlayraSpace.xl),
                   if (tags.isNotEmpty) ...[
                     Text(
                       '作品标签',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: PlayraType.caption,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: PlayraSpace.sm),
                   ],
                   Wrap(
                     spacing: 6,
@@ -247,7 +246,7 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
                     }
                     if (snapshot.connectionState != ConnectionState.done) {
                       return SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(PlayraSpace.lg),
                         child: index == 2
                             ? const SkeletonPosters(count: 3)
                             : const SkeletonInfoList(),
@@ -261,7 +260,7 @@ class _PlayerWorkInfoSheetState extends State<PlayerWorkInfoSheet>
                     if (count == 0) return const Center(child: Text('暂无相关资料'));
                     if (index == 2) {
                       return SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(PlayraSpace.lg),
                         child: PlayerRelations(
                           relations: widget.controller.relationList.toList(),
                           beforeNavigate: widget.beforeNavigate,

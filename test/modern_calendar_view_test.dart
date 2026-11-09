@@ -1,4 +1,3 @@
-import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/presentation/modern/calendar/modern_calendar_controller.dart';
@@ -12,6 +11,7 @@ void main() {
     double width = 390,
     double height = 844,
     double scale = 1,
+    bool reduceMotion = false,
   }) async {
     tester.view.physicalSize = Size(width, height);
     tester.view.devicePixelRatio = 1;
@@ -44,6 +44,7 @@ void main() {
           data: MediaQueryData(
             size: Size(width, height),
             textScaler: TextScaler.linear(scale),
+            disableAnimations: reduceMotion,
             padding: const EdgeInsets.only(top: 24, bottom: 24),
           ),
           child: ModernShell(
@@ -62,6 +63,62 @@ void main() {
     await tester.pumpAndSettle();
     return controller;
   }
+
+  testWidgets('320dp and large type put the complete title above the period', (
+    tester,
+  ) async {
+    final controller = await mount(tester, width: 320, scale: 2);
+    final title = tester.getRect(find.text('放送日历'));
+    final period = tester.getRect(
+      find.byKey(const ValueKey('calendar-season')),
+    );
+    expect(period.top, greaterThanOrEqualTo(title.bottom));
+    expect(title.left, greaterThanOrEqualTo(0));
+    expect(title.right, lessThanOrEqualTo(320));
+    expect(tester.takeException(), isNull);
+    controller.dispose();
+  });
+
+  testWidgets('加载与失败不显示零部，失败时重试不会清空筛选', (tester) async {
+    final controller = await mount(tester);
+    controller.snapshot = null;
+    controller.loading = true;
+    controller.setFilters(watchingOnly: true);
+    await tester.pump();
+    expect(find.text('0部'), findsNothing);
+    expect(find.text('加载中'), findsOneWidget);
+    controller.loading = false;
+    controller.error = '暂时无法获取放送日历';
+    controller.setFilters(hideWatched: true);
+    await tester.pumpAndSettle();
+    expect(find.text('暂时无法获取放送日历'), findsOneWidget);
+    expect(find.text('0部'), findsNothing);
+    expect(find.text('清除筛选'), findsNothing);
+    await tester.tap(find.text('重新加载'));
+    await tester.pumpAndSettle();
+    expect(controller.snapshot, isNotNull);
+    expect(controller.watchingOnly, isTrue);
+    expect(controller.hideWatched, isTrue);
+    expect(find.text('没有符合筛选的番剧'), findsOneWidget);
+    await tester.tap(find.text('清除筛选'));
+    await tester.pumpAndSettle();
+    expect(find.text('星期7的番剧'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('减少动画时星期切换立即到达对应列表', (tester) async {
+    final controller = await mount(tester, reduceMotion: true);
+    await tester.tap(find.byKey(const ValueKey('calendar-weekday-1')));
+    await tester.pump();
+    await tester.pump();
+    expect(controller.weekday, 1);
+    expect(find.text('星期1的番剧'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
 
   testWidgets('星期点击与左右滑动同步，顶部固定，沿用暗色主题', (tester) async {
     final controller = await mount(tester);
@@ -159,6 +216,4 @@ void main() {
   });
 }
 
-Finder _tooltip(String message) => find.byWidgetPredicate((widget) =>
-  widget is PlayraIconButton && widget.tooltip == message ||
-  widget is Tooltip && widget.message == message);
+Finder _tooltip(String message) => find.byTooltip(message);

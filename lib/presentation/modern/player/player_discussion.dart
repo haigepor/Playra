@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/content_skeleton.dart';
@@ -141,8 +142,7 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
               itemCount: episodes!.length,
               itemBuilder: (context, i) {
                 final item = episodes![i];
-                return ListTile(
-                  minVerticalPadding: 12,
+                return PlayraListTile(
                   title: Text(
                     '${item.readType()} ${item.episode} · ${item.nameCn.isEmpty ? item.name : item.nameCn}',
                   ),
@@ -163,9 +163,9 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
     super.build(context);
     if (matched == null) {
       return ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(PlayraSpace.xxl),
         children: [
-          const SizedBox(height: 24),
+          const SizedBox(height: PlayraSpace.xxl),
           if (loading)
             const SkeletonComments()
           else ...[
@@ -176,9 +176,9 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
                   ? '先选择播放剧集'
                   : '尚未匹配到资料库分集',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: PlayraType.item, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: PlayraSpace.md),
             Text(
               error ? '请检查网络后重试。' : '讨论对应真实分集；特别篇和来源集数不一致时，可手动选择。',
               textAlign: TextAlign.center,
@@ -207,7 +207,7 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
       onSelectEpisode: pick,
       onRefresh: () => refresh(manual: matched),
       emptyState: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: PlayraSpace.section, horizontal: PlayraSpace.lg),
         child: Column(
           children: [
             SvgPicture.asset(
@@ -216,7 +216,7 @@ class _PlayerDiscussionState extends State<PlayerDiscussion>
               height: 95,
               excludeFromSemantics: true,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: PlayraSpace.md),
             const Text('这集还没有讨论'),
           ],
         ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../secondary/secondary_theme.dart';
-import '../../widgets/playra_controls.dart';
 
 /// 播放页保持紧凑内容密度，触控目标不随桌面主题压缩为 40dp。
 class ModernPlayerScope extends StatelessWidget {
@@ -45,7 +44,7 @@ class ModernPlayerScope extends StatelessWidget {
                   ),
             ),
           ),
-          child: PlayraComponentScope(enabled: false, child: child),
+          child: child,
         );
       },
     ),

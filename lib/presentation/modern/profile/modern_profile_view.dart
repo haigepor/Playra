@@ -36,10 +36,7 @@ class ModernProfileView extends StatelessWidget {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: PlayraLayout.formWidth),
             child: Padding(
-              padding: const EdgeInsets.only(
-                left: PlayraSpace.xl,
-                right: PlayraSpace.md,
-              ),
+              padding: PlayraLayout.pagePadding(context),
               child: Row(
                 children: [
                   const Expanded(
@@ -260,7 +257,10 @@ class ModernProfileView extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Text(
             '$count',
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              fontSize: PlayraType.heroTitle,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),

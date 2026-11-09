@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bbcode/bbcode_widget.dart';
@@ -233,7 +234,7 @@ class UserCommentsCardBone extends StatelessWidget {
                   children: [
                     Bone.text(width: 96),
                     SizedBox(height: 2),
-                    Bone.text(width: 64, fontSize: 11),
+                    Bone.text(width: 64, fontSize: PlayraType.micro),
                   ],
                 ),
               ],
@@ -258,7 +259,7 @@ class _CommentSurface extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(PlayraRadius.card),
         clipBehavior: Clip.antiAlias,
         child: Padding(padding: const EdgeInsets.all(16), child: child),
       ),

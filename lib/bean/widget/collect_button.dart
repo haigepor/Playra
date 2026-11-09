@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -10,7 +11,7 @@ class CollectButton extends StatefulWidget {
   const CollectButton({
     super.key,
     required this.bangumiItem,
-    this.color = Colors.white,
+    this.color = PlayraMedia.foreground,
     this.onOpen,
     this.onClose,
   }) : _isExtended = false;
@@ -18,7 +19,7 @@ class CollectButton extends StatefulWidget {
   const CollectButton.extend({
     super.key,
     required this.bangumiItem,
-    this.color = Colors.white,
+    this.color = PlayraMedia.foreground,
     this.onOpen,
     this.onClose,
   }) : _isExtended = true;

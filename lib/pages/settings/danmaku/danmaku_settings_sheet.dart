@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:flutter/material.dart';
@@ -162,7 +163,7 @@ class _DanmakuSettingsSheetState extends State<_DanmakuSettingsSheet> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: PlayraSpace.xxl),
                     ContentSection(
                       title: '弹幕类型',
                       child: Wrap(
@@ -240,7 +241,7 @@ class _DanmakuSettingsSheetState extends State<_DanmakuSettingsSheet> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: PlayraSpace.xxl),
                     ContentSection.group(
                       title: '校准与过滤',
                       children: [

@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
@@ -186,9 +187,9 @@ class _ImageViewerState extends State<ImageViewer> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
+        color: PlayraMedia.canvas.withValues(alpha: 0.5),
         shape: widget.modern ? BoxShape.rectangle : BoxShape.circle,
-        borderRadius: widget.modern ? BorderRadius.circular(10) : null,
+        borderRadius: widget.modern ? BorderRadius.circular(PlayraRadius.control) : null,
       ),
       child: PlayraIconButton(
         onPressed: onPressed,
@@ -196,7 +197,7 @@ class _ImageViewerState extends State<ImageViewer> {
 
         icon: Icon(
           icon,
-          color: onPressed != null ? Colors.white : Colors.white38,
+          color: onPressed != null ? PlayraMedia.foreground : PlayraMedia.foregroundDisabled,
           size: widget.modern ? 20 : 32,
         ),
       ),
@@ -206,7 +207,7 @@ class _ImageViewerState extends State<ImageViewer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: PlayraMedia.canvas,
       body: Stack(
         children: [
           _isMultiImage ? _buildGallery() : _buildSingleImage(),
@@ -215,9 +216,9 @@ class _ImageViewerState extends State<ImageViewer> {
             right: 16,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: PlayraMedia.canvas.withValues(alpha: 0.5),
                 shape: widget.modern ? BoxShape.rectangle : BoxShape.circle,
-                borderRadius: widget.modern ? BorderRadius.circular(10) : null,
+                borderRadius: widget.modern ? BorderRadius.circular(PlayraRadius.control) : null,
               ),
               child: PlayraIconButton(
                 key: const ValueKey('image-preview-close'),
@@ -226,7 +227,7 @@ class _ImageViewerState extends State<ImageViewer> {
                 onPressed: _closePreview,
                 icon: Icon(
                   widget.modern ? LucideIcons.x : Icons.close,
-                  color: Colors.white,
+                  color: PlayraMedia.foreground,
                   size: widget.modern ? 20 : null,
                 ),
               ),
@@ -240,16 +241,16 @@ class _ImageViewerState extends State<ImageViewer> {
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: PlayraSpace.md,
+                    vertical: PlayraSpace.compact,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(16),
+                    color: PlayraMedia.canvas.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(PlayraRadius.card),
                   ),
                   child: Text(
                     '${_currentIndex + 1} / ${widget.imageUrls.length}',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: const TextStyle(color: PlayraMedia.foreground, fontSize: PlayraType.body),
                   ),
                 ),
               ),
@@ -310,7 +311,7 @@ class _ImageViewerState extends State<ImageViewer> {
           scaleStateController: _scaleStateController,
           minScale: PhotoViewComputedScale.contained,
           maxScale: PhotoViewComputedScale.covered * 3,
-          backgroundDecoration: const BoxDecoration(color: Colors.black),
+          backgroundDecoration: const BoxDecoration(color: PlayraMedia.canvas),
           heroAttributes: widget.heroTag != null
               ? PhotoViewHeroAttributes(tag: widget.heroTag!)
               : null,
@@ -331,7 +332,7 @@ class _ImageViewerState extends State<ImageViewer> {
           pageController: _pageController,
           itemCount: widget.imageUrls.length,
           onPageChanged: (index) => setState(() => _currentIndex = index),
-          backgroundDecoration: const BoxDecoration(color: Colors.black),
+          backgroundDecoration: const BoxDecoration(color: PlayraMedia.canvas),
           loadingBuilder: (context, event) =>
               const Center(child: LoadingIndicator()),
           builder: (context, index) {

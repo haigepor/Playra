@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -79,7 +80,7 @@ class _InfoTabViewState extends State<InfoTabView> {
   Widget get infoBody {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(PlayraSpace.lg),
         child: SizedBox(
           width: MediaQuery.sizeOf(context).width > maxWidth
               ? maxWidth
@@ -87,8 +88,8 @@ class _InfoTabViewState extends State<InfoTabView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('简介', style: TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
+              Text('简介', style: TextStyle(fontSize: PlayraType.section)),
+              const SizedBox(height: PlayraSpace.sm),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final span = TextSpan(text: widget.bangumiItem.summary);
@@ -137,9 +138,9 @@ class _InfoTabViewState extends State<InfoTabView> {
                   }
                 },
               ),
-              const SizedBox(height: 16),
-              Text('标签', style: TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
+              const SizedBox(height: PlayraSpace.lg),
+              Text('标签', style: TextStyle(fontSize: PlayraType.section)),
+              const SizedBox(height: PlayraSpace.sm),
               Wrap(
                 spacing: 8.0,
                 runSpacing: isDesktop() ? 8 : 0,
@@ -245,9 +246,9 @@ class _InfoTabViewState extends State<InfoTabView> {
                 return SliverPadding(
                   padding: EdgeInsets.fromLTRB(
                     horizontalPadding,
-                    16,
+                    PlayraSpace.lg,
                     horizontalPadding,
-                    16,
+                    PlayraSpace.lg,
                   ),
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -287,7 +288,7 @@ class _InfoTabViewState extends State<InfoTabView> {
   Widget get infoBodyBone {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(PlayraSpace.lg),
         child: SizedBox(
           width: MediaQuery.sizeOf(context).width > maxWidth
               ? maxWidth
@@ -295,12 +296,12 @@ class _InfoTabViewState extends State<InfoTabView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Skeletonizer.zone(child: Bone.text(fontSize: 18, width: 50)),
-              const SizedBox(height: 8),
+              Skeletonizer.zone(child: Bone.text(fontSize: PlayraType.section, width: 50)),
+              const SizedBox(height: PlayraSpace.sm),
               Skeletonizer.zone(child: Bone.multiText(lines: 7)),
-              const SizedBox(height: 16),
-              Skeletonizer.zone(child: Bone.text(fontSize: 18, width: 50)),
-              const SizedBox(height: 8),
+              const SizedBox(height: PlayraSpace.lg),
+              Skeletonizer.zone(child: Bone.text(fontSize: PlayraType.section, width: 50)),
+              const SizedBox(height: PlayraSpace.sm),
               if (widget.isLoading)
                 Skeletonizer.zone(
                   child: Wrap(
@@ -337,7 +338,7 @@ class _InfoTabViewState extends State<InfoTabView> {
                     itemBuilder: (context, index) {
                       return Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
                           child: SizedBox(
                             width: MediaQuery.sizeOf(context).width > maxWidth
                                 ? maxWidth
@@ -415,7 +416,7 @@ class _InfoTabViewState extends State<InfoTabView> {
                     itemBuilder: (context, index) {
                       return Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
                           child: SizedBox(
                             width: MediaQuery.sizeOf(context).width > maxWidth
                                 ? maxWidth
@@ -553,7 +554,7 @@ class _RelatedBangumiCardH extends StatelessWidget {
           context.pushNamed('/info/', arguments: bangumiItem);
         },
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(PlayraSpace.sm),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final gap = constraints.maxWidth.clamp(0.0, 10.0).toDouble();

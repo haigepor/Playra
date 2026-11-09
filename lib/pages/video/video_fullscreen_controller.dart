@@ -34,8 +34,9 @@ class VideoFullscreenController {
   }
 
   /// Default fullscreen button: normal page <-> landscape fullscreen.
-  Future<void> toggle() =>
-      setMode(isFullscreen ? VideoFullscreenMode.none : VideoFullscreenMode.landscape);
+  Future<void> toggle() => setMode(
+    isFullscreen ? VideoFullscreenMode.none : VideoFullscreenMode.landscape,
+  );
 
   /// Top-bar button: normal/landscape -> portrait; portrait -> exit.
   Future<void> togglePortrait() => setMode(
@@ -106,9 +107,7 @@ class VideoFullscreenController {
     if (!fullscreen) {
       unawaited(_setMode(VideoFullscreenMode.none, updatePlatform: false));
     } else if (!isFullscreen) {
-      unawaited(
-        _setMode(VideoFullscreenMode.landscape, updatePlatform: false),
-      );
+      unawaited(_setMode(VideoFullscreenMode.landscape, updatePlatform: false));
     }
   }
 
@@ -120,9 +119,17 @@ class VideoFullscreenController {
 
   Future<void> _requestFullscreen(VideoFullscreenMode mode) {
     _pendingRequests++;
-    return _lastRequest = _applyFullscreen(mode).whenComplete(() {
-      _pendingRequests--;
-    });
+    final request = _lastRequest
+        .then((_) => _applyFullscreen(mode))
+        .whenComplete(() {
+          _pendingRequests--;
+        });
+    // 单次失败仍交给调用者；后续退出/方向切换不能被失败的队列阻断。
+    _lastRequest = request.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stack) {},
+    );
+    return request;
   }
 
   Future<void> close() {

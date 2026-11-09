@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -64,12 +65,12 @@ class _TimelinePageState extends State<TimelinePage> {
             child: ListView.separated(
               padding: materialBottomSheetContentPadding,
               itemCount: years.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 24),
+              separatorBuilder: (_, __) => const SizedBox(height: PlayraSpace.xxl),
               itemBuilder: (context, index) {
                 final year = years[index];
                 return ContentSection(
                   title: '$year',
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(PlayraSpace.sm),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final columns =
@@ -173,7 +174,7 @@ class _TimelinePageState extends State<TimelinePage> {
                   );
             final weekHeight = _TimelineWeekSelector.heightFor(scaler) + 16;
             final weekSelector = Padding(
-              padding: EdgeInsets.fromLTRB(inset, 0, inset, 16),
+              padding: EdgeInsets.fromLTRB(inset, 0, inset, PlayraSpace.lg),
               child: _TimelineWeekSelector(
                 counts: calendar.map((day) => day.length).toList(),
                 todayIndex: currentSeason ? today.weekday - 1 : null,
@@ -198,7 +199,7 @@ class _TimelinePageState extends State<TimelinePage> {
                       ),
                 actions: [
                   Padding(
-                    padding: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.only(right: PlayraSpace.md),
                     child: _TimelineOptionsButton(
                       availableWidth: constraints.maxWidth,
                       sort: _controller.sort,
@@ -221,7 +222,7 @@ class _TimelinePageState extends State<TimelinePage> {
                       if (seasonHeader != null)
                         SliverToBoxAdapter(
                           child: Padding(
-                            padding: EdgeInsets.fromLTRB(inset, 8, inset, 20),
+                            padding: EdgeInsets.fromLTRB(inset, PlayraSpace.sm, inset, PlayraSpace.xl),
                             child: seasonHeader,
                           ),
                         ),
@@ -245,7 +246,7 @@ class _TimelinePageState extends State<TimelinePage> {
                         ? _TimelineScrollView(
                             slivers: [
                               SliverPadding(
-                                padding: const EdgeInsets.all(24),
+                                padding: const EdgeInsets.all(PlayraSpace.xxl),
                                 sliver: SliverToBoxAdapter(
                                   child: BangumiMirrorErrorWidget(
                                     onRetry: () => _controller.loadSeason(
@@ -335,9 +336,9 @@ class _TimelinePageState extends State<TimelinePage> {
         message: '切换放送季度',
         child: InkWell(
           onTap: loading ? null : () => _showSeasonBottomSheet(context),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(PlayraRadius.overlay),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: PlayraSpace.sm),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -434,7 +435,7 @@ class _TimelinePageState extends State<TimelinePage> {
           )
         else
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(inset, 0, inset, 24),
+            padding: EdgeInsets.fromLTRB(inset, 0, inset, PlayraSpace.xxl),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,

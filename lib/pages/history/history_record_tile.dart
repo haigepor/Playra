@@ -79,7 +79,7 @@ class HistoryRecordTile extends StatelessWidget {
       },
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
+        padding: const EdgeInsets.only(right: PlayraSpace.xxl),
         decoration: BoxDecoration(
           color: colors.errorContainer,
           borderRadius: borderRadius,
@@ -109,7 +109,7 @@ class HistoryRecordTile extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(PlayraSpace.md),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final wide = constraints.maxWidth >= 600;
@@ -132,7 +132,7 @@ class HistoryRecordTile extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: PlayraSpace.compact),
                       Text(
                         episode,
                         maxLines: 1,
@@ -143,7 +143,7 @@ class HistoryRecordTile extends StatelessWidget {
                         ),
                       ),
                       if (position.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: PlayraSpace.xs),
                         Row(
                           children: [
                             const UtilitySvgIcon(
@@ -163,7 +163,7 @@ class HistoryRecordTile extends StatelessWidget {
                           ],
                         ),
                       ],
-                      const SizedBox(height: 8),
+                      const SizedBox(height: PlayraSpace.sm),
                       Text(
                         [
                           source,
@@ -190,7 +190,7 @@ class HistoryRecordTile extends StatelessWidget {
                           ExcludeSemantics(
                             child: IgnorePointer(
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(PlayraRadius.control),
                                 child: image.isEmpty
                                     ? Container(
                                         width: coverWidth,
@@ -209,20 +209,20 @@ class HistoryRecordTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: PlayraSpace.md),
                           Expanded(
                             child: ExcludeSemantics(
                               child: IgnorePointer(child: content),
                             ),
                           ),
                           if (!largeText) ...[
-                            const SizedBox(width: 8),
+                            const SizedBox(width: PlayraSpace.sm),
                             actions,
                           ],
                         ],
                       ),
                       if (largeText) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: PlayraSpace.md),
                         Align(alignment: Alignment.centerRight, child: actions),
                       ],
                     ],

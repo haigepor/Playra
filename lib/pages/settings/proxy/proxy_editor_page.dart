@@ -150,7 +150,7 @@ class _ProxyEditorPageState extends State<ProxyEditorPage> {
               ],
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(PlayraSpace.lg),
               child: Center(
                 child: SizedBox(
                   width: (MediaQuery.of(context).size.width > 800) ? 800 : null,

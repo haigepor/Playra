@@ -9,6 +9,7 @@ import 'playra_component_scope.dart';
 export 'playra_component_scope.dart';
 
 enum PlayraButtonKind { primary, secondary, outline, ghost, destructive }
+
 enum PlayraButtonSize { sm, md, lg }
 
 class PlayraDayButton extends StatelessWidget with PlayraForuiComponent {
@@ -16,13 +17,16 @@ class PlayraDayButton extends StatelessWidget with PlayraForuiComponent {
     super.key,
     required this.onPressed,
     required this.child,
+    this.selected = false,
   });
   final VoidCallback? onPressed;
   final Widget child;
+  final bool selected;
   @override
   Widget buildForui(BuildContext context) => f.FButton(
     onPress: onPressed,
-    variant: f.FButtonVariant.ghost,
+    selected: selected,
+    variant: selected ? f.FButtonVariant.secondary : f.FButtonVariant.ghost,
     size: f.FButtonSizeVariant.lg,
     style: f.FButtonStyleDelta.delta(
       contentStyle: f.FButtonContentStyleDelta.delta(
@@ -35,7 +39,7 @@ class PlayraDayButton extends StatelessWidget with PlayraForuiComponent {
   );
 }
 
-/// 标准化全站统一按钮（支持小胶囊形态与多尺寸层级规范）
+/// Forui 负责视觉与状态，适配层保留业务接口和手机触控尺寸。
 class PlayraButton extends StatelessWidget with PlayraForuiComponent {
   const PlayraButton({
     super.key,
@@ -164,137 +168,59 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
 
   @override
   Widget buildForui(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final tokens = context.playraTokens;
-
-    final (height, hPadding, radius, iconSize, fontSize) = switch (size) {
-      PlayraButtonSize.sm => (28.0, 11.0, 14.0, 13.0, 11.5),
-      PlayraButtonSize.md => (32.0, 14.0, 16.0, 15.0, 12.5),
-      PlayraButtonSize.lg => (40.0, 18.0, 20.0, 17.0, 14.0),
+    final variant = switch (kind) {
+      PlayraButtonKind.primary => f.FButtonVariant.primary,
+      PlayraButtonKind.secondary => f.FButtonVariant.secondary,
+      PlayraButtonKind.outline => f.FButtonVariant.outline,
+      PlayraButtonKind.ghost => f.FButtonVariant.ghost,
+      PlayraButtonKind.destructive => f.FButtonVariant.destructive,
     };
-
-    final isEnabled = onPressed != null && !busy;
-
-    final (bgColor, fgColor, borderColor, boxShadow) = switch (kind) {
-      PlayraButtonKind.primary => (
-        isEnabled ? colors.primary : colors.primary.withValues(alpha: 0.45),
-        Colors.white,
-        null,
-        isEnabled
-            ? [
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.32),
-                  blurRadius: 8.0,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      PlayraButtonKind.secondary => (
-        tokens.surfaceRaised.withValues(alpha: isEnabled ? 0.85 : 0.40),
-        colors.onSurface.withValues(alpha: isEnabled ? 0.92 : 0.40),
-        tokens.borderSubtle.withValues(alpha: 0.50),
-        null,
-      ),
-      PlayraButtonKind.outline => (
-        tokens.surface.withValues(alpha: isEnabled ? 0.35 : 0.15),
-        colors.onSurface.withValues(alpha: isEnabled ? 0.88 : 0.40),
-        tokens.borderSubtle.withValues(alpha: isEnabled ? 0.80 : 0.30),
-        null,
-      ),
-      PlayraButtonKind.ghost => (
-        tokens.surfaceRaised.withValues(alpha: isEnabled ? 0.45 : 0.20),
-        colors.onSurfaceVariant.withValues(alpha: isEnabled ? 0.95 : 0.40),
-        tokens.borderSubtle.withValues(alpha: isEnabled ? 0.38 : 0.15),
-        null,
-      ),
-      PlayraButtonKind.destructive => (
-        colors.error.withValues(alpha: isEnabled ? 0.14 : 0.06),
-        colors.error.withValues(alpha: isEnabled ? 1.0 : 0.40),
-        colors.error.withValues(alpha: isEnabled ? 0.28 : 0.12),
-        null,
-      ),
-    };
-
-    final borderRadius = BorderRadius.circular(radius);
-
-    final effectivePrefix = busy
-        ? SizedBox.square(
-            dimension: iconSize,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(fgColor),
-            ),
-          )
-        : (iconAlignment == IconAlignment.start && icon != null
-            ? IconTheme(
-                data: IconThemeData(size: iconSize, color: fgColor),
-                child: icon!,
-              )
-            : null);
-
-    final effectiveSuffix = trailing ??
-        (iconAlignment == IconAlignment.end && icon != null && !busy
-            ? IconTheme(
-                data: IconThemeData(size: iconSize, color: fgColor),
-                child: icon!,
-              )
-            : null);
-
+    final prefix = busy
+        ? (PlayraMotion.reduceOf(context)
+              ? const Icon(Icons.hourglass_top_rounded)
+              : const f.FCircularProgress())
+        : iconAlignment == IconAlignment.start
+        ? icon
+        : null;
+    final suffix =
+        trailing ?? (iconAlignment == IconAlignment.end && !busy ? icon : null);
     return Semantics(
-      button: true,
-      enabled: isEnabled,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isEnabled ? onPressed : null,
-          borderRadius: borderRadius,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            curve: Curves.easeOutCubic,
-            height: height,
-            padding: EdgeInsets.symmetric(horizontal: hPadding),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: borderRadius,
-              border: borderColor != null
-                  ? Border.all(color: borderColor, width: 1.0)
-                  : null,
-              boxShadow: boxShadow,
+      value: busy ? '正在处理' : null,
+      liveRegion: busy,
+      child: f.FButton(
+        variant: variant,
+        size: f.FButtonSizeVariant.lg,
+        onPress: busy ? null : onPressed,
+        mainAxisSize: MainAxisSize.min,
+        style: f.FButtonStyleDelta.delta(
+          contentStyle: f.FButtonContentStyleDelta.delta(
+            constraints: BoxConstraints(
+              minWidth: PlayraLayout.touchTarget,
+              minHeight: size == PlayraButtonSize.lg
+                  ? PlayraLayout.compactToolbar
+                  : PlayraLayout.touchTarget,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (effectivePrefix != null) ...[
-                  effectivePrefix,
-                  const SizedBox(width: 5.0),
-                ],
-                DefaultTextStyle(
-                  style: theme.textTheme.labelMedium?.copyWith(
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.w600,
-                        color: fgColor,
-                        height: 1.15,
-                      ) ??
-                      TextStyle(
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.w600,
-                        color: fgColor,
-                        height: 1.15,
-                      ),
-                  child: child,
-                ),
-                if (effectiveSuffix != null) ...[
-                  const SizedBox(width: 5.0),
-                  effectiveSuffix,
-                ],
-              ],
+            padding: f.EdgeInsetsGeometryDelta.value(
+              EdgeInsets.symmetric(
+                horizontal: switch (size) {
+                  PlayraButtonSize.sm => PlayraSpace.md,
+                  PlayraButtonSize.md => PlayraSpace.lg,
+                  PlayraButtonSize.lg => PlayraSpace.xl,
+                },
+                vertical: PlayraSpace.md,
+              ),
             ),
           ),
         ),
+        prefix: prefix,
+        suffix: suffix,
+        builder: (_, _, _, _, _, child) => Flexible(
+          child: DefaultTextStyle.merge(
+            textAlign: TextAlign.center,
+            child: child!,
+          ),
+        ),
+        child: child,
       ),
     );
   }
@@ -308,7 +234,7 @@ class PlayraIconButton extends StatelessWidget with PlayraForuiComponent {
     this.tooltip,
     this.isSelected,
     this.selectedIcon,
-    this.size = 32.0,
+    this.size = PlayraLayout.touchTarget,
   });
   final VoidCallback? onPressed;
   final Widget icon;
@@ -319,52 +245,40 @@ class PlayraIconButton extends StatelessWidget with PlayraForuiComponent {
 
   @override
   Widget buildForui(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final tokens = context.playraTokens;
-    final selected = isSelected == true;
-    final isEnabled = onPressed != null;
-
-    final effectiveIcon = selected ? (selectedIcon ?? icon) : icon;
-
-    final button = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: isEnabled ? onPressed : null,
-        borderRadius: BorderRadius.circular(size / 2),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: selected
-                ? colors.primary.withValues(alpha: 0.18)
-                : tokens.surfaceRaised.withValues(alpha: isEnabled ? 0.40 : 0.15),
-            borderRadius: BorderRadius.circular(size / 2),
-            border: Border.all(
-              color: selected
-                  ? colors.primary.withValues(alpha: 0.40)
-                  : tokens.borderSubtle.withValues(alpha: isEnabled ? 0.35 : 0.15),
-              width: 1.0,
-            ),
+    final targetSize = size < PlayraLayout.touchTarget
+        ? PlayraLayout.touchTarget
+        : size;
+    final button = f.FButton.icon(
+      variant: f.FButtonVariant.ghost,
+      size: f.FButtonSizeVariant.lg,
+      onPress: onPressed,
+      selected: isSelected == true,
+      style: f.FButtonStyleDelta.delta(
+        iconContentStyle: f.FButtonIconContentStyleDelta.delta(
+          constraints: BoxConstraints.tightFor(
+            width: targetSize,
+            height: targetSize,
           ),
-          alignment: Alignment.center,
-          child: IconTheme(
-            data: IconThemeData(
-              size: (size * 0.50).clamp(14.0, 18.0),
-              color: selected
-                  ? colors.primary
-                  : colors.onSurface.withValues(alpha: isEnabled ? 0.88 : 0.35),
-            ),
-            child: effectiveIcon,
-          ),
+          padding: const f.EdgeInsetsGeometryDelta.value(EdgeInsets.zero),
         ),
       ),
+      child: isSelected == true ? (selectedIcon ?? icon) : icon,
     );
-
-    return tooltip == null
-        ? button
-        : Tooltip(message: tooltip!, child: button);
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: tooltip,
+      onTap: onPressed,
+      excludeSemantics: true,
+      selected: isSelected,
+      child: tooltip == null
+          ? button
+          : Tooltip(
+              message: tooltip!,
+              excludeFromSemantics: true,
+              child: button,
+            ),
+    );
   }
 }
 
@@ -683,8 +597,9 @@ class PlayraProgress extends StatelessWidget with PlayraForuiComponent {
 class PlayraSpinner extends StatelessWidget with PlayraForuiComponent {
   const PlayraSpinner({super.key});
   @override
-  Widget buildForui(BuildContext context) =>
-      !PlayraComponentScope.enabledOf(context)
+  Widget buildForui(BuildContext context) => PlayraMotion.reduceOf(context)
+      ? const Icon(Icons.hourglass_top_rounded, semanticLabel: '正在加载')
+      : !PlayraComponentScope.enabledOf(context)
       ? const CircularProgressIndicator()
       : const f.FCircularProgress();
 }
@@ -695,20 +610,33 @@ class PlayraChoice extends StatelessWidget with PlayraForuiComponent {
     required this.label,
     required this.selected,
     required this.onSelected,
+    this.icon,
   });
   final Widget label;
   final bool selected;
   final ValueChanged<bool>? onSelected;
+  final Widget? icon;
   @override
   Widget buildForui(BuildContext context) => f.FButton(
     onPress: onSelected == null ? null : () => onSelected!(!selected),
     selected: selected,
     variant: selected ? f.FButtonVariant.secondary : f.FButtonVariant.outline,
-    size: f.FButtonSizeVariant.md,
+    size: f.FButtonSizeVariant.lg,
     mainAxisSize: MainAxisSize.min,
+    style: const f.FButtonStyleDelta.delta(
+      contentStyle: f.FButtonContentStyleDelta.delta(
+        padding: f.EdgeInsetsGeometryDelta.value(
+          EdgeInsets.symmetric(
+            horizontal: PlayraSpace.md,
+            vertical: PlayraSpace.md,
+          ),
+        ),
+      ),
+    ),
     prefix: selected
         ? const Icon(Icons.check_rounded, size: PlayraLayout.compactIcon)
-        : null,
+        : icon,
+    builder: (_, _, _, _, _, child) => Flexible(child: child!),
     child: label,
   );
 }
@@ -797,10 +725,12 @@ class PlayraListTile extends StatelessWidget with PlayraForuiComponent {
     this.trailing,
     this.onTap,
     this.enabled = true,
+    this.selected = false,
   });
   final Widget? title, subtitle, leading, trailing;
   final VoidCallback? onTap;
   final bool enabled;
+  final bool selected;
   @override
   Widget buildForui(BuildContext context) => f.FTile(
     title: title ?? const SizedBox.shrink(),
@@ -809,6 +739,7 @@ class PlayraListTile extends StatelessWidget with PlayraForuiComponent {
     suffix: trailing,
     onPress: enabled ? onTap : null,
     enabled: enabled,
+    selected: selected,
   );
 }
 
@@ -883,7 +814,7 @@ class PlayraCheckboxTile extends StatelessWidget with PlayraForuiComponent {
   );
 }
 
-class PlayraRadioTile<T> extends StatelessWidget {
+class PlayraRadioTile<T> extends StatelessWidget with PlayraForuiComponent {
   const PlayraRadioTile({
     super.key,
     required this.value,
@@ -898,7 +829,7 @@ class PlayraRadioTile<T> extends StatelessWidget {
   final Widget? subtitle, secondary;
   final bool enabled, selected;
   @override
-  Widget build(BuildContext context) => f.FTile(
+  Widget buildForui(BuildContext context) => f.FTile(
     title: title,
     subtitle: subtitle,
     prefix: secondary,
@@ -952,6 +883,44 @@ class PlayraExpansionTile extends StatelessWidget with PlayraForuiComponent {
   );
 }
 
+/// A controlled selector for filters whose state belongs to a page controller.
+class PlayraTabSelector extends StatelessWidget with PlayraForuiComponent {
+  const PlayraTabSelector({
+    super.key,
+    required this.labels,
+    required this.index,
+    required this.onChange,
+    this.scrollable = true,
+  });
+  final List<Widget> labels;
+  final int index;
+  final ValueChanged<int> onChange;
+  final bool scrollable;
+
+  @override
+  Widget buildForui(BuildContext context) => f.FTabs(
+    // Forui retains its internal controller length across entry changes.
+    key: ValueKey(labels.length),
+    scrollable: scrollable,
+    style: const f.FTabsStyleDelta.delta(
+      minHeight: PlayraLayout.touchTarget,
+      spacing: 0,
+    ),
+    control: f.FTabControl.lifted(
+      index: index,
+      onChange: onChange,
+      motion: f.FTabMotion(
+        duration: PlayraMotion.duration(context, PlayraMotion.state),
+        curve: PlayraMotion.curve,
+      ),
+    ),
+    children: [
+      for (final label in labels)
+        f.FTabEntry(label: label, child: const SizedBox.shrink()),
+    ],
+  );
+}
+
 /// The existing TabController still owns routing and swipe synchronization.
 class PlayraTabBar extends StatelessWidget
     with PlayraForuiComponent
@@ -976,14 +945,10 @@ class PlayraTabBar extends StatelessWidget
       animation: current,
       builder: (context, _) => f.FTabs(
         scrollable: isScrollable,
-        // 选项卡只用文字颜色区分选中，不画整条底色或选中指示块。
-        style: f.FTabsStyleDelta.delta(
-          decoration: f.DecorationDelta.value(
-            const BoxDecoration(color: Colors.transparent),
-          ),
-          indicatorDecoration: f.DecorationDelta.value(
-            const BoxDecoration(color: Colors.transparent),
-          ),
+        // This adapter only renders the header; the caller owns TabBarView.
+        style: const f.FTabsStyleDelta.delta(
+          minHeight: PlayraLayout.touchTarget,
+          spacing: 0,
         ),
         control: f.FTabControl.lifted(
           index: current.index,
@@ -1050,7 +1015,7 @@ class PlayraSearchBar extends StatelessWidget with PlayraForuiComponent {
   );
 }
 
-class PlayraPopupMenu<T> extends StatelessWidget {
+class PlayraPopupMenu<T> extends StatelessWidget with PlayraForuiComponent {
   const PlayraPopupMenu({
     super.key,
     required this.itemBuilder,
@@ -1066,7 +1031,7 @@ class PlayraPopupMenu<T> extends StatelessWidget {
   final String? tooltip;
   final Widget? child, icon;
   @override
-  Widget build(BuildContext context) => f.FPopoverMenu.tiles(
+  Widget buildForui(BuildContext context) => f.FPopoverMenu.tiles(
     maxHeight: MediaQuery.sizeOf(context).height * .65,
     menuBuilder: (context, control, _) => [
       f.FTileGroup(
@@ -1131,48 +1096,28 @@ class PlayraBadge extends StatelessWidget with PlayraForuiComponent {
     this.kind = PlayraBadgeKind.primary,
   });
 
-  const PlayraBadge.secondary({
-    super.key,
-    required this.child,
-  }) : kind = PlayraBadgeKind.secondary;
+  const PlayraBadge.secondary({super.key, required this.child})
+    : kind = PlayraBadgeKind.secondary;
 
-  const PlayraBadge.outline({
-    super.key,
-    required this.child,
-  }) : kind = PlayraBadgeKind.outline;
+  const PlayraBadge.outline({super.key, required this.child})
+    : kind = PlayraBadgeKind.outline;
 
-  const PlayraBadge.destructive({
-    super.key,
-    required this.child,
-  }) : kind = PlayraBadgeKind.destructive;
+  const PlayraBadge.destructive({super.key, required this.child})
+    : kind = PlayraBadgeKind.destructive;
 
   final Widget child;
   final PlayraBadgeKind kind;
 
   @override
   Widget buildForui(BuildContext context) {
-    final tokens = context.playraTokens;
-    final (bg, fg, border) = switch (kind) {
-      PlayraBadgeKind.primary => (tokens.primary, tokens.primaryForeground, null),
-      PlayraBadgeKind.secondary => (tokens.surfaceRaised, tokens.foreground, tokens.borderSubtle),
-      PlayraBadgeKind.outline => (Colors.transparent, tokens.foreground, tokens.borderSubtle),
-      PlayraBadgeKind.destructive => (tokens.destructive, tokens.destructiveContainer, null),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(PlayraTokens.radiusSm),
-        border: border != null ? Border.all(color: border) : null,
-      ),
-      child: DefaultTextStyle.merge(
-        style: TextStyle(
-          color: fg,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-        child: child,
-      ),
+    return f.FBadge(
+      variant: switch (kind) {
+        PlayraBadgeKind.primary => f.FBadgeVariant.primary,
+        PlayraBadgeKind.secondary => f.FBadgeVariant.secondary,
+        PlayraBadgeKind.outline => f.FBadgeVariant.outline,
+        PlayraBadgeKind.destructive => f.FBadgeVariant.destructive,
+      },
+      child: child,
     );
   }
 }
@@ -1202,79 +1147,30 @@ class PlayraAlert extends StatelessWidget with PlayraForuiComponent {
 
   @override
   Widget buildForui(BuildContext context) {
-    final tokens = context.playraTokens;
-    final isDestructive = kind == PlayraAlertKind.destructive;
-    final bg = isDestructive ? tokens.destructiveContainer : tokens.surfaceRaised;
-    final borderColor = isDestructive ? tokens.destructive : tokens.borderSubtle;
-    final iconColor = isDestructive ? tokens.destructive : tokens.primary;
-
-    return Container(
-      padding: const EdgeInsets.all(PlayraSpace.md),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (icon != null) ...[
-            IconTheme(
-              data: IconThemeData(color: iconColor, size: 20),
-              child: icon!,
-            ),
-            const SizedBox(width: PlayraSpace.sm),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DefaultTextStyle.merge(
-                  style: TextStyle(
-                    color: tokens.foreground,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  child: title,
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: PlayraSpace.xs),
-                  DefaultTextStyle.merge(
-                    style: TextStyle(
-                      color: tokens.foregroundMuted,
-                      fontSize: 13,
-                    ),
-                    child: subtitle!,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
+    return f.FAlert(
+      variant: kind == PlayraAlertKind.destructive
+          ? f.FAlertVariant.destructive
+          : f.FAlertVariant.primary,
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
     );
   }
 }
 
 class PlayraDivider extends StatelessWidget with PlayraForuiComponent {
-  const PlayraDivider({
-    super.key,
-    this.vertical = false,
-  });
+  const PlayraDivider({super.key, this.vertical = false});
 
   final bool vertical;
 
   @override
   Widget buildForui(BuildContext context) {
-    final tokens = context.playraTokens;
-    return vertical
-        ? VerticalDivider(color: tokens.borderSubtle, width: 1, thickness: 1)
-        : Divider(color: tokens.borderSubtle, height: 1, thickness: 1);
+    return f.FDivider(axis: vertical ? Axis.vertical : Axis.horizontal);
   }
 }
 
-class PlayraFloatingActionButton extends StatelessWidget with PlayraForuiComponent {
+class PlayraFloatingActionButton extends StatelessWidget
+    with PlayraForuiComponent {
   const PlayraFloatingActionButton({
     super.key,
     required this.onPressed,
@@ -1299,56 +1195,19 @@ class PlayraFloatingActionButton extends StatelessWidget with PlayraForuiCompone
 
   @override
   Widget buildForui(BuildContext context) {
-    final tokens = context.playraTokens;
-    final isExtended = label != null;
-    final shape = isExtended
-        ? RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+    final button = label == null
+        ? f.FButton.icon(
+            onPress: onPressed,
+            variant: f.FButtonVariant.primary,
+            size: f.FButtonSizeVariant.lg,
+            child: child!,
           )
-        : const CircleBorder();
-
-    final content = isExtended
-        ? Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[
-                  icon!,
-                  const SizedBox(width: 8),
-                ],
-                label!,
-              ],
-            ),
-          )
-        : SizedBox(
-            width: 56,
-            height: 56,
-            child: Center(child: child),
+        : PlayraButton(
+            onPressed: onPressed,
+            size: PlayraButtonSize.lg,
+            icon: icon,
+            child: label!,
           );
-
-    final button = Material(
-      color: tokens.primary,
-      elevation: 4,
-      shadowColor: Colors.black38,
-      shape: shape,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: shape,
-        child: IconTheme(
-          data: IconThemeData(color: tokens.primaryForeground, size: 24),
-          child: DefaultTextStyle(
-            style: TextStyle(
-              color: tokens.primaryForeground,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-            child: content,
-          ),
-        ),
-      ),
-    );
-    return tooltip != null ? Tooltip(message: tooltip!, child: button) : button;
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }

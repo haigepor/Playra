@@ -194,7 +194,7 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _header() => Padding(
     key: _searchHeaderKey,
-    padding: EdgeInsets.only(top: _hasSearched ? 8 : 24, bottom: 16),
+    padding: EdgeInsets.only(top: _hasSearched ? PlayraSpace.sm : PlayraSpace.xxl, bottom: PlayraSpace.lg),
     child: _searchField(),
   );
 
@@ -222,7 +222,7 @@ class _SearchPageState extends State<SearchPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(left: 16, right: 4),
+                  padding: const EdgeInsets.only(left: PlayraSpace.lg, right: PlayraSpace.xs),
                   child: Row(
                     children: [
                       Expanded(
@@ -310,7 +310,7 @@ class _SearchPageState extends State<SearchPage> {
     return [
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.only(bottom: PlayraSpace.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -354,7 +354,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
               if (summary.isNotEmpty) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: PlayraSpace.compact),
                 Text(
                   summary,
                   maxLines: 2,
@@ -403,7 +403,7 @@ class _SearchPageState extends State<SearchPage> {
       if (allItems.isNotEmpty || !failed)
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
+            padding: const EdgeInsets.symmetric(vertical: PlayraSpace.xxl),
             child: Center(
               child: busy
                   ? (allItems.isEmpty
@@ -454,7 +454,7 @@ class _SearchPageState extends State<SearchPage> {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               slivers: [
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(inset, 0, inset, 24),
+                  padding: EdgeInsets.fromLTRB(inset, 0, inset, PlayraSpace.xxl),
                   sliver: SliverMainAxisGroup(slivers: slivers),
                 ),
               ],

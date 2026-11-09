@@ -68,7 +68,7 @@ Future<void> showDanmakuSourceSheet(
         child: Material(
           color: Theme.of(context).colorScheme.surface,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.horizontal(left: Radius.circular(28)),
+            borderRadius: BorderRadius.horizontal(left: Radius.circular(PlayraRadius.card)),
           ),
           clipBehavior: Clip.antiAlias,
           child: buildSheet(context),
@@ -306,7 +306,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
           data: const InputDecorationThemeData(
             filled: true,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
+              borderRadius: BorderRadius.all(Radius.circular(PlayraRadius.card)),
               borderSide: BorderSide.none,
             ),
           ),
@@ -335,13 +335,13 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
       _SourceStep.episode => _episodes.isEmpty ? '加载分集…' : '切换中…',
     };
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: PlayraSpace.xl),
       child: Center(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             LoadingIndicator(size: 22, semanticsLabel: label),
-            const SizedBox(width: 12),
+            const SizedBox(width: PlayraSpace.md),
             Text(label, style: Theme.of(context).textTheme.bodyMedium),
           ],
         ),
@@ -362,7 +362,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+          padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, PlayraSpace.xs, PlayraSpace.xl, PlayraSpace.sm),
           child: ValueListenableBuilder<TextEditingValue>(
             valueListenable: _keywordController,
             builder: (context, value, _) => PlayraTextField(
@@ -386,13 +386,13 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, PlayraSpace.sm, PlayraSpace.xl, PlayraSpace.xl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (_error != null) ...[
                   Text(_error!, style: TextStyle(color: tokens.destructive)),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: PlayraSpace.md),
                 ],
                 if (_recentKeywords.isNotEmpty) ...[
                   Text(
@@ -427,7 +427,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
             border: Border(top: BorderSide(color: tokens.borderSubtle)),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, PlayraSpace.md, PlayraSpace.xl, PlayraSpace.xl),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -465,7 +465,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
       children: [
         if (_hasMore)
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, PlayraSpace.xs, PlayraSpace.xl, PlayraSpace.md),
             child: Text(
               '仅显示部分结果',
               style: Theme.of(context).textTheme.bodySmall,
@@ -474,7 +474,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
         Flexible(
           child: ListView.separated(
             shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, PlayraSpace.xs, PlayraSpace.xl, PlayraSpace.xl),
             itemCount: _animes.length,
             separatorBuilder: (_, __) =>
                 const SizedBox(height: splitListRowGap),
@@ -540,14 +540,14 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
                 )
               : ListView.builder(
                   controller: _episodeScrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, PlayraSpace.sm, PlayraSpace.xl, PlayraSpace.xl),
                   itemExtent: _episodeRowExtent,
                   itemCount: visible.length,
                   itemBuilder: (context, index) {
                     final episode = visible[index];
                     return Padding(
                       padding: const EdgeInsets.symmetric(
-                          vertical: splitListRowGap / 2),
+                          vertical: splitListRowGap / PlayraSpace.tiny),
                       child: SplitListRow(
                         topRadius: index == 0
                             ? splitListOuterRadius
@@ -602,7 +602,7 @@ class _SheetHeader extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final subtitle = this.subtitle;
     return Padding(
-      padding: const EdgeInsets.only(top: 14, bottom: 8),
+      padding: const EdgeInsets.only(top: PlayraSpace.lg, bottom: PlayraSpace.sm),
       child: Column(
         children: [
           MaterialBottomSheetHeader(
@@ -619,7 +619,7 @@ class _SheetHeader extends StatelessWidget {
           ),
           if (subtitle != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xxl),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(subtitle,
@@ -630,7 +630,7 @@ class _SheetHeader extends StatelessWidget {
             ),
           const SizedBox(height: 10),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xxl),
             child: Row(
               children: List.generate(_SourceStep.values.length, (index) {
                 final color = index == step.index
@@ -642,11 +642,11 @@ class _SheetHeader extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: EdgeInsets.only(
-                        right: index == _SourceStep.values.length - 1 ? 0 : 6),
+                        right: index == _SourceStep.values.length - 1 ? 0 : PlayraSpace.compact),
                     height: 4,
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(PlayraRadius.indicator),
                     ),
                   ),
                 );
@@ -687,7 +687,7 @@ class _EpisodeToolbar extends StatelessWidget {
     final segmentCount = (total / _episodeSegmentSize).ceil();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.xs, PlayraSpace.lg, PlayraSpace.md),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: colors.outlineVariant)),
       ),
@@ -721,7 +721,7 @@ class _EpisodeToolbar extends StatelessWidget {
                 ),
               ),
               if (showSegments) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: PlayraSpace.sm),
                 SizedBox(
                   width: 126,
                   height: 46,
@@ -748,7 +748,7 @@ class _EpisodeToolbar extends StatelessWidget {
           if (showSegments) ...[
             const SizedBox(height: 10),
             SizedBox(
-              height: 32,
+              height: PlayraSpace.section,
               child: Row(
                 children: [
                   Text(
@@ -789,7 +789,7 @@ class _EpisodeToolbar extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: PlayraSpace.sm),
           Text(
             matched == total ? '共 $total 集' : '显示 $matched 集，共 $total 集',
             style: Theme.of(context).textTheme.bodySmall,
@@ -814,12 +814,11 @@ class _SegmentChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
+      padding: const EdgeInsets.only(right: PlayraSpace.sm),
+      child: PlayraChoice(
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
-        showCheckmark: false,
       ),
     );
   }

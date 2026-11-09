@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' as f;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -194,8 +195,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('home-calendar')));
     await tester.pumpAndSettle();
     expect(find.text('modern-timeline'), findsOneWidget);
-    final selected = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(selected.selectedIndex, 1);
+    final selected = tester.widget<f.FBottomNavigationBar>(
+      find.byType(f.FBottomNavigationBar),
+    );
+    expect(selected.index, 1);
     await tester.tap(find.text('发现'));
     await tester.pumpAndSettle();
     expect(find.byType(ModernHomeView), findsOneWidget);
@@ -332,7 +335,7 @@ void main() {
       await _mount(tester, _controller(style: 'modern'), preview: true);
       expect(find.byTooltip('Kazumi'), findsNothing);
       expect(find.byKey(const ValueKey('home-calendar')), findsOneWidget);
-      expect(find.text('搜索动漫或关键词'), findsOneWidget);
+      expect(find.text('搜索作品'), findsOneWidget);
       final boundary = tester.renderObject<RenderRepaintBoundary>(
         find.byKey(const ValueKey('preview-boundary')),
       );

@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/collect_button.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
@@ -183,7 +184,7 @@ class PlayerPanelHoldCollectButton extends StatefulWidget {
     super.key,
     required this.acquirePlayerPanelHold,
     required this.bangumiItem,
-    this.color = Colors.white,
+    this.color = PlayraMedia.foreground,
   });
 
   final PlayerPanelHold Function() acquirePlayerPanelHold;

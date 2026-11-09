@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/bangumi/episode_item.dart';
 import 'package:kazumi/modules/history/history_module.dart';
@@ -237,7 +238,7 @@ void main() {
     expect(find.text('OVA 完整特别篇'), findsOneWidget);
     expect(find.byType(PlayerEpisodeButton).evaluate().length, lessThan(50));
     expect(
-      tester.getSize(find.widgetWithText(TextButton, '当前集')).height,
+      tester.getSize(find.widgetWithText(PlayraButton, '当前集')).height,
       greaterThanOrEqualTo(48),
     );
   });

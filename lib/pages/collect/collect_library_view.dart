@@ -252,7 +252,7 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
               ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         Row(
           children: [
             if (!compact)
@@ -267,7 +267,7 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
               )
             else
               Expanded(child: _countLabel(query)),
-            const SizedBox(width: 12),
+            const SizedBox(width: PlayraSpace.md),
             _CollectSortMenu(
               value: _sort,
               showLabel: !compact,
@@ -284,7 +284,7 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
                 icon: const Icon(Icons.search_rounded),
                 onPressed: _searchExpanded ? _closeSearch : _focusSearch,
               ),
-            const SizedBox(width: 8),
+            const SizedBox(width: PlayraSpace.sm),
             _CollectLayoutSwitch(
               value: widget.layout,
               onChanged: widget.onLayoutChanged,
@@ -292,10 +292,10 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
           ],
         ),
         if (compact && _searchExpanded) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
           _searchBar(),
         ],
-        const SizedBox(height: 20),
+        const SizedBox(height: PlayraSpace.xl),
       ],
     );
   }
@@ -372,7 +372,7 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
                     inset,
                     0,
                     inset,
-                    24 + MediaQuery.paddingOf(context).bottom,
+                    PlayraSpace.xxl + MediaQuery.paddingOf(context).bottom,
                   ),
                   sliver: widget.layout == CollectLayout.cards
                       ? _grid(entries, contentWidth, type: type)
@@ -417,7 +417,7 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
       itemBuilder: (context, row) {
         final first = row * columns;
         return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.only(bottom: PlayraSpace.md),
           child: columns == 1
               ? tile(first)
               : IntrinsicHeight(

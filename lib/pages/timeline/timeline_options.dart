@@ -93,7 +93,7 @@ class _TimelineOptionsSheet extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: PlayraSpace.xxl),
                   ContentSection.group(
                     title: '显示范围',
                     children: [

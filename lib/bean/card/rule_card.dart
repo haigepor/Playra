@@ -53,14 +53,10 @@ class RuleCard extends StatelessWidget {
           duration: duration,
           curve: Curves.easeInOutCubicEmphasized,
           decoration: BoxDecoration(
-            color: selected
-                ? tokens.primaryContainer
-                : tokens.surfaceRaised,
+            color: selected ? tokens.primaryContainer : tokens.surfaceRaised,
             borderRadius: BorderRadius.circular(PlayraRadius.card),
             border: Border.all(
-              color: selected
-                  ? tokens.primary
-                  : tokens.borderSubtle,
+              color: selected ? tokens.primary : tokens.borderSubtle,
               width: 1,
             ),
           ),
@@ -91,7 +87,9 @@ class RuleCard extends StatelessWidget {
                                   color: colors.primary.withValues(
                                     alpha: selected || installed ? .16 : .09,
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(
+                                    PlayraRadius.control,
+                                  ),
                                 ),
                                 child: Center(
                                   child: selected
@@ -205,7 +203,7 @@ class RuleCard extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: colors.primary.withValues(alpha: .09),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(PlayraRadius.control),
                 border: Border.all(
                   color: colors.primary.withValues(alpha: .14),
                 ),
@@ -271,10 +269,7 @@ class RuleCard extends StatelessWidget {
             ],
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Divider(
-                height: 1,
-                color: tokens.borderSubtle,
-              ),
+              child: Divider(height: 1, color: tokens.borderSubtle),
             ),
             Wrap(
               spacing: 16,
@@ -331,7 +326,7 @@ class RuleTag extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(
       color: background,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(PlayraRadius.thumbnail),
     ),
     child: Text(
       label,

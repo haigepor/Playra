@@ -29,7 +29,7 @@ class _CollectCategories extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minWidth: 64),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
                   child: ValueListenableBuilder(
                     valueListenable: selected,
                     builder: (context, value, _) => Text(

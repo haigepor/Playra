@@ -51,8 +51,8 @@ class ModernAnimeCover extends StatelessWidget {
                   child: ExcludeSemantics(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 3,
+                        horizontal: PlayraSpace.compact,
+                        vertical: PlayraSpace.xs,
                       ),
                       decoration: BoxDecoration(
                         color: tokens.surfaceRaised.withValues(alpha: 0.9),

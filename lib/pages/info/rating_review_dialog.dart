@@ -1,3 +1,4 @@
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -267,27 +268,27 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.fromLTRB(
                   horizontalPadding,
-                  8,
+                  PlayraSpace.sm,
                   horizontalPadding,
-                  24,
+                  PlayraSpace.xxl,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (_submitError != null) ...[
                       _buildSubmitError(),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: PlayraSpace.xl),
                     ],
                     Text(
                       _displayName,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: PlayraSpace.xl),
                     _buildComment(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: PlayraSpace.xl),
                     _buildScore(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: PlayraSpace.xxl),
                     _buildTags(),
                   ],
                 ),
@@ -328,7 +329,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
   }
 
   Widget _buildHeader() => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 12, 24, 12),
+    padding: const EdgeInsets.fromLTRB(PlayraSpace.md, PlayraSpace.md, PlayraSpace.xxl, PlayraSpace.md),
     child: Row(
       children: [
         PlayraIconButton(
@@ -336,7 +337,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
           onPressed: _submitting ? null : _requestClose,
           icon: const Icon(Icons.close_rounded),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: PlayraSpace.md),
         Expanded(
           child: Text(
             _editing ? '编辑吐槽' : '发表吐槽',
@@ -366,14 +367,14 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
         floatingLabelBehavior: FloatingLabelBehavior.always,
         filled: true,
         fillColor: colors.surfaceContainerLowest,
-        contentPadding: const EdgeInsets.all(20),
+        contentPadding: const EdgeInsets.all(PlayraSpace.xl),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(PlayraRadius.overlay),
           borderSide: BorderSide(color: colors.outlineVariant),
         ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(PlayraRadius.overlay)),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(PlayraRadius.overlay),
           borderSide: BorderSide(color: colors.primary, width: 2),
         ),
       ),
@@ -384,10 +385,10 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(PlayraSpace.lg),
       decoration: BoxDecoration(
         color: colors.secondaryContainer,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(PlayraRadius.brand),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -417,7 +418,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: PlayraSpace.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,7 +429,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
                         color: colors.onSecondaryContainer,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: PlayraSpace.xs),
                     Text(
                       _scoreLabels[_score],
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -449,7 +450,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: PlayraSpace.lg),
           LayoutBuilder(
             builder: (context, constraints) {
               final targetWidth =
@@ -465,11 +466,11 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
               return Column(
                 children: [
                   for (var start = 1; start <= 10; start += columns) ...[
-                    if (start > 1) const SizedBox(height: 8),
+                    if (start > 1) const SizedBox(height: PlayraSpace.sm),
                     Row(
                       children: [
                         for (var index = 0; index < columns; index++) ...[
-                          if (index > 0) const SizedBox(width: 4),
+                          if (index > 0) const SizedBox(width: PlayraSpace.xs),
                           Expanded(
                             child: _buildScoreButton(
                               start + index,
@@ -505,7 +506,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
           child: ExcludeSemantics(
             child: Text(
               '$value',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: PlayraType.item, fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -531,7 +532,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: PlayraSpace.md),
         if (_selectedTags.isNotEmpty) ...[
           Wrap(
             spacing: 8,
@@ -547,7 +548,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: PlayraSpace.md),
         ],
         if (_popularTags.isNotEmpty) ...[
           Text(
@@ -556,7 +557,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
               color: colors.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: PlayraSpace.xs),
         ],
         Wrap(
           spacing: 8,
@@ -601,7 +602,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
           alignment: Alignment.topCenter,
           child: _showCustomTag
               ? Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.only(top: PlayraSpace.md),
                   child: PlayraTextField(
                     key: const ValueKey('review-custom-tag'),
                     controller: _tagController,
@@ -617,7 +618,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
                       filled: true,
                       fillColor: colors.surfaceContainerLowest,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(PlayraRadius.card),
                       ),
                       suffixIcon: PlayraIconButton(
                         tooltip: '添加标签',
@@ -633,7 +634,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
           Semantics(
             liveRegion: true,
             child: Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: PlayraSpace.sm),
               child: Text(
                 _tagError!,
                 style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
@@ -649,16 +650,16 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
     return Semantics(
       liveRegion: true,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(PlayraSpace.lg),
         decoration: BoxDecoration(
           color: colors.errorContainer,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(PlayraRadius.card),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.error_outline_rounded, color: colors.onErrorContainer),
-            const SizedBox(width: 12),
+            const SizedBox(width: PlayraSpace.md),
             Expanded(
               child: Text(
                 _submitError!,
@@ -674,7 +675,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
   Widget _buildActions() {
     final colors = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+      padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, PlayraSpace.md, PlayraSpace.xxl, PlayraSpace.lg),
       child: Row(
         children: [
           Expanded(
@@ -685,7 +686,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
               ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: PlayraSpace.lg),
           if (_submitting)
             Semantics(
               liveRegion: true,
@@ -699,7 +700,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
                       color: colors.primary,
                       semanticsLabel: '正在发表',
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: PlayraSpace.md),
                     const Text('正在发表…'),
                   ],
                 ),
