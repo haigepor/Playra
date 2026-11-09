@@ -1,0 +1,13 @@
+00:00:00.151838 HM: HMR3Init: Attempting fall back to NEM: VT-x is not available
+00:00:00.154214 NEM: WHvCapabilityCodeHypervisorPresent is TRUE, so this might work...
+00:01:33.811024 TM: Giving up catch-up attempt at a 63 566 122 896 ns lag; new total: 63 566 122 896 ns
+00:02:49.677077 TM: Giving up catch-up attempt at a 60 004 218 899 ns lag; new total: 123 570 341 795 ns
+00:04:13.097092 TM: Giving up catch-up attempt at a 60 011 501 565 ns lag; new total: 183 581 843 360 ns
+00:05:35.010431 TM: Giving up catch-up attempt at a 60 000 518 580 ns lag; new total: 243 582 361 940 ns
+00:06:49.261439 TM: Giving up catch-up attempt at a 60 064 876 280 ns lag; new total: 303 647 238 220 ns
+00:08:06.081445 TM: Giving up catch-up attempt at a 64 876 512 696 ns lag; new total: 368 523 750 916 ns
+00:09:12.920041 TM: Giving up catch-up attempt at a 60 004 000 192 ns lag; new total: 428 527 751 108 ns
+00:10:28.748802 TM: Giving up catch-up attempt at a 60 000 229 802 ns lag; new total: 488 527 980 910 ns
+00:11:50.819784 TM: Giving up catch-up attempt at a 60 001 532 079 ns lag; new total: 548 529 512 989 ns
+00:13:08.277525 TM: Giving up catch-up attempt at a 60 000 210 595 ns lag; new total: 608 529 723 584 ns
+00:14:24.973306 TM: Giving up catch-up attempt at a 60 008 526 794 ns lag; new total: 668 538 250 378 ns

@@ -1,0 +1,7 @@
+Command: flutter analyze --no-pub --no-fatal-infos
+Configuration: repository analysis_options.yaml
+Result: exit 0
+Errors: 0
+Warnings: 0
+Info: 474
+Full local log: .dart_tool/cinema-redesign-20261109/precommit-ci-analyze.log

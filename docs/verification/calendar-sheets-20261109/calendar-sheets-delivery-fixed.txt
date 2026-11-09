@@ -1,0 +1,39 @@
+00:00 +0: loading C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_calendar_view_test.dart
+00:00 +0: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_calendar_view_test.dart: 320dp and large type put the complete title above the period
+00:01 +1: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_calendar_view_test.dart: 加载与失败不显示零部，失败时重试不会清空筛选
+00:01 +2: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_calendar_view_test.dart: 减少动画时星期切换立即到达对应列表
+00:01 +3: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_calendar_view_test.dart: 星期点击与左右滑动同步，顶部固定，沿用暗色主题
+00:02 +4: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:03 +5: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:03 +6: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:03 +7: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:03 +8: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:04 +9: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:04 +10: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:04 +11: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: SDK history and download cards retain their real actions
+00:04 +12: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:04 +13: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:04 +14: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:04 +15: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:05 +16: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:05 +17: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:05 +18: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:05 +19: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:05 +20: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 390.0
+00:05 +21: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 390.0
+00:05 +22: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 390.0
+00:05 +23: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 390.0
+00:06 +24: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 390.0
+00:06 +25: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 390.0
+00:06 +26: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 390.0
+00:06 +27: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:06 +28: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 320.0
+00:06 +29: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/2.0/Brightness.dark with reduced motion
+00:06 +30: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 800.0
+00:06 +31: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 800.0
+00:06 +32: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 800.0
+00:06 +33: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: calendar frame 800.0
+00:06 +34: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/2.0/Brightness.light with reduced motion
+00:06 +35: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: library sorting frame
+00:07 +36: C:/Users/haige/Desktop/Playra/.dart_tool/calendar-sheets-20261109/visual_test.dart: (tearDownAll)
+00:07 +36: All tests passed!

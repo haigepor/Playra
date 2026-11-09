@@ -1,0 +1,8 @@
+Total messages: 18 (Errors: 3, Warnings: 2)
+Returning 5 messages for level "warning"
+
+[ERROR] Failed to load resource: net::ERR_CONNECTION_CLOSED @ https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2:0
+[WARNING] Failed to load font Roboto at https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2 @ http://127.0.0.1:8947/main.dart.js:69895
+[WARNING] Flutter Web engine failed to complete HTTP request to fetch "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2": TypeError: Failed to fetch @ http://127.0.0.1:8947/main.dart.js:69895
+[ERROR] Access to fetch at 'http://198.16.39.44:27264/nzjm.php/v7/logs' from origin 'http://127.0.0.1:8947' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://127.0.0.1:8947/#/tab/popular/:0
+[ERROR] Failed to load resource: net::ERR_FAILED @ http://198.16.39.44:27264/nzjm.php/v7/logs:0

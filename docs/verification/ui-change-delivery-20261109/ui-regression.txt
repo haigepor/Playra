@@ -1,0 +1,143 @@
+00:00 +0: loading C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart
+00:00 +0: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: empty recommendations use a compact refresh notice instead of a source error
+00:01 +1: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_calendar_view_test.dart: 320dp and large type put the complete title above the period
+00:01 +2: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: source failure exposes retry and recovers when content arrives
+00:01 +3: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:02 +4: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:02 +5: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:02 +6: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:02 +7: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:02 +8: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:04 +9: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:04 +10: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:05 +11: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 固定顶部、真实续播、分类搜索与底部暗色
+00:05 +12: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: icon label and tap semantics stay together, enabled=true
+00:05 +13: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: icon label and tap semantics stay together, enabled=true
+00:05 +14: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: icon label and tap semantics stay together, enabled=true
+00:05 +15: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:05 +16: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:05 +17: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: native player tabs preserve selection callback at 1.0
+00:06 +18: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/cinema_adaptive_layout_test.dart: unavailable media shows status instead of a play action
+00:06 +19: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/cinema_adaptive_layout_test.dart: unavailable media shows status instead of a play action
+00:06 +20: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/cinema_adaptive_layout_test.dart: unavailable media shows status instead of a play action
+00:06 +21: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: style channels keep only their own second-source content
+00:06 +22: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: style channels keep only their own second-source content
+00:06 +23: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: SDK history and download cards retain their real actions
+00:06 +24: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: SDK history and download cards retain their real actions
+00:06 +25: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: SDK history and download cards retain their real actions
+00:06 +26: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 空库引导与桌面卡片布局
+00:06 +27: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 空库引导与桌面卡片布局
+00:06 +28: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 空库引导与桌面卡片布局
+00:06 +29: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 空库引导与桌面卡片布局
+00:07 +30: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 空库引导与桌面卡片布局
+00:07 +31: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 空库引导与桌面卡片布局
+00:07 +32: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 空库引导与桌面卡片布局
+00:07 +33: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_library_view_test.dart: 空库引导与桌面卡片布局
+00:07 +34: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: loaded home at Size(844.0, 390.0), dark=false, enlarged text
+00:07 +35: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: loaded home at Size(844.0, 390.0), dark=false, enlarged text
+00:07 +36: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: loaded home at Size(844.0, 390.0), dark=false, enlarged text
+00:07 +37: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: loaded home at Size(844.0, 390.0), dark=false, enlarged text
+00:07 +38: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_home_view_test.dart: loaded home at Size(844.0, 390.0), dark=false, enlarged text
+00:07 +39: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:07 +40: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:07 +41: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:07 +42: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:07 +43: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:07 +44: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:07 +45: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:07 +46: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/forui_theme_contract_test.dart: Forui controls remain usable at 320px/1.0/Brightness.dark with reduced motion
+00:07 +47: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: root dialogs inherit the product surface without a page context
+00:07 +48: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/playra_components_test.dart: root dialogs inherit the product surface without a page context
+00:07 +49: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +50: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +51: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +52: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +53: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +54: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +55: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +56: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +57: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +58: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:08 +59: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_shell_layout_test.dart: last page action stays above navigation and system safe area
+00:09 +60: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 分组统一使用 Forui，主题偏好保留
+00:09 +61: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 分组统一使用 Forui，主题偏好保留
+00:10 +62: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 同步介绍、操作按钮和空状态适配 320.0 字号 1.0
+00:10 +63: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 同步介绍、操作按钮和空状态适配 320.0 字号 2.0
+00:10 +64: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 控件宽度 320.0 字号 1.0，无溢出且交互可用
+00:11 +65: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 控件宽度 320.0 字号 1.5，无溢出且交互可用
+00:11 +66: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: player touch targets remain 48dp with compact desktop base theme
+00:12 +67: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: player touch targets remain 48dp with compact desktop base theme
+00:12 +68: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: player touch targets remain 48dp with compact desktop base theme
+00:12 +69: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: player touch targets remain 48dp with compact desktop base theme
+00:12 +70: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: player touch targets remain 48dp with compact desktop base theme
+00:12 +71: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 控件宽度 390.0 字号 1.5，无溢出且交互可用
+00:13 +72: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 控件宽度 390.0 字号 1.5，无溢出且交互可用
+00:13 +73: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: resume follows URL after reordering, never old list position
+00:13 +74: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_secondary_pages_test.dart: (setUpAll)
+00:13 +75: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_secondary_pages_test.dart: (setUpAll)
+00:13 +76: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_secondary_pages_test.dart: (setUpAll)
+00:13 +76: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 控件宽度 390.0 字号 2.0，无溢出且交互可用
+00:13 +77: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_settings_foundation_test.dart: 控件宽度 390.0 字号 2.0，无溢出且交互可用
+00:13 +78: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:13 +79: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:13 +80: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:13 +81: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:14 +82: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:14 +83: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:14 +84: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:14 +85: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:15 +86: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_player_contract_test.dart: reverse and segment preserve original episode identity
+00:15 +87: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_secondary_pages_test.dart: 搜索和条件草稿：320.0 / 1.0
+00:16 +88: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/content_search_screen_test.dart: Android search requests ordinary text, never a password variant
+00:16 +89: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/content_search_screen_test.dart: Android search requests ordinary text, never a password variant
+00:16 +90: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:16 +91: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:17 +92: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:17 +93: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:17 +94: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:17 +95: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:17 +96: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:17 +97: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:17 +98: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:18 +99: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:18 +100: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:18 +101: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:18 +102: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: home calendar entry selects its destination and returns home
+00:18 +103: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:18 +104: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:18 +105: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +106: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +107: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +108: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +109: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +110: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +111: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +112: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +113: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +114: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +115: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:19 +116: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +117: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +118: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +119: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +120: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +121: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +122: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +123: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +124: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +125: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.0 切换分区保留草稿且不溢出
+00:20 +126: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/interface_navigation_test.dart: small-screen content stays clear of the bottom navigation
+00:20 +127: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_secondary_pages_test.dart: 应用条件只提交一次，标签删除后同步查询
+00:21 +128: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_secondary_pages_test.dart: 应用条件只提交一次，标签删除后同步查询
+00:21 +129: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 320.0 / 1.6 切换分区保留草稿且不溢出
+00:21 +130: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_secondary_pages_test.dart: 新版图片保留原生图库与分页，关闭区域可达
+00:21 +131: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 390.0 / 1.0 切换分区保留草稿且不溢出
+00:21 +132: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 390.0 / 1.0 切换分区保留草稿且不溢出
+00:21 +133: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/modern_secondary_pages_test.dart: 人物紧凑资料和引导长文在大字体可滚动
+00:21 +134: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 390.0 / 1.6 切换分区保留草稿且不溢出
+00:21 +135: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 390.0 / 1.6 切换分区保留草稿且不溢出
+00:22 +136: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 390.0 / 1.6 切换分区保留草稿且不溢出
+00:22 +137: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 390.0 / 1.6 切换分区保留草稿且不溢出
+00:22 +138: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 900.0 / 1.0 切换分区保留草稿且不溢出
+00:22 +139: C:/Users/haige/Desktop/Playra/.dart_tool/emulator-ui-20261108/fixture/test/rule_editor_layout_test.dart: 规则编辑器 900.0 / 1.6 切换分区保留草稿且不溢出
+00:22 +140: All tests passed!

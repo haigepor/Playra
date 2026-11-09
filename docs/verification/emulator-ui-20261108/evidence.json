@@ -1,0 +1,153 @@
+{
+  "source_revision": "8ff9b17d7a5c582a9e6a",
+  "apk": {
+    "path": "C:\\Users\\haige\\Desktop\\Playra\\.dart_tool\\emulator-ui-20261108\\fixture\\build\\app\\outputs\\flutter-apk\\app-debug.apk",
+    "bytes": 127883649,
+    "sha256": "f05252c2907dcb6fd8ca4fb68458a0f229a6fd73b4b2712bf8ede681a1dd4a0d",
+    "package": "com.predidit.kazumi.uiverify",
+    "label": "Playra UI Verify",
+    "mode": "debug",
+    "abis": [
+      "x86_64"
+    ]
+  },
+  "protected_input_unchanged": true,
+  "phone_320_font_2_title_bounds": [
+    24,
+    36,
+    234,
+    114
+  ],
+  "phone_320_font_2_period_bounds": [
+    177,
+    114,
+    456,
+    186
+  ],
+  "tablet_800_first_calendar_cards": [
+    [
+      168,
+      329,
+      654,
+      566
+    ],
+    [
+      678,
+      329,
+      1164,
+      566
+    ]
+  ],
+  "tablet_1280_brand_count": 1,
+  "unavailable_media_is_status": true,
+  "native_search_completed_results": 7,
+  "display_restored": {
+    "size": "Physical size: 540x960",
+    "density": "Physical density: 240",
+    "font_scale": "null",
+    "accelerometer_rotation": "0",
+    "user_rotation": "0"
+  },
+  "final_process_runtime_layout_errors": [],
+  "pip_evidence": {
+    "pinned": true,
+    "picture_in_picture": true,
+    "evidence": [
+      "* Task{665af49 #10 type=standard A=10071:com.predidit.kazumi.uiverify U=0 visible=true visibleRequested=true mode=pinned translucent=false sz=1}",
+      "* Hist  #0: ActivityRecord{43ed150 u0 com.predidit.kazumi.uiverify/com.example.kazumi.MainActivity t10}",
+      "rootOfTask=true task=Task{665af49 #10 type=standard A=10071:com.predidit.kazumi.uiverify}",
+      "mLastReportedMultiWindowMode=true mLastReportedPictureInPictureMode=true",
+      "* Task{665af49 #10 type=standard A=10071:com.predidit.kazumi.uiverify U=0 visible=true visibleRequested=true mode=pinned translucent=false sz=1}",
+      "* ActivityRecord{43ed150 u0 com.predidit.kazumi.uiverify/com.example.kazumi.MainActivity t10}",
+      "source=ActivityRecord{43ed150 u0 com.predidit.kazumi.uiverify/com.example.kazumi.MainActivity t10} SCREEN_ORIENTATION_USER_LANDSCAPE",
+      "source=ActivityRecord{43ed150 u0 com.predidit.kazumi.uiverify/com.example.kazumi.MainActivity t10} SCREEN_ORIENTATION_PORTRAIT",
+      "(pinned) Task{665af49 #10 type=standard A=10071:com.predidit.kazumi.uiverify}"
+    ]
+  },
+  "images": {
+    "final-home-restored": {
+      "dimensions": [
+        540,
+        960
+      ],
+      "sha256": "c8e2a9b2aa9ca85c112f53ee985ba4160778821bc832b3033ecc54726a2c9c6f"
+    },
+    "final-calendar-320-2x": {
+      "dimensions": [
+        480,
+        960
+      ],
+      "sha256": "6e6ce00c0597df16ca40186a2a8fcee4ff64c3e37a0488d2ae625c1117616283"
+    },
+    "final-calendar-800": {
+      "dimensions": [
+        1200,
+        1800
+      ],
+      "sha256": "500e8cfe40b83c0cd9769d9eb361aef8bf6d6ba1e776a2417b836fafc61f6c9c"
+    },
+    "final-home-1280": {
+      "dimensions": [
+        1920,
+        1200
+      ],
+      "sha256": "504f8b9c201b654ba0276d76d7e7cdfaa04d181f0e3eee2adf926e32707efe58"
+    },
+    "final-player-preview": {
+      "dimensions": [
+        540,
+        960
+      ],
+      "sha256": "1a3bed1233012049bf5dc21cdef1c122b276d2c977240f00ddd44a235f2aadd0"
+    },
+    "final-search-results": {
+      "dimensions": [
+        540,
+        960
+      ],
+      "sha256": "88fea348550e7afa46a1032a4c46d17307c383ac6741a1aeb56d8cee34c806de"
+    },
+    "final-search-800": {
+      "dimensions": [
+        1200,
+        1800
+      ],
+      "sha256": "765bd0565ca12d12f1688e261211a6fed4ec3fb0aae61d34dcd0ae9e8522dc86"
+    },
+    "phone-320-settings-2x": {
+      "dimensions": [
+        480,
+        960
+      ],
+      "sha256": "d6543a609c65d213e32d380df5b43bcaf98544dd7b58dbf69e9768b78fa3fae9"
+    },
+    "native-landscape-fullscreen": {
+      "dimensions": [
+        960,
+        540
+      ],
+      "sha256": "633bd257fb71c1fbc1bd799e5d4d82a7b9545af2d38a7ce3d7f5fab8148184f2"
+    },
+    "native-portrait-fullscreen": {
+      "dimensions": [
+        540,
+        960
+      ],
+      "sha256": "78b91984ae68a45c861507cfb1885b81bb6864653eb85f6aa3495ee4abf93208"
+    },
+    "native-pip": {
+      "dimensions": [
+        540,
+        960
+      ],
+      "sha256": "2a044d3b1a1aff4afd11316a0352a54a829a25cd0efb539567e1f4ce80783d5a"
+    },
+    "native-pip-return": {
+      "dimensions": [
+        540,
+        960
+      ],
+      "sha256": "d43f5c632a2a34766a1ceb8a24e8476f54fa9d1ef02ffd9c88817898a75b13a9"
+    }
+  }
+}

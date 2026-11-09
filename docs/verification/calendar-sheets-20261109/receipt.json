@@ -1,0 +1,25 @@
+{
+  "source_revision": "b5c7e93ebcd668ca136f",
+  "apk": "C:\\Users\\haige\\Desktop\\Playra\\.dart_tool\\calendar-sheets-20261109\\Playra-UI-Verify-calendar-sheets-debug-x86_64.apk",
+  "sha256": "caed3d298ff09ee18f185df4ac32520c81b97b77fa610dc3e1d7488e6136c71f",
+  "bytes": 127883649,
+  "abis": [
+    "x86_64"
+  ],
+  "badging": [
+    "package: name='com.predidit.kazumi.uiverify' versionCode='20403' versionName='2.4.3' platformBuildVersionName='17' platformBuildVersionCode='37' compileSdkVersion='37' compileSdkVersionCodename='17'",
+    "application-label:'Playra UI Verify'",
+    "launchable-activity: name='com.example.kazumi.MainActivity'  label='' icon=''",
+    "native-code: 'x86_64'"
+  ],
+  "build": "PASS isolated debug; not a formal release",
+  "test": "PASS 36 focused cases",
+  "analyze": "PASS no issues in changed source and calendar test",
+  "installed_revision_last_observed": "38be61c2fd8d3158306b",
+  "new_apk_install": "NOT_RUN emulator boot stalled; ADB has no devices",
+  "reference_apk_install": "PASS original 4.0.6 installed",
+  "reference_runtime": "Launched into startup page; requested four page families not traversed",
+  "render_probes": "Flutter test frames with explicit sample data; not Android screenshots",
+  "canonical_inputs_sha256": "4ce15e56810ebcec2d48509f5cf026be6a5d9da589766810b892bcbefc1c69f6",
+  "environment_restore": "See docs/design/calendar-sheets-reference-20261109.zh.md"
+}

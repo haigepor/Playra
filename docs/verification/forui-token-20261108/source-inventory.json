@@ -1,0 +1,4401 @@
+{
+  "scope": "256 page and business-widget Dart sources; source scan, not 256 runtime pages",
+  "forui_version": "0.27.7",
+  "before": {
+    "spacing": 282,
+    "radius": 89,
+    "font": 66,
+    "color": 106,
+    "component": 13
+  },
+  "after": {
+    "color": 8,
+    "font": 0,
+    "radius": 0,
+    "spacing": 31,
+    "component": 0
+  },
+  "excluded": "vendored components/upstream gallery examples; token/theme owners reviewed separately",
+  "files": [
+    {
+      "file": "lib/presentation/modern/modern_layout.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/modern_shell.dart",
+      "findings": [
+        {
+          "line": 69,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/modern_tab_pages.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/modern_theme.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/calendar/modern_calendar_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/calendar/modern_calendar_view.dart",
+      "findings": [
+        {
+          "line": 382,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(3),"
+        },
+        {
+          "line": 556,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(2),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/components/component_catalog.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/components/forui_gallery.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/home_anime_card.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/home_catalog.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/home_content_algorithm.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/home_display_session.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/home_frame_updates.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/home_rule_catalog.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/home_theme.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/modern_home_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/home/modern_home_view.dart",
+      "findings": [
+        {
+          "line": 1174,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(12),"
+        },
+        {
+          "line": 1273,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(14),"
+        },
+        {
+          "line": 1439,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(14),"
+        },
+        {
+          "line": 1590,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(14),"
+        },
+        {
+          "line": 1718,
+          "kind": "font",
+          "source": "fontSize: 14"
+        },
+        {
+          "line": 2182,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(10),"
+        },
+        {
+          "line": 2360,
+          "kind": "color",
+          "source": "Color(0x50000000),"
+        },
+        {
+          "line": 2410,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/library/modern_library_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/library/modern_library_view.dart",
+      "findings": [
+        {
+          "line": 515,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/library/sdk_library_widgets.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/calendar_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/content_search_screen.dart",
+      "findings": [
+        {
+          "line": 312,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 10),"
+        },
+        {
+          "line": 369,
+          "kind": "font",
+          "source": "fontSize: 15,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/content_work_page.dart",
+      "findings": [
+        {
+          "line": 226,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 236,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 246,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 12),"
+        },
+        {
+          "line": 255,
+          "kind": "font",
+          "source": "fontSize: 18,"
+        },
+        {
+          "line": 262,
+          "kind": "font",
+          "source": "const Text('仍在检索…', style: TextStyle(fontSize: 12)),"
+        },
+        {
+          "line": 280,
+          "kind": "font",
+          "source": "style: TextStyle(fontSize: 12),"
+        },
+        {
+          "line": 302,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 12),"
+        },
+        {
+          "line": 315,
+          "kind": "component",
+          "source": "ChoiceChip("
+        },
+        {
+          "line": 369,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.symmetric(vertical: 20),"
+        },
+        {
+          "line": 381,
+          "kind": "font",
+          "source": "fontSize: 18,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/discover_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/library_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/modern_category_list_page.dart",
+      "findings": [
+        {
+          "line": 657,
+          "kind": "color",
+          "source": "Color(0x75000000),"
+        },
+        {
+          "line": 707,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 713,
+          "kind": "color",
+          "source": "color: Colors.black54,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/modern_player_detail_page.dart",
+      "findings": [
+        {
+          "line": 632,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 6),"
+        },
+        {
+          "line": 636,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        },
+        {
+          "line": 726,
+          "kind": "spacing",
+          "source": "margin: const EdgeInsets.only(bottom: 8),"
+        },
+        {
+          "line": 727,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),"
+        },
+        {
+          "line": 772,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(12),"
+        },
+        {
+          "line": 1004,
+          "kind": "color",
+          "source": "const ColoredBox(color: Color(0x66000000)),"
+        },
+        {
+          "line": 1020,
+          "kind": "component",
+          "source": "child: ShadButton("
+        },
+        {
+          "line": 1027,
+          "kind": "radius",
+          "source": "border: ShadBorder(radius: BorderRadius.circular(26)),"
+        },
+        {
+          "line": 1049,
+          "kind": "color",
+          "source": "style: const TextStyle(fontSize: 12, color: Colors.white),"
+        },
+        {
+          "line": 1049,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 12, color: Colors.white),"
+        },
+        {
+          "line": 1060,
+          "kind": "color",
+          "source": "icon: const Icon(LucideIcons.chevronLeft, size: 22, color: Colors.white),"
+        },
+        {
+          "line": 1073,
+          "kind": "color",
+          "source": "icon: const Icon(Icons.view_sidebar_outlined, size: 22, color: Colors.white),"
+        },
+        {
+          "line": 1150,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),"
+        },
+        {
+          "line": 1160,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w600),"
+        },
+        {
+          "line": 1167,
+          "kind": "font",
+          "source": "fontSize: 20,"
+        },
+        {
+          "line": 1179,
+          "kind": "font",
+          "source": "style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),"
+        },
+        {
+          "line": 1202,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        },
+        {
+          "line": 1208,
+          "kind": "font",
+          "source": "Text('简介', style: TextStyle(color: c.primary, fontSize: 12)),"
+        },
+        {
+          "line": 1293,
+          "kind": "font",
+          "source": "style: TextStyle(fontSize: 11, color: c.onSurfaceVariant),"
+        },
+        {
+          "line": 1341,
+          "kind": "font",
+          "source": "style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),"
+        },
+        {
+          "line": 1354,
+          "kind": "font",
+          "source": "style: TextStyle(color: c.onSurfaceVariant, fontSize: 12),"
+        },
+        {
+          "line": 1380,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 1386,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 1399,
+          "kind": "font",
+          "source": "fontSize: 36,"
+        },
+        {
+          "line": 1405,
+          "kind": "font",
+          "source": "style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),"
+        },
+        {
+          "line": 1415,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 2),"
+        },
+        {
+          "line": 1423,
+          "kind": "font",
+          "source": "fontSize: 10,"
+        },
+        {
+          "line": 1434,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(3),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/profile_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/pages/sdk_player_detail_page.dart",
+      "findings": [
+        {
+          "line": 1056,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 6),"
+        },
+        {
+          "line": 1090,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(top: 8),"
+        },
+        {
+          "line": 1095,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 8),"
+        },
+        {
+          "line": 1098,
+          "kind": "font",
+          "source": "style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),"
+        },
+        {
+          "line": 1207,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 12),"
+        },
+        {
+          "line": 1262,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),"
+        },
+        {
+          "line": 1362,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),"
+        },
+        {
+          "line": 1372,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        },
+        {
+          "line": 1647,
+          "kind": "color",
+          "source": "color: Colors.black,"
+        },
+        {
+          "line": 1687,
+          "kind": "color",
+          "source": "const ColoredBox(color: Color(0x65000000),"
+        },
+        {
+          "line": 1702,
+          "kind": "color",
+          "source": "color: Colors.black.withValues("
+        },
+        {
+          "line": 1737,
+          "kind": "color",
+          "source": "Color(0x85000000),"
+        },
+        {
+          "line": 1757,
+          "kind": "color",
+          "source": "Color(0x95000000),"
+        },
+        {
+          "line": 1768,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 1807,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(14),"
+        },
+        {
+          "line": 1840,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.45),"
+        },
+        {
+          "line": 1842,
+          "kind": "color",
+          "source": "color: Colors.white.withValues(alpha: 0.22,"
+        },
+        {
+          "line": 1866,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 1882,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),"
+        },
+        {
+          "line": 1891,
+          "kind": "font",
+          "source": "fontSize: 20,"
+        },
+        {
+          "line": 1904,
+          "kind": "font",
+          "source": "fontSize: 14,"
+        },
+        {
+          "line": 1941,
+          "kind": "font",
+          "source": "fontSize: 15,"
+        },
+        {
+          "line": 1952,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 12),"
+        },
+        {
+          "line": 1959,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.symmetric(vertical: 16),"
+        },
+        {
+          "line": 2017,
+          "kind": "component",
+          "source": "ListTile("
+        },
+        {
+          "line": 2056,
+          "kind": "font",
+          "source": "style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12),"
+        },
+        {
+          "line": 2195,
+          "kind": "component",
+          "source": "child: TabBar("
+        },
+        {
+          "line": 2207,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(24),"
+        },
+        {
+          "line": 2215,
+          "kind": "font",
+          "source": "labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),"
+        },
+        {
+          "line": 2217,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        },
+        {
+          "line": 2230,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 12),"
+        },
+        {
+          "line": 2304,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        }
+      ],
+      "after": [
+        {
+          "line": 1264,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, 0, PlayraSpace.xl, PlayraSpace.xxl),"
+        },
+        {
+          "line": 1364,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, 0, PlayraSpace.lg, PlayraSpace.lg),"
+        }
+      ]
+    },
+    {
+      "file": "lib/presentation/modern/player/player_detail_tabs.dart",
+      "findings": [
+        {
+          "line": 55,
+          "kind": "font",
+          "source": "fontSize: 14,"
+        },
+        {
+          "line": 87,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(4),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/player_discussion.dart",
+      "findings": [
+        {
+          "line": 144,
+          "kind": "component",
+          "source": "return ListTile("
+        },
+        {
+          "line": 166,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(24),"
+        },
+        {
+          "line": 179,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),"
+        },
+        {
+          "line": 210,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/player_episodes.dart",
+      "findings": [
+        {
+          "line": 34,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(4),"
+        },
+        {
+          "line": 38,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(left: 16, right: 8),"
+        },
+        {
+          "line": 45,
+          "kind": "font",
+          "source": "fontSize: 18,"
+        },
+        {
+          "line": 96,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),"
+        },
+        {
+          "line": 113,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        },
+        {
+          "line": 154,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),"
+        },
+        {
+          "line": 162,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 12),"
+        },
+        {
+          "line": 170,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 8),"
+        },
+        {
+          "line": 174,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        },
+        {
+          "line": 217,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16),"
+        },
+        {
+          "line": 221,
+          "kind": "font",
+          "source": "child: Text('实际可播放集数以匹配来源为准', style: TextStyle(fontSize: 12)),"
+        },
+        {
+          "line": 240,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16),"
+        },
+        {
+          "line": 244,
+          "kind": "component",
+          "source": "itemBuilder: (_, i) => ChoiceChip("
+        },
+        {
+          "line": 255,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 366,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16),"
+        },
+        {
+          "line": 369,
+          "kind": "font",
+          "source": "style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),"
+        },
+        {
+          "line": 373,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),"
+        },
+        {
+          "line": 392,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 12),"
+        },
+        {
+          "line": 399,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 12),"
+        },
+        {
+          "line": 434,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16),"
+        },
+        {
+          "line": 468,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/player_theme.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/player_work_info.dart",
+      "findings": [
+        {
+          "line": 94,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 12),"
+        },
+        {
+          "line": 99,
+          "kind": "font",
+          "source": "fontSize: 11,"
+        },
+        {
+          "line": 165,
+          "kind": "component",
+          "source": "TabBar("
+        },
+        {
+          "line": 181,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 186,
+          "kind": "font",
+          "source": "fontSize: 20,"
+        },
+        {
+          "line": 192,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 6),"
+        },
+        {
+          "line": 203,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 14, height: 1.8),"
+        },
+        {
+          "line": 210,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        },
+        {
+          "line": 250,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 264,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/playing_mark.dart",
+      "findings": [
+        {
+          "line": 96,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(2),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/portrait_episode_pager.dart",
+      "findings": [
+        {
+          "line": 101,
+          "kind": "color",
+          "source": "color: Colors.black,"
+        },
+        {
+          "line": 110,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 132,
+          "kind": "font",
+          "source": "fontSize: 15,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/sdk_playback_notice.dart",
+      "findings": [
+        {
+          "line": 26,
+          "kind": "spacing",
+          "source": "margin: const EdgeInsets.only(bottom: 10),"
+        },
+        {
+          "line": 27,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(14),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/sdk_poster.dart",
+      "findings": [
+        {
+          "line": 78,
+          "kind": "color",
+          "source": "Color(0x80000000),"
+        },
+        {
+          "line": 134,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 135,
+          "kind": "font",
+          "source": "fontSize: 10,"
+        },
+        {
+          "line": 152,
+          "kind": "font",
+          "source": "fontSize: 13,"
+        },
+        {
+          "line": 163,
+          "kind": "font",
+          "source": "fontSize: 11,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/sdk_quality_selector.dart",
+      "findings": [
+        {
+          "line": 48,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 10, right: 10),"
+        },
+        {
+          "line": 61,
+          "kind": "component",
+          "source": "child: ChoiceChip("
+        },
+        {
+          "line": 71,
+          "kind": "component",
+          "source": "ChoiceChip("
+        },
+        {
+          "line": 102,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 4),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/sdk_rank_section.dart",
+      "findings": [
+        {
+          "line": 39,
+          "kind": "font",
+          "source": "style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),"
+        },
+        {
+          "line": 54,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/player/sdk_source_widgets.dart",
+      "findings": [
+        {
+          "line": 125,
+          "kind": "component",
+          "source": "Widget build(BuildContext context) => ChoiceChip("
+        },
+        {
+          "line": 166,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 8, bottom: 4),"
+        },
+        {
+          "line": 173,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(2),"
+        },
+        {
+          "line": 179,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),"
+        },
+        {
+          "line": 209,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),"
+        },
+        {
+          "line": 213,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16),"
+        },
+        {
+          "line": 221,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),"
+        },
+        {
+          "line": 228,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),"
+        },
+        {
+          "line": 257,
+          "kind": "component",
+          "source": "child: ChoiceChip("
+        },
+        {
+          "line": 380,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 4),"
+        },
+        {
+          "line": 390,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/profile/modern_profile_view.dart",
+      "findings": [
+        {
+          "line": 191,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(right: empty ? 72 : 0),"
+        },
+        {
+          "line": 263,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),"
+        }
+      ],
+      "after": [
+        {
+          "line": 191,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(right: empty ? 72 : 0),"
+        }
+      ]
+    },
+    {
+      "file": "lib/presentation/modern/profile/profile_sync_state.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/secondary/secondary_theme.dart",
+      "findings": [
+        {
+          "line": 60,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),"
+        },
+        {
+          "line": 73,
+          "kind": "font",
+          "source": "fontSize: 16,"
+        },
+        {
+          "line": 183,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(24),"
+        },
+        {
+          "line": 219,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/secondary/utility_page_art.dart",
+      "findings": [
+        {
+          "line": 101,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 119,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 132,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 146,
+          "kind": "font",
+          "source": "fontSize: 17,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/settings/modern_back_button.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/settings/modern_settings_scope.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/widgets/liquid_glass_navigation.dart",
+      "findings": [
+        {
+          "line": 295,
+          "kind": "color",
+          "source": "color: Color(0x65000000),"
+        },
+        {
+          "line": 398,
+          "kind": "font",
+          "source": "fontSize: 11.5,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/widgets/modern_anime_cover.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/widgets/modern_feature_carousel.dart",
+      "findings": [
+        {
+          "line": 462,
+          "kind": "color",
+          "source": "? Colors.white.withValues(alpha: 0.16)"
+        },
+        {
+          "line": 468,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: isActive ? 0.60 : 0.32),"
+        },
+        {
+          "line": 603,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.50),"
+        },
+        {
+          "line": 632,
+          "kind": "color",
+          "source": "color: Colors.black.withValues("
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/widgets/modern_page_art.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/widgets/modern_page_scaffold.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/widgets/modern_section_mark.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/widgets/native_liquid_navigation.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/widgets/near_end_scroll.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/library/widgets/library_card.dart",
+      "findings": [
+        {
+          "line": 83,
+          "kind": "font",
+          "source": "fontSize: 15,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/calendar/widgets/calendar_poster_card.dart",
+      "findings": [
+        {
+          "line": 72,
+          "kind": "font",
+          "source": "fontSize: 15,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/presentation/modern/calendar/widgets/calendar_season_picker.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/index_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/index_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/init_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/router.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/route_error_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/source_unavailable_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/about/about_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/about/about_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/about/about_widgets.dart",
+      "findings": [
+        {
+          "line": 23,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/about/product_information_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_library_card.dart",
+      "findings": [
+        {
+          "line": 149,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 8, bottom: 4),"
+        },
+        {
+          "line": 154,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 8),"
+        },
+        {
+          "line": 296,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(24),"
+        },
+        {
+          "line": 301,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(24),"
+        },
+        {
+          "line": 314,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(12, 12, 16, 8),"
+        },
+        {
+          "line": 325,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 341,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 4, bottom: 8),"
+        },
+        {
+          "line": 357,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 8),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_library_controls.dart",
+      "findings": [
+        {
+          "line": 32,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_library_query.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_library_view.dart",
+      "findings": [
+        {
+          "line": 420,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 10),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/collect/collect_sync_dialog.dart",
+      "findings": [
+        {
+          "line": 357,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 362,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 2),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/download/download_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/download/download_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/download/download_episode_sheet.dart",
+      "findings": [
+        {
+          "line": 121,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),"
+        },
+        {
+          "line": 160,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),"
+        },
+        {
+          "line": 291,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 8),"
+        }
+      ],
+      "after": [
+        {
+          "line": 121,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, 0, PlayraSpace.xxl, PlayraSpace.lg),"
+        },
+        {
+          "line": 160,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.xxl, 0, PlayraSpace.xxl, PlayraSpace.xxl),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/download/download_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/download/download_page_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/download/download_widgets.dart",
+      "findings": [
+        {
+          "line": 84,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),"
+        },
+        {
+          "line": 185,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(16, 0, 16, expanded ? 4 : 16),"
+        },
+        {
+          "line": 196,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),"
+        },
+        {
+          "line": 264,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 267,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),"
+        }
+      ],
+      "after": [
+        {
+          "line": 185,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(PlayraSpace.lg, 0, PlayraSpace.lg, expanded ? PlayraSpace.xs : PlayraSpace.lg),"
+        },
+        {
+          "line": 196,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.md, 0, PlayraSpace.md, PlayraSpace.sm),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/error/storage_error_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/history/history_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/history/history_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/history/history_list_query.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/history/history_list_view.dart",
+      "findings": [
+        {
+          "line": 136,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 16, inset, 0),"
+        },
+        {
+          "line": 248,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(4, 24, 4, 12),"
+        },
+        {
+          "line": 277,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 8),"
+        }
+      ],
+      "after": [
+        {
+          "line": 136,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, PlayraSpace.lg, inset, 0),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/history/history_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/history/history_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/history/history_record_tile.dart",
+      "findings": [
+        {
+          "line": 82,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(right: 24),"
+        },
+        {
+          "line": 112,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(12),"
+        },
+        {
+          "line": 193,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/history/personal_history_query.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/character_info_view.dart",
+      "findings": [
+        {
+          "line": 67,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(modern ? 12 : 20),"
+        },
+        {
+          "line": 74,
+          "kind": "spacing",
+          "source": "const EdgeInsets.symmetric(horizontal: 12, vertical: 6),"
+        },
+        {
+          "line": 181,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 248,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),"
+        },
+        {
+          "line": 291,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 12),"
+        },
+        {
+          "line": 317,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 20),"
+        },
+        {
+          "line": 374,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 408,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(4),"
+        },
+        {
+          "line": 458,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),"
+        },
+        {
+          "line": 470,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        }
+      ],
+      "after": [
+        {
+          "line": 248,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.xl, 0, PlayraSpace.xl, PlayraSpace.xxl),"
+        },
+        {
+          "line": 458,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.md, PlayraSpace.md, PlayraSpace.md, 0),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/info/character_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/info_actions_menu.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/info_comments_view.dart",
+      "findings": [
+        {
+          "line": 99,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(gutter, 12, gutter, 8),"
+        },
+        {
+          "line": 158,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.symmetric(vertical: 16),"
+        },
+        {
+          "line": 193,
+          "kind": "spacing",
+          "source": "margin: const EdgeInsets.symmetric(vertical: 12),"
+        },
+        {
+          "line": 203,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),"
+        }
+      ],
+      "after": [
+        {
+          "line": 204,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.sm, 0, PlayraSpace.sm, PlayraSpace.sm),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/info/info_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/info_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/info_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/info_page.dart",
+      "findings": [
+        {
+          "line": 533,
+          "kind": "color",
+          "source": "colors: [Colors.white, Colors.transparent],"
+        },
+        {
+          "line": 559,
+          "kind": "color",
+          "source": "color: Colors.white.withValues(alpha: _opacity),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/info_tabview.dart",
+      "findings": [
+        {
+          "line": 82,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16.0),"
+        },
+        {
+          "line": 90,
+          "kind": "font",
+          "source": "Text('简介', style: TextStyle(fontSize: 18)),"
+        },
+        {
+          "line": 141,
+          "kind": "font",
+          "source": "Text('标签', style: TextStyle(fontSize: 18)),"
+        },
+        {
+          "line": 290,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16.0),"
+        },
+        {
+          "line": 298,
+          "kind": "font",
+          "source": "Skeletonizer.zone(child: Bone.text(fontSize: 18, width: 50)),"
+        },
+        {
+          "line": 302,
+          "kind": "font",
+          "source": "Skeletonizer.zone(child: Bone.text(fontSize: 18, width: 50)),"
+        },
+        {
+          "line": 340,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16.0),"
+        },
+        {
+          "line": 418,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16.0),"
+        },
+        {
+          "line": 556,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(8),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/rating_review_dialog.dart",
+      "findings": [
+        {
+          "line": 331,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(12, 12, 24, 12),"
+        },
+        {
+          "line": 369,
+          "kind": "spacing",
+          "source": "contentPadding: const EdgeInsets.all(20),"
+        },
+        {
+          "line": 371,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 374,
+          "kind": "radius",
+          "source": "border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),"
+        },
+        {
+          "line": 376,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 387,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 390,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(24),"
+        },
+        {
+          "line": 508,
+          "kind": "font",
+          "source": "style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),"
+        },
+        {
+          "line": 604,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 12),"
+        },
+        {
+          "line": 620,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 636,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 8),"
+        },
+        {
+          "line": 652,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 655,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 677,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/source_alias_dialog.dart",
+      "findings": [
+        {
+          "line": 132,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/source_captcha_flow.dart",
+      "findings": [
+        {
+          "line": 319,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 322,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 352,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 400,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(8),"
+        },
+        {
+          "line": 402,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 433,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.symmetric(vertical: 16),"
+        }
+      ],
+      "after": [
+        {
+          "line": 402,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/info/source_search_entry.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/source_sheet.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/info/source_sheet_view.dart",
+      "findings": [
+        {
+          "line": 148,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),"
+        },
+        {
+          "line": 183,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 24),"
+        },
+        {
+          "line": 196,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 12),"
+        },
+        {
+          "line": 246,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 251,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),"
+        },
+        {
+          "line": 294,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),"
+        },
+        {
+          "line": 450,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),"
+        },
+        {
+          "line": 477,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),"
+        },
+        {
+          "line": 512,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),"
+        },
+        {
+          "line": 520,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 2),"
+        }
+      ],
+      "after": [
+        {
+          "line": 294,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.md, 0, PlayraSpace.md, PlayraSpace.sm),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/logs/logs_page.dart",
+      "findings": [
+        {
+          "line": 201,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16.0),"
+        },
+        {
+          "line": 206,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 4.0),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/menu/menu.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/menu/route_visibility.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/my/my_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/my/my_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/my/my_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/my/my_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/my/my_space_view.dart",
+      "findings": [
+        {
+          "line": 21,
+          "kind": "radius",
+          "source": "const _tileRadius = BorderRadius.all(Radius.circular(28));"
+        },
+        {
+          "line": 39,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 12, inset, 32),"
+        },
+        {
+          "line": 132,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),"
+        },
+        {
+          "line": 253,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),"
+        },
+        {
+          "line": 309,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 12),"
+        },
+        {
+          "line": 413,
+          "kind": "radius",
+          "source": "topLeft: Radius.circular(28),"
+        },
+        {
+          "line": 414,
+          "kind": "radius",
+          "source": "topRight: Radius.circular(64),"
+        },
+        {
+          "line": 415,
+          "kind": "radius",
+          "source": "bottomLeft: Radius.circular(28),"
+        },
+        {
+          "line": 416,
+          "kind": "radius",
+          "source": "bottomRight: Radius.circular(28),"
+        },
+        {
+          "line": 420,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(24),"
+        },
+        {
+          "line": 490,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(compact ? 16 : 20),"
+        },
+        {
+          "line": 540,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(20),"
+        },
+        {
+          "line": 612,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),"
+        },
+        {
+          "line": 664,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 761,
+          "kind": "radius",
+          "source": "borderRadius: _pressed ? BorderRadius.circular(16) : widget.radius,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/onboarding/onboarding_page.dart",
+      "findings": [
+        {
+          "line": 333,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(3),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/onboarding/onboarding_step_layout.dart",
+      "findings": [
+        {
+          "line": 37,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: compact ? 16 : 20),"
+        },
+        {
+          "line": 89,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 24),"
+        },
+        {
+          "line": 115,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: wide ? 0 : 28),"
+        },
+        {
+          "line": 146,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),"
+        },
+        {
+          "line": 163,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 40, bottom: 24),"
+        },
+        {
+          "line": 253,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),"
+        }
+      ],
+      "after": [
+        {
+          "line": 115,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: wide ? 0 : PlayraSpace.xxl),"
+        },
+        {
+          "line": 146,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(0, PlayraSpace.xl, 0, PlayraSpace.xxl),"
+        },
+        {
+          "line": 163,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 40, bottom: PlayraSpace.xxl),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/player/danmaku_destination_sheet.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/danmaku_source_sheet.dart",
+      "findings": [
+        {
+          "line": 71,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.horizontal(left: Radius.circular(28)),"
+        },
+        {
+          "line": 309,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.all(Radius.circular(16)),"
+        },
+        {
+          "line": 338,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),"
+        },
+        {
+          "line": 365,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),"
+        },
+        {
+          "line": 389,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),"
+        },
+        {
+          "line": 430,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),"
+        },
+        {
+          "line": 468,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),"
+        },
+        {
+          "line": 477,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),"
+        },
+        {
+          "line": 543,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),"
+        },
+        {
+          "line": 605,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 14, bottom: 8),"
+        },
+        {
+          "line": 622,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 24),"
+        },
+        {
+          "line": 633,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 24),"
+        },
+        {
+          "line": 649,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(2),"
+        },
+        {
+          "line": 690,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),"
+        },
+        {
+          "line": 817,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(right: 8),"
+        },
+        {
+          "line": 818,
+          "kind": "component",
+          "source": "child: ChoiceChip("
+        }
+      ],
+      "after": [
+        {
+          "line": 338,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 48, horizontal: PlayraSpace.xl),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/player/episode_comments_picker.dart",
+      "findings": [
+        {
+          "line": 22,
+          "kind": "spacing",
+          "source": "insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),"
+        },
+        {
+          "line": 36,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),"
+        },
+        {
+          "line": 53,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 12),"
+        },
+        {
+          "line": 110,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/episode_comments_sheet.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/episode_comments_view.dart",
+      "findings": [
+        {
+          "line": 60,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(gutter, 16, gutter, 0),"
+        },
+        {
+          "line": 70,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(gutter + 4, 16, gutter, 12),"
+        },
+        {
+          "line": 98,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(gutter, 0, gutter, 12),"
+        },
+        {
+          "line": 102,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 104,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),"
+        },
+        {
+          "line": 147,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),"
+        },
+        {
+          "line": 176,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),"
+        },
+        {
+          "line": 179,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 253,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(28),"
+        },
+        {
+          "line": 256,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(20),"
+        },
+        {
+          "line": 270,
+          "kind": "spacing",
+          "source": "const EdgeInsets.symmetric(horizontal: 12, vertical: 8),"
+        },
+        {
+          "line": 273,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        }
+      ],
+      "after": [
+        {
+          "line": 61,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(gutter, PlayraSpace.lg, gutter, 0),"
+        },
+        {
+          "line": 99,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(gutter, 0, gutter, PlayraSpace.md),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/player/player_adjustment_hud.dart",
+      "findings": [
+        {
+          "line": 162,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),"
+        },
+        {
+          "line": 176,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.28),"
+        },
+        {
+          "line": 192,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 676,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.28),"
+        },
+        {
+          "line": 713,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 879,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),"
+        },
+        {
+          "line": 886,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.18),"
+        },
+        {
+          "line": 902,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_buffering_overlay.dart",
+      "findings": [
+        {
+          "line": 105,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.8),"
+        },
+        {
+          "line": 109,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),"
+        },
+        {
+          "line": 121,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 125,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 126,
+          "kind": "color",
+          "source": "backgroundColor: Colors.white24,"
+        },
+        {
+          "line": 136,
+          "kind": "color",
+          "source": ").textTheme.bodySmall?.copyWith(color: Colors.white),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_gesture_detector.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_item.dart",
+      "findings": [
+        {
+          "line": 1207,
+          "kind": "color",
+          "source": "final color = _danmakuColor ? danmaku.color : Colors.white;"
+        },
+        {
+          "line": 1520,
+          "kind": "color",
+          "source": "icon: const Icon(Icons.arrow_back, color: Colors.white),"
+        },
+        {
+          "line": 1530,
+          "kind": "color",
+          "source": "color: Colors.black,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_item_panel.dart",
+      "findings": [
+        {
+          "line": 187,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 8),"
+        },
+        {
+          "line": 192,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 199,
+          "kind": "color",
+          "source": "fillColor: Colors.black.withValues(alpha: 0.35),"
+        },
+        {
+          "line": 206,
+          "kind": "color",
+          "source": "color: Colors.white.withValues(alpha: 0.5),"
+        },
+        {
+          "line": 214,
+          "kind": "color",
+          "source": "borderSide: const BorderSide(color: Colors.white24),"
+        },
+        {
+          "line": 220,
+          "kind": "color",
+          "source": "borderSide: const BorderSide(color: Colors.white24),"
+        },
+        {
+          "line": 226,
+          "kind": "color",
+          "source": "borderSide: const BorderSide(color: Colors.white60),"
+        },
+        {
+          "line": 236,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 4),"
+        },
+        {
+          "line": 354,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 379,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 413,
+          "kind": "color",
+          "source": "colors: const [Colors.black45, Colors.transparent],"
+        },
+        {
+          "line": 423,
+          "kind": "color",
+          "source": "colors: const [Colors.transparent, Colors.black45],"
+        },
+        {
+          "line": 646,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 677,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 692,
+          "kind": "color",
+          "source": "child: const Text('超分辨率', style: TextStyle(color: Colors.white)),"
+        },
+        {
+          "line": 700,
+          "kind": "color",
+          "source": "style: const TextStyle(color: Colors.white),"
+        },
+        {
+          "line": 705,
+          "kind": "color",
+          "source": "child: const Icon(Icons.aspect_ratio_rounded, color: Colors.white),"
+        },
+        {
+          "line": 711,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 741,
+          "kind": "color",
+          "source": "iconColor: Colors.white,"
+        },
+        {
+          "line": 746,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 762,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 763,
+          "kind": "font",
+          "source": "fontSize: 12,"
+        },
+        {
+          "line": 780,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 800,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 831,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 843,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 872,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 902,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 918,
+          "kind": "color",
+          "source": "icon: const Icon(Icons.more_vert, color: Colors.white),"
+        },
+        {
+          "line": 1053,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 1063,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_item_surface.dart",
+      "findings": [
+        {
+          "line": 31,
+          "kind": "color",
+          "source": "color: Colors.black,"
+        },
+        {
+          "line": 54,
+          "kind": "font",
+          "source": "fontSize: 48.0,"
+        },
+        {
+          "line": 72,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(24.0),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_keyboard_shortcuts.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_panel_hold.dart",
+      "findings": [
+        {
+          "line": 186,
+          "kind": "color",
+          "source": "this.color = Colors.white,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_pointer_interaction.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_screenshot_controls.dart",
+      "findings": [
+        {
+          "line": 30,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 33,
+          "kind": "color",
+          "source": ": const Icon(Icons.photo_camera_outlined, color: Colors.white),"
+        },
+        {
+          "line": 43,
+          "kind": "color",
+          "source": "child: const Icon(Icons.photo_library_outlined, color: Colors.white),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_screenshot_feedback_overlay.dart",
+      "findings": [
+        {
+          "line": 44,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: dimOpacity),"
+        },
+        {
+          "line": 129,
+          "kind": "color",
+          "source": "..color = Colors.white.withValues(alpha: opacity)"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_screenshot_image.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_screenshot_sheet.dart",
+      "findings": [
+        {
+          "line": 322,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 378,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(12),"
+        },
+        {
+          "line": 389,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 438,
+          "kind": "radius",
+          "source": "child: ClipRRect(borderRadius: BorderRadius.circular(16), child: _stage()),"
+        },
+        {
+          "line": 656,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 658,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),"
+        },
+        {
+          "line": 802,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(24),"
+        },
+        {
+          "line": 967,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 970,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 4),"
+        },
+        {
+          "line": 974,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(3),"
+        },
+        {
+          "line": 983,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(6),"
+        },
+        {
+          "line": 1006,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(2),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/player_transport_bar.dart",
+      "findings": [
+        {
+          "line": 90,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16),"
+        },
+        {
+          "line": 106,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 8),"
+        },
+        {
+          "line": 125,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(left: 10, bottom: 10),"
+        },
+        {
+          "line": 129,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 10),"
+        },
+        {
+          "line": 141,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 10),"
+        },
+        {
+          "line": 149,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(left: 10),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/syncplay_sheet.dart",
+      "findings": [
+        {
+          "line": 73,
+          "kind": "radius",
+          "source": "border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),"
+        },
+        {
+          "line": 128,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 24),"
+        },
+        {
+          "line": 136,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),"
+        },
+        {
+          "line": 204,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 335,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 382,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(20),"
+        },
+        {
+          "line": 722,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/video_details_sheet.dart",
+      "findings": [
+        {
+          "line": 263,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 12),"
+        },
+        {
+          "line": 287,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/editor_form_widgets.dart",
+      "findings": [
+        {
+          "line": 128,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(4),"
+        },
+        {
+          "line": 131,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(14),"
+        },
+        {
+          "line": 208,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 24, bottom: 12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/plugin_catalog_view.dart",
+      "findings": [
+        {
+          "line": 242,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.symmetric(vertical: 8),"
+        },
+        {
+          "line": 247,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 8),"
+        },
+        {
+          "line": 258,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(48),"
+        },
+        {
+          "line": 308,
+          "kind": "spacing",
+          "source": ": const EdgeInsets.fromLTRB(16, 12, 16, 24),"
+        },
+        {
+          "line": 383,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),"
+        }
+      ],
+      "after": [
+        {
+          "line": 258,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(48),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/plugin_editor/plugin_editor_page.dart",
+      "findings": [
+        {
+          "line": 465,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),"
+        },
+        {
+          "line": 484,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 487,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 520,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),"
+        },
+        {
+          "line": 771,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 8),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/plugin_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/plugin_shop_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/plugin_test_page.dart",
+      "findings": [
+        {
+          "line": 171,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),"
+        },
+        {
+          "line": 280,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(28),"
+        },
+        {
+          "line": 342,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(12.0),"
+        },
+        {
+          "line": 345,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 384,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 16),"
+        },
+        {
+          "line": 410,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 416,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(left: 16, right: 4, top: 4),"
+        },
+        {
+          "line": 453,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),"
+        },
+        {
+          "line": 512,
+          "kind": "spacing",
+          "source": "margin: const EdgeInsets.only(bottom: 8.0),"
+        },
+        {
+          "line": 513,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(12.0),"
+        },
+        {
+          "line": 516,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 543,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 4.0),"
+        },
+        {
+          "line": 564,
+          "kind": "spacing",
+          "source": "margin: const EdgeInsets.only(bottom: 8.0),"
+        },
+        {
+          "line": 567,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(12.0),"
+        },
+        {
+          "line": 610,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 8),"
+        },
+        {
+          "line": 645,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 12),"
+        },
+        {
+          "line": 655,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(8.0),"
+        },
+        {
+          "line": 677,
+          "kind": "spacing",
+          "source": "margin: const EdgeInsets.only(bottom: 8.0),"
+        },
+        {
+          "line": 680,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(12.0),"
+        },
+        {
+          "line": 708,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 6),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/plugin_update_actions.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/plugin_view_page.dart",
+      "findings": [
+        {
+          "line": 306,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),"
+        },
+        {
+          "line": 356,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(6),"
+        },
+        {
+          "line": 454,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 8),"
+        },
+        {
+          "line": 462,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(2, 20, 2, 10),"
+        },
+        {
+          "line": 566,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 3),"
+        },
+        {
+          "line": 614,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(12),"
+        },
+        {
+          "line": 646,
+          "kind": "radius",
+          "source": "RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),"
+        },
+        {
+          "line": 648,
+          "kind": "spacing",
+          "source": "padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/rule_dialogs.dart",
+      "findings": [
+        {
+          "line": 54,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 6),"
+        },
+        {
+          "line": 148,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/plugin_editor/rule_management_widgets.dart",
+      "findings": [
+        {
+          "line": 61,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(modern ? 16 : 20),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/popular/popular_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/popular/popular_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/popular/popular_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/popular/popular_page.dart",
+      "findings": [
+        {
+          "line": 145,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(8),"
+        },
+        {
+          "line": 220,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(8),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/search/image_search_page.dart",
+      "findings": [
+        {
+          "line": 362,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 0, showResults ? 0 : inset, 16),"
+        },
+        {
+          "line": 387,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(right: inset, bottom: 8),"
+        },
+        {
+          "line": 403,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(padding, 0, padding, 24),"
+        },
+        {
+          "line": 428,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: action == null ? 0 : 16),"
+        },
+        {
+          "line": 683,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(16),"
+        }
+      ],
+      "after": [
+        {
+          "line": 363,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 0, showResults ? 0 : inset, PlayraSpace.lg),"
+        },
+        {
+          "line": 404,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(padding, 0, padding, PlayraSpace.xxl),"
+        },
+        {
+          "line": 429,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: action == null ? 0 : PlayraSpace.lg),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/search/image_search_widgets.dart",
+      "findings": [
+        {
+          "line": 199,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 4),"
+        },
+        {
+          "line": 222,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 32),"
+        },
+        {
+          "line": 270,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(modern ? 16 : 20),"
+        },
+        {
+          "line": 325,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 346,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(modern ? 16 : 20),"
+        },
+        {
+          "line": 407,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.symmetric(horizontal: modern ? 16 : 12),"
+        },
+        {
+          "line": 440,
+          "kind": "radius",
+          "source": "? BorderRadius.circular(12)"
+        },
+        {
+          "line": 452,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 461,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/search/modern_search_widgets.dart",
+      "findings": [
+        {
+          "line": 30,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 8, inset, 24),"
+        },
+        {
+          "line": 53,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 55,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 12),"
+        },
+        {
+          "line": 191,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 12),"
+        },
+        {
+          "line": 291,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 20),"
+        },
+        {
+          "line": 298,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 20),"
+        },
+        {
+          "line": 381,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/search/search_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/search/search_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/search/search_filter_sheet.dart",
+      "findings": [
+        {
+          "line": 167,
+          "kind": "spacing",
+          "source": "contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),"
+        },
+        {
+          "line": 463,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/search/search_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/search/search_page.dart",
+      "findings": [
+        {
+          "line": 197,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(top: _hasSearched ? 8 : 24, bottom: 16),"
+        },
+        {
+          "line": 225,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(left: 16, right: 4),"
+        },
+        {
+          "line": 313,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 20),"
+        },
+        {
+          "line": 406,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 24),"
+        },
+        {
+          "line": 457,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 0, inset, 24),"
+        }
+      ],
+      "after": [
+        {
+          "line": 457,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 0, inset, PlayraSpace.xxl),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/search/search_widgets.dart",
+      "findings": [
+        {
+          "line": 161,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 168,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 232,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),"
+        }
+      ],
+      "after": [
+        {
+          "line": 232,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 48, horizontal: PlayraSpace.lg),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/settings/decoder_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/displaymode_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/download_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/interface_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/keyboard_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/low_memory_mode_settings.dart",
+      "findings": [
+        {
+          "line": 76,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        },
+        {
+          "line": 81,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/player_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/renderer_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/settings_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/settings_page.dart",
+      "findings": [
+        {
+          "line": 318,
+          "kind": "spacing",
+          "source": "? const EdgeInsets.fromLTRB(PlayraSpace.xs, 0, 0, PlayraSpace.md)"
+        },
+        {
+          "line": 404,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 10),"
+        }
+      ],
+      "after": [
+        {
+          "line": 318,
+          "kind": "spacing",
+          "source": "? const EdgeInsets.fromLTRB(PlayraSpace.xs, 0, 0, PlayraSpace.md)"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/settings/storage_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/super_resolution_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/theme_settings_page.dart",
+      "findings": [
+        {
+          "line": 79,
+          "kind": "color",
+          "source": "colorSchemeSeed: Colors.green,"
+        },
+        {
+          "line": 90,
+          "kind": "color",
+          "source": "colorSchemeSeed: Colors.green,"
+        },
+        {
+          "line": 128,
+          "kind": "color",
+          "source": "color = Colors.green;"
+        },
+        {
+          "line": 249,
+          "kind": "color",
+          "source": "color = Colors.green;"
+        }
+      ],
+      "after": [
+        {
+          "line": 79,
+          "kind": "color",
+          "source": "colorSchemeSeed: Colors.green,"
+        },
+        {
+          "line": 90,
+          "kind": "color",
+          "source": "colorSchemeSeed: Colors.green,"
+        },
+        {
+          "line": 128,
+          "kind": "color",
+          "source": "color = Colors.green;"
+        },
+        {
+          "line": 249,
+          "kind": "color",
+          "source": "color = Colors.green;"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/settings/update_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/timeline/timeline_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/timeline/timeline_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/timeline/timeline_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/timeline/timeline_options.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/timeline/timeline_page.dart",
+      "findings": [
+        {
+          "line": 72,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(8),"
+        },
+        {
+          "line": 176,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 0, inset, 16),"
+        },
+        {
+          "line": 201,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(right: 12),"
+        },
+        {
+          "line": 224,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 8, inset, 20),"
+        },
+        {
+          "line": 248,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(24),"
+        },
+        {
+          "line": 338,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(20),"
+        },
+        {
+          "line": 340,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 8),"
+        },
+        {
+          "line": 437,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 0, inset, 24),"
+        }
+      ],
+      "after": [
+        {
+          "line": 177,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 0, inset, PlayraSpace.lg),"
+        },
+        {
+          "line": 438,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.fromLTRB(inset, 0, inset, PlayraSpace.xxl),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/timeline/timeline_week_selector.dart",
+      "findings": [
+        {
+          "line": 31,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(28),"
+        },
+        {
+          "line": 34,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(4),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/episode_selection_panel.dart",
+      "findings": [
+        {
+          "line": 121,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),"
+        },
+        {
+          "line": 155,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),"
+        },
+        {
+          "line": 345,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: last ? 0 : 2),"
+        },
+        {
+          "line": 355,
+          "kind": "spacing",
+          "source": "EdgeInsets.symmetric(horizontal: 16, vertical: 12)),"
+        },
+        {
+          "line": 371,
+          "kind": "radius",
+          "source": "? BorderRadius.circular(20)"
+        },
+        {
+          "line": 429,
+          "kind": "spacing",
+          "source": "padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),"
+        },
+        {
+          "line": 441,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),"
+        },
+        {
+          "line": 472,
+          "kind": "spacing",
+          "source": "const EdgeInsets.symmetric(horizontal: 16, vertical: 12),"
+        },
+        {
+          "line": 621,
+          "kind": "radius",
+          "source": "? BorderRadius.circular(20)"
+        },
+        {
+          "line": 628,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: widget.last ? 0 : 2),"
+        },
+        {
+          "line": 638,
+          "kind": "radius",
+          "source": "restShape, BorderRadius.circular(12), press)!,"
+        },
+        {
+          "line": 659,
+          "kind": "spacing",
+          "source": "const EdgeInsets.symmetric(horizontal: 20, vertical: 16),"
+        }
+      ],
+      "after": [
+        {
+          "line": 345,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: last ? 0 : PlayraSpace.tiny),"
+        },
+        {
+          "line": 628,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.only(bottom: widget.last ? 0 : PlayraSpace.tiny),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/video/playback_identity.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/playback_scaffold.dart",
+      "findings": [
+        {
+          "line": 453,
+          "kind": "color",
+          "source": "color: Colors.black,"
+        },
+        {
+          "line": 601,
+          "kind": "color",
+          "source": "icon: const Icon(Icons.play_arrow, color: Colors.white),"
+        },
+        {
+          "line": 608,
+          "kind": "color",
+          "source": "style: const TextStyle(color: Colors.white),"
+        },
+        {
+          "line": 619,
+          "kind": "color",
+          "source": "icon: const Icon(Icons.chevron_left, color: Colors.white),"
+        },
+        {
+          "line": 635,
+          "kind": "color",
+          "source": "color: Colors.black,"
+        },
+        {
+          "line": 671,
+          "kind": "color",
+          "source": "style: const TextStyle(color: Colors.white),"
+        },
+        {
+          "line": 684,
+          "kind": "color",
+          "source": "color: Colors.black,"
+        },
+        {
+          "line": 693,
+          "kind": "color",
+          "source": "style: const TextStyle(color: Colors.white),"
+        },
+        {
+          "line": 714,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 726,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 741,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 749,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/player_content_tabs.dart",
+      "findings": [
+        {
+          "line": 22,
+          "kind": "component",
+          "source": "child: TabBar("
+        },
+        {
+          "line": 35,
+          "kind": "spacing",
+          "source": "labelPadding: const EdgeInsets.symmetric(horizontal: 4),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/prepared_online_playback.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_fullscreen_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_page_layout.dart",
+      "findings": [
+        {
+          "line": 103,
+          "kind": "color",
+          "source": "color: Colors.black,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_playback_args.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_side_panel.dart",
+      "findings": [
+        {
+          "line": 95,
+          "kind": "color",
+          "source": "Colors.black.withValues(alpha: 0.5),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/video/video_system_bars.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/danmaku/danmaku_ch_convert_tile.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/danmaku/danmaku_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/danmaku/danmaku_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/danmaku/danmaku_settings_sheet.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/danmaku/danmaku_shield_editor.dart",
+      "findings": [
+        {
+          "line": 13,
+          "kind": "spacing",
+          "source": "this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 24),"
+        },
+        {
+          "line": 57,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        }
+      ],
+      "after": [
+        {
+          "line": 14,
+          "kind": "spacing",
+          "source": "this.padding = const EdgeInsets.fromLTRB(PlayraSpace.xxl, 0, PlayraSpace.xxl, PlayraSpace.xxl),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/settings/danmaku/danmaku_shield_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/danmaku/danmaku_shield_settings_sheet.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/danmaku/danmaku_time_offset_sheet.dart",
+      "findings": [
+        {
+          "line": 94,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/proxy/proxy_editor_page.dart",
+      "findings": [
+        {
+          "line": 153,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16.0),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/proxy/proxy_module.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/proxy/proxy_settings_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/sync/bangumi_sync_page.dart",
+      "findings": [
+        {
+          "line": 278,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),"
+        }
+      ],
+      "after": [
+        {
+          "line": 279,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(PlayraSpace.lg, PlayraSpace.xs, PlayraSpace.sm, 0),"
+        }
+      ]
+    },
+    {
+      "file": "lib/pages/settings/sync/sync_settings_page.dart",
+      "findings": [
+        {
+          "line": 122,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(14),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/sync/sync_settings_widgets.dart",
+      "findings": [
+        {
+          "line": 17,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),"
+        },
+        {
+          "line": 64,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.symmetric(vertical: 8),"
+        },
+        {
+          "line": 74,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(12),"
+        },
+        {
+          "line": 133,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(16),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/sync/webdav_server_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/settings/sync/webdav_sync_page.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_aspect_ratio.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_danmaku_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_danmaku_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_debug_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_debug_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_models.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_panel_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_panel_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_playback_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_playback_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_screenshot_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_screenshot_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_seek_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_super_resolution.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_syncplay_controller.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/player/controller/player_syncplay_controller.g.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/onboarding/steps/disclaimer_step.dart",
+      "findings": [
+        {
+          "line": 55,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(24),"
+        },
+        {
+          "line": 58,
+          "kind": "spacing",
+          "source": "padding: EdgeInsets.all(32),"
+        },
+        {
+          "line": 77,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(bottom: 12),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/pages/onboarding/steps/mirror_settings_step.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/onboarding/steps/plugin_shop_step.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/pages/onboarding/steps/update_source_step.dart",
+      "findings": [
+        {
+          "line": 132,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.only(top: 8),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/bangumi_avatar.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/bangumi_mirror_error_widget.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/collect_button.dart",
+      "findings": [
+        {
+          "line": 13,
+          "kind": "color",
+          "source": "this.color = Colors.white,"
+        },
+        {
+          "line": 21,
+          "kind": "color",
+          "source": "this.color = Colors.white,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/connected_tabs.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/content_section.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/content_skeleton.dart",
+      "findings": [
+        {
+          "line": 186,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(14),"
+        },
+        {
+          "line": 230,
+          "kind": "spacing",
+          "source": "padding: const EdgeInsets.all(18),"
+        },
+        {
+          "line": 233,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(22),"
+        },
+        {
+          "line": 292,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(14),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/embedded_native_control_area.dart",
+      "findings": [
+        {
+          "line": 23,
+          "kind": "spacing",
+          "source": "padding: needsOffset ? const EdgeInsets.only(top: 22) : EdgeInsets.zero,"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/empty_state_widget.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/error_widget.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/image_preview.dart",
+      "findings": [
+        {
+          "line": 189,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.5),"
+        },
+        {
+          "line": 191,
+          "kind": "radius",
+          "source": "borderRadius: widget.modern ? BorderRadius.circular(10) : null,"
+        },
+        {
+          "line": 199,
+          "kind": "color",
+          "source": "color: onPressed != null ? Colors.white : Colors.white38,"
+        },
+        {
+          "line": 209,
+          "kind": "color",
+          "source": "backgroundColor: Colors.black,"
+        },
+        {
+          "line": 218,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.5),"
+        },
+        {
+          "line": 220,
+          "kind": "radius",
+          "source": "borderRadius: widget.modern ? BorderRadius.circular(10) : null,"
+        },
+        {
+          "line": 229,
+          "kind": "color",
+          "source": "color: Colors.white,"
+        },
+        {
+          "line": 247,
+          "kind": "color",
+          "source": "color: Colors.black.withValues(alpha: 0.5),"
+        },
+        {
+          "line": 248,
+          "kind": "radius",
+          "source": "borderRadius: BorderRadius.circular(16),"
+        },
+        {
+          "line": 252,
+          "kind": "color",
+          "source": "style: const TextStyle(color: Colors.white, fontSize: 14),"
+        },
+        {
+          "line": 252,
+          "kind": "font",
+          "source": "style: const TextStyle(color: Colors.white, fontSize: 14),"
+        },
+        {
+          "line": 313,
+          "kind": "color",
+          "source": "backgroundDecoration: const BoxDecoration(color: Colors.black),"
+        },
+        {
+          "line": 334,
+          "kind": "color",
+          "source": "backgroundDecoration: const BoxDecoration(color: Colors.black),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/kazumi_menu.dart",
+      "findings": [
+        {
+          "line": 8,
+          "kind": "spacing",
+          "source": "padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/loading_indicator.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/media_error_widget.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/play_pause_icon.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/side_panel_transition.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/split_list_row.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/state_presentation.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/widget/tonal_card.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/settings/color_type.dart",
+      "findings": [
+        {
+          "line": 4,
+          "kind": "color",
+          "source": "{'color': Colors.green, 'label': '默认'},"
+        },
+        {
+          "line": 6,
+          "kind": "color",
+          "source": "{'color': Colors.blue, 'label': '蓝色'},"
+        },
+        {
+          "line": 8,
+          "kind": "color",
+          "source": "{'color': const Color(0xff6750a4), 'label': '紫罗兰色'},"
+        }
+      ],
+      "after": [
+        {
+          "line": 4,
+          "kind": "color",
+          "source": "{'color': Colors.green, 'label': '默认'},"
+        },
+        {
+          "line": 6,
+          "kind": "color",
+          "source": "{'color': Colors.blue, 'label': '蓝色'},"
+        },
+        {
+          "line": 8,
+          "kind": "color",
+          "source": "{'color': const Color(0xff6750a4), 'label': '紫罗兰色'},"
+        }
+      ]
+    },
+    {
+      "file": "lib/bean/settings/network_mirror_settings.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/settings/settings_detail_scaffold.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/settings/settings_dropdown_tile.dart",
+      "findings": [],
+      "after": []
+    },
+    {
+      "file": "lib/bean/settings/settings_list.dart",
+      "findings": [
+        {
+          "line": 249,
+          "kind": "radius",
+          "source": "? BorderRadius.circular(10)"
+        },
+        {
+          "line": 250,
+          "kind": "radius",
+          "source": ": BorderRadius.circular(18),"
+        }
+      ],
+      "after": []
+    },
+    {
+      "file": "lib/bean/settings/theme_provider.dart",
+      "findings": [],
+      "after": []
+    }
+  ]
+}
