@@ -1,0 +1,9 @@
+# ImageGen 提示词
+
+## 播放器设计稿
+
+Use case: ui-mockup. High fidelity mobile UI design handoff, one presentation board on a neutral charcoal canvas. A Chinese anime streaming app. Compose one straight-on flat portrait screen on the left (360x800 logical units) and one flat landscape fullscreen on the upper right (800x360), below it a compact landscape playback speed drawer detail. Precisely aligned flat screenshots without phone devices, no annotation, no legends. Show a dusky violet harbor with a hand-drawn animated ferry pilot, original art. In portrait: 16:9 live player pinned to top, subtle white controls, then one left-aligned title "夜航线", one quiet metadata line "第 3 集 · 2026 · 动画", bookmark to the right. Next a restrained 16px "选集" row with small "线路 1" selector and six 01 to 06 episodes, lavender 03. Then "剧情简介" with two short lines. In landscape keep just the image and thin transport overlay. The drawer shows title "播放倍速", current speed "1.25×", slider, four presets. Style: refined near-black cinema surfaces, warm white text, muted violet for active control, fine tonal contrasts, tight yet readable vertical rhythm, controls have generous invisible touch area. Avoid badges, extra text, gradients on panels, repeated title labels, promotional banners or marketing copy.
+
+## 缺省封面素材
+
+Use case: illustration-story. Original wide cinematic anime background painting as a decorative no-cover fallback in the Playra streaming player's pre-play/error backdrop. Quiet Japanese ferry terminal just after dusk, viewed across dark harbor water. A distant ferry moored at the far right; two or three lit windows and a soft line of reflections, violet blue silhouettes of harbour cranes. Visually calm middle and left with deep ink-blue water and sky for native white overlay text and spinner. Matte restrained tones, delicate painted grain, widescreen 16:9. No characters, writing, logos, UI, badges, symbols or frames. This is environmental art, not a film poster.
