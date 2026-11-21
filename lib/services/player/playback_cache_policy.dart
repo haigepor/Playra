@@ -15,7 +15,7 @@ class PlaybackCachePolicy {
        _currentPlayer = currentPlayer;
 
   static const int _lowMemoryBufferSize = 2 * 1024 * 1024;
-  static const int _defaultBufferSize = 1500 * 1024 * 1024;
+  static const int _defaultBufferSize = 512 * 1024 * 1024;
 
   final bool Function() _isLocalPlayback;
   final Player? Function() _currentPlayer;

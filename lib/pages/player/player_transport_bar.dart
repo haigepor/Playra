@@ -1,23 +1,5 @@
-import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-
-enum PlayerTimeLabelPlacement {
-  aboveProgress,
-  besideProgress,
-  afterPlaybackButtons;
-
-  static PlayerTimeLabelPlacement forViewport(
-    Size viewport, {
-    required bool desktop,
-  }) {
-    if (desktop) return afterPlaybackButtons;
-    final hasRoomForSideLabels =
-        viewport.shortestSide >= 600 &&
-        viewport.shortestSide / viewport.longestSide >= 9 / 16;
-    return hasRoomForSideLabels ? besideProgress : aboveProgress;
-  }
-}
 
 /// ProgressBar 的位置更新只重绘画面；由当前播放状态更新读屏值。
 class PlayerProgressSemantics extends StatelessWidget {
@@ -46,6 +28,7 @@ class PlayerProgressSemantics extends StatelessWidget {
     final backward = (current - step).clamp(0, duration > 0 ? duration : 0);
     return Semantics(
       slider: true,
+      label: '播放进度',
       value: duration > 0 ? percentage(current) : '时长未知',
       increasedValue: duration > 0 ? percentage(forward) : null,
       decreasedValue: duration > 0 ? percentage(backward) : null,
@@ -68,7 +51,7 @@ class PlayerTransportBar extends StatelessWidget {
     required this.nextEpisode,
     required this.progressBuilder,
     required this.timeLabel,
-    required this.timePlacement,
+    required this.timeBesideProgress,
     required this.controls,
     required this.fullscreen,
   });
@@ -78,85 +61,80 @@ class PlayerTransportBar extends StatelessWidget {
   final Widget nextEpisode;
   final Widget Function(TimeLabelLocation location) progressBuilder;
   final Widget timeLabel;
-  final PlayerTimeLabelPlacement timePlacement;
+  final bool timeBesideProgress;
   final Widget controls;
   final Widget fullscreen;
 
   @override
-  Widget build(BuildContext context) => compact
-      ? Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.lg),
-              child: Semantics(
-                container: true,
-                label: '播放进度',
-                child: SizedBox(
-                  height: 44,
-                  child: progressBuilder(TimeLabelLocation.none),
+  Widget build(BuildContext context) {
+    if (compact && MediaQuery.textScalerOf(context).scale(12) >= 16) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: 44, child: progressBuilder(TimeLabelLocation.none)),
+          Row(
+            children: [
+              playPause,
+              nextEpisode,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: timeLabel,
                 ),
               ),
-            ),
-            Row(
-              children: [
-                playPause,
-                nextEpisode,
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.sm),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: timeLabel,
-                    ),
-                  ),
-                ),
-                fullscreen,
-              ],
-            ),
-          ],
-        )
-      : Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (timePlacement == PlayerTimeLabelPlacement.aboveProgress)
+              fullscreen,
+            ],
+          ),
+        ],
+      );
+    }
+    return compact
+        ? Row(
+            children: [
+              playPause,
+              Expanded(child: progressBuilder(TimeLabelLocation.none)),
               Padding(
-                padding: const EdgeInsets.only(left: PlayraSpace.md, bottom: PlayraSpace.md),
+                padding: const EdgeInsets.only(left: 6),
                 child: timeLabel,
               ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md),
-              child: Semantics(
-                container: true,
-                label: '播放进度',
-                child: progressBuilder(
-                  timePlacement == PlayerTimeLabelPlacement.besideProgress
-                      ? TimeLabelLocation.sides
-                      : TimeLabelLocation.none,
+              fullscreen,
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    Expanded(child: progressBuilder(TimeLabelLocation.none)),
+                    if (timeBesideProgress) ...[
+                      const SizedBox(width: 10),
+                      timeLabel,
+                    ],
+                  ],
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.md),
-              child: Row(
-                children: [
-                  playPause,
-                  nextEpisode,
-                  if (timePlacement ==
-                      PlayerTimeLabelPlacement.afterPlaybackButtons)
-                    Padding(
-                      padding: const EdgeInsets.only(left: PlayraSpace.md),
-                      child: timeLabel,
-                    ),
-                  Expanded(child: controls),
-                  fullscreen,
-                ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    playPause,
+                    nextEpisode,
+                    if (!timeBesideProgress)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 10),
+                        child: timeLabel,
+                      ),
+                    Expanded(child: controls),
+                    fullscreen,
+                  ],
+                ),
               ),
-            ),
-            if (timePlacement != PlayerTimeLabelPlacement.aboveProgress)
-              const SizedBox(height: PlayraSpace.compact),
-          ],
-        );
+              const SizedBox(height: 6),
+            ],
+          );
+  }
 }

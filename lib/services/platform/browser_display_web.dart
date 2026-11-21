@@ -39,8 +39,9 @@ Future<bool> enterBrowserPictureInPicture() async {
   final video = _video();
   if (!web.document.pictureInPictureEnabled ||
       video == null ||
-      video.readyState < 2)
+      video.readyState < 2) {
     return false;
+  }
   try {
     await video.requestPictureInPicture().toDart;
     return true;
@@ -52,6 +53,7 @@ Future<bool> enterBrowserPictureInPicture() async {
 void setBrowserVideoBrightness(double value) {
   final video = _video();
   // 浏览器不能修改显示器背光，调整视频画面亮度以保留手势行为。
-  if (video != null)
+  if (video != null) {
     video.style.filter = 'brightness(${value.clamp(0.0, 1.0)})';
+  }
 }

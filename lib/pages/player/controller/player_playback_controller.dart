@@ -20,7 +20,7 @@ import 'package:kazumi/services/player/playback_cache_policy.dart';
 import 'package:kazumi/services/player/player_error_mapper.dart';
 import 'package:kazumi/services/player/playback_start_position.dart';
 import 'package:kazumi/services/storage/storage.dart';
-import 'package:kazumi/services/video_source/video_source_format.dart';
+import 'package:kazumi/playback/video_source_format.dart';
 import 'package:kazumi/utils/async_serial_queue.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -86,7 +86,7 @@ abstract class _PlayerPlaybackController with Store {
   Player? get mediaPlayer => _ownedPlayer?.player;
 
   /// 仅当前媒体实例上报；来源控制器决定是否重试，避免错误提示自行循环。
-  void Function(String message)? onMediaError;
+  void Function(String message)? onOpenFailure;
   VideoController? videoController;
 
   final AsyncSerialQueue _prefetchWrites = AsyncSerialQueue();
@@ -284,10 +284,10 @@ abstract class _PlayerPlaybackController with Store {
   }
 
   Future<Player?> createVideoController(
-    Map<String, String> httpHeaders,
-    bool adBlockerEnabled, {
+    Map<String, String> httpHeaders, {
     required bool Function() canInstall,
     int offset = 0,
+    bool? playWhenReady,
     VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
     // CENC 内容密钥（hex）。mov demuxer 在打开媒体时按它解密
     // cenc-aes-ctr 采样；必须在 player.open 之前设置。
@@ -304,7 +304,7 @@ abstract class _PlayerPlaybackController with Store {
       SettingsKeys.androidEnableOpenSLES,
     );
     hardwareDecoder = GStorage.getSetting(SettingsKeys.hardwareDecoder);
-    autoPlay = GStorage.getSetting(SettingsKeys.autoPlay);
+    autoPlay = playWhenReady ?? GStorage.getSetting(SettingsKeys.autoPlay);
     playerDebugMode = GStorage.getSetting(SettingsKeys.playerDebugMode);
 
     if (!canInstall()) {
@@ -316,7 +316,7 @@ abstract class _PlayerPlaybackController with Store {
           bufferSize: cachePolicy.bufferSize,
           osc: false,
           logLevel: MPVLogLevel.values[debug.playerLogLevel],
-          adBlocker: adBlockerEnabled,
+          adBlocker: false,
         ),
       ),
     );
@@ -408,12 +408,15 @@ abstract class _PlayerPlaybackController with Store {
           // Android 14 及以上使用基于 Vulkan 的 MPV GPU-NEXT 视频输出，着色器性能更好
           // GPU-NEXT 需要 Vulkan 1.2 支持
           // 避免 Android 13 及以下设备上部分机型 Vulkan 支持不佳导致的黑屏问题
+          // x86_64 模拟器（雷电等）的 Vulkan HAL 在 gpu-next 初始化时会崩掉
+          // 整个虚拟机，实测只能走 OpenGL 的 gpu 输出。
           final int androidSdkVersion =
               await PlatformEnvironmentService.getAndroidSdkVersion();
           if (!isCurrentPlayer(player)) {
             return await _discardIfNotCurrent(candidate);
           }
-          if (androidSdkVersion >= 34) {
+          if (androidSdkVersion >= 34 &&
+              !PlatformEnvironmentService.isAndroidX64Emulator) {
             videoRenderer = 'gpu-next';
           } else {
             videoRenderer = 'gpu';
@@ -461,32 +464,30 @@ abstract class _PlayerPlaybackController with Store {
               error: event,
             );
             unawaited(
-              Future<void>.delayed(const Duration(milliseconds: 1200)).then(
-                (_) async {
-                  if (!isCurrentPlayer(player)) return;
-                  await player.open(
-                    Media(
-                      videoUrl(),
-                      start: Duration(seconds: offset),
-                      httpHeaders: kIsWeb ? null : httpHeaders,
-                    ),
-                    play: autoPlay,
-                  );
-                },
-              ),
+              Future<void>.delayed(const Duration(milliseconds: 1200)).then((
+                _,
+              ) async {
+                if (!isCurrentPlayer(player)) return;
+                await player.open(
+                  Media(
+                    videoUrl(),
+                    start: Duration(seconds: offset),
+                    httpHeaders: kIsWeb ? null : httpHeaders,
+                  ),
+                  play: autoPlay,
+                );
+              }),
             );
             return;
           }
-          onMediaError?.call(event.toString());
-          final actionableMessage = PlayerErrorMapper.toActionableMessage(
-            event,
-            isBuffering: playerBuffering,
-          );
-          if (actionableMessage != null) {
-            KazumiDialog.showToast(
-              message: actionableMessage,
-              showActionButton: true,
-            );
+          final message = PlayerErrorMapper.openFailureMessage(event);
+          if (message != null) {
+            final report = onOpenFailure;
+            if (report != null) {
+              report(message);
+            } else {
+              KazumiDialog.showToast(message: message, showActionButton: true);
+            }
           } else if (showPlayerError) {
             KazumiDialog.showToast(
               message: '播放器内部错误 ${event.toString()} ${videoUrl()}',
@@ -693,8 +694,12 @@ abstract class _PlayerPlaybackController with Store {
     if (isBuffering != state.buffering) {
       isBuffering = state.buffering;
     }
-    if (currentPosition != state.position) {
-      currentPosition = state.position;
+    // At EOF the final frame timestamp can precede the end of the media.
+    final position = state.completed && state.duration > Duration.zero
+        ? state.duration
+        : state.position;
+    if (currentPosition != position) {
+      currentPosition = position;
     }
     if (buffer != state.buffer) {
       buffer = state.buffer;

@@ -4,41 +4,7 @@ import 'package:forui/forui.dart' as f;
 import 'playra_tokens.dart';
 import 'playra_design.dart';
 
-/// Legacy appearance keeps its user-selected palette; modern pages use Forui.
-f.FThemeData playraForuiTheme(ThemeData material) {
-  final design = playraDesign(
-    material.brightness,
-    fontFamily: material.textTheme.bodyMedium?.fontFamily,
-  );
-  if (material.extension<PlayraTokens>()?.modern == true) return design;
-  final c = material.colorScheme;
-  final colors = design.colors.copyWith(
-    background: c.surface,
-    foreground: c.onSurface,
-    primary: c.primary,
-    primaryForeground: c.onPrimary,
-    secondary: c.surfaceContainer,
-    secondaryForeground: c.onSurface,
-    muted: c.surfaceContainerHighest,
-    mutedForeground: c.onSurfaceVariant,
-    card: c.surfaceContainerLow,
-    border: c.outlineVariant,
-    destructive: c.error,
-    destructiveForeground: c.onError,
-    error: c.error,
-    errorForeground: c.onError,
-  );
-  final typeface = f.FTypeface.inherit(
-    colors: colors,
-    touch: true,
-    fontFamily: design.typography.body.fontFamily,
-  );
-  return f.FThemeData(
-    colors: colors,
-    typography: f.FTypography(body: typeface, display: typeface),
-    touch: true,
-  );
-}
+f.FThemeData playraForuiTheme(ThemeData material) => playraDesign(material);
 
 class PlayraForuiScope extends StatelessWidget {
   const PlayraForuiScope({

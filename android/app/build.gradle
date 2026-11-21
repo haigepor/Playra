@@ -71,16 +71,6 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
-    // Lumina 通过 nativeLibraryDir 加载只读引擎，不从可写缓存目录执行。
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
-            // 保持私有输入原始字节，使 APK 库摘要能直接对照导入收据。
-            keepDebugSymbols += ["**/liblumafuse.so"]
-            keepDebugSymbols += ["**/liblumina_core_vendor.so"]
-        }
-    }
-
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.predidit.kazumi"

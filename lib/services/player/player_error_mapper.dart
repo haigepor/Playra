@@ -13,15 +13,10 @@ class PlayerErrorMapper {
         message.contains('timeout');
   }
 
-  static String? toActionableMessage(
-    Object error, {
-    required bool isBuffering,
-  }) {
-    final message = error.toString();
-    if (message.contains('Failed to recognize file format') ||
-        (isBuffering && message.contains('Failed to open'))) {
-      return '加载失败, 请尝试更换其他视频来源';
-    }
+  static String? openFailureMessage(Object error) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('failed to recognize file format')) return '无法识别视频格式';
+    if (message.contains('failed to open')) return '视频未能打开，请重试或切换线路';
     return null;
   }
 }

@@ -11,11 +11,13 @@ class PlayerBufferingOverlay extends StatefulWidget {
     required this.player,
     required this.buffering,
     required this.resolving,
+    this.resolvingLabel,
   });
 
   final Player? player;
   final bool buffering;
   final bool resolving;
+  final String? resolvingLabel;
 
   @override
   State<PlayerBufferingOverlay> createState() => _PlayerBufferingOverlayState();
@@ -92,48 +94,53 @@ class _PlayerBufferingOverlayState extends State<PlayerBufferingOverlay> {
     // 百分比是播放器当前起播缓冲目标的进度，不是整部视频已下载的比例。
     final progress = widget.resolving ? null : _percentage;
     final label = widget.resolving
-        ? '正在解析视频'
+        ? widget.resolvingLabel ?? '正在准备播放'
         : progress == null
         ? '正在缓冲'
         : '缓冲 ${progress.round()}%';
-    final reduceMotion = PlayraMotion.reduceOf(context);
+    final tokens = PlayraTokens.of(context);
     return IgnorePointer(
       child: Center(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            // 视频上的提示始终使用深色底，不能跟随浅色页面主题。
-            color: PlayraMedia.canvas.withValues(alpha: 0.8),
+            color: const Color(0xCC11141C),
             borderRadius: BorderRadius.circular(PlayraRadius.card),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.12),
+              width: 1,
+            ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: PlayraSpace.xl, vertical: PlayraSpace.lg),
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: PlayraSpace.section,
-                  height: 32,
-                  child: reduceMotion && progress == null
-                      ? Icon(
-                          widget.resolving
-                              ? Icons.video_library_outlined
-                              : Icons.hourglass_top_rounded,
-                          color: PlayraMedia.foreground,
-                        )
-                      : CircularProgressIndicator(
-                          value: progress == null ? null : progress / 100,
-                          color: PlayraMedia.foreground,
-                          backgroundColor: PlayraMedia.border,
-                          semanticsLabel: label,
-                          strokeWidth: 3,
-                        ),
+                ExcludeSemantics(
+                  child: SizedBox.square(
+                    dimension: 16,
+                    child: progress == null && PlayraMotion.reduceOf(context)
+                        ? Icon(
+                            Icons.hourglass_top_rounded,
+                            size: 16,
+                            color: tokens.primary,
+                          )
+                        : CircularProgressIndicator(
+                            value: progress == null ? null : progress / 100,
+                            strokeWidth: 2,
+                            color: tokens.primary,
+                          ),
+                  ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: PlayraMedia.foreground),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white,
+                      height: 1.15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -18,6 +18,10 @@ class NetworkConfig {
     this.enableLog = true,
   });
 
+  /// Bumped by [ProxyManager] whenever proxy settings change so long-lived
+  /// clients can rebuild their adapter on the next request.
+  static int revision = 0;
+
   final Duration connectTimeout;
   final Duration receiveTimeout;
   final Duration? sendTimeout;

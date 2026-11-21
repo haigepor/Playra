@@ -2,24 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kazumi/pages/video/video_fullscreen_controller.dart';
+import 'package:kazumi/playback/video_fullscreen_controller.dart';
 import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
 import 'package:kazumi/services/player/pip_utils.dart';
-import 'package:kazumi/pages/player/controller/player_danmaku_controller.dart';
-import 'package:kazumi/pages/download/download_controller.dart';
-import 'package:kazumi/modules/danmaku/danmaku_module.dart';
-
-class UnusedDownload implements DownloadController {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class LocalDanmaku extends PlayerDanmakuController {
-  LocalDanmaku()
-    : super(isLocalPlayback: () => true, downloadController: UnusedDownload());
-  @override
-  double get timelineOffsetSeconds => 0;
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -114,44 +99,6 @@ void main() {
     PipUtils.disposePipHandler(current);
     expect(PipUtils.androidPIPInited, isFalse);
   });
-  test(
-    'danmaku emits once per source second and toggle invalidates delayed items',
-    () {
-      final controller = LocalDanmaku();
-      controller.danDanmakus[3] = [
-        DanmakuEntry(
-          message: 'test',
-          time: 3,
-          type: 1,
-          color: Colors.white,
-          source: 'local',
-        ),
-      ];
-      controller.setDanmakuEnabled(true);
-      final generation = controller.scheduledDanmakuGeneration;
-      expect(
-        controller.takeDanmakusForPlaybackPosition(
-          const Duration(milliseconds: 3100),
-        ),
-        hasLength(1),
-      );
-      expect(
-        controller.takeDanmakusForPlaybackPosition(
-          const Duration(milliseconds: 3600),
-        ),
-        isEmpty,
-      );
-      controller.setDanmakuEnabled(false);
-      controller.setDanmakuEnabled(true);
-      expect(controller.scheduledDanmakuGeneration, greaterThan(generation));
-      expect(
-        controller.takeDanmakusForPlaybackPosition(
-          const Duration(milliseconds: 3600),
-        ),
-        hasLength(1),
-      );
-    },
-  );
   test(
     'desktop PiP restores original bounds and on-top state after aspect changes',
     () async {

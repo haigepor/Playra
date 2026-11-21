@@ -1,3 +1,4 @@
+import 'package:kazumi/services/platform/android_abi.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
 
 import 'package:flutter/services.dart';
@@ -19,6 +20,10 @@ class PlatformEnvironmentService {
       return false;
     }
   }
+
+  /// Android x86_64（模拟器）上 Vulkan 驱动普遍不可靠，gpu-next 会在
+  /// 初始化阶段拖死宿主；渲染器选择据此退回 OpenGL。
+  static bool get isAndroidX64Emulator => androidRunsOnX64;
 
   static Future<int> getAndroidSdkVersion() async {
     if (!Platform.isAndroid) {

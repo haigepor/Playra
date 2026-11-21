@@ -33,7 +33,6 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-/tool/web_backend/node_modules/
 /.tooling/
 /.playwright-mcp/
 
@@ -61,19 +60,18 @@ android/build/reports/problems/
 **/macos/Podfile.lock
 .vscode/private-folder-alias.json
 
-# Private native SDK binaries and protocol profile.
-/packages/lumina_engine/native/
-/assets/lumina_private/
 .env
 .env.*
 !.env.example
 **/*device-state*.json
 **/*device-identity*.json
 
-# 本地运行时生成（不入库）
-/recipes.json
-/tool/source_runtime/
-
 # ZCode 会话目录与恢复锚点
 .zcode/
 RECOVERY-CT.md
+
+# 本地验证产物（截图、日志、临时调试文件）
+/.analysis/
+/tool/clicli/*.png
+/tool/clicli/*.jpg
+/tool/clicli/*.txt

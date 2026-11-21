@@ -1,7 +1,7 @@
 name: kazumi
-description: "Playra media discovery and playback application."
+description: "Playra: a lavender-editorial Flutter anime client built on a retained playback kernel."
 publish_to: "none"
-version: 2.4.3+20403
+version: 3.0.0+30000
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
@@ -13,92 +13,27 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.6
+
+  # 应用骨架：路由/DI、状态、存储。
   flutter_modular: ^7.1.0
   mobx: ^2.6.0
   flutter_mobx: ^2.3.0
-  dio: ^5.11.0
-  cookie_jar: ^4.0.9
-  crypto: ^3.0.6
-  lumina_engine:
-    path: packages/lumina_engine
-  connectivity_plus: ^6.0.5
-
-  path_provider: ^2.1.5
-  path_provider_platform_interface: ^2.1.2
   hive_ce: ^2.16.0
   hive_ce_flutter: ^2.3.3
-  cached_network_image: ^3.4.1
-  octo_image: ^2.1.0
-  flutter_cache_manager: ^3.4.1
-  ech_http: ^0.2.3
-  http: ^1.6.0
-  # 第二内容源（Whisklet）请求/响应信封：AES-128-CBC + PKCS7，纯 Dart 实现。
-  pointycastle: ^3.9.1
-  web: ^1.1.1
-  image: ^4.8.0
-  file_picker: ^10.3.7
-
-  flutter_volume_controller: ^2.0.1
-  audio_video_progress_bar: ^2.0.2
-  audio_service: ^0.18.15
-  audio_service_mpris:
-    git:
-      url: https://github.com/Predidit/audio-service-mpris.git
-      ref: d30b53fb7dbdd8f10ceda7447fe0a0218711a220
-  audio_service_win:
-    git:
-      url: https://github.com/Predidit/audio_service_win.git
-      ref: 8ad650c6eb487208b9861d44755c8e58db061c88
-  audio_session: ^0.2.2
-  dynamic_color: ^1.9.0
-  flutter_displaymode: ^0.6.0
-
-  url_launcher: ^6.3.0
-  window_manager: ^0.5.1
-  xpath_selector: ^3.0.2
-  xpath_selector_html_parser: ^3.0.1
-  json_path: ^0.9.0
-
-  canvas_danmaku: ^0.3.3
-  webdav_client: ^1.2.2
-  tray_manager: ^0.5.0
-  dlna_dart: ^0.1.1
-  logger: ^2.6.2
-  flutter_rating_bar: ^4.0.1
-  scrollview_observer: ^1.22.0
-  saver_gallery: ^4.1.0
-  screen_brightness_android: ^2.1.3
-  screen_brightness_ios: ^2.1.2
-  screen_brightness_ohos: ^2.1.2
-  screen_brightness_platform_interface: ^2.1.0
-  synchronized: any
-  flutter_svg: ^2.2.3
-  antlr4: ^4.13.2
-  fl_chart: ^1.1.1
-  flutter_foreground_task: ^9.0.0
-  skeletonizer: ^2.1.2
-  flutter_inappwebview_platform_interface: ^1.3.0+1
-  flutter_inappwebview_ios: ^1.1.2
-  flutter_inappwebview_macos: ^1.1.2
-  flutter_inappwebview_android: ^1.1.3
-  upgrader: ^12.3.0
-  open_filex: ^4.7.0
-  html: any
-  material_color_utilities: any
-  material_new_shapes: ^1.0.0
+  path_provider: ^2.1.5
+  path_provider_platform_interface: ^2.1.2
   path: any
-  photo_view: ^0.15.0
-  win32: ^5.15.0
-  ffi: ^2.1.0
-  image_picker: ^1.2.1
-  webview_windows:
-    git:
-      url: https://github.com/Predidit/flutter-webview-windows.git
-      ref: 2b3306d2bfb9f22cbb328743b60e547cf50f0c3c
-  desktop_webview_window:
-    git:
-      url: https://github.com/Predidit/linux_webview_window.git
-      ref: b429f8ba6b8a99cd0f7eb5fe8d1621f325635c3d
+  synchronized: any
+
+  # 网络、代理与图片缓存。
+  dio: ^5.11.0
+  http: ^1.6.0
+  crypto: ^3.0.7
+  connectivity_plus: ^6.0.5
+  cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
+
+  # 播放内核。
   media_kit:
     git:
       url: https://github.com/Predidit/media-kit.git
@@ -109,23 +44,44 @@ dependencies:
       url: https://github.com/Predidit/media-kit.git
       ref: 803c4a27912091db6f839d48d1b984a0d9f588c7
       path: ./media_kit_video
-  macos_secure_bookmarks: ^0.2.1
-  shadcn_ui: 0.57.4
-  flutter_animate: 4.5.2
-  forui: 0.27.7
+  audio_service: ^0.18.15
+  audio_service_mpris:
+    git:
+      url: https://github.com/Predidit/audio-service-mpris.git
+      ref: d30b53fb7dbdd8f10ceda7447fe0a0218711a220
+  audio_service_win:
+    git:
+      url: https://github.com/Predidit/audio_service_win.git
+      ref: 8ad650c6eb487208b9861d44755c8e58db061c88
+  audio_session: ^0.2.2
+  audio_video_progress_bar: ^2.0.2
+  flutter_volume_controller: ^2.0.1
+  screen_brightness_android: ^2.1.3
+  screen_brightness_ios: ^2.1.2
+  screen_brightness_platform_interface: ^2.1.0
+  saver_gallery: ^4.1.0
+  dlna_dart: ^0.1.1
 
-dependency_overrides:
-  # 本地修复 ech_http 0.2.1 的 MSVC 证书字符串编译限制。
-  ech_http:
-    path: third_party/ech_http
-  flutter_inappwebview_android:
-    path: third_party/flutter_inappwebview_android
+  # 桌面与平台能力。
+  window_manager: ^0.5.1
+  win32: ^5.15.0
+  ffi: ^2.1.0
+  url_launcher: ^6.3.0
+  open_filex: ^4.7.0
+  file_picker: ^10.3.7
+
+  # 主题与控件。
+  forui: 0.27.7
+  flutter_svg: ^2.2.3
+
+  # 工具。
+  logger: ^2.6.2
+  web: ^1.1.1
 
 dev_dependencies:
   plugin_platform_interface: ^2.1.8
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^6.0.0
   build_runner: ^2.15.0
   mobx_codegen: ^2.7.5
@@ -175,77 +131,11 @@ flutter:
   shaders:
     - assets/runtime_shaders/liquid_navigation.frag
   assets:
-    - path: assets/lumina_private/profile.json
-      platforms: [android, windows]
-    - path: assets/lumina_private/fuse_image.bin.gz
-      platforms: [android, windows]
-    - packages/lumina_engine/inputs.json
-    # 设计源图留在仓库；仅将运行素材打包，排除未使用的排名母版。
-    - assets/images/danmaku_off.svg
-    - assets/images/danmaku_setting.svg
     - assets/images/forward_80.png
-    - assets/images/loading.png
-    - assets/images/modern-about-orbit.svg
-    - assets/images/modern-calendar-decoration.svg
-    - assets/images/modern-calendar-empty.svg
-    - assets/images/modern-calendar-header-art.png
-    - assets/images/modern-card-paper-corner.svg
-    - assets/images/modern-cinema-header-art.png
-    - assets/images/modern-discover-decoration.svg
-    - assets/images/modern-download-empty.svg
-    - assets/images/modern-feature-orbit.svg
-    - assets/images/modern-history-art.png
-    - assets/images/modern-home-empty-feed.svg
-    - assets/images/modern-home-empty-watch.svg
-    - assets/images/modern-home-mark.svg
-    - assets/images/modern-home-screen.svg
-    - assets/images/modern-image-search-empty.svg
-    - assets/images/modern-library-decoration.svg
-    - assets/images/modern-library-empty.svg
-    - assets/images/modern-library-header-art.png
-    - assets/images/modern-offline-art.png
-    - assets/images/modern-onboarding-decoration.svg
-    - assets/images/modern-player-detail-decoration.svg
-    - assets/images/modern-player-empty-discussion.svg
-    - assets/images/modern-player-empty-source.svg
-    - assets/images/modern-player-placeholder.svg
-    - assets/images/modern-player-playing-mark.svg
-    - assets/images/modern-player-poster-placeholder.svg
-    - assets/images/modern-profile-decoration.svg
-    - assets/images/modern-profile-empty.svg
-    - assets/images/modern-profile-header-art.png
-    - assets/images/modern-rank-first.svg
-    - assets/images/modern-rank-second.svg
-    - assets/images/modern-rank-third.svg
-    - assets/images/modern-recommendation-lines.svg
-    - assets/images/modern-search-empty.svg
-    - assets/images/modern-section-curated.svg
-    - assets/images/modern-section-ranking.svg
-    - assets/images/modern-section-resume.svg
-    - assets/images/modern-source-candidates.svg
-    - assets/images/modern-sync-art.png
-    - assets/images/modern-utility-collection.svg
-    - assets/images/modern-utility-completed.svg
-    - assets/images/modern-utility-devices.svg
-    - assets/images/modern-utility-downloading.svg
-    - assets/images/modern-utility-failed.svg
-    - assets/images/modern-utility-history.svg
-    - assets/images/modern-utility-offline.svg
-    - assets/images/modern-utility-paused.svg
-    - assets/images/modern-utility-pending.svg
-    - assets/images/modern-utility-resolving.svg
-    - assets/images/modern-utility-rules.svg
-    - assets/images/modern-utility-sdk.svg
-    - assets/images/modern-utility-synchronization.svg
-    - assets/images/modern-work-info.svg
-    - assets/images/noface.jpeg
-    - assets/images/sdk-auto.svg
-    - assets/images/sdk-orbit.svg
-    - assets/images/sdk-route.svg
-    - assets/shaders/
+    - assets/images/player/harbor-at-dusk.webp
+    - assets/images/home/home-decoration.webp
     - assets/images/logo/
-    - assets/statements/
-    - licenses/ech_http/
+    - assets/shaders/
   fonts:
     - family: MI_Sans_Regular
       fonts:

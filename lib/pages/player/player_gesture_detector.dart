@@ -6,17 +6,15 @@ class PlayerGestureDetector extends StatefulWidget {
     required this.onSeekStart,
     required this.onSeekUpdate,
     required this.onSeekEnd,
-    this.onVerticalDragUpdate,
-    this.onVerticalDragEnd,
-    this.onVerticalDragCancel,
+    this.onAdjust,
+    required this.onAdjustmentEnd,
   });
 
   final VoidCallback onSeekStart;
   final void Function(double delta, bool cancelPending) onSeekUpdate;
   final void Function(bool cancelled) onSeekEnd;
-  final GestureDragUpdateCallback? onVerticalDragUpdate;
-  final GestureDragEndCallback? onVerticalDragEnd;
-  final GestureDragCancelCallback? onVerticalDragCancel;
+  final void Function(bool left, double deltaFraction)? onAdjust;
+  final VoidCallback onAdjustmentEnd;
 
   @override
   State<PlayerGestureDetector> createState() => _PlayerGestureDetectorState();
@@ -24,6 +22,7 @@ class PlayerGestureDetector extends StatefulWidget {
 
 class _PlayerGestureDetectorState extends State<PlayerGestureDetector> {
   bool? _cancelPending;
+  bool _left = false;
 
   void _endSeek({bool cancelled = false}) {
     final cancelPending = _cancelPending;
@@ -55,15 +54,28 @@ class _PlayerGestureDetectorState extends State<PlayerGestureDetector> {
               final wasCancelPending = _cancelPending;
               if (wasCancelPending == null) return;
               final cancelPending = isAtEdge(details.localPosition);
-              final delta =
-                  cancelPending || wasCancelPending ? 0.0 : details.delta.dx;
+              final delta = cancelPending || wasCancelPending
+                  ? 0.0
+                  : details.delta.dx;
               _cancelPending = cancelPending;
               widget.onSeekUpdate(delta, cancelPending);
             },
             onHorizontalDragEnd: (_) => _endSeek(),
-            onVerticalDragUpdate: widget.onVerticalDragUpdate,
-            onVerticalDragEnd: widget.onVerticalDragEnd,
-            onVerticalDragCancel: widget.onVerticalDragCancel,
+            onVerticalDragDown: widget.onAdjust == null
+                ? null
+                : (d) => _left = d.localPosition.dx < constraints.maxWidth / 2,
+            onVerticalDragUpdate: widget.onAdjust == null
+                ? null
+                : (d) => widget.onAdjust!(
+                    _left,
+                    d.delta.dy / constraints.maxHeight,
+                  ),
+            onVerticalDragEnd: widget.onAdjust == null
+                ? null
+                : (_) => widget.onAdjustmentEnd(),
+            onVerticalDragCancel: widget.onAdjust == null
+                ? null
+                : widget.onAdjustmentEnd,
           ),
         );
       },

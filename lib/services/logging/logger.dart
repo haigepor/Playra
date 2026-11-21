@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'package:kazumi/app_brand.dart';
 import 'dart:async';
 import 'dart:convert';
