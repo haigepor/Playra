@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kazumi/app_brand.dart';
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/services/storage/storage.dart';
@@ -19,29 +20,36 @@ class AppWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: AppBrand.name,
-      debugShowCheckedModeBanner: false,
-      theme: buildShellTheme(Brightness.light),
-      darkTheme: buildShellTheme(Brightness.dark),
-      themeMode: _themeMode,
-      scaffoldMessengerKey: rootScaffoldMessengerKey,
-      routerConfig: ModularApp.routerConfigOf(context),
-      localizationsDelegates: const [
-        ...GlobalMaterialLocalizations.delegates,
-      ],
-      supportedLocales: const [
-        Locale.fromSubtags(
-          languageCode: 'zh',
-          scriptCode: 'Hans',
-          countryCode: 'CN',
-        ),
-      ],
-      locale: const Locale.fromSubtags(
-        languageCode: 'zh',
-        scriptCode: 'Hans',
-        countryCode: 'CN',
+    return ValueListenableBuilder<Box<dynamic>>(
+      valueListenable: GStorage.settings.listenable(
+        keys: [SettingsKeys.themeMode.name],
       ),
+      builder: (context, box, child) {
+        return MaterialApp.router(
+          title: AppBrand.name,
+          debugShowCheckedModeBanner: false,
+          theme: buildShellTheme(Brightness.light),
+          darkTheme: buildShellTheme(Brightness.dark),
+          themeMode: _themeMode,
+          scaffoldMessengerKey: rootScaffoldMessengerKey,
+          routerConfig: ModularApp.routerConfigOf(context),
+          localizationsDelegates: const [
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: const [
+            Locale.fromSubtags(
+              languageCode: 'zh',
+              scriptCode: 'Hans',
+              countryCode: 'CN',
+            ),
+          ],
+          locale: const Locale.fromSubtags(
+            languageCode: 'zh',
+            scriptCode: 'Hans',
+            countryCode: 'CN',
+          ),
+        );
+      },
     );
   }
 }

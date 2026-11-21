@@ -80,6 +80,9 @@ try {
     $env:GRADLE_OPTS = (@($savedEnvironment['GRADLE_OPTS'], '-Dorg.gradle.project.kotlin.incremental=false') |
       Where-Object { $_ }) -join ' '
   }
+  if (-not $DartDefineFromFile -and (Test-Path -LiteralPath .env.clicli.json)) {
+    $DartDefineFromFile = Join-Path $projectRoot '.env.clicli.json'
+  }
   $defineArguments = @()
   if ($DartDefineFromFile) {
     $definePath = (Resolve-Path -LiteralPath $DartDefineFromFile).Path

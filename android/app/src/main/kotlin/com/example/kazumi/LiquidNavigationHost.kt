@@ -94,7 +94,7 @@ class LiquidNavigationHost(private val activity: Activity, private val channel: 
     private val typeface by lazy {
         val manifest = JSONArray(activity.assets.open("flutter_assets/FontManifest.json").bufferedReader().use { it.readText() })
         val font = (0 until manifest.length()).asSequence().map { manifest.getJSONObject(it) }
-            .first { it.getString("family") == "packages/lucide_icons_flutter/Lucide" }
+            .first { it.getString("family") == "packages/forui_lucide/ForuiLucideIcons" }
             .getJSONArray("fonts").getJSONObject(0).getString("asset")
         FontFamily(Typeface.createFromAsset(activity.assets, "flutter_assets/$font"))
     }
@@ -172,6 +172,7 @@ class LiquidNavigationHost(private val activity: Activity, private val channel: 
 
     @Composable
     private fun NavigationContent() {
+        val foreground = if (dark) Color(0xFFE6EAF2) else Color(0xFF3A324F)
         val density = LocalDensity.current
         val configuration = Configuration(LocalConfiguration.current).apply {
             uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
@@ -194,7 +195,9 @@ class LiquidNavigationHost(private val activity: Activity, private val channel: 
                         onTabSelected = ::select,
                         backdrop = background,
                         tabsCount = 4,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 48.dp)
                     ) {
                         repeat(4) { index ->
                             LiquidBottomTab(
@@ -204,9 +207,9 @@ class LiquidNavigationHost(private val activity: Activity, private val channel: 
                                 BasicText(
                                     String(Character.toChars(icons[index])),
                                     modifier = Modifier.clearAndSetSemantics {},
-                                    style = TextStyle(color = Color(0xFFE6EAF2), fontFamily = typeface, fontSize = 20.sp)
+                                    style = TextStyle(color = foreground, fontFamily = typeface, fontSize = 20.sp)
                                 )
-                                BasicText(labels[index], style = TextStyle(color = Color(0xFFE6EAF2), fontSize = 11.5f.sp))
+                                BasicText(labels[index], style = TextStyle(color = foreground, fontSize = 11.5f.sp))
                             }
                         }
                     }

@@ -9,15 +9,19 @@ $flutter = if (Test-Path -LiteralPath (Join-Path $projectRoot '.tooling\dev-envi
 } else { Join-Path $projectRoot '.tooling\flutter\bin\flutter.bat' }
 Push-Location -LiteralPath $projectRoot
 try {
+  $defineArguments = @()
+  if (Test-Path -LiteralPath .env.clicli.json) {
+    $defineArguments += '--dart-define-from-file=.env.clicli.json'
+  }
   if ($Build) {
-    & $flutter build web --release --no-wasm-dry-run --no-web-resources-cdn
+    & $flutter build web --release --no-wasm-dry-run --no-web-resources-cdn @defineArguments
     if ($LASTEXITCODE -ne 0) { throw 'Web build failed' }
     $url = "http://127.0.0.1:$Port"
     Write-Host "Playra Web: $url"
     if (-not $NoOpen) { Start-Process $url }
     & python -m http.server $Port --directory build/web
   } else {
-    & $flutter run -d chrome --web-port $Port
+    & $flutter run -d chrome --web-port $Port @defineArguments
   }
 } finally {
   Pop-Location

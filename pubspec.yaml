@@ -1,5 +1,5 @@
 name: kazumi
-description: "Playra shell: minimal app architecture with a retained playback kernel."
+description: "Playra: a lavender-editorial Flutter anime client built on a retained playback kernel."
 publish_to: "none"
 version: 3.0.0+30000
 
@@ -28,6 +28,7 @@ dependencies:
   # 网络、代理与图片缓存。
   dio: ^5.11.0
   http: ^1.6.0
+  crypto: ^3.0.7
   connectivity_plus: ^6.0.5
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
@@ -131,6 +132,8 @@ flutter:
     - assets/runtime_shaders/liquid_navigation.frag
   assets:
     - assets/images/forward_80.png
+    - assets/images/player/harbor-at-dusk.webp
+    - assets/images/home/home-decoration.webp
     - assets/images/logo/
     - assets/shaders/
   fonts:

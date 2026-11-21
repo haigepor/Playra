@@ -11,11 +11,13 @@ class PlayerBufferingOverlay extends StatefulWidget {
     required this.player,
     required this.buffering,
     required this.resolving,
+    this.resolvingLabel,
   });
 
   final Player? player;
   final bool buffering;
   final bool resolving;
+  final String? resolvingLabel;
 
   @override
   State<PlayerBufferingOverlay> createState() => _PlayerBufferingOverlayState();
@@ -92,7 +94,7 @@ class _PlayerBufferingOverlayState extends State<PlayerBufferingOverlay> {
     // 百分比是播放器当前起播缓冲目标的进度，不是整部视频已下载的比例。
     final progress = widget.resolving ? null : _percentage;
     final label = widget.resolving
-        ? '正在解析视频'
+        ? widget.resolvingLabel ?? '正在准备播放'
         : progress == null
         ? '正在缓冲'
         : '缓冲 ${progress.round()}%';
@@ -101,29 +103,38 @@ class _PlayerBufferingOverlayState extends State<PlayerBufferingOverlay> {
       child: Center(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: tokens.background.withValues(alpha: 0.8),
+            color: const Color(0xCC11141C),
             borderRadius: BorderRadius.circular(PlayraRadius.card),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.12),
+              width: 1,
+            ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    value: progress == null ? null : progress / 100,
-                    semanticsLabel: label,
-                    strokeWidth: 3,
+                ExcludeSemantics(
+                  child: SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(
+                      value: progress == null ? null : progress / 100,
+                      strokeWidth: 2,
+                      color: tokens.primary,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white,
+                      height: 1.15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -1,0 +1,11 @@
+name: clicli_protocol_check
+description: Standalone golden-vector regression for the CliCli esdk-v3 port.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  crypto: ^3.0.7
+  dio: ^5.11.0

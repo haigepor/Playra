@@ -5,6 +5,8 @@ class PlaybackInitParams {
   const PlaybackInitParams({
     required this.videoUrl,
     this.offset = 0,
+    this.playWhenReady,
+    this.speed,
     this.isLocalPlayback = false,
     this.videoSourceFormat = VideoSourceFormat.auto,
     this.episode = 1,
@@ -20,6 +22,8 @@ class PlaybackInitParams {
 
   final String videoUrl;
   final int offset;
+  final bool? playWhenReady;
+  final double? speed;
   final bool isLocalPlayback;
   final VideoSourceFormat videoSourceFormat;
   final int episode;

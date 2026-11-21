@@ -26,14 +26,17 @@ class PlaceholderPage extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(PlayraSpace.xxl),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              // 居中显示：文案长短不同的占位页左边界才不会跳来跳去。
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(icon, size: 40, color: t.primary),
                 const SizedBox(height: PlayraSpace.lg),
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: PlayraType.pageTitle,
                     color: t.foreground,
                     fontWeight: FontWeight.w600,
                   ),
@@ -41,6 +44,7 @@ class PlaceholderPage extends StatelessWidget {
                 const SizedBox(height: PlayraSpace.sm),
                 Text(
                   description,
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: t.mutedForeground,
                     height: PlayraType.bodyHeight,

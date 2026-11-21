@@ -15,7 +15,7 @@ abstract final class PlayraSpace {
 abstract final class PlayraRadius {
   static const thumbnail = 8.0;
   static const control = 12.0;
-  static const poster = 12.0;
+  static const poster = 6.0;
   static const card = 16.0;
   static const hero = 20.0;
   static const overlay = 20.0;
@@ -23,10 +23,10 @@ abstract final class PlayraRadius {
 }
 
 abstract final class PlayraType {
-  static const pageTitle = 22.0;
+  static const pageTitle = 20.0;
   static const title = 20.0;
-  static const section = 18.0;
-  static const item = 16.0;
+  static const section = 16.0;
+  static const item = 14.0;
   static const body = 14.0;
   static const label = 13.0;
   static const caption = 12.0;
@@ -52,6 +52,12 @@ abstract final class PlayraLayout {
   static const formWidth = 760.0;
   static const readingWidth = 880.0;
   static const catalogWidth = 1120.0;
+
+  /// Floating phone dock dimensions and the content reserve needed when
+  /// `Scaffold.extendBody` lets the page scroll behind it.
+  static const bottomNavHeight = 48.0;
+  static const bottomNavMargin = 8.0;
+  static const bottomNavReserved = 72.0;
 
   static bool isCompact(Size size) => size.width < 380 || size.height < 700;
 
@@ -170,19 +176,19 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
   });
 
   static const dark = PlayraTokens(
-    background: Color(0xff11141c),
-    foreground: Color(0xffedf0f8),
-    surface: Color(0xff1b202c),
-    surfaceRaised: Color(0xff222838),
-    surfaceOverlay: Color(0xff283042),
-    muted: Color(0xff202638),
-    mutedForeground: Color(0xffa5afc5),
-    foregroundSubtle: Color(0xff737f99),
-    primary: Color(0xffa7b7ff),
-    primaryForeground: Color(0xff182142),
-    primaryContainer: Color(0xff242c4c),
-    border: Color(0xff30384a),
-    borderSubtle: Color(0xff222a3a),
+    background: Color(0xff101115),
+    foreground: Color(0xfff4f3ee),
+    surface: Color(0xff1a1c22),
+    surfaceRaised: Color(0xff282a32),
+    surfaceOverlay: Color(0xff30323b),
+    muted: Color(0xff25262e),
+    mutedForeground: Color(0xffb2b4bd),
+    foregroundSubtle: Color(0xffb2b4bd),
+    primary: Color(0xffb7a3ff),
+    primaryForeground: Color(0xff1a1026),
+    primaryContainer: Color(0xff312c40),
+    border: Color(0xff363840),
+    borderSubtle: Color(0xff2b2c35),
     success: PlayraColors.success,
     successContainer: PlayraColors.successContainer,
     warning: PlayraColors.warning,
@@ -205,19 +211,19 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
   );
 
   static const light = PlayraTokens(
-    background: Color(0xfff7f8fc),
-    foreground: Color(0xff22293c),
+    background: Color(0xfff8f8fa),
+    foreground: Color(0xff16121f),
     surface: Colors.white,
-    surfaceRaised: Color(0xfff0f3fa),
-    surfaceOverlay: Color(0xffe8ecf6),
-    muted: Color(0xffe9edfb),
-    mutedForeground: Color(0xff647087),
-    foregroundSubtle: Color(0xff939eb5),
-    primary: Color(0xff5267d9),
+    surfaceRaised: Color(0xfff0f0f3),
+    surfaceOverlay: Color(0xffeae3f5),
+    muted: Color(0xffe4ddf0),
+    mutedForeground: Color(0xff62636d),
+    foregroundSubtle: Color(0xff62636d),
+    primary: Color(0xff9966ff),
     primaryForeground: Colors.white,
-    primaryContainer: Color(0xffe0e6ff),
-    border: Color(0xffe3e7f0),
-    borderSubtle: Color(0xffedf0f7),
+    primaryContainer: Color(0xffede4ff),
+    border: Color(0xffd8d9df),
+    borderSubtle: Color(0xffe6def3),
     success: Color(0xff16a34a),
     successContainer: Color(0xffdcfce7),
     warning: Color(0xffd97706),
@@ -348,7 +354,7 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
     surfaceRaised: surfaceRaised ?? this.surfaceRaised,
     surfaceOverlay: surfaceOverlay ?? this.surfaceOverlay,
     muted: muted ?? this.muted,
-    mutedForeground: mutedForeground ?? this.mutedForeground,
+    mutedForeground: foregroundMuted ?? mutedForeground ?? this.mutedForeground,
     foregroundSubtle: foregroundSubtle ?? this.foregroundSubtle,
     primary: primary ?? this.primary,
     primaryForeground: primaryForeground ?? this.primaryForeground,
@@ -387,20 +393,36 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
       surfaceOverlay: Color.lerp(surfaceOverlay, other.surfaceOverlay, t)!,
       muted: Color.lerp(muted, other.muted, t)!,
       mutedForeground: Color.lerp(mutedForeground, other.mutedForeground, t)!,
-      foregroundSubtle: Color.lerp(foregroundSubtle, other.foregroundSubtle, t)!,
+      foregroundSubtle: Color.lerp(
+        foregroundSubtle,
+        other.foregroundSubtle,
+        t,
+      )!,
       primary: Color.lerp(primary, other.primary, t)!,
       primaryForeground: Color.lerp(
         primaryForeground,
         other.primaryForeground,
         t,
       )!,
-      primaryContainer: Color.lerp(primaryContainer, other.primaryContainer, t)!,
+      primaryContainer: Color.lerp(
+        primaryContainer,
+        other.primaryContainer,
+        t,
+      )!,
       border: Color.lerp(border, other.border, t)!,
       borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
       success: Color.lerp(success, other.success, t)!,
-      successContainer: Color.lerp(successContainer, other.successContainer, t)!,
+      successContainer: Color.lerp(
+        successContainer,
+        other.successContainer,
+        t,
+      )!,
       warning: Color.lerp(warning, other.warning, t)!,
-      warningContainer: Color.lerp(warningContainer, other.warningContainer, t)!,
+      warningContainer: Color.lerp(
+        warningContainer,
+        other.warningContainer,
+        t,
+      )!,
       destructive: Color.lerp(destructive, other.destructive, t)!,
       destructiveContainer: Color.lerp(
         destructiveContainer,
@@ -418,7 +440,11 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
       onHold: Color.lerp(onHold, other.onHold, t)!,
       abandoned: Color.lerp(abandoned, other.abandoned, t)!,
       shimmerBase: Color.lerp(shimmerBase, other.shimmerBase, t)!,
-      shimmerHighlight: Color.lerp(shimmerHighlight, other.shimmerHighlight, t)!,
+      shimmerHighlight: Color.lerp(
+        shimmerHighlight,
+        other.shimmerHighlight,
+        t,
+      )!,
       modern: t < .5 ? modern : other.modern,
     );
   }

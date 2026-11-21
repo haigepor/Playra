@@ -178,8 +178,12 @@ class PlayraButton extends StatelessWidget with PlayraForuiComponent {
 
     final (bgColor, fgColor, borderColor, boxShadow) = switch (kind) {
       PlayraButtonKind.primary => (
-        isEnabled ? colors.primary : colors.primary.withValues(alpha: 0.45),
-        Colors.white,
+        isEnabled
+            ? colors.primary
+            : tokens.surfaceRaised.withValues(alpha: 0.60),
+        isEnabled
+            ? tokens.primaryForeground
+            : tokens.mutedForeground.withValues(alpha: 0.65),
         null,
         isEnabled
             ? [
@@ -1156,7 +1160,7 @@ class PlayraBadge extends StatelessWidget with PlayraForuiComponent {
       PlayraBadgeKind.primary => (tokens.primary, tokens.primaryForeground, null),
       PlayraBadgeKind.secondary => (tokens.surfaceRaised, tokens.foreground, tokens.borderSubtle),
       PlayraBadgeKind.outline => (Colors.transparent, tokens.foreground, tokens.borderSubtle),
-      PlayraBadgeKind.destructive => (tokens.destructive, tokens.destructiveContainer, null),
+      PlayraBadgeKind.destructive => (tokens.destructive, Colors.white, null),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

@@ -41,7 +41,10 @@ class PlayerItem extends StatefulWidget {
     required this.videoPageController,
     required this.fillsWindow,
     this.onToggleSidePanel,
+    this.episodePanelOpen = false,
     required this.changeEpisode,
+    required this.onEpisodeEnded,
+    this.resolvingLabel,
     required this.onBackPressed,
     required this.keyboardFocus,
     required this.pauseForTimedShutdown,
@@ -51,9 +54,12 @@ class PlayerItem extends StatefulWidget {
   final PlayerController playerController;
   final PlaybackSession videoPageController;
   final bool fillsWindow;
+  final bool episodePanelOpen;
   final VoidCallback? onToggleSidePanel;
   final Future<void> Function(int episode, {int currentRoad, int offset})
   changeEpisode;
+  final VoidCallback onEpisodeEnded;
+  final String? resolvingLabel;
   final VoidCallback onBackPressed;
   final FocusNode keyboardFocus;
   final bool disableAnimations;
@@ -70,17 +76,14 @@ class _PlayerItemState extends State<PlayerItem>
         TickerProviderStateMixin,
         KazumiDialogOwner {
   late final PlayerController playerController;
-  late final PlaybackSession videoPageController =
-      widget.videoPageController;
+  late final PlaybackSession videoPageController = widget.videoPageController;
   AudioController get _audioController => playerController.audioController;
   late final Map<String, PlayerShortcutAction> keyboardActions;
   late final Map<String, PlayerLongPressShortcutActions>
   keyboardLongPressActions;
 
-
   final _videoSurfaceKey = GlobalKey();
 
-  late bool autoPlayNext;
   late bool backgroundPlayback;
   late bool brightnessVolumeGesture;
 
@@ -89,6 +92,7 @@ class _PlayerItemState extends State<PlayerItem>
 
   Timer? hideTimer;
   Timer? playerTimer;
+  PlaybackEpisodeSelection? _handledEnd;
   Timer? mouseScrollerTimer;
   Timer? _adjustmentHudHideTimer;
   final Set<PlayerPanelHold> _playerPanelHolds = <PlayerPanelHold>{};
@@ -104,6 +108,7 @@ class _PlayerItemState extends State<PlayerItem>
       playerController.screenshots;
   bool _screenshotSheetOpen = false;
 
+  double? _speedBeforeTouch;
   double lastPlayerSpeed = 1.0;
   late double longPressPlaySpeed;
   bool? _lastPipPlaying;
@@ -139,8 +144,7 @@ class _PlayerItemState extends State<PlayerItem>
       await playerController.playback.setPrefetchSuspended(false);
     }
     try {
-      if (playerController.playback.playerPlaying) {
-      }
+      if (playerController.playback.playerPlaying) {}
     } catch (_) {}
   }
 
@@ -358,11 +362,6 @@ class _PlayerItemState extends State<PlayerItem>
   void _disposePlayerMenu() {
     unawaited(PlayerMenuService.dispose());
   }
-
-  /// 竖屏全屏时垂直滑动交给页式切集（PageView），PlayerItem 不再注册
-  /// 垂直识别器，避免抢走手势仲裁；横屏与窗口模式维持亮度/音量手势。
-  bool get _isPortraitFullscreen =>
-      videoPageController.fullscreen.mode == VideoFullscreenMode.portrait;
 
   Future<void> handlePreNextEpisode(String direction) async {
     if (videoPageController.loading) return;
@@ -614,18 +613,42 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void _handleFullscreenChange() async {
-    playerController.panel.lockPanel = false;
+    _endTouchSpeed();
     _releasePlayerPanelHolds();
     _scheduleAndroidPIPSourceRectSync();
   }
 
+  void _endTouchSpeed() {
+    final original = _speedBeforeTouch;
+    if (original == null) return;
+    _speedBeforeTouch = null;
+    playerController.panel.showPlaySpeed = false;
+    unawaited(setPlaybackSpeed(original));
+  }
+
+  void _toggleLock() {
+    final panel = playerController.panel;
+    _endTouchSpeed();
+    if (playerController.seeking.hasActiveInteractiveSeek) {
+      unawaited(_finishInteractiveSeek(cancelled: true));
+    }
+    _finishAdjustmentGesture();
+    panel.showSeekTime = false;
+    panel.showBrightness = false;
+    panel.showVolume = false;
+    panel.lockPanel = !panel.lockPanel;
+    showVideoController();
+  }
+
   void handleProgressBarDragStart() {
     _beginInteractiveSeek();
+    playerController.panel.showSeekTime = true;
     _syncAudioServiceState();
     _progressBarDragHold = acquirePlayerPanelHold();
   }
 
   Future<void> handleProgressBarSeek(Duration duration) async {
+    playerController.panel.showSeekTime = false;
     if (!playerController.seeking.updateInteractiveSeek(duration)) {
       await playerController.seek(duration);
       return;
@@ -1095,30 +1118,15 @@ class _PlayerItemState extends State<PlayerItem>
         });
       }
       final playingSelection = videoPageController.playbackEpisode;
-      final playingRoadData =
-          videoPageController.roadList[playingSelection.road];
-      if (playerController.playback.completed && !videoPageController.loading) {
+      if (!playerController.playback.completed) {
+        _handledEnd = null;
+      } else if (!videoPageController.loading &&
+          _handledEnd != playingSelection) {
+        _handledEnd = playingSelection;
         if (playerController.playback.resumedNearEnd) {
-          // Replay stale near-end resumes instead of advancing to the next episode.
           unawaited(playerController.playback.restartFromBeginning());
-        } else if (playingSelection.episode < playingRoadData.data.length &&
-            autoPlayNext) {
-          final nextSelection = PlaybackEpisodeSelection(
-            episode: playingSelection.episode + 1,
-            road: playingSelection.road,
-          );
-          // Let the controller report resolution failures without retrying every tick.
-          final nextRef = videoPageController.resolveEpisode(nextSelection);
-          if (nextRef != null) {
-            KazumiDialog.showToast(message: '正在加载${nextRef.displayTitle}');
-          }
-          try {
-            playerTimer!.cancel();
-          } catch (_) {}
-          widget.changeEpisode(
-            playingSelection.episode + 1,
-            currentRoad: playingSelection.road,
-          );
+        } else {
+          widget.onEpisodeEnded();
         }
       }
     });
@@ -1183,7 +1191,6 @@ class _PlayerItemState extends State<PlayerItem>
       parent: _screenshotFeedbackController,
       curve: Curves.linear,
     );
-    autoPlayNext = GStorage.getSetting(SettingsKeys.autoPlayNext);
     backgroundPlayback = GStorage.getSetting(SettingsKeys.backgroundPlayback);
     brightnessVolumeGesture = GStorage.getSetting(
       SettingsKeys.brightnessVolumeGesture,
@@ -1275,8 +1282,10 @@ class _PlayerItemState extends State<PlayerItem>
                 }
               },
               child: Listener(
+                onPointerCancel: (_) => _endTouchSpeed(),
                 onPointerSignal: (pointerSignal) {
-                  if (pointerSignal is PointerScrollEvent) {
+                  if (!playerController.panel.lockPanel &&
+                      pointerSignal is PointerScrollEvent) {
                     _handleMouseScroller();
                     final scrollDelta = pointerSignal.scrollDelta;
                     final double volume =
@@ -1292,7 +1301,9 @@ class _PlayerItemState extends State<PlayerItem>
                         focusScopeNode: widget.keyboardFocus,
                         actions: keyboardActions,
                         longPressActions: keyboardLongPressActions,
-                        isBlocked: () => _openPlayerMenuCount > 0,
+                        isBlocked: () =>
+                            _openPlayerMenuCount > 0 ||
+                            playerController.panel.lockPanel,
                       ),
                       Center(
                         key: _videoSurfaceKey,
@@ -1305,6 +1316,7 @@ class _PlayerItemState extends State<PlayerItem>
                           player: playerController.playback.mediaPlayer,
                           buffering: playerController.playback.isBuffering,
                           resolving: videoPageController.loading,
+                          resolvingLabel: widget.resolvingLabel,
                         ),
                       ),
                       GestureDetector(
@@ -1334,25 +1346,14 @@ class _PlayerItemState extends State<PlayerItem>
                                 _lastTapPointerKind = null;
                               },
                         onLongPressStart: (_) {
-                          if (playerController.panel.lockPanel) {
-                            return;
-                          }
-                          setState(() {
-                            playerController.panel.showPlaySpeed = true;
-                          });
-                          lastPlayerSpeed =
+                          if (playerController.panel.lockPanel) return;
+                          _speedBeforeTouch =
                               playerController.playback.playerSpeed;
-                          setPlaybackSpeed(longPressPlaySpeed);
+                          playerController.panel.showPlaySpeed = true;
+                          unawaited(setPlaybackSpeed(longPressPlaySpeed));
                         },
-                        onLongPressEnd: (_) {
-                          if (playerController.panel.lockPanel) {
-                            return;
-                          }
-                          setState(() {
-                            playerController.panel.showPlaySpeed = false;
-                          });
-                          setPlaybackSpeed(lastPlayerSpeed);
-                        },
+                        onLongPressEnd: (_) => _endTouchSpeed(),
+                        onLongPressCancel: _endTouchSpeed,
                         child: Container(
                           color: Colors.transparent,
                           width: double.infinity,
@@ -1364,41 +1365,6 @@ class _PlayerItemState extends State<PlayerItem>
                           animation: _screenshotFeedbackAnimation,
                         ),
                       ),
-                      (Platform.isAndroid &&
-                              (videoPageController.isPip || _pipEnterRequested))
-                          ? const SizedBox.shrink()
-                          : PlayerItemPanel(
-                              fillsWindow: widget.fillsWindow,
-                              playerController: playerController,
-                              videoPageController: videoPageController,
-                              onBackPressed: widget.onBackPressed,
-                              setPlaybackSpeed: setPlaybackSpeed,
-                              onToggleSidePanel: widget.onToggleSidePanel,
-                              handleFullscreen: handleFullscreen,
-                              handlePortraitFullscreen:
-                                  handlePortraitFullscreen,
-                              enterAndroidPictureInPicture:
-                                  enterAndroidPictureInPicture,
-                              handleProgressBarDragStart:
-                                  handleProgressBarDragStart,
-                              handleProgressBarSeek: handleProgressBarSeek,
-                              handleSuperResolutionChange:
-                                  handleSuperResolutionChange,
-                              onNextEpisode: () => handlePreNextEpisode('next'),
-                              panelVisibilityController:
-                                  _panelVisibilityController,
-                              keyboardFocus: widget.keyboardFocus,
-                              acquirePlayerPanelHold: acquirePlayerPanelHold,
-                              onMenuVisibilityChanged:
-                                  _handlePlayerMenuVisibilityChanged,
-                              pauseForTimedShutdown:
-                                  widget.pauseForTimedShutdown,
-                              disableAnimations: widget.disableAnimations,
-                              handleScreenShot: handleScreenshot,
-                              showScreenshotCandidates:
-                                  showScreenshotCandidates,
-                              skipOP: skipOP,
-                            ),
                       Positioned.fill(
                         left: 16,
                         top: 25,
@@ -1444,82 +1410,149 @@ class _PlayerItemState extends State<PlayerItem>
                                     ),
                                   );
                                 },
-                                onVerticalDragUpdate:
-                                    _isPortraitFullscreen
+                                onAdjust: !brightnessVolumeGesture
                                     ? null
-                                    : (DragUpdateDetails details) async {
-                                      if (!brightnessVolumeGesture) {
-                                        return;
-                                      }
-                                      final double totalWidth =
-                                          MediaQuery.sizeOf(context).width;
-                                      final double totalHeight =
-                                          MediaQuery.sizeOf(context).height;
-                                      final double tapPosition =
-                                          details.localPosition.dx;
-                                      final double sectionWidth =
-                                          totalWidth / 2;
-                                      final double delta = details.delta.dy;
-
-                                      if (tapPosition < sectionWidth) {
-                                        playerController
-                                                .panel
-                                                .brightnessSeeking =
-                                            true;
-                                        _showBrightnessAdjustmentHud();
-                                        final double level = (totalHeight) * 2;
-                                        final double brightness =
-                                            playerController.panel.brightness -
-                                            delta / level;
-                                        final double result = brightness.clamp(
-                                          0.0,
-                                          1.0,
-                                        );
-                                        setBrightness(result);
-                                        playerController.panel.brightness =
-                                            result;
-                                      } else {
-                                        _showVolumeAdjustmentHud();
-                                        if (!playerController
-                                            .panel
-                                            .volumeSeeking) {
-                                          playerController.panel.volumeSeeking =
-                                              true;
-                                          playerController.playback
-                                              .invalidatePreciseVolume();
+                                    : (left, fraction) {
+                                        final panel = playerController.panel;
+                                        if (left) {
+                                          panel.brightnessSeeking = true;
+                                          _showBrightnessAdjustmentHud();
+                                          final value =
+                                              (panel.brightness - fraction)
+                                                  .clamp(0.0, 1.0);
+                                          panel.brightness = value;
+                                          unawaited(setBrightness(value));
+                                        } else {
+                                          _showVolumeAdjustmentHud();
+                                          if (!panel.volumeSeeking) {
+                                            panel.volumeSeeking = true;
+                                            playerController.playback
+                                                .invalidatePreciseVolume();
+                                          }
+                                          final playback =
+                                              playerController.playback;
+                                          final base =
+                                              playback.preciseVolume >= 0
+                                              ? playback.preciseVolume
+                                              : playback.volume;
+                                          playerController
+                                              .setVolumeDuringGesture(
+                                                base - fraction * 100,
+                                              );
                                         }
-                                        final double baseVolume =
-                                            playerController
-                                                    .playback
-                                                    .preciseVolume >=
-                                                0
-                                            ? playerController
-                                                  .playback
-                                                  .preciseVolume
-                                            : playerController.playback.volume;
-                                        final double level =
-                                            (totalHeight) * 0.03;
-                                        final double volume =
-                                            baseVolume - delta / level;
-                                        playerController.setVolumeDuringGesture(
-                                          volume,
-                                        );
-                                      }
-                                    },
-                                onVerticalDragEnd:
-                                    _isPortraitFullscreen
-                                    ? null
-                                    : (_) {
-                                      _finishAdjustmentGesture();
-                                    },
-                                onVerticalDragCancel:
-                                    _isPortraitFullscreen
-                                    ? null
-                                    : () {
-                                      _finishAdjustmentGesture();
-                                    },
+                                      },
+                                onAdjustmentEnd: _finishAdjustmentGesture,
                               ),
                       ),
+                      widget.episodePanelOpen ||
+                              (Platform.isAndroid &&
+                                  (videoPageController.isPip ||
+                                      _pipEnterRequested))
+                          ? const SizedBox.shrink()
+                          : PlayerItemPanel(
+                              fillsWindow: widget.fillsWindow,
+                              playerController: playerController,
+                              videoPageController: videoPageController,
+                              onBackPressed: widget.onBackPressed,
+                              setPlaybackSpeed: setPlaybackSpeed,
+                              onToggleSidePanel: widget.onToggleSidePanel,
+                              handleFullscreen: handleFullscreen,
+                              handlePortraitFullscreen:
+                                  handlePortraitFullscreen,
+                              enterAndroidPictureInPicture:
+                                  enterAndroidPictureInPicture,
+                              handleProgressBarDragStart:
+                                  handleProgressBarDragStart,
+                              handleProgressBarSeek: handleProgressBarSeek,
+                              handleSuperResolutionChange:
+                                  handleSuperResolutionChange,
+                              onToggleLock: _toggleLock,
+                              onNextEpisode: () => handlePreNextEpisode('next'),
+                              panelVisibilityController:
+                                  _panelVisibilityController,
+                              keyboardFocus: widget.keyboardFocus,
+                              acquirePlayerPanelHold: acquirePlayerPanelHold,
+                              onMenuVisibilityChanged:
+                                  _handlePlayerMenuVisibilityChanged,
+                              pauseForTimedShutdown:
+                                  widget.pauseForTimedShutdown,
+                              disableAnimations: widget.disableAnimations,
+                              handleScreenShot: handleScreenshot,
+                              showScreenshotCandidates:
+                                  showScreenshotCandidates,
+                              skipOP: skipOP,
+                            ),
+                      if (playerController.panel.lockPanel &&
+                          !widget.episodePanelOpen &&
+                          !videoPageController.isPip)
+                        Positioned.fill(
+                          child: Stack(
+                            alignment: Alignment.centerRight,
+                            children: [
+                              Positioned.fill(
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  excludeFromSemantics: true,
+                                  onTap: showVideoController,
+                                ),
+                              ),
+                              if (playerController.panel.showVideoController ||
+                                  !playerController.playback.playing)
+                                SafeArea(
+                                  top: false,
+                                  bottom: false,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    child: Semantics(
+                                      button: true,
+                                      label: '长按解锁',
+                                      onTap: _toggleLock,
+                                      child: ExcludeSemantics(
+                                        child: Material(
+                                          color: const Color(0xe817171d),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: InkWell(
+                                            onTapDown: (_) =>
+                                                showVideoController(),
+                                            onLongPress: _toggleLock,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            child: const Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 14,
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.lock_outline_rounded,
+                                                    color: Colors.white,
+                                                    size: 18,
+                                                  ),
+                                                  SizedBox(width: 6),
+                                                  Text(
+                                                    '长按解锁',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),

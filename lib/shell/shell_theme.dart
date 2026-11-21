@@ -6,22 +6,24 @@ ThemeData buildShellTheme(Brightness brightness) {
   final t = brightness == Brightness.dark
       ? PlayraTokens.dark
       : PlayraTokens.light;
-  final scheme = ColorScheme.fromSeed(
-    seedColor: t.primary,
-    brightness: brightness,
-  ).copyWith(
-    primary: t.primary,
-    onPrimary: t.primaryForeground,
-    secondary: t.primary,
-    onSecondary: t.primaryForeground,
-    surface: t.background,
-    onSurface: t.foreground,
-    surfaceContainer: t.surface,
-    surfaceContainerHigh: t.surfaceRaised,
-    surfaceContainerLow: t.surfaceOverlay,
-    error: t.destructive,
-    outline: t.border,
-  );
+  final scheme =
+      ColorScheme.fromSeed(
+        seedColor: t.primary,
+        brightness: brightness,
+      ).copyWith(
+        primary: t.primary,
+        onPrimary: t.primaryForeground,
+        secondary: t.primary,
+        onSecondary: t.primaryForeground,
+        surface: t.background,
+        onSurface: t.foreground,
+        surfaceContainerLow: t.surface,
+        surfaceContainer: t.surface,
+        surfaceContainerHigh: t.surfaceRaised,
+        surfaceContainerHighest: t.surfaceOverlay,
+        error: t.destructive,
+        outline: t.border,
+      );
   final base = ThemeData(
     useMaterial3: true,
     brightness: brightness,
@@ -40,11 +42,25 @@ ThemeData buildShellTheme(Brightness brightness) {
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: t.surface,
-      indicatorColor: t.primaryContainer,
+      // 扁平导航：只有图标/文字换色，没有背景胶囊。
+      indicatorColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
-      labelTextStyle: WidgetStatePropertyAll(
-        base.textTheme.labelSmall?.copyWith(color: t.mutedForeground),
-      ),
+      height: 68,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return base.textTheme.labelSmall?.copyWith(
+          color: selected ? t.primary : t.mutedForeground,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        );
+      }),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return IconThemeData(
+          color: selected ? t.primary : t.mutedForeground,
+          size: 24,
+        );
+      }),
     ),
     cardTheme: CardThemeData(
       color: t.surface,

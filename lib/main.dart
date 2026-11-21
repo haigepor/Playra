@@ -1,3 +1,7 @@
+import 'package:kazumi/presentation/widgets/playra_page_state.dart';
+import 'package:kazumi/shell/shell_theme.dart';
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +10,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kazumi/app_module.dart';
 import 'package:kazumi/app_widget.dart';
+import 'package:kazumi/features/sources/sources.dart';
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/metered_network_service.dart';
@@ -73,6 +78,9 @@ void main() async {
   await MeteredNetworkService.refresh();
   ProxyManager.applyProxy();
 
+  bootstrapMediaSources();
+  unawaited(mediaSources.primary?.warmUp());
+
   // 播放器超分辨率着色器需要先落到应用数据目录。
   await ShaderAssetService().copyShadersToExternalDirectory();
 
@@ -98,14 +106,13 @@ class _StartupFailureApp extends StatelessWidget {
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: const [Locale('zh', 'CN')],
       locale: const Locale('zh', 'CN'),
+      theme: buildShellTheme(Brightness.dark),
       home: const Scaffold(
-        body: Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              '应用初始化失败。请确认存储权限后重新启动。',
-              textAlign: TextAlign.center,
-            ),
+        body: SafeArea(
+          child: PlayraPageState(
+            icon: Icons.folder_off_outlined,
+            title: '本地存储不可用',
+            description: '请检查设备存储空间后重新打开 Playra。',
           ),
         ),
       ),

@@ -1,23 +1,32 @@
 import 'dart:async';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kazumi/services/logging/logger.dart';
+import 'package:kazumi/services/storage/favorite_storage.dart';
+import 'package:kazumi/services/storage/history_storage.dart';
 import 'package:kazumi/services/storage/settings_keys.dart';
 
+export 'favorite_storage.dart';
+export 'history_storage.dart';
 export 'settings_keys.dart';
 
-/// 空壳项目的最小持久化入口。
+/// 统一本地持久化入口。
 ///
-/// 只保留设置 Box。收藏、历史、下载、搜索历史等业务 Box 随旧 schema 移除；
-/// 新业务需要持久化时在这里显式新增 Box，不要复用旧模型。
+/// 管理设置 (setting)、播放历史 (playback_history) 与收藏 (favorites) Box。
 class GStorage {
   static late Box<dynamic> _setting;
+  static late Box<dynamic> _history;
+  static late Box<dynamic> _favorites;
 
   static Future<void> init() async {
     _setting = await Hive.openBox<dynamic>('setting');
-    KazumiLogger().i('Storage: settings box opened');
+    _history = await Hive.openBox<dynamic>(HistoryStorage.boxName);
+    _favorites = await Hive.openBox<dynamic>(FavoriteStorage.boxName);
+    KazumiLogger().i('Storage: settings, history and favorites boxes opened');
   }
 
   static Box<dynamic> get settings => _setting;
+  static Box<dynamic> get history => _history;
+  static Box<dynamic> get favorites => _favorites;
 
   static T getSetting<T>(
     SettingKey<T> key, {
@@ -50,12 +59,17 @@ class GStorage {
 
   static Stream<void> watchSettings(List<SettingKey<dynamic>> keys) {
     final names = keys.map((key) => key.name).toSet();
-    return _setting.watch().where((event) => names.contains(event.key)).map(
-      (_) {},
-    );
+    return _setting
+        .watch()
+        .where((event) => names.contains(event.key))
+        .map((_) {});
   }
 
   static Future<void> close() async {
-    await _setting.close();
+    await Future.wait<void>([
+      _setting.close(),
+      _history.close(),
+      _favorites.close(),
+    ]);
   }
 }

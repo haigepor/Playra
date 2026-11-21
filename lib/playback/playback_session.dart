@@ -46,7 +46,8 @@ class PlaybackEpisodeSelection {
   int get hashCode => Object.hash(episode, road);
 
   @override
-  String toString() => 'PlaybackEpisodeSelection(episode: $episode, road: $road)';
+  String toString() =>
+      'PlaybackEpisodeSelection(episode: $episode, road: $road)';
 }
 
 class PlaybackResolvedEpisode {
@@ -104,7 +105,7 @@ class PlaybackSession {
   final Observable<String> _artwork = Observable('');
 
   String get title => _title.value;
-  set title(String value) => _title.value = value;
+  set title(String value) => runInAction(() => _title.value = value);
 
   List<PlaybackRoad> get roadList => _roads.value;
 
@@ -112,10 +113,10 @@ class PlaybackSession {
   PlaybackEpisodeSelection get playbackEpisode => _playing.value;
 
   bool get loading => _loading.value;
-  set loading(bool value) => _loading.value = value;
+  set loading(bool value) => runInAction(() => _loading.value = value);
 
   bool get isPip => _isPip.value;
-  set isPip(bool value) => _isPip.value = value;
+  set isPip(bool value) => runInAction(() => _isPip.value = value);
 
   bool get isFullscreen => fullscreen.isFullscreen;
 
@@ -124,7 +125,8 @@ class PlaybackSession {
   String get playbackMediaId => _mediaId.value;
   String get playbackArtwork => _artwork.value;
 
-  PlaybackEpisode? get currentEpisode => resolveEpisode(_playing.value)?.episode;
+  PlaybackEpisode? get currentEpisode =>
+      resolveEpisode(_playing.value)?.episode;
 
   String get src => currentEpisode?.url ?? '';
 
@@ -146,14 +148,16 @@ class PlaybackSession {
   /// 用户选择一集；真正起播由页面确认后调用 [markPlaying]。
   PlaybackEpisodeSelection selectEpisode(int episode, {int? road}) {
     final next = _clampSelection(episode, road ?? _selected.value.road);
-    _selected.value = next;
+    runInAction(() => _selected.value = next);
     return next;
   }
 
   void markPlaying(int episode, {int? road}) {
     final next = _clampSelection(episode, road ?? _playing.value.road);
-    _playing.value = next;
-    _selected.value = next;
+    runInAction(() {
+      _playing.value = next;
+      _selected.value = next;
+    });
   }
 
   PlaybackEpisodeSelection _clampSelection(int episode, int road) {

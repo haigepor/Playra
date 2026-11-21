@@ -145,8 +145,9 @@ class PlayerController {
 
   /// Describes [videoUrl], not the episode the page may still be resolving.
   String get mediaTitle {
-    final episode =
-        _episodeTitle.isNotEmpty ? _episodeTitle : '第 $currentEpisode 集';
+    final episode = _episodeTitle.isNotEmpty
+        ? _episodeTitle
+        : '第 $currentEpisode 集';
     return _workTitle.isEmpty ? episode : '$_workTitle · $episode';
   }
 
@@ -171,7 +172,8 @@ class PlayerController {
 
     playback.resetForInit();
     debug.playerLogLevel = GStorage.getSetting(SettingsKeys.playerLogLevel);
-    playback.playerSpeed = GStorage.getSetting(SettingsKeys.defaultPlaySpeed);
+    playback.playerSpeed =
+        params.speed ?? GStorage.getSetting(SettingsKeys.defaultPlaySpeed);
     panel.aspectRatioMode = PlayerAspectRatio.fromStorageValue(
       GStorage.getSetting(SettingsKeys.defaultAspectRatioType),
     );
@@ -193,6 +195,7 @@ class PlayerController {
         params.httpHeaders,
         canInstall: () => initialization.isActive,
         offset: params.offset,
+        playWhenReady: params.playWhenReady,
         videoSourceFormat: params.videoSourceFormat,
         decryptionKey: params.decryptionKey,
       );

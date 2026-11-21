@@ -25,10 +25,10 @@ class PlayerSeekController {
     required Future<void> Function({bool enableSync}) pause,
     required Future<void> Function({bool enableSync}) play,
     required Future<void> Function(bool enableSync) onSeekCompleted,
-  })  : _playback = playback,
-        _pause = pause,
-        _play = play,
-        _onSeekCompleted = onSeekCompleted;
+  }) : _playback = playback,
+       _pause = pause,
+       _play = play,
+       _onSeekCompleted = onSeekCompleted;
 
   final PlayerPlaybackController _playback;
   final Future<void> Function({bool enableSync}) _pause;
@@ -40,10 +40,7 @@ class PlayerSeekController {
 
   bool get hasActiveInteractiveSeek => _interactiveSession != null;
 
-  Future<void> seekTo(
-    Duration target, {
-    bool enableSync = true,
-  }) {
+  Future<void> seekTo(Duration target, {bool enableSync = true}) {
     final player = _playback.mediaPlayer;
     if (player == null) {
       return Future<void>.value();
@@ -68,20 +65,16 @@ class PlayerSeekController {
         await _onSeekCompleted(enableSync);
       } catch (e) {
         // Callers often drop this future; it must not complete with an error.
-        KazumiLogger()
-            .w('PlayerSeekController: seek completion failed', error: e);
+        KazumiLogger().w(
+          'PlayerSeekController: seek completion failed',
+          error: e,
+        );
       }
     });
   }
 
-  Future<void> seekBy(
-    Duration offset, {
-    bool enableSync = true,
-  }) =>
-      seekTo(
-        _playback.currentPosition + offset,
-        enableSync: enableSync,
-      );
+  Future<void> seekBy(Duration offset, {bool enableSync = true}) =>
+      seekTo(_playback.currentPosition + offset, enableSync: enableSync);
 
   void beginInteractiveSeek() {
     final initialPosition = _playback.currentPosition;
@@ -114,8 +107,10 @@ class PlayerSeekController {
     if (session == null) {
       return Future<bool>.value(false);
     }
-    return session.completion ??=
-        _finishInteractiveSeek(session, cancelled: cancelled);
+    return session.completion ??= _finishInteractiveSeek(
+      session,
+      cancelled: cancelled,
+    );
   }
 
   void invalidateInteractiveSeek() {
@@ -144,7 +139,7 @@ class PlayerSeekController {
           return false;
         }
       }
-      if (!cancelled || session.wasPlaying) {
+      if (session.wasPlaying) {
         await _play(enableSync: false);
       }
       return _isCurrent(session);

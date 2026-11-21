@@ -170,7 +170,7 @@ class SettingsKeys {
   // 主题与界面
   static const themeMode = SettingKey<String>(
     'themeMode',
-    'system',
+    'dark',
     group: SettingGroup.theme,
   );
   static const themeColor = SettingKey<String>(
