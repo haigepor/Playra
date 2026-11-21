@@ -1,0 +1,45 @@
+name: Playra Android APK
+on:
+  push:
+    branches: [main]
+    tags: ['playra/v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: playra-android-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  android:
+    if: github.repository == 'haigepor/Playra'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check CliCli public Android configuration
+        env:
+          CLICLI_PUBLIC_CLIENT_ID: ${{ vars.CLICLI_PUBLIC_CLIENT_ID }}
+          CLICLI_PUBLIC_SERVICE_URL: ${{ vars.CLICLI_PUBLIC_SERVICE_URL }}
+        run: python3 tool/prepare_android_public_config.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2.16.0
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: flutter pub get
+      - run: flutter test --no-pub
+      - name: Build Android ARM64 release APK
+        run: flutter build apk --release --target-platform android-arm64
+      - name: Verify packaged public configuration
+        run: |
+          unzip -p build/app/outputs/flutter-apk/app-release.apk assets/playra/clicli-public.json |
+            cmp - android/app/src/release/assets/playra/clicli-public.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playra-android-arm64-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error

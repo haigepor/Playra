@@ -59,6 +59,21 @@ Android 构建：
 
 产物位于 `build/app/outputs/flutter-apk/app-debug.apk`。
 
+### GitHub Actions 的 Android 验证包
+
+在仓库的 **Settings → Secrets and variables → Actions → Variables** 设置以下两个仓库变量。它们是 Playra 预留的公开客户端参数，填写前需与提供方的正式接入文档核对。
+
+| 变量 | 填写内容 |
+| --- | --- |
+| `CLICLI_PUBLIC_CLIENT_ID` | 提供方为 Playra Android 分配、允许随应用分发的公开客户端标识 |
+| `CLICLI_PUBLIC_SERVICE_URL` | 正式服务或自有授权网关的 HTTPS 基础地址，不含账号密码、查询串和片段 |
+
+推送到 `main` 或推送 `playra/v*` 标签会触发 **Playra Android APK**。配置补齐后，可在 **Actions → Playra Android APK → Run workflow** 选择 `main` 重新验证。Android 作业会先列出缺失的变量，配置完整后运行 Flutter 测试、构建 ARM64 release APK，并核对包内的 `assets/playra/clicli-public.json`。成功后从 `playra-android-arm64-<提交 SHA>` 下载 APK。Web 作业独立运行。
+
+该 JSON 是供后续授权适配器读取的发布配置，包内可见。正式接入还需要提供方给出设备注册或匿名会话流程、浏览和播放接口，以及账号或播放权限要求。服务端密钥留在服务端。当前 CI 使用项目已有的测试签名回退；如果提供方绑定包名和签名证书，还需为 `com.predidit.kazumi` 配置固定的签名证书并登记指纹。
+
+验收时在干净的 ARM64 Android 设备上首次安装，检查首页能加载真实片单、详情能列出剧集，点播后出现首帧并持续播放。记录所测 APK 的提交 SHA。
+
 ## 目录
 
 ```text

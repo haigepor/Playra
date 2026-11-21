@@ -63,6 +63,7 @@ android/build/reports/problems/
 .env
 .env.*
 !.env.example
+/android/app/src/release/assets/playra/clicli-public.json
 **/*device-state*.json
 **/*device-identity*.json
 
