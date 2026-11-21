@@ -20,7 +20,7 @@ import 'package:kazumi/services/player/playback_cache_policy.dart';
 import 'package:kazumi/services/player/player_error_mapper.dart';
 import 'package:kazumi/services/player/playback_start_position.dart';
 import 'package:kazumi/services/storage/storage.dart';
-import 'package:kazumi/services/video_source/video_source_format.dart';
+import 'package:kazumi/playback/video_source_format.dart';
 import 'package:kazumi/utils/async_serial_queue.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -284,8 +284,7 @@ abstract class _PlayerPlaybackController with Store {
   }
 
   Future<Player?> createVideoController(
-    Map<String, String> httpHeaders,
-    bool adBlockerEnabled, {
+    Map<String, String> httpHeaders, {
     required bool Function() canInstall,
     int offset = 0,
     VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
@@ -316,7 +315,7 @@ abstract class _PlayerPlaybackController with Store {
           bufferSize: cachePolicy.bufferSize,
           osc: false,
           logLevel: MPVLogLevel.values[debug.playerLogLevel],
-          adBlocker: adBlockerEnabled,
+          adBlocker: false,
         ),
       ),
     );

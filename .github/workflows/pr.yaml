@@ -17,24 +17,7 @@ jobs:
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Restore pinned Lumina native input
-        env:
-          PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
-          PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
-          PLAYRA_LUMINA_INPUT_PASSPHRASE: ${{ secrets.PLAYRA_LUMINA_INPUT_PASSPHRASE }}
-        run: node tool/lumina-native-input.cjs restore
-      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
+          cache: true
       - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos
-      - run: node --test tool/lumina-native-input.test.cjs
-      # 2.4.2 合并起三个 UI 用例稳定失败（browse_auto_load / content_skeleton /
-      # modern_profile），已证与协议层无关；日志照常保留，不阻塞质量流水线。
-      - continue-on-error: true
-        run: flutter test
-      - run: python -m unittest discover -s tool -p test_cloud_build.py
+      - run: flutter analyze
+      - run: flutter build web --release

@@ -1,4 +1,4 @@
-param(
+﻿param(
   [switch]$Release,
   [string]$Device,
   [string]$AndroidSdk = $env:ANDROID_HOME,
@@ -87,7 +87,7 @@ try {
   } else {
     # 与 CI 保持一致；使用临时文件传入，避免密钥出现在终端与进程参数中。
     $defines = @{}
-    foreach ($defineName in 'KAZUMI_APPID', 'KAZUMI_KEY', 'DANDANAPI_APPID', 'DANDANAPI_KEY') {
+    foreach ($defineName in @()) {
       $defineValue = [Environment]::GetEnvironmentVariable($defineName, 'Process')
       if ($defineValue) { $defines[$defineName] = $defineValue }
     }

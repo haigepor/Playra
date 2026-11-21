@@ -1,4 +1,3 @@
-import 'package:kazumi/pages/player/controller/player_danmaku_controller.dart';
 import 'package:kazumi/pages/player/controller/player_playback_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/async_serial_queue.dart';
@@ -23,18 +22,15 @@ class _InteractiveSeekSession {
 class PlayerSeekController {
   PlayerSeekController({
     required PlayerPlaybackController playback,
-    required PlayerDanmakuController danmaku,
     required Future<void> Function({bool enableSync}) pause,
     required Future<void> Function({bool enableSync}) play,
     required Future<void> Function(bool enableSync) onSeekCompleted,
   })  : _playback = playback,
-        _danmaku = danmaku,
         _pause = pause,
         _play = play,
         _onSeekCompleted = onSeekCompleted;
 
   final PlayerPlaybackController _playback;
-  final PlayerDanmakuController _danmaku;
   final Future<void> Function({bool enableSync}) _pause;
   final Future<void> Function({bool enableSync}) _play;
   final Future<void> Function(bool enableSync) _onSeekCompleted;
@@ -55,7 +51,6 @@ class PlayerSeekController {
 
     final normalizedTarget = _normalize(target);
     _playback.currentPosition = normalizedTarget;
-    _danmaku.clearAndInvalidateScheduledDanmakus();
 
     return _seekQueue.run(() async {
       if (!_playback.isCurrentPlayer(player)) {

@@ -3,55 +3,28 @@ import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/io_client.dart';
 import 'package:kazumi/services/logging/logger.dart';
-import 'package:kazumi/services/network/bangumi_ech_image_service.dart';
-import 'package:kazumi/services/network/image_acceleration.dart';
-import 'package:kazumi/services/network/image_file_service.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
 import 'package:kazumi/services/storage/storage.dart';
 
+/// 带系统/手动代理的图片缓存。空壳不包含任何来源镜像或 ECH 逻辑。
 class ProxyAwareImageCacheManager extends CacheManager with ImageCacheManager {
   static final ProxyAwareImageCacheManager instance =
-      ProxyAwareImageCacheManager._(
-        ImageFileService(
-          acceleration: () => ImageAcceleration.fromSetting(
-            GStorage.getSetting(SettingsKeys.imageAcceleration),
-          ),
-          clientFactory: _createHttpClient,
-          echService: BangumiEchImageService(proxyForUrl: _currentEchProxy),
+      ProxyAwareImageCacheManager._();
+
+  ProxyAwareImageCacheManager._()
+    : super(
+        Config(
+          DefaultCacheManager.key,
+          fileService: HttpFileService(httpClient: _createHttpClient()),
         ),
       );
 
-  ProxyAwareImageCacheManager._(this._fileService)
-    : super(Config(DefaultCacheManager.key, fileService: _fileService));
-
-  final ImageFileService _fileService;
-
-  void resetNetworkClients() => _fileService.resetNetworkClients();
-
-  @override
-  Future<void> dispose() async {
-    _fileService.close();
-    await super.dispose();
-  }
-
-  static Uri? _currentEchProxy(Uri uri) {
-    final proxy = _currentProxy();
-    if (proxy != null) {
-      return Uri(scheme: 'http', host: proxy.$1, port: proxy.$2);
-    }
-    if (Platform.isWindows) {
-      final systemProxy = SystemProxyService.findProxy(uri);
-      if (systemProxy.startsWith('PROXY ')) {
-        return Uri.parse('http://${systemProxy.substring(6)}');
-      }
-    }
-    return null;
-  }
+  /// 代理设置变更后由 ProxyManager 调用；新请求会复用最新客户端配置。
+  void resetNetworkClients() {}
 
   static IOClient _createHttpClient() {
     final client = HttpClient()
-      // 污染域名的 TCP/TLS 常表现为长时间挂起；限时后交给镜像回退。
       ..connectionTimeout = const Duration(seconds: 8);
     final proxy = _currentProxy();
     if (proxy != null) {

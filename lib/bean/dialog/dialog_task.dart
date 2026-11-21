@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:kazumi/bean/dialog/dialog.dart'
     show KazumiDialog, KazumiDialogHandle;
-import 'package:kazumi/bean/widget/loading_indicator.dart';
 
 mixin KazumiDialogOwner<T extends StatefulWidget> on State<T> {
   late final dialogs = KazumiDialogController(context: () => context)
@@ -226,7 +225,7 @@ class _LoadingDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const LoadingIndicator(),
+            const CircularProgressIndicator(),
             const SizedBox(height: 16),
             Text(message ?? 'Loading...', style: const TextStyle(fontSize: 16)),
           ],

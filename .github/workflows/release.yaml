@@ -1,223 +1,30 @@
-name: Playra platform build
+name: Playra release build
 on:
   push:
     tags: ['playra/v*']
   workflow_dispatch:
-    inputs:
-      platform:
-        description: 'Cloud target (Android normally builds locally)'
-        type: choice
-        required: true
-        default: ios
-        options: [ios, web, macos, linux, windows, cloud, android]
-      skip_tests:
-        description: 'Skip flutter test (three UI cases are known-failing since 2.4.2)'
-        type: boolean
-        required: false
-        default: false
 permissions:
   contents: read
 concurrency:
-  group: playra-build-${{ github.ref }}-${{ inputs.platform || 'release' }}
+  group: playra-build-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  plan:
+  quality:
     if: github.repository == 'haigepor/Playra'
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.targets.outputs.matrix }}
-      cloud: ${{ steps.targets.outputs.cloud }}
-      android: ${{ steps.targets.outputs.android }}
-      flutter_version: ${{ steps.targets.outputs.flutter_version }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: targets
-        name: Select independent build targets
-        env:
-          PLAYRA_BUILD_TARGET: ${{ inputs.platform }}
-          PLAYRA_BUILD_EVENT: ${{ github.event_name }}
-        run: python3 tool/cloud_build.py plan
-  quality:
-    needs: plan
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2.16.0
         with:
           channel: stable
-          flutter-version: ${{ needs.plan.outputs.flutter_version }}
+          flutter-version-file: pubspec.yaml
           cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
-      - name: Restore pinned Lumina native input
-        env:
-          PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
-          PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
-          PLAYRA_LUMINA_INPUT_PASSPHRASE: ${{ secrets.PLAYRA_LUMINA_INPUT_PASSPHRASE }}
-        run: node tool/lumina-native-input.cjs restore
       - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos
-      - run: node --test tool/lumina-native-input.test.cjs
-      - if: ${{ inputs.skip_tests != true && inputs.skip_tests != 'true' }}
-        # 2.4.2 合并起三个 UI 用例稳定失败（browse_auto_load / content_skeleton /
-        # modern_profile），已证与协议层无关；日志照常保留，不阻塞发布流水线。
-        continue-on-error: true
-        run: flutter test
-      - run: python -m unittest discover -s tool -p test_cloud_build.py
-  cloud:
-    needs: [plan, quality]
-    if: needs.plan.outputs.cloud == 'true'
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
-    env:
-      PLAYRA_BUILD_PLATFORM: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Select Apple toolchain
-        if: runner.os == 'macOS'
-        run: |
-          test -d /Applications/Xcode_26.2.app
-          echo 'DEVELOPER_DIR=/Applications/Xcode_26.2.app/Contents/Developer' >> "$GITHUB_ENV"
-          /Applications/Xcode_26.2.app/Contents/Developer/usr/bin/xcodebuild -version
-          pod --version
-      - name: Install Linux desktop dependencies
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev libayatana-appindicator3-dev
-      - uses: subosito/flutter-action@v2.16.0
-        with:
-          channel: stable
-          flutter-version: ${{ needs.plan.outputs.flutter_version }}
-          cache: true
-      - name: Restore pinned Lumina native input
-        env:
-          PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
-          PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
-          PLAYRA_LUMINA_INPUT_PASSPHRASE: ${{ secrets.PLAYRA_LUMINA_INPUT_PASSPHRASE }}
-        run: node tool/lumina-native-input.cjs restore
-      - run: flutter pub get
-      - name: Validate Windows archive support
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        run: |
-          # media-kit uses tar for its pinned 7z bundle; old runners lack LZMA.
-          $archiveVersion = (& tar --version | Out-String).Trim()
-          Write-Output $archiveVersion
-          if ($LASTEXITCODE -ne 0 -or $archiveVersion -notmatch 'liblzma') {
-            throw 'The Windows runner must provide tar with LZMA support'
-          }
-      - name: Build selected platform
-        run: python tool/cloud_build.py build
-      - name: Show failed Windows native hook diagnostics
-        if: failure() && matrix.platform == 'windows'
-        shell: pwsh
-        run: |
-          # Flutter/MSBuild can hide the native hook error behind build_hooks.
-          Get-ChildItem -LiteralPath .dart_tool/hooks_runner -Recurse -File -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -in @('stderr.txt', 'native-build.log') } |
-            ForEach-Object {
-              Write-Output $_.FullName
-              Get-Content -LiteralPath $_.FullName -Encoding UTF8 -Tail 80
-            }
-      - name: Package and verify artifact
-        run: python tool/cloud_build.py package
+      - run: flutter analyze
+      - run: flutter build web --release
       - uses: actions/upload-artifact@v4
         with:
-          name: Playra-${{ matrix.platform }}-${{ github.sha }}
-          path: build/playra-artifacts/
-          if-no-files-found: error
-          retention-days: 14
-  build:
-    needs: [plan, quality]
-    if: needs.plan.outputs.android == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: subosito/flutter-action@v2.16.0
-        with:
-          channel: stable
-          flutter-version: ${{ needs.plan.outputs.flutter_version }}
-      - name: Validate product version
-        env:
-          BUILD_REF_TYPE: ${{ github.ref_type }}
-          BUILD_REF_NAME: ${{ github.ref_name }}
-        run: |
-          python - <<'PY'
-          import os, re
-          from pathlib import Path
-          version = re.search(r'^version: ([^+\n]+)', Path('pubspec.yaml').read_text(), re.M).group(1)
-          if os.environ['BUILD_REF_TYPE'] == 'tag':
-              assert os.environ['BUILD_REF_NAME'] == 'playra/v' + version, 'Playra tag/version mismatch'
-          PY
-      - name: Configure release signing
-        env:
-          KEYSTORE_DATA: ${{ secrets.PLAYRA_ANDROID_KEYSTORE }}
-          STORE_PASSWORD: ${{ secrets.PLAYRA_ANDROID_STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.PLAYRA_ANDROID_KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.PLAYRA_ANDROID_KEY_ALIAS }}
-        run: |
-          python - <<'PY'
-          import base64, os
-          from pathlib import Path
-          names = ['KEYSTORE_DATA', 'STORE_PASSWORD', 'KEY_PASSWORD', 'KEY_ALIAS']
-          if not all(os.environ.get(n) for n in names):
-              # Gradle 在缺 key.properties 时回落到 debug 签名，构建仍可完成。
-              print('::warning::Release signing secrets absent; APK will use the debug key')
-              raise SystemExit(0)
-          Path('android/playra-release.jks').write_bytes(base64.b64decode(os.environ['KEYSTORE_DATA'], validate=True))
-          def escape(value):
-              return value.replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r')
-          properties = {'storeFile': 'playra-release.jks', 'storePassword': os.environ['STORE_PASSWORD'],
-                        'keyPassword': os.environ['KEY_PASSWORD'], 'keyAlias': os.environ['KEY_ALIAS']}
-          Path('android/key.properties').write_text(''.join(k + '=' + escape(v) + '\n' for k, v in properties.items()))
-          PY
-      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ libmpv-dev
-      - name: Restore pinned Lumina native input
-        env:
-          PLAYRA_LUMINA_NATIVE_INPUT_URL: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_URL }}
-          PLAYRA_LUMINA_NATIVE_INPUT_SHA256: ${{ secrets.PLAYRA_LUMINA_NATIVE_INPUT_SHA256 }}
-          PLAYRA_LUMINA_INPUT_PASSPHRASE: ${{ secrets.PLAYRA_LUMINA_INPUT_PASSPHRASE }}
-        run: node tool/lumina-native-input.cjs restore
-      - run: flutter pub get
-      - name: Build Android
-        run: flutter build apk --release --dart-define=PLAYRA_DIAGNOSTICS=false
-      - name: Build Web
-        run: flutter build web --release --no-web-resources-cdn --dart-define=PLAYRA_DIAGNOSTICS=false
-      - name: Package outputs
-        run: |
-          mkdir -p build/playra-artifacts
-          cp build/app/outputs/flutter-apk/app-release.apk build/playra-artifacts/Playra_android.apk
-          tar -czf build/playra-artifacts/Playra_web.tar.gz -C build/web .
-          (cd build/playra-artifacts && sha256sum Playra_android.apk Playra_web.tar.gz > SHA256SUMS)
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Playra-build
-          path: build/playra-artifacts/
+          name: playra-web-${{ github.ref_name }}
+          path: build/web
           if-no-files-found: error

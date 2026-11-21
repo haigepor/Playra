@@ -1,27 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:canvas_danmaku/models/danmaku_content_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/bean/widget/play_pause_icon.dart';
 import 'package:kazumi/pages/player/player_adjustment_hud.dart';
-import 'package:kazumi/pages/player/danmaku_destination_sheet.dart';
 import 'package:kazumi/pages/player/controller/player_aspect_ratio.dart';
 import 'package:kazumi/pages/player/controller/player_super_resolution.dart';
 import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/pages/player/player_panel_hold.dart';
 import 'package:kazumi/services/player/pip_utils.dart';
 import 'package:kazumi/services/platform/video_fullscreen_mode.dart';
-import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
+import 'package:kazumi/playback/playback_session.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/services/player/remote.dart';
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart' as dtb;
-import 'package:kazumi/pages/settings/danmaku/danmaku_settings_sheet.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:kazumi/services/player/timed_shutdown_service.dart';
@@ -38,7 +34,6 @@ class PlayerItemPanel extends StatefulWidget {
     required this.fillsWindow,
     required this.onBackPressed,
     required this.setPlaybackSpeed,
-    required this.showDanmakuSwitch,
     required this.handleFullscreen,
     required this.handlePortraitFullscreen,
     required this.enterAndroidPictureInPicture,
@@ -53,20 +48,16 @@ class PlayerItemPanel extends StatefulWidget {
     required this.keyboardFocus,
     required this.acquirePlayerPanelHold,
     required this.onMenuVisibilityChanged,
-    required this.handleDanmaku,
     required this.skipOP,
-    required this.showVideoInfo,
-    required this.showSyncPlayPanel,
     required this.pauseForTimedShutdown,
     this.disableAnimations = false,
   });
 
   final PlayerController playerController;
-  final VideoPageController videoPageController;
+  final PlaybackSession videoPageController;
   final bool fillsWindow;
   final VoidCallback onBackPressed;
   final Future<void> Function(double) setPlaybackSpeed;
-  final VoidCallback showDanmakuSwitch;
   final VoidCallback? onToggleSidePanel;
   final VoidCallback handleFullscreen;
   final VoidCallback handlePortraitFullscreen;
@@ -81,11 +72,8 @@ class PlayerItemPanel extends StatefulWidget {
   final FocusNode keyboardFocus;
   final PlayerPanelHold Function() acquirePlayerPanelHold;
   final ValueChanged<bool> onMenuVisibilityChanged;
-  final VoidCallback handleDanmaku;
   final VoidCallback onNextEpisode;
   final VoidCallback skipOP;
-  final VoidCallback showVideoInfo;
-  final VoidCallback showSyncPlayPanel;
   final VoidCallback pauseForTimedShutdown;
   final bool disableAnimations;
 
@@ -97,16 +85,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   late final Animation<Offset> _topOffsetAnimation;
   late final Animation<Offset> _bottomOffsetAnimation;
   late final Animation<Offset> _rightOffsetAnimation;
-  late final VideoPageController videoPageController =
+  late final PlaybackSession videoPageController =
       widget.videoPageController;
   late final PlayerController playerController;
   final TextEditingController textController = TextEditingController();
   final FocusNode textFieldFocus = FocusNode();
 
-  String? _cachedDanmakuColorHex;
-  late Widget _cachedDanmakuOnIcon;
-  late final Widget _cachedDanmakuOffIcon;
-  late final Widget _cachedDanmakuSettingsIcon;
 
   bool get _desktop => switch (defaultTargetPlatform) {
     TargetPlatform.windows ||
@@ -115,150 +99,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     _ => false,
   };
 
-  static const double _danmakuIconSize = 24.0;
-  static const double _loadingIndicatorStrokeWidth = 2.0;
 
   @override
   void dispose() {
     textController.dispose();
     textFieldFocus.dispose();
     super.dispose();
-  }
-
-  Future<void> _submitDanmakuText(String message) async {
-    textFieldFocus.unfocus();
-
-    if (message.trim().isEmpty) {
-      KazumiDialog.showToast(message: '弹幕内容为空');
-      return;
-    }
-
-    final destination = await showDanmakuDestinationSheet(context);
-    if (!mounted || destination == null) {
-      return;
-    }
-
-    widget.keyboardFocus.requestFocus();
-    if (playerController.danmaku.danDanmakus.isEmpty) {
-      KazumiDialog.showToast(message: '当前剧集不支持弹幕发送的说');
-      return;
-    }
-    if (message.length > 100) {
-      KazumiDialog.showToast(message: '弹幕内容过长');
-      return;
-    }
-
-    if (destination == DanmakuDestination.chatRoom) {
-      if (playerController.syncplay.syncplayRoom.isEmpty) {
-        KazumiDialog.showToast(message: '你还没有加入一起看，无法发送聊天室弹幕');
-        return;
-      }
-
-      final sender =
-          playerController.syncplay.syncplayController?.username ?? '我';
-      playerController.danmaku.canvasController.addDanmaku(
-        DanmakuContentItem(
-          '$sender：$message',
-          color: Colors.orange,
-          isColorful: true,
-          type: DanmakuItemType.bottom,
-          extra: DateTime.now().millisecondsSinceEpoch,
-        ),
-      );
-      unawaited(playerController.sendSyncPlayChatMessage(message));
-    } else {
-      // This provider has no send API; display a local echo.
-      playerController.danmaku.canvasController.addDanmaku(
-        DanmakuContentItem(message, selfSend: true),
-      );
-    }
-    textController.clear();
-  }
-
-  Widget get _danmakuTextField {
-    return Observer(
-      builder: (context) {
-        return PlayerPanelHoldFocusRegion(
-          acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
-          child: Container(
-            constraints: _desktop
-                ? const BoxConstraints(maxWidth: 500, maxHeight: 33)
-                : const BoxConstraints(maxHeight: 33),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: TextField(
-              focusNode: textFieldFocus,
-              style: TextStyle(
-                fontSize: _desktop ? 15 : 13,
-                color: Colors.white,
-              ),
-              controller: textController,
-              textAlignVertical: TextAlignVertical.center,
-              decoration: InputDecoration(
-                enabled: playerController.danmaku.danmakuOn,
-                filled: true,
-                fillColor: Colors.black.withValues(alpha: 0.35),
-                floatingLabelBehavior: FloatingLabelBehavior.never,
-                hintText: playerController.danmaku.danmakuOn
-                    ? '发个友善的弹幕见证当下'
-                    : '已关闭弹幕',
-                hintStyle: TextStyle(
-                  fontSize: _desktop ? 15 : 13,
-                  color: Colors.white.withValues(alpha: 0.5),
-                ),
-                alignLabelWithHint: true,
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: _desktop ? 8 : 12,
-                ),
-                border: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.white24),
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(_desktop ? 8 : 20),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.white24),
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(_desktop ? 8 : 20),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.white60),
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(_desktop ? 8 : 20),
-                  ),
-                ),
-                suffixIconConstraints: const BoxConstraints(minWidth: 0),
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: PlayraButton(
-                        kind: playerController.danmaku.danmakuOn
-                            ? PlayraButtonKind.primary
-                            : PlayraButtonKind.secondary,
-                        onPressed: () {
-                          unawaited(_submitDanmakuText(textController.text));
-                        },
-                        child: const Text('发送'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              onSubmitted: (msg) {
-                unawaited(_submitDanmakuText(msg));
-              },
-              onTapOutside: (_) {
-                textFieldFocus.unfocus();
-                widget.keyboardFocus.requestFocus();
-              },
-            ),
-          ),
-        );
-      },
-    );
   }
 
   void _showForwardChange() {
@@ -312,59 +158,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     );
     _rightOffsetAnimation = visibility.drive(
       Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero),
-    );
-    _cachedDanmakuOffIcon = RepaintBoundary(
-      child: SvgPicture.asset(
-        'assets/images/danmaku_off.svg',
-        height: _danmakuIconSize,
-      ),
-    );
-
-    _cachedDanmakuSettingsIcon = RepaintBoundary(
-      child: SvgPicture.asset(
-        'assets/images/danmaku_setting.svg',
-        height: _danmakuIconSize,
-      ),
-    );
-  }
-
-  Widget _danmakuOnIcon(BuildContext context) {
-    final colorHex = Theme.of(
-      context,
-    ).colorScheme.primary.toARGB32().toRadixString(16).substring(2);
-
-    if (_cachedDanmakuColorHex != colorHex) {
-      _cachedDanmakuColorHex = colorHex;
-      final svgString = danmakuOnSvg.replaceFirst('00AEEC', colorHex);
-      _cachedDanmakuOnIcon = RepaintBoundary(
-        child: SvgPicture.string(svgString, height: _danmakuIconSize),
-      );
-    }
-
-    return _cachedDanmakuOnIcon;
-  }
-
-  Widget _buildDanmakuToggleButton(BuildContext context) {
-    if (!videoPageController.hasBangumiContext) return const SizedBox.shrink();
-    return Observer(
-      builder: (context) {
-        final danmakuLoading = playerController.danmaku.danmakuLoading;
-        final danmakuOn = playerController.danmaku.danmakuOn;
-        return IconButton(
-          color: Colors.white,
-          icon: danmakuLoading
-              ? SizedBox(
-                  width: _danmakuIconSize,
-                  height: _danmakuIconSize,
-                  child: CircularProgressIndicator(
-                    strokeWidth: _loadingIndicatorStrokeWidth,
-                  ),
-                )
-              : (danmakuOn ? _danmakuOnIcon(context) : _cachedDanmakuOffIcon),
-          onPressed: danmakuLoading ? null : widget.handleDanmaku,
-          tooltip: danmakuLoading ? '弹幕加载中...' : (danmakuOn ? '关闭弹幕' : '打开弹幕'),
-        );
-      },
     );
   }
 
@@ -580,16 +373,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     },
   );
 
-  void _showDanmakuSettings() {
-    showDanmakuSettingsSheet(
-      context: context,
-      danmakuController: playerController.danmaku.canvasController,
-      onUpdateDanmakuSpeed: playerController.updateDanmakuSpeed,
-      onTimelineOffsetChanged:
-          playerController.danmaku.clearAndInvalidateScheduledDanmakus,
-    );
-  }
-
   List<Widget> _choiceItems<T>(
     Iterable<T> values, {
     required String Function(T) label,
@@ -641,53 +424,9 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     menuChildren: items,
   );
 
-  Widget get _danmakuSettingsButton => IconButton(
-    onPressed: _showDanmakuSettings,
-    color: Colors.white,
-    icon: _cachedDanmakuSettingsIcon,
-    tooltip: '弹幕设置',
-  );
-
-  Widget get _desktopDanmakuControls => !videoPageController.hasBangumiContext
-      ? const SizedBox.shrink()
-      : LayoutBuilder(
-          builder: (context, constraints) => Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildDanmakuToggleButton(context),
-                _danmakuSettingsButton,
-                if (constraints.maxWidth > 600) _danmakuTextField,
-              ],
-            ),
-          ),
-        );
-
-  Widget get _syncPlayMenuItem =>
-      KazumiMenuItem(onPressed: widget.showSyncPlayPanel, label: '一起看');
-
-  Widget get _danmakuSettingsMenuItem =>
-      KazumiMenuItem(onPressed: _showDanmakuSettings, label: '弹幕设置');
-
   Widget get _wideControls => Row(
     children: [
-      if (_desktop) Expanded(child: _desktopDanmakuControls),
-      if (!_desktop && videoPageController.hasBangumiContext) ...[
-        IconButton(
-          color: Colors.white,
-          icon: playerController.danmaku.danmakuOn
-              ? _danmakuOnIcon(context)
-              : _cachedDanmakuOffIcon,
-          onPressed: widget.handleDanmaku,
-          tooltip: playerController.danmaku.danmakuOn ? '关闭弹幕' : '打开弹幕',
-        ),
-        if (playerController.danmaku.danmakuOn) ...[
-          _danmakuSettingsButton,
-          Expanded(child: _danmakuTextField),
-        ] else
-          const Spacer(),
-      ],
-      if (!_desktop && !videoPageController.hasBangumiContext) const Spacer(),
+      const Spacer(),
       _menuButton(
         child: const Text('超分辨率', style: TextStyle(color: Colors.white)),
         items: _superResolutionItems,
@@ -897,12 +636,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     color: Colors.white,
                   ),
                 ),
-              if (compact) _buildDanmakuToggleButton(context),
-              if (videoPageController.hasBangumiContext)
-                PlayerPanelHoldCollectButton(
-                  acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
-                  bangumiItem: videoPageController.bangumiItem,
-                ),
               PlayerPanelHoldMenuAnchor(
                 acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
                 onVisibilityChanged: widget.onMenuVisibilityChanged,
@@ -935,20 +668,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       menuChildren: _superResolutionItems,
                       child: const Text('超分辨率'),
                     ),
-                    if (videoPageController.hasBangumiContext)
-                      _syncPlayMenuItem,
                   ],
-                  if (videoPageController.hasBangumiContext)
-                    KazumiMenuItem(
-                      onPressed: widget.showDanmakuSwitch,
-                      label: '弹幕切换',
-                    ),
-                  if (compact && videoPageController.hasBangumiContext)
-                    _danmakuSettingsMenuItem,
-                  KazumiMenuItem(
-                    onPressed: widget.showVideoInfo,
-                    label: '视频详情',
-                  ),
                   KazumiMenuItem(
                     onPressed: () {
                       if (kIsWeb) {
@@ -1018,8 +738,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       ),
                     ),
                   ),
-                  if (!compact && videoPageController.hasBangumiContext)
-                    _syncPlayMenuItem,
                 ],
               ),
             ],

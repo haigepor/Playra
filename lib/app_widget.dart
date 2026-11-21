@@ -1,399 +1,47 @@
-import 'package:kazumi/presentation/widgets/playra_controls.dart';
-import 'package:kazumi/services/platform/platform_io.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:kazumi/plugins/plugins_controller.dart';
-import 'package:kazumi/pages/download/download_controller.dart';
-import 'package:kazumi/pages/collect/collect_controller.dart';
-import 'package:kazumi/pages/my/my_controller.dart';
-import 'package:kazumi/services/sync/danmaku_shield_sync_service.dart';
-import 'package:kazumi/services/sync/webdav.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter_displaymode/flutter_displaymode.dart';
-import 'package:kazumi/services/storage/storage.dart';
-import 'package:tray_manager/tray_manager.dart';
-import 'package:kazumi/services/logging/logger.dart';
-import 'package:kazumi/services/network/metered_network_service.dart';
-import 'package:kazumi/services/platform/app_exit.dart';
-import 'package:kazumi/services/platform/tray_service.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:kazumi/bean/dialog/dialog_helper.dart';
-import 'package:kazumi/bean/dialog/exit_confirmation_dialog.dart';
-import 'package:kazumi/bean/settings/theme_provider.dart';
+import 'package:kazumi/app_brand.dart';
 import 'package:kazumi/navigation.dart';
-import 'package:kazumi/utils/constants.dart';
-import 'package:kazumi/utils/device.dart';
-import 'package:kazumi/utils/theme.dart';
-import 'package:kazumi/presentation/interface_style.dart';
-import 'package:kazumi/presentation/theme/playra_theme.dart';
-import 'package:kazumi/presentation/theme/playra_tokens.dart';
-import 'package:kazumi/presentation/theme/playra_forui_theme.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:kazumi/services/storage/storage.dart';
+import 'package:kazumi/shell/shell_theme.dart';
 
-class AppWidget extends StatefulWidget {
+class AppWidget extends StatelessWidget {
   const AppWidget({super.key});
 
-  @override
-  State<AppWidget> createState() => _AppWidgetState();
-}
-
-class _AppWidgetState extends State<AppWidget>
-    with TrayListener, WidgetsBindingObserver, WindowListener {
-  final TrayManager trayManager = TrayManager.instance;
-  bool _isHandlingWindowClose = false;
-  bool _didApplyStoredThemeSettings = false;
-  Brightness? _lastTitleBarBrightness;
-  Future<void>? _webStartup;
-
-  @override
-  void initState() {
-    super.initState();
-    if (kIsWeb) _webStartup = _initializeWebData();
-    trayManager.addListener(this);
-    windowManager.addListener(this);
-    WidgetsBinding.instance.addObserver(this);
-    _initializePlatformIntegrations();
-  }
-
-  /// 浏览器可直接打开或刷新任意路由，不能依赖首页的 InitPage 加载规则和下载状态。
-  Future<void> _initializeWebData() async {
-    await inject<PluginsController>().init();
-    await inject<DownloadController>().init();
-    await inject<CollectController>().migrateCollect();
-    await inject<MyController>().loadShieldList();
-    inject<DanmakuShieldSyncService>().start();
-    if (GStorage.getSetting(SettingsKeys.webDavEnable)) {
-      try {
-        await WebDav().init();
-      } catch (error) {
-        KazumiLogger().w(
-          'Web: automatic WebDAV initialization failed',
-          error: error,
-        );
-      }
-    }
-  }
-
-  Future<void> _initializePlatformIntegrations() async {
-    if (isDesktop()) {
-      await windowManager.setPreventClose(true);
-      await TrayService.initialize();
-    }
-    await _configurePreferredDisplayMode();
-  }
-
-  Future<void> _configurePreferredDisplayMode() async {
-    if (!Platform.isAndroid) return;
-
-    try {
-      final modes = await FlutterDisplayMode.supported;
-      final storageDisplay = GStorage.getSetting(SettingsKeys.displayMode);
-      DisplayMode selectedMode = DisplayMode.auto;
-      if (storageDisplay != null) {
-        selectedMode = modes.firstWhere(
-          (e) => e.toString() == storageDisplay,
-          orElse: () => DisplayMode.auto,
-        );
-      }
-      final preferred = modes.firstWhere(
-        (el) => el == selectedMode,
-        orElse: () => DisplayMode.auto,
-      );
-      await FlutterDisplayMode.setPreferredMode(preferred);
-    } catch (e) {
-      KazumiLogger().e('DisPlay: set preferred mode failed', error: e);
-    }
-  }
-
-  @override
-  void dispose() {
-    trayManager.removeListener(this);
-    windowManager.removeListener(this);
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final themeProvider = context.watch<ThemeProvider>();
-    _applyStoredThemeSettings(themeProvider);
-    _syncWindowsTitleBarBrightness(themeProvider);
-  }
-
-  void _applyStoredThemeSettings(ThemeProvider themeProvider) {
-    if (_didApplyStoredThemeSettings) return;
-    _didApplyStoredThemeSettings = true;
-
-    themeProvider.setThemeMode(_storedThemeMode(), notify: false);
-    themeProvider.setDynamic(
-      GStorage.getSetting(SettingsKeys.useDynamicColor),
-      notify: false,
-    );
-    themeProvider.setFontFamily(
-      GStorage.getSetting(SettingsKeys.useSystemFont),
-      notify: false,
-    );
-
-    final color = _storedThemeColor();
-    final oledEnhance = GStorage.getSetting(SettingsKeys.oledEnhance);
-    final defaultDarkTheme = _buildAppTheme(
-      brightness: Brightness.dark,
-      color: color,
-      fontFamily: themeProvider.currentFontFamily,
-    );
-    themeProvider.setTheme(
-      _buildAppTheme(
-        brightness: Brightness.light,
-        color: color,
-        fontFamily: themeProvider.currentFontFamily,
-      ),
-      oledEnhance ? oledDarkTheme(defaultDarkTheme) : defaultDarkTheme,
-      notify: false,
-    );
-  }
-
-  ThemeMode _storedThemeMode() {
-    return switch (GStorage.getSetting(SettingsKeys.themeMode)) {
-      'dark' => ThemeMode.dark,
-      'light' => ThemeMode.light,
-      _ => ThemeMode.system,
-    };
-  }
-
-  Color _storedThemeColor() {
-    final defaultThemeColor = GStorage.getSetting(SettingsKeys.themeColor);
-    if (defaultThemeColor == 'default') {
-      return Colors.green;
-    }
-    return Color(int.parse(defaultThemeColor, radix: 16));
-  }
-
-  ThemeData _buildAppTheme({
-    required Brightness brightness,
-    required String? fontFamily,
-    Color? color,
-    ColorScheme? colorScheme,
-  }) {
-    return ThemeData(
-      useMaterial3: true,
-      fontFamily: fontFamily,
-      brightness: brightness,
-      colorSchemeSeed: color,
-      colorScheme: colorScheme,
-      progressIndicatorTheme: progressIndicatorTheme2024,
-      sliderTheme: sliderTheme2024,
-      pageTransitionsTheme: pageTransitionsTheme2024,
-      // 全站可点击小卡片统一胶囊形态：chip 与各类按钮同用 StadiumBorder。
-      chipTheme: const ChipThemeData(shape: StadiumBorder()),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(shape: const StadiumBorder()),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(shape: const StadiumBorder()),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(shape: const StadiumBorder()),
-      ),
-    );
-  }
-
-  void _syncWindowsTitleBarBrightness(ThemeProvider themeProvider) {
-    if (!Platform.isWindows) return;
-
-    final brightness = themeProvider.isEffectiveDark()
-        ? Brightness.dark
-        : Brightness.light;
-    if (_lastTitleBarBrightness == brightness) return;
-
-    _lastTitleBarBrightness = brightness;
-    windowManager.setBrightness(brightness).catchError((e) {
-      KazumiLogger().w('Window: set title bar brightness failed', error: e);
-    });
-  }
-
-  @override
-  void onTrayIconMouseDown() {
-    windowManager.show();
-  }
-
-  @override
-  void onTrayIconRightMouseDown() {
-    trayManager.popUpContextMenu();
-  }
-
-  @override
-  void onTrayMenuItemClick(MenuItem menuItem) {
-    switch (menuItem.key) {
-      case 'show_window':
-        windowManager.show();
-      case 'exit':
-        AppExit.quit();
-    }
-  }
-
-  // windowManager.close() triggers this handler; exit() bypasses confirmation.
-  @override
-  Future<void> onWindowClose() async {
-    if (_isHandlingWindowClose || !mounted) return;
-    _isHandlingWindowClose = true;
-    try {
-      var action = switch (GStorage.getSetting(SettingsKeys.exitBehavior)) {
-        0 => ExitDialogAction.exit,
-        1 => ExitDialogAction.minimizeToTray,
-        _ => null,
-      };
-      if (action == null) {
-        final result = await KazumiDialog.show<ExitDialogResult>(
-          builder: (_) => const ExitConfirmationDialog(),
-        );
-        if (result == null || !mounted) return;
-
-        action = result.action;
-        if (result.rememberChoice) {
-          await GStorage.putSetting(SettingsKeys.exitBehavior, switch (action) {
-            ExitDialogAction.exit => 0,
-            ExitDialogAction.minimizeToTray => 1,
-          });
-        }
-      }
-
-      if (!mounted) return;
-      switch (action) {
-        case ExitDialogAction.exit:
-          await AppExit.quit();
-        case ExitDialogAction.minimizeToTray:
-          await windowManager.hide();
-      }
-    } finally {
-      _isHandlingWindowClose = false;
-    }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused) {
-      KazumiLogger().i(
-        "AppLifecycleState.paused: Application moved to background",
-      );
-    } else if (state == AppLifecycleState.resumed) {
-      KazumiLogger().i(
-        "AppLifecycleState.resumed: Application moved to foreground",
-      );
-      await MeteredNetworkService.refresh();
-    } else if (state == AppLifecycleState.inactive) {
-      KazumiLogger().i("AppLifecycleState.inactive: Application is inactive");
-    }
-  }
-
-  @override
-  Future<void> didChangePlatformBrightness() async {
-    super.didChangePlatformBrightness();
-    final ThemeProvider themeProvider = context.read<ThemeProvider>();
-    KazumiLogger().i(
-      "Platform brightness changed, themeMode: ${themeProvider.themeMode}",
-    );
-
-    _syncWindowsTitleBarBrightness(themeProvider);
-  }
+  ThemeMode get _themeMode => switch (GStorage.getSetting(
+    SettingsKeys.themeMode,
+  )) {
+    'light' => ThemeMode.light,
+    'dark' => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 
   @override
   Widget build(BuildContext context) {
-    final ThemeProvider themeProvider = context.watch<ThemeProvider>();
-    final modern =
-        context.watch<InterfaceStyleController>().style ==
-        InterfaceStyle.modern;
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    bool oledEnhance = GStorage.getSetting(SettingsKeys.oledEnhance);
-
-    var app = DynamicColorBuilder(
-      builder: (theme, darkTheme) {
-        final useDynamicColor =
-            themeProvider.useDynamicColor && theme != null && darkTheme != null;
-        final lightTheme = useDynamicColor
-            ? _buildAppTheme(
-                brightness: Brightness.light,
-                colorScheme: theme,
-                fontFamily: themeProvider.currentFontFamily,
-              )
-            : themeProvider.light;
-        final dynamicDarkTheme = useDynamicColor
-            ? _buildAppTheme(
-                brightness: Brightness.dark,
-                colorScheme: darkTheme,
-                fontFamily: themeProvider.currentFontFamily,
-              )
-            : themeProvider.dark;
-        final effectiveDarkTheme = useDynamicColor && oledEnhance
-            ? oledDarkTheme(dynamicDarkTheme)
-            : dynamicDarkTheme;
-
-        final materialLight = playraTheme(lightTheme, modern: modern);
-        final materialDark = playraTheme(effectiveDarkTheme, modern: modern);
-        final mode = modern ? ThemeMode.dark : themeProvider.themeMode;
-        return ShadApp.custom(
-          themeMode: mode,
-          theme: playraShadTheme(materialLight, reduceMotion: reduceMotion),
-          darkTheme: playraShadTheme(materialDark, reduceMotion: reduceMotion),
-          appBuilder: (_) => MaterialApp.router(
-            builder: (context, child) => PlayraForuiScope(
-              withOverlays: true,
-              child: ShadAppBuilder(
-                child: kIsWeb
-                    ? FutureBuilder<void>(
-                        future: _webStartup,
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return const Scaffold(
-                              body: Center(child: Text('初始化失败，请刷新页面重试')),
-                            );
-                          }
-                          if (snapshot.connectionState !=
-                              ConnectionState.done) {
-                            return const Scaffold(
-                              body: Center(child: PlayraSpinner()),
-                            );
-                          }
-                          return child ?? const SizedBox.shrink();
-                        },
-                      )
-                    : child ?? const SizedBox.shrink(),
-              ),
-            ),
-            title: "Playra",
-            localizationsDelegates: const [
-              GlobalShadLocalizations.delegate,
-              ...GlobalMaterialLocalizations.delegates,
-            ],
-            supportedLocales: const [
-              Locale.fromSubtags(
-                languageCode: 'zh',
-                scriptCode: 'Hans',
-                countryCode: "CN",
-              ),
-            ],
-            locale: const Locale.fromSubtags(
-              languageCode: 'zh',
-              scriptCode: 'Hans',
-              countryCode: "CN",
-            ),
-            theme: materialLight,
-            darkTheme: materialDark,
-            themeMode: mode,
-            themeAnimationDuration: reduceMotion
-                ? Duration.zero
-                : PlayraMotion.state,
-            scaffoldMessengerKey: rootScaffoldMessengerKey,
-            routerConfig: ModularApp.routerConfigOf(context),
-          ),
-        );
-      },
+    return MaterialApp.router(
+      title: AppBrand.name,
+      debugShowCheckedModeBanner: false,
+      theme: buildShellTheme(Brightness.light),
+      darkTheme: buildShellTheme(Brightness.dark),
+      themeMode: _themeMode,
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
+      routerConfig: ModularApp.routerConfigOf(context),
+      localizationsDelegates: const [
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      supportedLocales: const [
+        Locale.fromSubtags(
+          languageCode: 'zh',
+          scriptCode: 'Hans',
+          countryCode: 'CN',
+        ),
+      ],
+      locale: const Locale.fromSubtags(
+        languageCode: 'zh',
+        scriptCode: 'Hans',
+        countryCode: 'CN',
+      ),
     );
-
-    return app;
   }
 }

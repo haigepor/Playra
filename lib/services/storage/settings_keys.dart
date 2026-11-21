@@ -1,20 +1,9 @@
-import 'package:kazumi/services/player/syncplay_endpoint.dart';
-import 'package:kazumi/utils/device.dart';
-
-enum SettingGroup {
-  player,
-  danmaku,
-  theme,
-  interface,
-  proxy,
-  webdav,
-  download,
-  bangumi,
-  collect,
-  sync,
-  update,
-  misc,
-}
+/// 空壳项目保留的最小设置注册表。
+///
+/// 只保留播放器、主题、代理和更新所需键；收藏、历史、下载、同步、弹幕和
+/// 内容源相关键随旧数据层一并移除。键名与旧版本保持一致，已安装用户升级后
+/// 播放器偏好仍可读取。
+enum SettingGroup { player, theme, proxy, update, misc }
 
 class SettingContext {
   const SettingContext({this.compactLayout = false});
@@ -40,547 +29,101 @@ class SettingKey<T> {
   }
 }
 
-// Add new settings here. SettingsKeys is the public typed registry used by
-// callers; new keys can use literal string names directly.
 class SettingsKeys {
-  // null 仅用于旧版本迁移；准备好规则并不等于已经完成引导。
-  static const onboardingCompleted = SettingKey<bool?>(
-    'onboardingCompleted',
-    null,
-    group: SettingGroup.misc,
-  );
+  // 播放器
   static const hAenable = SettingKey<bool>(
-    _SettingBoxKey.hAenable,
+    'hAenable',
     true,
     group: SettingGroup.player,
   );
   static const hardwareDecoder = SettingKey<String>(
-    _SettingBoxKey.hardwareDecoder,
+    'hardwareDecoder',
     'auto-safe',
     group: SettingGroup.player,
   );
-  static const searchEnhanceEnable = SettingKey<bool>(
-    _SettingBoxKey.searchEnhanceEnable,
+  static const androidEnableOpenSLES = SettingKey<bool>(
+    'androidEnableOpenSLES',
     true,
-    group: SettingGroup.misc,
+    group: SettingGroup.player,
   );
-  static const autoUpdate = SettingKey<bool>(
-    _SettingBoxKey.autoUpdate,
-    true,
-    group: SettingGroup.update,
+  static const androidVideoRenderer = SettingKey<String>(
+    'androidVideoRenderer',
+    'auto',
+    group: SettingGroup.player,
   );
-  static const checkPluginUpdateOnStartup = SettingKey<bool>(
-    'checkPluginUpdateOnStartup',
-    true,
-    group: SettingGroup.update,
-  );
-  static const alwaysOntop = SettingKey<bool>(
-    _SettingBoxKey.alwaysOntop,
+  static const androidAutoEnterPIP = SettingKey<bool>(
+    'androidAutoEnterPIP',
     false,
-    group: SettingGroup.misc,
+    group: SettingGroup.player,
   );
   static const defaultPlaySpeed = SettingKey<double>(
-    _SettingBoxKey.defaultPlaySpeed,
+    'defaultPlaySpeed',
     1.0,
     group: SettingGroup.player,
   );
   static const defaultShortcutForwardPlaySpeed = SettingKey<double>(
-    _SettingBoxKey.defaultShortcutForwardPlaySpeed,
+    'defaultShortcutForwardPlaySpeed',
     2.0,
     group: SettingGroup.player,
   );
   static const defaultAspectRatioType = SettingKey<int>(
-    _SettingBoxKey.defaultAspectRatioType,
+    'defaultAspectRatioType',
     1,
     group: SettingGroup.player,
   );
   static const buttonSkipTime = SettingKey<int>(
-    _SettingBoxKey.buttonSkipTime,
+    'buttonSkipTime',
     80,
     group: SettingGroup.player,
   );
   static const arrowKeySkipTime = SettingKey<int>(
-    _SettingBoxKey.arrowKeySkipTime,
+    'arrowKeySkipTime',
     10,
     group: SettingGroup.player,
   );
-  static const danmakuEnhance = SettingKey<bool>(
-    _SettingBoxKey.danmakuEnhance,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  /// Off on desktop and on on mobile, like the B 站 client.
-  static final pauseOnDanmakuEdit = SettingKey<bool>(
-    'pauseOnDanmakuEdit',
-    true,
-    group: SettingGroup.danmaku,
-    defaultResolver: (_) => !isDesktop(),
-  );
-  static const danmakuBorder = SettingKey<bool>(
-    _SettingBoxKey.danmakuBorder,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuBorderSize = SettingKey<double>(
-    _SettingBoxKey.danmakuBorderSize,
-    1.5,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuOpacity = SettingKey<double>(
-    _SettingBoxKey.danmakuOpacity,
-    1.0,
-    group: SettingGroup.danmaku,
-  );
-  static final danmakuFontSize = SettingKey<double>(
-    _SettingBoxKey.danmakuFontSize,
-    25.0,
-    group: SettingGroup.danmaku,
-    defaultResolver: (context) => context.compactLayout ? 16.0 : 25.0,
-  );
-  static const danmakuTop = SettingKey<bool>(
-    _SettingBoxKey.danmakuTop,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuScroll = SettingKey<bool>(
-    _SettingBoxKey.danmakuScroll,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuBottom = SettingKey<bool>(
-    _SettingBoxKey.danmakuBottom,
-    false,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuMassive = SettingKey<bool>(
-    _SettingBoxKey.danmakuMassive,
-    false,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuDeduplication = SettingKey<bool>(
-    _SettingBoxKey.danmakuDeduplication,
-    false,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuChConvert = SettingKey<int>(
-    'danmakuChConvert',
-    0,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuArea = SettingKey<double>(
-    _SettingBoxKey.danmakuArea,
-    1.0,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuColor = SettingKey<bool>(
-    _SettingBoxKey.danmakuColor,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuDuration = SettingKey<double>(
-    _SettingBoxKey.danmakuDuration,
-    8.0,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuLineHeight = SettingKey<double>(
-    _SettingBoxKey.danmakuLineHeight,
-    1.6,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuTimeOffset = SettingKey<double>(
-    _SettingBoxKey.danmakuTimeOffset,
-    0.0,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuEnabledByDefault = SettingKey<bool>(
-    _SettingBoxKey.danmakuEnabledByDefault,
-    false,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuBiliBiliSource = SettingKey<bool>(
-    _SettingBoxKey.danmakuBiliBiliSource,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuGamerSource = SettingKey<bool>(
-    _SettingBoxKey.danmakuGamerSource,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuDanDanSource = SettingKey<bool>(
-    _SettingBoxKey.danmakuDanDanSource,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuFontWeight = SettingKey<int>(
-    _SettingBoxKey.danmakuFontWeight,
-    4,
-    group: SettingGroup.danmaku,
-  );
-  static const danmakuFollowSpeed = SettingKey<bool>(
-    _SettingBoxKey.danmakuFollowSpeed,
-    true,
-    group: SettingGroup.danmaku,
-  );
-  static const themeMode = SettingKey<String>(
-    _SettingBoxKey.themeMode,
-    'system',
-    group: SettingGroup.theme,
-  );
-  static const themeColor = SettingKey<String>(
-    _SettingBoxKey.themeColor,
-    'default',
-    group: SettingGroup.theme,
-  );
-  static const privateMode = SettingKey<bool>(
-    _SettingBoxKey.privateMode,
-    false,
-    group: SettingGroup.player,
-  );
   static const autoPlay = SettingKey<bool>(
-    _SettingBoxKey.autoPlay,
+    'autoPlay',
     true,
     group: SettingGroup.player,
   );
   static const autoPlayNext = SettingKey<bool>(
-    _SettingBoxKey.autoPlayNext,
+    'autoPlayNext',
     true,
     group: SettingGroup.player,
   );
   static const playResume = SettingKey<bool>(
-    _SettingBoxKey.playResume,
+    'playResume',
     true,
     group: SettingGroup.player,
   );
   static const showPlayerError = SettingKey<bool>(
-    _SettingBoxKey.showPlayerError,
+    'showPlayerError',
     false,
     group: SettingGroup.player,
   );
-  static const oledEnhance = SettingKey<bool>(
-    _SettingBoxKey.oledEnhance,
+  static const privateMode = SettingKey<bool>(
+    'privateMode',
     false,
-    group: SettingGroup.theme,
-  );
-  static const displayMode = SettingKey<String?>(
-    _SettingBoxKey.displayMode,
-    null,
-    group: SettingGroup.interface,
-  );
-  static const enableGitProxy = SettingKey<bool>(
-    _SettingBoxKey.enableGitProxy,
-    true,
-    group: SettingGroup.proxy,
-  );
-  static const enableBangumiProxy = SettingKey<bool>(
-    _SettingBoxKey.enableBangumiProxy,
-    true,
-    group: SettingGroup.proxy,
-  );
-  static const imageAcceleration = SettingKey<String>(
-    'imageAcceleration',
-    'ech',
-    group: SettingGroup.proxy,
-  );
-  // Unset modes inherit the old mirror switches (enabled by default).
-  static const bangumiAcceleration = SettingKey<String>(
-    'bangumiAcceleration',
-    '',
-    group: SettingGroup.proxy,
-  );
-  static const rulesMirror = SettingKey<String>(
-    'rulesMirror',
-    '',
-    group: SettingGroup.proxy,
-  );
-  static const enableSystemProxy = SettingKey<bool>(
-    _SettingBoxKey.enableSystemProxy,
-    false,
-    group: SettingGroup.proxy,
-  );
-  static const defaultStartupPage = SettingKey<String>(
-    _SettingBoxKey.defaultStartupPage,
-    '/tab/popular/',
-    group: SettingGroup.interface,
-  );
-  // Android/iOS 共用页面偏好，保留旧持久化键以兼容同步和覆盖安装。
-  static const androidUiStyle = SettingKey<String>(
-    'androidUiStyle',
-    'modern',
-    group: SettingGroup.interface,
-  );
-  // 两个移动平台分别在本机首次升级时迁移；完成后仍尊重主动选择。
-  static const androidModernDefaultApplied = SettingKey<bool>(
-    'androidModernDefaultApplied',
-    false,
-    group: SettingGroup.misc,
-  );
-  static const webDavEnable = SettingKey<bool>(
-    _SettingBoxKey.webDavEnable,
-    false,
-    group: SettingGroup.webdav,
-  );
-  static const webDavEnableHistory = SettingKey<bool>(
-    _SettingBoxKey.webDavEnableHistory,
-    false,
-    group: SettingGroup.webdav,
-  );
-  static const webDavEnableCollect = SettingKey<bool>(
-    _SettingBoxKey.webDavEnableCollect,
-    false,
-    group: SettingGroup.webdav,
-  );
-  static const webDavEnableDanmakuShield = SettingKey<bool>(
-    'webDavEnableDanmakuShield',
-    false,
-    group: SettingGroup.webdav,
-  );
-  static const danmakuShieldSyncDeviceId = SettingKey<String>(
-    'danmakuShieldSyncDeviceId',
-    '',
-    group: SettingGroup.sync,
-  );
-  static const danmakuShieldSyncState = SettingKey<String>(
-    'danmakuShieldSyncState',
-    '',
-    group: SettingGroup.sync,
-  );
-  static const danmakuShieldSyncCorruptState = SettingKey<String>(
-    'danmakuShieldSyncCorruptState',
-    '',
-    group: SettingGroup.sync,
-  );
-  static const webDavURL = SettingKey<String>(
-    _SettingBoxKey.webDavURL,
-    '',
-    group: SettingGroup.webdav,
-  );
-  static const webDavUsername = SettingKey<String>(
-    _SettingBoxKey.webDavUsername,
-    '',
-    group: SettingGroup.webdav,
-  );
-  static const webDavPassword = SettingKey<String>(
-    _SettingBoxKey.webDavPassword,
-    '',
-    group: SettingGroup.webdav,
+    group: SettingGroup.player,
   );
   static const lowMemoryMode = SettingKey<bool>(
-    _SettingBoxKey.lowMemoryMode,
+    'lowMemoryMode',
     false,
     group: SettingGroup.player,
   );
-  // Null preserves the legacy lowMemoryMode choice until a policy is selected.
   static const lowMemoryPolicy = SettingKey<String?>(
     'lowMemoryPolicy',
     null,
     group: SettingGroup.player,
   );
-  static const showWindowButton = SettingKey<bool>(
-    _SettingBoxKey.showWindowButton,
-    false,
-    group: SettingGroup.theme,
-  );
-  static const useDynamicColor = SettingKey<bool>(
-    _SettingBoxKey.useDynamicColor,
-    false,
-    group: SettingGroup.theme,
-  );
-  static const exitBehavior = SettingKey<int>(
-    _SettingBoxKey.exitBehavior,
-    2,
-    group: SettingGroup.interface,
-  );
   static const playerDebugMode = SettingKey<bool>(
-    _SettingBoxKey.playerDebugMode,
-    false,
-    group: SettingGroup.player,
-  );
-  static const syncPlayEndPoint = SettingKey<String>(
-    _SettingBoxKey.syncPlayEndPoint,
-    defaultSyncPlayEndPoint,
-    group: SettingGroup.player,
-  );
-  static const syncPlayUserName = SettingKey<String>(
-    'syncPlayUserName',
-    '',
-    group: SettingGroup.player,
-  );
-  static const androidEnableOpenSLES = SettingKey<bool>(
-    _SettingBoxKey.androidEnableOpenSLES,
-    true,
-    group: SettingGroup.player,
-  );
-  static const androidVideoRenderer = SettingKey<String>(
-    _SettingBoxKey.androidVideoRenderer,
-    'auto',
-    group: SettingGroup.player,
-  );
-  static const androidAutoEnterPIP = SettingKey<bool>(
-    _SettingBoxKey.androidAutoEnterPIP,
-    false,
-    group: SettingGroup.player,
-  );
-  static const defaultSuperResolutionMode = SettingKey<int>(
-    _SettingBoxKey.defaultSuperResolutionMode,
-    1,
-    group: SettingGroup.player,
-  );
-  static const disableSuperResolutionWarning = SettingKey<bool>(
-    _SettingBoxKey.disableSuperResolutionWarning,
-    false,
-    group: SettingGroup.player,
-  );
-  static const playerDisableAnimations = SettingKey<bool>(
-    _SettingBoxKey.playerDisableAnimations,
+    'playerDebugMode',
     false,
     group: SettingGroup.player,
   );
   static const playerLogLevel = SettingKey<int>(
-    _SettingBoxKey.playerLogLevel,
+    'playerLogLevel',
     2,
-    group: SettingGroup.player,
-  );
-  static const timelineNotShowAbandonedBangumis = SettingKey<bool>(
-    _SettingBoxKey.timelineNotShowAbandonedBangumis,
-    false,
-    group: SettingGroup.collect,
-  );
-  static const timelineNotShowWatchedBangumis = SettingKey<bool>(
-    _SettingBoxKey.timelineNotShowWatchedBangumis,
-    false,
-    group: SettingGroup.collect,
-  );
-  static const timelineOnlyShowWatchingBangumis = SettingKey<bool>(
-    _SettingBoxKey.timelineOnlyShowWatchingBangumis,
-    false,
-    group: SettingGroup.collect,
-  );
-  static const useSystemFont = SettingKey<bool>(
-    _SettingBoxKey.useSystemFont,
-    false,
-    group: SettingGroup.theme,
-  );
-  static const forceAdBlocker = SettingKey<bool>(
-    _SettingBoxKey.forceAdBlocker,
-    false,
-    group: SettingGroup.player,
-  );
-  static const backgroundPlayback = SettingKey<bool>(
-    _SettingBoxKey.backgroundPlayback,
-    false,
-    group: SettingGroup.player,
-  );
-  static const proxyEnable = SettingKey<bool>(
-    _SettingBoxKey.proxyEnable,
-    false,
-    group: SettingGroup.proxy,
-  );
-  static const proxyConfigured = SettingKey<bool>(
-    _SettingBoxKey.proxyConfigured,
-    false,
-    group: SettingGroup.proxy,
-  );
-  static const proxyUrl = SettingKey<String>(
-    _SettingBoxKey.proxyUrl,
-    '',
-    group: SettingGroup.proxy,
-  );
-  static const proxyTestUrl = SettingKey<String>(
-    _SettingBoxKey.proxyTestUrl,
-    '',
-    group: SettingGroup.proxy,
-  );
-  static const showRating = SettingKey<bool>(
-    _SettingBoxKey.showRating,
-    true,
-    group: SettingGroup.interface,
-  );
-  static const defaultCollectLayout = SettingKey<String>(
-    'defaultCollectLayout',
-    'list',
-    group: SettingGroup.interface,
-  );
-  static const downloadParallelEpisodes = SettingKey<int>(
-    _SettingBoxKey.downloadParallelEpisodes,
-    2,
-    group: SettingGroup.download,
-  );
-  static const downloadParallelSegments = SettingKey<int>(
-    _SettingBoxKey.downloadParallelSegments,
-    3,
-    group: SettingGroup.download,
-  );
-  static const downloadDanmaku = SettingKey<bool>(
-    _SettingBoxKey.downloadDanmaku,
-    true,
-    group: SettingGroup.download,
-  );
-  static const downloadDirectory = SettingKey<String>(
-    _SettingBoxKey.downloadDirectory,
-    '',
-    group: SettingGroup.download,
-  );
-  // macOS only: security-scoped bookmark that keeps downloadDirectory
-  // writable across app restarts under the sandbox.
-  static const downloadDirectoryBookmark = SettingKey<String>(
-    'downloadDirectoryBookmark',
-    '',
-    group: SettingGroup.download,
-  );
-  static const shortcutDialogShown = SettingKey<bool>(
-    _SettingBoxKey.shortcutDialogShown,
-    false,
-    group: SettingGroup.misc,
-  );
-  static const bangumiSyncEnable = SettingKey<bool>(
-    _SettingBoxKey.bangumiSyncEnable,
-    false,
-    group: SettingGroup.bangumi,
-  );
-  static const bangumiAccessToken = SettingKey<String>(
-    _SettingBoxKey.bangumiAccessToken,
-    '',
-    group: SettingGroup.bangumi,
-  );
-  static const bangumiSyncPriority = SettingKey<int>(
-    _SettingBoxKey.bangumiSyncPriority,
-    0,
-    group: SettingGroup.bangumi,
-  );
-  static const bangumiImmediateSyncToastEnable = SettingKey<bool>(
-    _SettingBoxKey.bangumiImmediateSyncToastEnable,
-    true,
-    group: SettingGroup.bangumi,
-  );
-  static const brightnessVolumeGesture = SettingKey<bool>(
-    _SettingBoxKey.brightnessVolumeGesture,
-    true,
-    group: SettingGroup.player,
-  );
-  static const historySyncDeviceId = SettingKey<String>(
-    _SettingBoxKey.historySyncDeviceId,
-    '',
-    group: SettingGroup.sync,
-  );
-  static const historySyncSequence = SettingKey<int>(
-    _SettingBoxKey.historySyncSequence,
-    0,
-    group: SettingGroup.sync,
-  );
-  static const historySyncSnapshotInitialized = SettingKey<bool>(
-    _SettingBoxKey.historySyncSnapshotInitialized,
-    false,
-    group: SettingGroup.sync,
-  );
-  static const playerControllerLayerDisappearTime = SettingKey<int>(
-    'playerControllerLayerDisappearTime',
-    4000,
-    group: SettingGroup.player,
-  );
-  static const defaultVolume = SettingKey<double>(
-    'defaultVolume',
-    100.0,
     group: SettingGroup.player,
   );
   static const playerMuted = SettingKey<bool>(
@@ -588,218 +131,151 @@ class SettingsKeys {
     false,
     group: SettingGroup.player,
   );
+  static const defaultVolume = SettingKey<double>(
+    'defaultVolume',
+    100.0,
+    group: SettingGroup.player,
+  );
+  static const playerControllerLayerDisappearTime = SettingKey<int>(
+    'playerControllerLayerDisappearTime',
+    4000,
+    group: SettingGroup.player,
+  );
+  static const backgroundPlayback = SettingKey<bool>(
+    'backgroundPlayback',
+    false,
+    group: SettingGroup.player,
+  );
+  static const brightnessVolumeGesture = SettingKey<bool>(
+    'brightnessVolumeGesture',
+    true,
+    group: SettingGroup.player,
+  );
+  static const playerDisableAnimations = SettingKey<bool>(
+    'playerDisableAnimations',
+    false,
+    group: SettingGroup.player,
+  );
+  static const defaultSuperResolutionMode = SettingKey<int>(
+    'defaultSuperResolutionType',
+    1,
+    group: SettingGroup.player,
+  );
+  static const disableSuperResolutionWarning = SettingKey<bool>(
+    'superResolutionWarn',
+    false,
+    group: SettingGroup.player,
+  );
 
-  static final List<SettingKey<Object?>> all = [
-    onboardingCompleted,
+  // 主题与界面
+  static const themeMode = SettingKey<String>(
+    'themeMode',
+    'system',
+    group: SettingGroup.theme,
+  );
+  static const themeColor = SettingKey<String>(
+    'themeColor',
+    'default',
+    group: SettingGroup.theme,
+  );
+  static const useDynamicColor = SettingKey<bool>(
+    'useDynamicColor',
+    false,
+    group: SettingGroup.theme,
+  );
+  static const useSystemFont = SettingKey<bool>(
+    'useSystemFont',
+    false,
+    group: SettingGroup.theme,
+  );
+  static const oledEnhance = SettingKey<bool>(
+    'oledEnhance',
+    false,
+    group: SettingGroup.theme,
+  );
+  static const showWindowButton = SettingKey<bool>(
+    'showWindowButton',
+    false,
+    group: SettingGroup.theme,
+  );
+  static const displayMode = SettingKey<String?>(
+    'displayMode',
+    null,
+    group: SettingGroup.misc,
+  );
+  static const exitBehavior = SettingKey<int>(
+    'exitBehavior',
+    2,
+    group: SettingGroup.misc,
+  );
+
+  // 网络与更新
+  static const enableGitProxy = SettingKey<bool>(
+    'enableGitProxy',
+    true,
+    group: SettingGroup.proxy,
+  );
+  static const proxyEnable = SettingKey<bool>(
+    'proxyEnable',
+    false,
+    group: SettingGroup.proxy,
+  );
+  static const proxyConfigured = SettingKey<bool>(
+    'proxyConfigured',
+    false,
+    group: SettingGroup.proxy,
+  );
+  static const proxyUrl = SettingKey<String>(
+    'proxyUrl',
+    '',
+    group: SettingGroup.proxy,
+  );
+  static const autoUpdate = SettingKey<bool>(
+    'autoUpdate',
+    true,
+    group: SettingGroup.update,
+  );
+
+  static final List<SettingKey<dynamic>> all = [
     hAenable,
     hardwareDecoder,
-    searchEnhanceEnable,
-    autoUpdate,
-    checkPluginUpdateOnStartup,
-    alwaysOntop,
+    androidEnableOpenSLES,
+    androidVideoRenderer,
+    androidAutoEnterPIP,
     defaultPlaySpeed,
     defaultShortcutForwardPlaySpeed,
     defaultAspectRatioType,
     buttonSkipTime,
     arrowKeySkipTime,
-    danmakuEnhance,
-    pauseOnDanmakuEdit,
-    danmakuBorder,
-    danmakuBorderSize,
-    danmakuOpacity,
-    danmakuFontSize,
-    danmakuTop,
-    danmakuScroll,
-    danmakuBottom,
-    danmakuMassive,
-    danmakuDeduplication,
-    danmakuChConvert,
-    danmakuArea,
-    danmakuColor,
-    danmakuDuration,
-    danmakuLineHeight,
-    danmakuTimeOffset,
-    danmakuEnabledByDefault,
-    danmakuBiliBiliSource,
-    danmakuGamerSource,
-    danmakuDanDanSource,
-    danmakuFontWeight,
-    danmakuFollowSpeed,
-    themeMode,
-    themeColor,
-    privateMode,
     autoPlay,
     autoPlayNext,
     playResume,
     showPlayerError,
-    oledEnhance,
-    displayMode,
-    enableGitProxy,
-    enableBangumiProxy,
-    imageAcceleration,
-    bangumiAcceleration,
-    rulesMirror,
-    enableSystemProxy,
-    defaultStartupPage,
-    androidUiStyle,
-    androidModernDefaultApplied,
-    webDavEnable,
-    webDavEnableHistory,
-    webDavEnableCollect,
-    webDavEnableDanmakuShield,
-    danmakuShieldSyncDeviceId,
-    danmakuShieldSyncState,
-    danmakuShieldSyncCorruptState,
-    webDavURL,
-    webDavUsername,
-    webDavPassword,
+    privateMode,
     lowMemoryMode,
     lowMemoryPolicy,
-    showWindowButton,
-    useDynamicColor,
-    exitBehavior,
     playerDebugMode,
-    syncPlayEndPoint,
-    syncPlayUserName,
-    androidEnableOpenSLES,
-    androidVideoRenderer,
-    androidAutoEnterPIP,
+    playerLogLevel,
+    playerMuted,
+    defaultVolume,
+    playerControllerLayerDisappearTime,
+    backgroundPlayback,
+    brightnessVolumeGesture,
+    playerDisableAnimations,
     defaultSuperResolutionMode,
     disableSuperResolutionWarning,
-    playerDisableAnimations,
-    playerLogLevel,
-    timelineNotShowAbandonedBangumis,
-    timelineNotShowWatchedBangumis,
-    timelineOnlyShowWatchingBangumis,
+    themeMode,
+    themeColor,
+    useDynamicColor,
     useSystemFont,
-    forceAdBlocker,
-    backgroundPlayback,
+    oledEnhance,
+    showWindowButton,
+    displayMode,
+    exitBehavior,
+    enableGitProxy,
     proxyEnable,
     proxyConfigured,
     proxyUrl,
-    proxyTestUrl,
-    showRating,
-    defaultCollectLayout,
-    downloadParallelEpisodes,
-    downloadParallelSegments,
-    downloadDanmaku,
-    downloadDirectory,
-    downloadDirectoryBookmark,
-    shortcutDialogShown,
-    onboardingCompleted,
-    bangumiSyncEnable,
-    bangumiAccessToken,
-    bangumiSyncPriority,
-    bangumiImmediateSyncToastEnable,
-    brightnessVolumeGesture,
-    historySyncDeviceId,
-    historySyncSequence,
-    historySyncSnapshotInitialized,
-    playerControllerLayerDisappearTime,
-    defaultVolume,
-    playerMuted,
+    autoUpdate,
   ];
-
-  static List<SettingKey<Object?>> byGroup(SettingGroup group) {
-    return [
-      for (final key in all)
-        if (key.group == group) key,
-    ];
-  }
-
-  SettingsKeys._();
-}
-
-// Historical Hive key names used by settings created before the typed registry.
-// Keep these strings stable so existing users keep their saved settings.
-// New settings do not need to be added here unless they intentionally reuse an
-// existing persisted key.
-class _SettingBoxKey {
-  static const String hAenable = 'hAenable',
-      hardwareDecoder = 'hardwareDecoder',
-      searchEnhanceEnable = 'searchEnhanceEnable',
-      autoUpdate = 'autoUpdate',
-      alwaysOntop = 'alwaysOntop',
-      defaultPlaySpeed = 'defaultPlaySpeed',
-      defaultShortcutForwardPlaySpeed = 'defaultShortcutForwardPlaySpeed',
-      defaultAspectRatioType = 'defaultAspectRatioType',
-      buttonSkipTime = 'buttonSkipTime',
-      arrowKeySkipTime = 'arrowKeySkipTime',
-      danmakuEnhance = 'danmakuEnhance',
-      danmakuBorder = 'danmakuBorder',
-      danmakuBorderSize = 'danmakuBorderSize',
-      danmakuOpacity = 'danmakuOpacity',
-      danmakuFontSize = 'danmakuFontSize',
-      danmakuTop = 'danmakuTop',
-      danmakuScroll = 'danmakuScroll',
-      danmakuBottom = 'danmakuBottom',
-      danmakuMassive = 'danmakuMassive',
-      danmakuDeduplication = 'danmakuDeduplication',
-      danmakuArea = 'danmakuArea',
-      danmakuColor = 'danmakuColor',
-      danmakuDuration = 'danmakuDuration',
-      danmakuLineHeight = 'danmakuLineHeight',
-      danmakuTimeOffset = 'danmakuTimeOffset',
-      danmakuEnabledByDefault = 'danmakuEnabledByDefault',
-      danmakuBiliBiliSource = 'danmakuBiliBiliSource',
-      danmakuGamerSource = 'danmakuGamerSource',
-      danmakuDanDanSource = 'danmakuDanDanSource',
-      danmakuFontWeight = 'danmakuFontWeight',
-      danmakuFollowSpeed = 'danmakuFollowSpeed',
-      themeMode = 'themeMode',
-      themeColor = 'themeColor',
-      privateMode = 'privateMode',
-      autoPlay = 'autoPlay',
-      autoPlayNext = 'autoPlayNext',
-      playResume = 'playResume',
-      showPlayerError = 'showPlayerError',
-      oledEnhance = 'oledEnhance',
-      displayMode = 'displayMode',
-      enableGitProxy = 'enableGitProxy',
-      enableBangumiProxy = 'enableBangumiProxy',
-      enableSystemProxy = 'enableSystemProxy',
-      defaultStartupPage = 'defaultStartupPage',
-      webDavEnable = 'webDavEnable',
-      webDavEnableHistory = 'webDavEnableHistory',
-      webDavEnableCollect = 'webDavEnableCollect',
-      webDavURL = 'webDavURL',
-      webDavUsername = 'webDavUsername',
-      webDavPassword = 'webDavPasswd',
-      lowMemoryMode = 'lowMemoryMode',
-      showWindowButton = 'showWindowButton',
-      useDynamicColor = 'useDynamicColor',
-      exitBehavior = 'exitBehavior',
-      playerDebugMode = 'playerDebugMode',
-      syncPlayEndPoint = 'syncPlayEndPoint',
-      androidEnableOpenSLES = 'androidEnableOpenSLES',
-      androidVideoRenderer = 'androidVideoRenderer',
-      androidAutoEnterPIP = 'androidAutoEnterPIP',
-      defaultSuperResolutionMode = 'defaultSuperResolutionType',
-      disableSuperResolutionWarning = 'superResolutionWarn',
-      playerDisableAnimations = 'playerDisableAnimations',
-      playerLogLevel = 'playerLogLevel',
-      timelineNotShowAbandonedBangumis = 'timelineNotShowAbandonedBangumis',
-      timelineNotShowWatchedBangumis = 'timelineNotShowWatchedBangumis',
-      timelineOnlyShowWatchingBangumis = 'timelineOnlyShowWatchingBangumis',
-      useSystemFont = 'useSystemFont',
-      forceAdBlocker = 'forceAdBlocker',
-      backgroundPlayback = 'backgroundPlayback',
-      proxyEnable = 'proxyEnable',
-      proxyConfigured = 'proxyConfigured',
-      proxyUrl = 'proxyUrl',
-      proxyTestUrl = 'proxyTestUrl',
-      showRating = 'showRating',
-      downloadParallelEpisodes = 'downloadParallelEpisodes',
-      downloadParallelSegments = 'downloadParallelSegments',
-      downloadDanmaku = 'downloadDanmaku',
-      downloadDirectory = 'downloadDirectory',
-      shortcutDialogShown = 'shortcutDialogShown',
-      bangumiSyncEnable = 'bangumiSyncEnable',
-      bangumiAccessToken = 'bangumiAccessToken',
-      bangumiSyncPriority = 'bangumiSyncPriority',
-      bangumiImmediateSyncToastEnable = 'bangumiImmediateSyncToastEnable',
-      brightnessVolumeGesture = 'brightnessVolumeGesture',
-      historySyncDeviceId = 'historySyncDeviceId',
-      historySyncSequence = 'historySyncSequence',
-      historySyncSnapshotInitialized = 'historySyncSnapshotInitialized';
 }

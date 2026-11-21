@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:kazumi/request/config/api_endpoints.dart';
 
 class StyleString {
   static const double cardSpace = 8;
@@ -83,14 +82,6 @@ const List<String> acceptLanguageList = [
   'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
   'zh-CN,zh-TW;q=0.9,zh;q=0.8,en-US;q=0.7,en;q=0.6',
 ];
-
-/// Bangumi API 文档要求的UA格式
-Map<String, String> bangumiHTTPHeader = {
-  'user-agent':
-      'Predidit/Kazumi/${ApiEndpoints.version} (Android) (https://github.com/Predidit/Kazumi)',
-  'referer': '',
-  'content-type': 'application/json'
-};
 
 /// 可选硬件解码器
 const Map<String, String> hardwareDecodersList = {
