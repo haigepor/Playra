@@ -1,0 +1,12 @@
+{
+  "resolution": "Physical size: 1080x2280",
+  "font_scale": "1.0",
+  "user_rotation": "0",
+  "accelerometer_rotation": "1",
+  "qa_package_present": false,
+  "reverse_mappings": "",
+  "original_version": "2.4.2",
+  "qa_directory_remains": true,
+  "qa_worktree_registered": false,
+  "cleanup_restriction": "Windows long path failure, then recursive cleanup rejected by automatic approval: blocked by policy"
+}

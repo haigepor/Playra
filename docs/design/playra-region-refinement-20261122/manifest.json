@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-22",
+  "generator": "built-in image_gen",
+  "theme": "dark",
+  "primary_regions": 30,
+  "files": [
+    {
+      "file": "01-discover-regions.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1973146,
+      "sha256": "bc96ccb70c08558b4bf0196802022ad117a4c2721a6a55f159ca6c411ea3fa30"
+    },
+    {
+      "file": "02-calendar-regions.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1622610,
+      "sha256": "a2bc7605c2dfce9ec2bcb2fb762caf27e5cb98538993a56aff4916ed19c43ef3"
+    },
+    {
+      "file": "03-favorites-regions.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1819888,
+      "sha256": "3b500ae667799b439f4b2babbd6083f42c8f0b52beab2a53b482b28c1031a8fb"
+    },
+    {
+      "file": "04-profile-regions.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1693294,
+      "sha256": "89551b227dd37b58d1e604f83dba49f909d19f88e79be8c3c254138ef0fd9f1a"
+    },
+    {
+      "file": "05-search-regions.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1877489,
+      "sha256": "77742361f06172dc5b7606d6341ea75b0a56ecec0e39420033cd5afddac2d3cf"
+    },
+    {
+      "file": "06-browse-regions.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2007753,
+      "sha256": "21b9dfd27a75a686ba259643e6517b3a8fcae677bdbe2a0378eecc7fb72bbd04"
+    },
+    {
+      "file": "07-detail-player-regions.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1901969,
+      "sha256": "7f3620545da235ca0c60e211a95b0e148a377171c98fe652352d484001d8bc95"
+    },
+    {
+      "file": "08-landscape-regions.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1984670,
+      "sha256": "03d9d84935e31aa9f2588f232c3e103d7a466c57944e55590f4d5852da8f07f5"
+    },
+    {
+      "file": "09-portrait-fullscreen-regions.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1710100,
+      "sha256": "b1bfd9d17a509cb144bfc51f1968efa617812b3aaa8b0fc889aba653e2902ce4"
+    },
+    {
+      "file": "10-shared-sheets-regions.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 1564459,
+      "sha256": "a128e31088931f062032978da90d7514e9a59c33da6cf71086d606c9e99b2eb5"
+    }
+  ]
+}

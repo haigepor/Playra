@@ -1,0 +1,40 @@
+{
+  "note": "Design token calculations, not runtime compliance tests",
+  "contrast": [
+    {
+      "pair": "primary on canvas",
+      "foreground": "#EDF0F7",
+      "background": "#0C0F15",
+      "contrast": 16.81
+    },
+    {
+      "pair": "secondary on surface",
+      "foreground": "#A9B1C1",
+      "background": "#151A24",
+      "contrast": 8.09
+    },
+    {
+      "pair": "accent on selected",
+      "foreground": "#C3AEFF",
+      "background": "#34294E",
+      "contrast": 6.88
+    },
+    {
+      "pair": "button text on accent",
+      "foreground": "#171124",
+      "background": "#C3AEFF",
+      "contrast": 9.47
+    }
+  ],
+  "week_days": {
+    "min_cell_dp": 48,
+    "seven_cells_dp": 336,
+    "content_width_at_320_dp": 288,
+    "content_width_at_390_dp": 358
+  },
+  "catalog_390_dp": {
+    "content_width": 358,
+    "three_columns": 114,
+    "poster_height": 171
+  }
+}

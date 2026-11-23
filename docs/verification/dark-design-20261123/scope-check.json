@@ -1,0 +1,35 @@
+{
+  "modified_existing_files": [
+    "lib/shell/playra_bottom_nav.dart",
+    "lib/shell/shell_theme.dart",
+    "lib/services/network/proxy_utils.dart",
+    "lib/services/storage/favorite_storage.dart",
+    "lib/presentation/theme/playra_home_tokens.dart",
+    "lib/presentation/theme/playra_tokens.dart",
+    "lib/presentation/widgets/playra_page_header.dart",
+    "lib/pages/calendar/calendar_page.dart",
+    "lib/pages/discover/browse_page.dart",
+    "lib/pages/discover/discover_page.dart",
+    "lib/pages/discover/home_banner.dart",
+    "lib/pages/discover/home_header.dart",
+    "lib/pages/discover/home_layout.dart",
+    "lib/pages/discover/home_sections.dart",
+    "lib/pages/discover/media_widgets.dart",
+    "lib/pages/discover/search_page.dart",
+    "lib/pages/favorites/favorites_page.dart",
+    "lib/pages/player/player_buffering_overlay.dart",
+    "lib/pages/player/player_item.dart",
+    "lib/pages/player/player_item_panel.dart",
+    "lib/pages/player/player_option_sheet.dart",
+    "lib/pages/player/player_transport_bar.dart",
+    "lib/pages/player/source_player_page.dart",
+    "lib/pages/profile/profile_page.dart",
+    "test/pages/page_boundary_test.dart",
+    "test/pages/discover/home_sections_test.dart"
+  ],
+  "new_files": [
+    "test/dark_design_contract_test.dart"
+  ],
+  "scope": "PASS",
+  "utf8_bom_newlines": "PASS"
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "url": "https://p0.meituan.net/imgupload/8ae1872d5ccd63e4737b8775df515f1d73608.jpg",
+    "error": "<urlopen error [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1032)>",
+    "type": "URLError"
+  },
+  {
+    "url": "https://img9.doubanio.com/view/photo/l/public/p2569799684.webp",
+    "status": 200,
+    "sample_bytes": 2048
+  },
+  {
+    "url": "https://img2.doubanio.com/view/photo/m/public/p2627757433.webp",
+    "error": "HTTP Error 404: Not Found",
+    "type": "HTTPError"
+  }
+]

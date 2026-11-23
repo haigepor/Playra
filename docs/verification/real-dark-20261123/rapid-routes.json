@@ -1,0 +1,18 @@
+[
+  {
+    "round": 1,
+    "before_back_seconds": 0.3
+  },
+  {
+    "round": 2,
+    "before_back_seconds": 0.8
+  },
+  {
+    "round": 3,
+    "before_back_seconds": 2
+  },
+  {
+    "round": 4,
+    "before_back_seconds": 4
+  }
+]

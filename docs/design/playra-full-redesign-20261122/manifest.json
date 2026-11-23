@@ -1,0 +1,41 @@
+{
+  "generator": "built-in image_gen",
+  "date": "2026-11-22",
+  "files": [
+    {
+      "file": "01-main-pages.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 1893141,
+      "sha256": "4f0f9e83752022a19649bc90f6978a71f3ef5fa1826d9d0e7e3f6750e6519b36"
+    },
+    {
+      "file": "02-search-browse-player.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 1822947,
+      "sha256": "ed53cf5e00071bcec66283fae4506fd4b663efdb26f0e0546eb41e4d54f782b5"
+    },
+    {
+      "file": "03-fullscreen-player.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1812513,
+      "sha256": "a189198c9361d108a7dd7edb5d8c984fde0b3f8aff0294ec37c0662552b9d490"
+    },
+    {
+      "file": "04-functional-sheets.png",
+      "width": 1706,
+      "height": 922,
+      "bytes": 1705187,
+      "sha256": "4e69b6a2bf8c95e5a84a0e4e983dbb9e18df4a51295285864de7de6663282f61"
+    },
+    {
+      "file": "05-dark-and-boundary-states.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 1831207,
+      "sha256": "ba291d025faacc408b0ad17ffdd5a16a08014e7f216c8884a0118c04d7c41ed1"
+    }
+  ]
+}
