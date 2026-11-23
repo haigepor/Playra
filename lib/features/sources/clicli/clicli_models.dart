@@ -34,7 +34,7 @@ MediaItem mediaItemFromVideo(Map<String, dynamic> video) {
     year: _asInt(video['year']),
     score: _asDouble(video['score']),
     episodeCount: current > 0 ? current : total,
-    updateSchedule: schedule,
+    updateSchedule: _scheduleLine(schedule),
     playCount: _asInt(video['playCount']) ?? 0,
   );
 }
@@ -130,11 +130,7 @@ List<MediaCategory> categoriesFromTypes(Map<String, dynamic> data) {
           ),
     ];
     roots.add(
-      MediaCategory(
-        id: id,
-        name: _asString(type['name']),
-        children: children,
-      ),
+      MediaCategory(id: id, name: _asString(type['name']), children: children),
     );
   }
   return roots;
@@ -143,7 +139,9 @@ List<MediaCategory> categoriesFromTypes(Map<String, dynamic> data) {
 MediaPage mediaPageFromVideos(Map<String, dynamic> data) {
   final videos = _mapList(data['videos']);
   final info = data['pageinfo'];
-  final pageInfo = info is Map ? Map<String, dynamic>.from(info) : const <String, dynamic>{};
+  final pageInfo = info is Map
+      ? Map<String, dynamic>.from(info)
+      : const <String, dynamic>{};
   return MediaPage(
     items: videos.map(mediaItemFromVideo).toList(growable: false),
     pageIndex: _asInt(pageInfo['pageIndex']) ?? 1,
@@ -158,6 +156,10 @@ MediaDetail mediaDetailFromVideo(
   List<Map<String, dynamic>> episodes = const [],
   List<MediaItem> related = const [],
 }) {
+  final current = _asInt(video['currentEpisodes']) ?? 0;
+  final total = _asInt(video['totalEpisodes']) ?? 0;
+  final finished = _asInt(video['isFinished']) == 1;
+  final schedule = _asString(video['updateSchedule']);
   return MediaDetail(
     key: MediaKey(
       sourceId: CliCliConfig.sourceId,
@@ -168,6 +170,7 @@ MediaDetail mediaDetailFromVideo(
       _asString(video['subTitle']),
       _asString(video['alias']),
     ]),
+    episodeStatus: _episodeLine(current, total, finished, schedule),
     cover: _firstNonEmpty(<String>[
       _asString(video['coverUrl']),
       _asString(video['posterUrl']),
@@ -183,8 +186,8 @@ MediaDetail mediaDetailFromVideo(
       ]),
     ),
     score: _asDouble(video['score']),
-    episodeCount: _asInt(video['currentEpisodes']) ?? 0,
-    updateSchedule: _asString(video['updateSchedule']),
+    episodeCount: current,
+    updateSchedule: _scheduleLine(schedule),
     roads: roadsFromVideo(video, episodes),
     related: related,
   );
@@ -209,10 +212,7 @@ List<MediaRoad> roadsFromVideo(
     roads.add(
       MediaRoad(
         code: code,
-        name: _firstNonEmpty(<String>[
-          _asString(player['playerName']),
-          code,
-        ]),
+        name: _firstNonEmpty(<String>[_asString(player['playerName']), code]),
         vipOnly: _asInt(player['isVip']) == 1,
         episodes: _episodesOf(byCode[code] ?? const []),
       ),
@@ -228,7 +228,9 @@ List<MediaRoad> roadsFromVideo(
       ),
     );
   }
-  return roads.where((road) => road.episodes.isNotEmpty).toList(growable: false);
+  return roads
+      .where((road) => road.episodes.isNotEmpty)
+      .toList(growable: false);
 }
 
 List<MediaQuality> qualitiesFromData(Map<String, dynamic> data) {
@@ -240,7 +242,8 @@ List<MediaQuality> qualitiesFromData(Map<String, dynamic> data) {
           _asString(quality['label']),
           _asString(quality['quality']),
         ]),
-        vipOnly: quality['isVipOnly'] == true || _asInt(quality['isVipOnly']) == 1,
+        vipOnly:
+            quality['isVipOnly'] == true || _asInt(quality['isVipOnly']) == 1,
       ),
   ].where((quality) => quality.id.isNotEmpty).toList(growable: false);
 }
@@ -278,6 +281,16 @@ String _episodeLine(int current, int total, bool finished, String schedule) {
   if (total > 0) return '共 $total 集';
   if (schedule.isNotEmpty) return schedule;
   return '';
+}
+
+// The service packs counts into updateSchedule, e.g. "168|周日18:30后更".
+// Episode counts are displayed through the release status instead.
+String _scheduleLine(String raw) {
+  final parts = raw.split('|').map((part) => part.trim()).where((part) {
+    if (part.isEmpty) return false;
+    return !RegExp(r'^(?:共\s*)?\d+\s*(?:(?:集|话)?全?)?$').hasMatch(part);
+  });
+  return parts.join(' · ');
 }
 
 MediaSectionLayout _layoutFrom(String layout) {

@@ -8,6 +8,7 @@ import 'package:kazumi/presentation/widgets/media_cover_image.dart';
 import 'package:kazumi/pages/discover/media_widgets.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_backdrop.dart';
+import 'package:kazumi/presentation/widgets/playra_page_header.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/services/storage/storage.dart';
 
@@ -33,44 +34,18 @@ class FavoritesPage extends StatelessWidget {
                   final favorites = FavoriteStorage.getAll();
                   return Column(
                     children: [
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          layout.gutter,
-                          6,
-                          layout.gutter,
-                          4,
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              '追番',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontSize: PlayraType.pageTitle,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                      PlayraPageHeader(
+                        title: '追番',
+                        largeTitle: true,
+                        subtitle: '${favorites.length} 部作品',
+                        actions: [
+                          if (favorites.isNotEmpty) ...[
+                            TextButton(
+                              onPressed: () => _manageFavorites(context),
+                              child: const Text('管理'),
                             ),
-                            if (favorites.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: Text(
-                                  '${favorites.length} 部',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ),
-                            const Spacer(),
-                            if (favorites.isNotEmpty)
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  minimumSize: const Size(48, 44),
-                                  padding: EdgeInsets.zero,
-                                  alignment: Alignment.centerRight,
-                                ),
-                                onPressed: () => _manageFavorites(context),
-                                child: const Text('管理'),
-                              ),
                           ],
-                        ),
+                        ],
                       ),
                       Expanded(
                         child: favorites.isEmpty
@@ -117,61 +92,56 @@ class FavoritesPage extends StatelessWidget {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '管理追番',
-                            style: Theme.of(sheet).textTheme.titleMedium,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: records.isEmpty
-                              ? null
-                              : () async {
-                                  final confirmed = await showDialog<bool>(
-                                    context: sheet,
-                                    builder: (dialog) => AlertDialog(
-                                      scrollable: true,
-                                      insetPadding: const EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                        vertical: 24,
-                                      ),
-                                      titleTextStyle: Theme.of(dialog)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                      title: const Text('清空全部追番？'),
-                                      content: const Text('清空后无法恢复。'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(dialog, false),
-                                          child: const Text('取消'),
-                                        ),
-                                        PlayraButton.destructive(
-                                          onPressed: () =>
-                                              Navigator.pop(dialog, true),
-                                          child: const Text('清空'),
-                                        ),
-                                      ],
+                  PlayraPageHeader(
+                    title: '管理追番',
+                    actions: [
+                      TextButton(
+                        onPressed: records.isEmpty
+                            ? null
+                            : () async {
+                                final confirmed = await showDialog<bool>(
+                                  context: sheet,
+                                  builder: (dialog) => AlertDialog(
+                                    scrollable: true,
+                                    insetPadding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 24,
                                     ),
-                                  );
-                                  if (confirmed != true) return;
-                                  await FavoriteStorage.clearAll();
-                                  if (sheet.mounted &&
-                                      ModalRoute.of(sheet)?.isCurrent == true) {
-                                    Navigator.pop(sheet);
-                                  }
-                                },
-                          child: const Text('清空'),
-                        ),
-                      ],
-                    ),
+                                    titleTextStyle: Theme.of(dialog)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                    title: const Text('清空全部追番？'),
+                                    content: const Text('清空后无法恢复。'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(dialog, false),
+                                        child: const Text('取消'),
+                                      ),
+                                      PlayraButton.destructive(
+                                        onPressed: () =>
+                                            Navigator.pop(dialog, true),
+                                        child: const Text('清空'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed != true) return;
+                                await FavoriteStorage.clearAll();
+                                if (sheet.mounted &&
+                                    ModalRoute.of(sheet)?.isCurrent == true) {
+                                  Navigator.pop(sheet);
+                                }
+                              },
+                        child: const Text('清空'),
+                      ),
+                      IconButton(
+                        tooltip: '关闭管理追番',
+                        onPressed: () => Navigator.pop(sheet),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
                   ),
                   Flexible(
                     child: ListView.builder(
@@ -199,12 +169,10 @@ class FavoritesPage extends StatelessWidget {
                             record.title,
                             style: Theme.of(sheet).textTheme.bodyMedium,
                           ),
-                          subtitle:
-                              record.subtitle.isEmpty ||
-                                  record.subtitle == record.title
+                          subtitle: record.statusText.isEmpty
                               ? null
                               : Text(
-                                  record.subtitle,
+                                  record.statusText,
                                   style: Theme.of(sheet).textTheme.bodySmall,
                                 ),
                           trailing: IconButton(
@@ -253,7 +221,7 @@ class _FavoritesGrid extends StatelessWidget {
         title: fav.title,
         cover: fav.cover,
         category: fav.category,
-        subtitle: fav.subtitle,
+        subtitle: fav.statusText,
       );
     }).toList();
 

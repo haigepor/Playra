@@ -45,7 +45,7 @@ Future<T?> _playerSheet<T>(
       clipBehavior: Clip.antiAlias,
       borderRadius: wide
           ? BorderRadius.zero
-          : const BorderRadius.vertical(top: Radius.circular(18)),
+          : const BorderRadius.vertical(top: Radius.circular(20)),
       child: SizedBox(
         width: !wide
             ? size.width

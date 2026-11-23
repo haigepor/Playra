@@ -24,22 +24,22 @@ class _ShellPageState extends State<ShellPage> {
     PlayraNavDestination(
       label: '发现',
       icon: FLucideIcons.compass,
-      selectedIcon: FLucideIcons.compass,
+      selectedIcon: Icons.explore,
     ),
     PlayraNavDestination(
       label: '日历',
       icon: FLucideIcons.calendarDays,
-      selectedIcon: FLucideIcons.calendarDays,
+      selectedIcon: Icons.calendar_month,
     ),
     PlayraNavDestination(
       label: '追番',
       icon: FLucideIcons.bookmark,
-      selectedIcon: FLucideIcons.bookmark,
+      selectedIcon: Icons.bookmark,
     ),
     PlayraNavDestination(
       label: '我的',
       icon: FLucideIcons.userRound,
-      selectedIcon: FLucideIcons.userRound,
+      selectedIcon: Icons.person,
     ),
   ];
 

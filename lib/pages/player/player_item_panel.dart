@@ -26,6 +26,7 @@ import 'package:kazumi/utils/format.dart';
 import 'package:kazumi/pages/player/player_transport_bar.dart';
 import 'package:kazumi/pages/player/player_screenshot_controls.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 
 enum _PlayerTool {
   speed,
@@ -193,7 +194,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           videoPageController.fullscreen.mode == VideoFullscreenMode.portrait;
       return LayoutBuilder(
         builder: (context, constraints) => _buildPanel(
-          portraitFullscreen ||
+          !portraitFullscreen &&
               (_mobile
                   ? !widget.fillsWindow || constraints.maxWidth < 420
                   : constraints.maxWidth <
@@ -697,8 +698,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             total: playerController.playback.duration,
             onSeek: widget.handleProgressBarSeek,
             child: ProgressBar(
-              progressBarColor: const Color(0xffb7a3ff),
-              thumbColor: const Color(0xffb7a3ff),
+              progressBarColor: PlayraTokens.dark.primary,
+              thumbColor: PlayraTokens.dark.primary,
               baseBarColor: Colors.white30,
               barHeight: 3,
               thumbRadius: 5,
@@ -743,15 +744,29 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       return const SizedBox.shrink();
     }
 
+    final portrait =
+        videoPageController.fullscreen.mode == VideoFullscreenMode.portrait;
     return IconButton(
       color: Colors.white,
       icon: Icon(
-        videoPageController.isFullscreen
+        portrait
+            ? Icons.screen_rotation_rounded
+            : videoPageController.isFullscreen
             ? Icons.fullscreen_exit_rounded
             : Icons.fullscreen_rounded,
       ),
-      tooltip: videoPageController.isFullscreen ? '退出全屏' : '全屏',
-      onPressed: widget.handleFullscreen,
+      tooltip: portrait
+          ? '横屏播放'
+          : videoPageController.isFullscreen
+          ? '退出全屏'
+          : '全屏',
+      onPressed: portrait
+          ? () => unawaited(
+              videoPageController.fullscreen.setMode(
+                VideoFullscreenMode.landscape,
+              ),
+            )
+          : widget.handleFullscreen,
     );
   }
 
@@ -786,6 +801,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       ? const SizedBox(height: 40)
                       : Text(
                           '${videoPageController.title} · ${videoPageController.currentEpisode?.title ?? ''}',
+                          maxLines: 2,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: Theme.of(

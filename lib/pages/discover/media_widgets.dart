@@ -34,48 +34,63 @@ class MediaPosterCard extends StatelessWidget {
     final t = PlayraTokens.of(context);
     return SizedBox(
       width: width,
-      child: InkWell(
+      child: Semantics(
+        container: true,
+        button: true,
+        label:
+            '查看 ${item.title}${item.subtitle.isEmpty ? '' : '，${item.subtitle}'}',
         onTap: onTap,
-        borderRadius: BorderRadius.circular(PlayraRadius.poster),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _PosterCover(
-              item: item,
-              rank: rank,
-              showScore: showScore,
-              decodeWidth: decodeWidth,
-              mutedColor: t.muted,
-              subtleColor: t.foregroundSubtle,
-            ),
-            const SizedBox(height: PlayraSpace.compact),
-            Text(
-              item.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: t.foreground,
-                fontSize: PlayraType.item,
-                fontWeight: FontWeight.w600,
-                height: 1.2,
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(PlayraRadius.poster),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _PosterCover(
+                item: item,
+                rank: rank,
+                showScore: showScore,
+                decodeWidth: decodeWidth,
+                mutedColor: t.muted,
+                subtleColor: t.foregroundSubtle,
               ),
-            ),
-            if (item.subtitle.isNotEmpty || item.metaText.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: PlayraSpace.tiny),
+              const SizedBox(height: PlayraSpace.compact),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      MediaQuery.textScalerOf(context).scale(PlayraType.item) *
+                      2.4,
+                ),
                 child: Text(
-                  item.subtitle.isNotEmpty ? item.subtitle : item.metaText,
-                  maxLines: 1,
+                  item.title,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: t.foregroundSubtle,
-                    fontSize: PlayraType.caption,
+                    color: t.foreground,
+                    fontSize: PlayraType.item,
+                    fontWeight: FontWeight.w600,
                     height: 1.2,
                   ),
                 ),
               ),
-          ],
+              if (item.subtitle.isNotEmpty || item.metaText.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: PlayraSpace.tiny),
+                  child: Text(
+                    item.subtitle.isNotEmpty ? item.subtitle : item.metaText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: t.foregroundSubtle,
+                      fontSize: PlayraType.caption,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -109,7 +124,7 @@ class _PosterCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 3 / 4,
+      aspectRatio: 2 / 3,
       child: LayoutBuilder(
         builder: (context, constraints) {
           return ClipRRect(
@@ -131,6 +146,17 @@ class _PosterCover extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (!showScore && item.badge.isNotEmpty)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth - 12,
+                      ),
+                      child: _Badge(text: item.badge, highlight: true),
+                    ),
+                  ),
                 if (showScore && (item.score ?? 0) > 0)
                   Positioned(
                     right: 6,
@@ -359,13 +385,7 @@ class MediaSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = PlayraTokens.of(context);
     return Container(
-      constraints: BoxConstraints(
-        minHeight: 40,
-        maxHeight: (MediaQuery.textScalerOf(context).scale(16) + 20).clamp(
-          40,
-          70,
-        ),
-      ),
+      constraints: BoxConstraints(minHeight: 48),
       padding: const EdgeInsets.only(
         left: PlayraSpace.md,
         right: PlayraSpace.xs,
@@ -399,7 +419,7 @@ class MediaSearchField extends StatelessWidget {
           if (controller.text.isNotEmpty)
             IconButton(
               tooltip: '清空',
-              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: onClear,
               icon: const Icon(Icons.cancel_rounded, size: 17),
             ),
@@ -439,7 +459,7 @@ class MediaPosterGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final scaler = MediaQuery.textScalerOf(context);
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final gap = phoneColumns == 2 ? 9.0 : 6.0;
+    final gap = phoneColumns == 2 ? 12.0 : 8.0;
     return SliverPadding(
       padding: insets,
       sliver: SliverLayoutBuilder(
@@ -454,7 +474,9 @@ class MediaPosterGrid extends StatelessWidget {
               MediaQuery.sizeOf(context).shortestSide <
                   PlayraLayout.compactWidth
               ? ((available + gap) /
-                        (scaler.scale(PlayraType.item) * 5.5 + gap))
+                        (scaler.scale(PlayraType.item) *
+                                (phoneColumns == 2 ? 5.5 : 4.5) +
+                            gap))
                     .floor()
                     .clamp(1, phoneColumns)
               : ((available + gap) / (maxExtent + gap)).ceil();
@@ -500,11 +522,13 @@ class MediaGridFooter extends StatelessWidget {
     this.loading = false,
     this.error,
     this.onRetry,
+    this.onLoadMore,
   });
 
   final bool loading;
   final Object? error;
   final VoidCallback? onRetry;
+  final VoidCallback? onLoadMore;
 
   @override
   Widget build(BuildContext context) {
@@ -524,6 +548,11 @@ class MediaGridFooter extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
+      );
+    }
+    if (onLoadMore != null) {
+      return Center(
+        child: TextButton(onPressed: onLoadMore, child: const Text('加载更多')),
       );
     }
     return const SizedBox.shrink();

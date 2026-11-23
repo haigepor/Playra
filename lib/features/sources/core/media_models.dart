@@ -193,6 +193,7 @@ class MediaDetail {
     required this.key,
     required this.title,
     this.subtitle = '',
+    this.episodeStatus = '',
     this.cover = '',
     this.description = '',
     this.category = '',
@@ -209,6 +210,9 @@ class MediaDetail {
   final MediaKey key;
   final String title;
   final String subtitle;
+
+  /// Source-provided release status, distinct from aliases and episode totals.
+  final String episodeStatus;
   final String cover;
   final String description;
   final String category;

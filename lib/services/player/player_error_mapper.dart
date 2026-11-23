@@ -16,7 +16,7 @@ class PlayerErrorMapper {
   static String? openFailureMessage(Object error) {
     final message = error.toString().toLowerCase();
     if (message.contains('failed to recognize file format')) return '无法识别视频格式';
-    if (message.contains('failed to open')) return '视频未能打开，请重试或切换线路';
+    if (message.contains('failed to open')) return '视频未能打开，请重试';
     return null;
   }
 }

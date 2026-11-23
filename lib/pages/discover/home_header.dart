@@ -56,14 +56,17 @@ class _HomeTopBarState extends State<HomeTopBar> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: widget.layout.brandRowHeight,
+            height: (MediaQuery.textScalerOf(context).scale(26) * 1.1).clamp(
+              56,
+              double.infinity,
+            ),
             child: Row(
               children: [
                 Text(
                   'Playra',
                   style: TextStyle(
                     color: t.textPrimary,
-                    fontSize: PlayraType.pageTitle,
+                    fontSize: 26,
                     fontWeight: FontWeight.w900,
                     fontStyle: FontStyle.italic,
                     letterSpacing: -1,
@@ -88,7 +91,8 @@ class _HomeTopBarState extends State<HomeTopBar> {
             ),
           ),
           SizedBox(
-            height: widget.layout.categoryRowHeight,
+            height: (MediaQuery.textScalerOf(context).scale(14) * 1.2 + 20)
+                .clamp(48, double.infinity),
             child: _buildCategories(
               context,
               visualHeight: widget.layout.categoryVisualHeight,
@@ -211,8 +215,12 @@ class _HomeTab extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(PlayraRadius.overlay),
         child: Container(
-          height: height,
-          padding: const EdgeInsets.symmetric(horizontal: 2),
+          height: (MediaQuery.textScalerOf(context).scale(14) * 1.2 + 20).clamp(
+            48,
+            double.infinity,
+          ),
+          constraints: const BoxConstraints(minWidth: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 6),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             border: Border(

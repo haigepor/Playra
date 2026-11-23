@@ -71,18 +71,12 @@ class PlayerTransportBar extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(height: 44, child: progressBuilder(TimeLabelLocation.none)),
+          SizedBox(height: 48, child: progressBuilder(TimeLabelLocation.none)),
           Row(
             children: [
               playPause,
               nextEpisode,
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: timeLabel,
-                ),
-              ),
+              Expanded(child: timeLabel),
               fullscreen,
             ],
           ),
@@ -93,7 +87,12 @@ class PlayerTransportBar extends StatelessWidget {
         ? Row(
             children: [
               playPause,
-              Expanded(child: progressBuilder(TimeLabelLocation.none)),
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: progressBuilder(TimeLabelLocation.none),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(left: 6),
                 child: timeLabel,
@@ -101,40 +100,77 @@ class PlayerTransportBar extends StatelessWidget {
               fullscreen,
             ],
           )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  children: [
-                    Expanded(child: progressBuilder(TimeLabelLocation.none)),
-                    if (timeBesideProgress) ...[
-                      const SizedBox(width: 10),
-                      timeLabel,
-                    ],
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  children: [
-                    playPause,
-                    nextEpisode,
-                    if (!timeBesideProgress)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10),
-                        child: timeLabel,
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked =
+                  constraints.maxWidth < 400 ||
+                  MediaQuery.textScalerOf(context).scale(12) >= 16;
+              if (stacked) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: 48,
+                        child: progressBuilder(TimeLabelLocation.none),
                       ),
-                    Expanded(child: controls),
-                    fullscreen,
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-            ],
+                      timeLabel,
+                      Row(
+                        children: [
+                          playPause,
+                          nextEpisode,
+                          const Spacer(),
+                          fullscreen,
+                        ],
+                      ),
+                      controls,
+                    ],
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: progressBuilder(TimeLabelLocation.none),
+                          ),
+                        ),
+                        if (timeBesideProgress) ...[
+                          const SizedBox(width: 10),
+                          timeLabel,
+                        ],
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      children: [
+                        playPause,
+                        nextEpisode,
+                        if (!timeBesideProgress)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 10),
+                            child: timeLabel,
+                          ),
+                        Expanded(child: controls),
+                        fullscreen,
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+              );
+            },
           );
   }
 }

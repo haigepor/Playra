@@ -42,6 +42,7 @@ class PlayerItem extends StatefulWidget {
     required this.fillsWindow,
     this.onToggleSidePanel,
     this.episodePanelOpen = false,
+    this.episodePanelInset = 0,
     required this.changeEpisode,
     required this.onEpisodeEnded,
     this.resolvingLabel,
@@ -55,6 +56,7 @@ class PlayerItem extends StatefulWidget {
   final PlaybackSession videoPageController;
   final bool fillsWindow;
   final bool episodePanelOpen;
+  final double episodePanelInset;
   final VoidCallback? onToggleSidePanel;
   final Future<void> Function(int episode, {int currentRoad, int offset})
   changeEpisode;
@@ -98,6 +100,7 @@ class _PlayerItemState extends State<PlayerItem>
   final Set<PlayerPanelHold> _playerPanelHolds = <PlayerPanelHold>{};
   int _openPlayerMenuCount = 0;
   PlayerPanelHold? _progressBarDragHold;
+  PlayerPanelHold? _episodePanelHold;
   PointerDeviceKind? _lastTapPointerKind;
   PointerDeviceKind? _lastDoubleTapPointerKind;
 
@@ -1219,7 +1222,28 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   @override
+  void didUpdateWidget(covariant PlayerItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.episodePanelOpen == widget.episodePanelOpen &&
+        oldWidget.episodePanelInset == widget.episodePanelInset) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.episodePanelOpen && widget.episodePanelInset > 0) {
+        if (_episodePanelHold?.isReleased != false) {
+          _episodePanelHold = acquirePlayerPanelHold();
+        }
+      } else {
+        _episodePanelHold?.release();
+        _episodePanelHold = null;
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    _episodePanelHold?.releaseSilently();
     // The route-scoped PlayerController owns playback disposal.
     _fullscreenListener();
     _playerSizeListener();
@@ -1458,43 +1482,48 @@ class _PlayerItemState extends State<PlayerItem>
                                 onAdjustmentEnd: _finishAdjustmentGesture,
                               ),
                       ),
-                      widget.episodePanelOpen ||
+                      (widget.episodePanelOpen &&
+                                  widget.episodePanelInset == 0) ||
                               (Platform.isAndroid &&
                                   (videoPageController.isPip ||
                                       _pipEnterRequested))
                           ? const SizedBox.shrink()
-                          : PlayerItemPanel(
-                              fillsWindow: widget.fillsWindow,
-                              playerController: playerController,
-                              videoPageController: videoPageController,
-                              onBackPressed: widget.onBackPressed,
-                              setPlaybackSpeed: setPlaybackSpeed,
-                              onToggleSidePanel: widget.onToggleSidePanel,
-                              handleFullscreen: handleFullscreen,
-                              handlePortraitFullscreen:
-                                  handlePortraitFullscreen,
-                              enterAndroidPictureInPicture:
-                                  enterAndroidPictureInPicture,
-                              handleProgressBarDragStart:
-                                  handleProgressBarDragStart,
-                              handleProgressBarSeek: handleProgressBarSeek,
-                              handleSuperResolutionChange:
-                                  handleSuperResolutionChange,
-                              onToggleLock: _toggleLock,
-                              onNextEpisode: () => handlePreNextEpisode('next'),
-                              panelVisibilityController:
-                                  _panelVisibilityController,
-                              keyboardFocus: widget.keyboardFocus,
-                              acquirePlayerPanelHold: acquirePlayerPanelHold,
-                              onMenuVisibilityChanged:
-                                  _handlePlayerMenuVisibilityChanged,
-                              pauseForTimedShutdown:
-                                  widget.pauseForTimedShutdown,
-                              disableAnimations: widget.disableAnimations,
-                              handleScreenShot: handleScreenshot,
-                              showScreenshotCandidates:
-                                  showScreenshotCandidates,
-                              skipOP: skipOP,
+                          : Positioned.fill(
+                              right: widget.episodePanelInset,
+                              child: PlayerItemPanel(
+                                fillsWindow: widget.fillsWindow,
+                                playerController: playerController,
+                                videoPageController: videoPageController,
+                                onBackPressed: widget.onBackPressed,
+                                setPlaybackSpeed: setPlaybackSpeed,
+                                onToggleSidePanel: widget.onToggleSidePanel,
+                                handleFullscreen: handleFullscreen,
+                                handlePortraitFullscreen:
+                                    handlePortraitFullscreen,
+                                enterAndroidPictureInPicture:
+                                    enterAndroidPictureInPicture,
+                                handleProgressBarDragStart:
+                                    handleProgressBarDragStart,
+                                handleProgressBarSeek: handleProgressBarSeek,
+                                handleSuperResolutionChange:
+                                    handleSuperResolutionChange,
+                                onToggleLock: _toggleLock,
+                                onNextEpisode: () =>
+                                    handlePreNextEpisode('next'),
+                                panelVisibilityController:
+                                    _panelVisibilityController,
+                                keyboardFocus: widget.keyboardFocus,
+                                acquirePlayerPanelHold: acquirePlayerPanelHold,
+                                onMenuVisibilityChanged:
+                                    _handlePlayerMenuVisibilityChanged,
+                                pauseForTimedShutdown:
+                                    widget.pauseForTimedShutdown,
+                                disableAnimations: widget.disableAnimations,
+                                handleScreenShot: handleScreenshot,
+                                showScreenshotCandidates:
+                                    showScreenshotCandidates,
+                                skipOP: skipOP,
+                              ),
                             ),
                       if (playerController.panel.lockPanel &&
                           !widget.episodePanelOpen &&

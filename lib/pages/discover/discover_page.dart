@@ -1,5 +1,6 @@
 import 'package:kazumi/presentation/widgets/playra_page_state.dart';
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/widgets/playra_page_header.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 import 'package:kazumi/features/sources/core/media_models.dart';
@@ -94,14 +95,15 @@ class _DiscoverPageState extends State<DiscoverPage> {
                         slivers.add(
                           SliverFillRemaining(
                             hasScrollBody: false,
-                            child: MediaRetryNotice(
-                              message: '首页加载失败',
-                              error: _error ?? snapshot.error,
-                              retrying:
-                                  snapshot.connectionState ==
-                                  ConnectionState.waiting,
-                              onRetry: _load,
-                            ),
+                            child:
+                                snapshot.connectionState ==
+                                    ConnectionState.waiting
+                                ? const MediaLoadingState(label: '正在重试')
+                                : MediaErrorState(
+                                    message: '发现内容未加载',
+                                    error: _error ?? snapshot.error,
+                                    onRetry: _load,
+                                  ),
                           ),
                         );
                       } else if (snapshot.connectionState ==
@@ -397,7 +399,7 @@ class _HistoryBottomSheet extends StatelessWidget {
       ),
       child: Material(
         color: t.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
           top: false,
@@ -417,25 +419,20 @@ class _HistoryBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 8, 2),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '播放历史',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
+                  PlayraPageHeader(
+                    title: '播放历史',
+                    actions: [
+                      if (records.isNotEmpty)
+                        TextButton(
+                          onPressed: () => confirmClearPlaybackHistory(context),
+                          child: const Text('清空'),
                         ),
-                        if (records.isNotEmpty)
-                          TextButton(
-                            onPressed: () =>
-                                confirmClearPlaybackHistory(context),
-                            child: const Text('清空'),
-                          ),
-                      ],
-                    ),
+                      IconButton(
+                        tooltip: '关闭播放历史',
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
                   ),
                   Flexible(
                     child: records.isEmpty
@@ -471,8 +468,8 @@ class _HistoryBottomSheet extends StatelessWidget {
                                               borderRadius:
                                                   BorderRadius.circular(5),
                                               child: SizedBox(
-                                                width: 56,
-                                                height: 42,
+                                                width: 96,
+                                                height: 54,
                                                 child: Stack(
                                                   fit: StackFit.expand,
                                                   children: [
@@ -611,156 +608,105 @@ void confirmClearPlaybackHistory(BuildContext context) {
 
 class _ResumeRail extends StatelessWidget {
   const _ResumeRail();
+
   @override
   Widget build(BuildContext context) => ValueListenableBuilder(
     valueListenable: HistoryStorage.listenable(),
     builder: (context, box, child) {
-      final records = HistoryStorage.getAll(limit: 8);
-      if (records.isEmpty) return const SizedBox.shrink();
-      final single = records.length == 1 ? records.first : null;
+      final record = HistoryStorage.getAll(limit: 1).firstOrNull;
+      if (record == null) return const SizedBox.shrink();
       return Padding(
-        padding: const EdgeInsets.only(top: 16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                '继续观看',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            if (single != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: InkWell(
-                  onTap: () => context.pushNamed(
-                    '/detail',
-                    arguments: MediaKey(
-                      sourceId: single.sourceId,
-                      mediaId: single.mediaId,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '继续观看',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: SizedBox(
-                          width: 112,
-                          height: 65,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              MediaCoverImage(url: single.cover),
-                              if (single.durationMs > 0)
-                                Align(
-                                  alignment: Alignment.bottomCenter,
-                                  child: LinearProgressIndicator(
-                                    value: single.progress,
-                                    minHeight: 3,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              single.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              [
-                                single.episodeTitle,
-                                single.formattedProgress,
-                              ].where((part) => part.isNotEmpty).join(' · '),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.play_arrow_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                  ),
                 ),
-              )
-            else
-              SizedBox(
-                height: 106 + MediaQuery.textScalerOf(context).scale(14) * 1.3,
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: records.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
-                  itemBuilder: (context, i) {
-                    final r = records[i];
-                    return SizedBox(
-                      width: 152,
-                      child: InkWell(
-                        onTap: () => context.pushNamed(
-                          '/detail',
-                          arguments: MediaKey(
-                            sourceId: r.sourceId,
-                            mediaId: r.mediaId,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: SizedBox(
-                                width: 152,
-                                height: 80,
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    MediaCoverImage(url: r.cover),
-                                    if (r.durationMs > 0)
-                                      Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: LinearProgressIndicator(
-                                          value: r.progress,
-                                          minHeight: 3,
-                                          backgroundColor: Colors.black45,
-                                          semanticsLabel: '已观看',
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              [
-                                r.title,
-                                r.episodeTitle,
-                              ].where((part) => part.isNotEmpty).join(' · '),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                height: 1.3,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                TextButton(
+                  onPressed: () => showPlaybackHistory(context),
+                  child: const Text('查看全部'),
+                ),
+              ],
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => context.pushNamed(
+                '/detail',
+                arguments: MediaKey(
+                  sourceId: record.sourceId,
+                  mediaId: record.mediaId,
                 ),
               ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 96,
+                        height: 54,
+                        child: MediaCoverImage(url: record.cover),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            record.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            [
+                              record.episodeTitle,
+                              record.formattedProgress,
+                            ].where((part) => part.isNotEmpty).join(' · '),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          if (record.durationMs > 0) ...[
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: record.progress,
+                                minHeight: 3,
+                                semanticsLabel: '已观看',
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: .12),
+                      child: Icon(
+                        Icons.play_arrow_rounded,
+                        size: 22,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       );

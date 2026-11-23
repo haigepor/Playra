@@ -28,20 +28,23 @@ class PlayraPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = PlayraHomeTokens.of(context);
-    final topPadding = MediaQuery.paddingOf(context).top;
+    final stacked =
+        onBack == null && MediaQuery.textScalerOf(context).scale(14) > 20;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        PlayraSpace.xl,
-        (topPadding > 0 ? 6 : PlayraSpace.md) + 2,
-        PlayraSpace.xl,
+        PlayraSpace.lg,
+        PlayraSpace.sm,
+        PlayraSpace.lg,
         0,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ConstrainedBox(
             constraints: BoxConstraints(minHeight: 48),
-            child: Row(
+            child: Flex(
+              direction: stacked ? Axis.vertical : Axis.horizontal,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (onBack != null) ...[
                   _CircleIconButton(
@@ -52,30 +55,29 @@ class PlayraPageHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: PlayraSpace.sm),
                 ],
-                Expanded(
+                Flexible(
+                  flex: stacked ? 0 : 1,
+                  fit: stacked ? FlexFit.loose : FlexFit.tight,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: largeTitle ? null : 2,
                         style: TextStyle(
                           color: t.textPrimary,
                           fontSize: largeTitle
                               ? PlayraType.pageTitle
                               : PlayraType.title,
                           fontWeight: FontWeight.w700,
-                          height: 1.1,
+                          height: 1.2,
                         ),
                       ),
                       if (subtitle != null) ...[
                         const SizedBox(height: 2),
                         Text(
                           subtitle!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: t.textSecondary,
                             fontSize: PlayraType.small,
@@ -86,10 +88,12 @@ class PlayraPageHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                for (final action in actions) ...[
-                  const SizedBox(width: PlayraSpace.xs),
-                  action,
-                ],
+                if (actions.isNotEmpty)
+                  Wrap(
+                    spacing: PlayraSpace.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: actions,
+                  ),
               ],
             ),
           ),
@@ -153,8 +157,8 @@ class _CircleIconButton extends StatelessWidget {
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           child: Tooltip(
             message: tooltip,
             child: Icon(icon, size: 21, color: color),

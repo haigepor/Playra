@@ -74,7 +74,7 @@ class HomeLayoutMetrics {
 
   static const HomeLayoutMetrics phoneCompact = HomeLayoutMetrics(
     kind: HomeLayoutKind.phone,
-    gutter: 14,
+    gutter: 16,
     sectionGap: 16,
     cardGap: 8,
     sectionColumns: 3,

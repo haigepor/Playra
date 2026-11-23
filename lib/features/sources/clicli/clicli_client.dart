@@ -32,6 +32,12 @@ class CliCliClient {
   Dio get _client {
     final injected = _injectedDio;
     if (injected != null) return injected;
+    if (!CliCliConfig.isConfigured) {
+      throw const MediaSourceException(
+        MediaSourceErrorKind.unsupported,
+        '内容源尚未配置，请联系应用提供方',
+      );
+    }
     final revision = NetworkConfig.revision;
     if (_dio == null || _dioRevision != revision) {
       _dio?.close(force: true);
@@ -84,14 +90,13 @@ class CliCliClient {
     Map<String, dynamic> payload, {
     Duration? timeout,
   }) async {
-    Map<String, dynamic> json;
     try {
-      json = await _callOnce(path, payload, timeout: timeout);
+      return dataOf(await _callOnce(path, payload, timeout: timeout));
     } on MediaSourceException catch (error) {
       final code = error.code;
       if (code == 4020) {
         await _recoverSession();
-        json = await _callOnce(path, payload, timeout: timeout);
+        return dataOf(await _callOnce(path, payload, timeout: timeout));
       } else if (code == 4012 || code == 4013) {
         throw MediaSourceException(
           MediaSourceErrorKind.authentication,
@@ -103,7 +108,6 @@ class CliCliClient {
         rethrow;
       }
     }
-    return dataOf(json);
   }
 
   /// Validates `code` and returns the `data` object. CliCli uses code 200 for

@@ -13,6 +13,8 @@ ThemeData buildShellTheme(Brightness brightness) {
       ).copyWith(
         primary: t.primary,
         onPrimary: t.primaryForeground,
+        primaryContainer: t.primaryContainer,
+        onPrimaryContainer: t.primary,
         secondary: t.primary,
         onSecondary: t.primaryForeground,
         surface: t.background,
@@ -42,8 +44,7 @@ ThemeData buildShellTheme(Brightness brightness) {
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: t.surface,
-      // 扁平导航：只有图标/文字换色，没有背景胶囊。
-      indicatorColor: Colors.transparent,
+      indicatorColor: t.primary.withValues(alpha: .12),
       surfaceTintColor: Colors.transparent,
       height: 68,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -72,6 +73,23 @@ ThemeData buildShellTheme(Brightness brightness) {
       ),
     ),
     dividerTheme: DividerThemeData(color: t.border, thickness: 1),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: t.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: t.surface,
+      surfaceTintColor: Colors.transparent,
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: t.primary,

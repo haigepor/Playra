@@ -46,6 +46,15 @@ class CliCliConfig {
   );
   static const String fingerPrintAlgo = '1';
 
+  static bool get isConfigured => <String>[
+    signSecret,
+    masterSecret,
+    bootstrapSessionSecret,
+    deviceId,
+    deviceFingerprint,
+    fingerPrintSign,
+  ].every((value) => value.trim().isNotEmpty);
+
   static const String playerPreRollSlot = 'player_pre_roll';
   static const String defaultPlayerCode = 'mao';
   static const List<String> caps = <String>['hls', 'mp4'];

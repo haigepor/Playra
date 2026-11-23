@@ -55,14 +55,14 @@ class HomeSectionGrid extends StatelessWidget {
                 if (hasMore) ...[
                   const SizedBox(width: PlayraSpace.xs),
                   SizedBox(
-                    height: 40,
+                    height: 48,
                     child: TextButton(
                       onPressed: onMore,
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: PlayraSpace.sm,
                         ),
-                        minimumSize: const Size(0, 40),
+                        minimumSize: const Size(48, 48),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         foregroundColor: t.textSecondary,
                       ),
@@ -78,18 +78,22 @@ class HomeSectionGrid extends StatelessWidget {
           ),
           const SizedBox(height: PlayraSpace.sm),
           LayoutBuilder(
-            builder: (context, _) {
-              final cardWidth = _sectionCardWidth(layout);
+            builder: (context, constraints) {
               final scaler = MediaQuery.textScalerOf(context);
+              final columns = scaler.scale(14) > 19 ? 2 : 3;
+              final cardWidth = layout.isPhone
+                  ? (constraints.maxWidth -
+                            layout.gutter * 2 -
+                            layout.cardGap * (columns - 1)) /
+                        columns
+                  : _sectionCardWidth(layout);
               final textHeight =
                   PlayraSpace.sm +
-                  (section.ranked
-                      ? 0
-                      : scaler.scale(PlayraType.item) * 1.2 * 2) +
+                  scaler.scale(PlayraType.item) * 1.2 * 2 +
                   3 +
                   scaler.scale(PlayraType.caption) * 1.2 +
                   PlayraSpace.tiny;
-              final itemHeight = cardWidth * 4 / 3 + textHeight;
+              final itemHeight = cardWidth * 3 / 2 + textHeight;
               final cacheWidth =
                   (cardWidth * MediaQuery.devicePixelRatioOf(context))
                       .round()
@@ -159,7 +163,7 @@ class HomePosterCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AspectRatio(
-              aspectRatio: 3 / 4,
+              aspectRatio: 2 / 3,
               child: ClipRRect(
                 borderRadius: coverRadius,
                 child: Stack(
@@ -213,20 +217,6 @@ class HomePosterCard extends StatelessWidget {
                                   height: 1,
                                 ),
                               ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: Text(
-                                  item.title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    height: 1.1,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -236,8 +226,13 @@ class HomePosterCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: PlayraSpace.sm),
-            if (rank == null)
-              Text(
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight:
+                    MediaQuery.textScalerOf(context).scale(PlayraType.item) *
+                    2.4,
+              ),
+              child: Text(
                 item.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -248,6 +243,7 @@ class HomePosterCard extends StatelessWidget {
                   height: 1.2,
                 ),
               ),
+            ),
             if (item.subtitle.isNotEmpty || item.metaText.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 3),

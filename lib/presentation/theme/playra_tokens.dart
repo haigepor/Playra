@@ -24,9 +24,9 @@ abstract final class PlayraRadius {
 
 abstract final class PlayraType {
   static const display = 48.0;
-  static const pageTitle = 20.0;
+  static const pageTitle = 28.0;
   static const title = 20.0;
-  static const section = 16.0;
+  static const section = 18.0;
   static const item = 14.0;
   static const body = 14.0;
   static const label = 13.0;
@@ -116,8 +116,7 @@ abstract final class PlayraMotion {
           reverseCurve: reverseCurve,
         );
 
-  static AnimationStyle sheet(BuildContext context) =>
-      reduceOf(context)
+  static AnimationStyle sheet(BuildContext context) => reduceOf(context)
       ? AnimationStyle.noAnimation
       : const AnimationStyle(
           duration: sheetEnter,
@@ -195,19 +194,19 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
   });
 
   static const dark = PlayraTokens(
-    background: Color(0xff101115),
-    foreground: Color(0xfff4f3ee),
-    surface: Color(0xff1a1c22),
-    surfaceRaised: Color(0xff282a32),
-    surfaceOverlay: Color(0xff30323b),
-    muted: Color(0xff25262e),
-    mutedForeground: Color(0xffb2b4bd),
-    foregroundSubtle: Color(0xffb2b4bd),
-    primary: Color(0xffb7a3ff),
+    background: Color(0xff0c0f15),
+    foreground: Color(0xffedf0f7),
+    surface: Color(0xff151a24),
+    surfaceRaised: Color(0xff1d2431),
+    surfaceOverlay: Color(0xff1d2431),
+    muted: Color(0xff1d2431),
+    mutedForeground: Color(0xffa9b1c1),
+    foregroundSubtle: Color(0xffa9b1c1),
+    primary: Color(0xffc3aeff),
     primaryForeground: Color(0xff1a1026),
-    primaryContainer: Color(0xff312c40),
-    border: Color(0xff363840),
-    borderSubtle: Color(0xff2b2c35),
+    primaryContainer: Color(0xff34294e),
+    border: Color(0xff2c3545),
+    borderSubtle: Color(0xff232c3b),
     success: PlayraColors.success,
     successContainer: PlayraColors.successContainer,
     warning: PlayraColors.warning,
@@ -238,7 +237,7 @@ class PlayraTokens extends ThemeExtension<PlayraTokens> {
     muted: Color(0xffe4ddf0),
     mutedForeground: Color(0xff62636d),
     foregroundSubtle: Color(0xff62636d),
-    primary: Color(0xff9966ff),
+    primary: Color(0xff7044c2),
     primaryForeground: Colors.white,
     primaryContainer: Color(0xffede4ff),
     border: Color(0xffd8d9df),

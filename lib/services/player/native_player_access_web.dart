@@ -1,4 +1,5 @@
 import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 /// 浏览器播放器由 HTML video 管理缓存与硬解，不接受 MPV 属性和 GLSL 命令。
 class BrowserPlayerProperties {
@@ -10,3 +11,5 @@ class BrowserPlayerProperties {
 
 BrowserPlayerProperties nativePlayerAccess(Player player) =>
     BrowserPlayerProperties();
+
+Future<void> prepareVideoOutputDisposal(VideoController? controller) async {}

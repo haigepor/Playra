@@ -42,7 +42,12 @@ void main() {
   testWidgets('phone section exposes the full poster rail', (tester) async {
     await tester.pumpWidget(_harness(HomeLayoutMetrics.phone));
     await tester.pump();
-    expect(find.byType(HomePosterCard), findsNWidgets(6));
+    await tester.dragUntilVisible(
+      find.text('作品 5'),
+      find.byType(ListView),
+      const Offset(-200, 0),
+    );
+    expect(find.text('作品 5'), findsOneWidget);
     expect(find.text('热门番剧'), findsOneWidget);
     expect(find.text('6 部'), findsNothing);
     expect(find.text('更多'), findsOneWidget);

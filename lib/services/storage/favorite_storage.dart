@@ -26,6 +26,13 @@ class FavoriteRecord {
 
   String get id => '${sourceId}_$mediaId';
 
+  /// Old detail saves could contain aliases in this field; only expose a
+  /// recognizable episode status on cards and management rows.
+  String get statusText =>
+      RegExp(r'^(?:更新至|全\s*\d|共\s*\d|连载|已完结|完结)').hasMatch(subtitle.trim())
+      ? subtitle.trim()
+      : '';
+
   Map<String, dynamic> toMap() => {
     'sourceId': sourceId,
     'mediaId': mediaId,
@@ -70,7 +77,10 @@ abstract final class FavoriteStorage {
       final raw = _box.get(key);
       if (raw is Map) return FavoriteRecord.fromMap(raw);
     } catch (e) {
-      KazumiLogger().w('FavoriteStorage: failed to read $sourceId:$mediaId', error: e);
+      KazumiLogger().w(
+        'FavoriteStorage: failed to read $sourceId:$mediaId',
+        error: e,
+      );
     }
     return null;
   }
@@ -103,7 +113,10 @@ abstract final class FavoriteStorage {
       list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       return list;
     } catch (e) {
-      KazumiLogger().w('FavoriteStorage: failed to get all favorites', error: e);
+      KazumiLogger().w(
+        'FavoriteStorage: failed to get all favorites',
+        error: e,
+      );
       return const [];
     }
   }

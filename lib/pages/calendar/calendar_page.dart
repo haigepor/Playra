@@ -10,6 +10,7 @@ import 'package:kazumi/presentation/theme/playra_home_tokens.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/media_cover_image.dart';
 import 'package:kazumi/presentation/widgets/playra_backdrop.dart';
+import 'package:kazumi/presentation/widgets/playra_page_header.dart';
 import 'package:kazumi/services/storage/storage.dart';
 
 /// Weekly anime release calendar.
@@ -153,7 +154,7 @@ class _CalendarPageState extends State<CalendarPage> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: MediaErrorState(
-                message: '日历加载失败',
+                message: '更新内容暂未加载',
                 error: _error,
                 onRetry: _load,
               ),
@@ -165,31 +166,6 @@ class _CalendarPageState extends State<CalendarPage> {
                 icon: Icons.calendar_today_outlined,
                 title: '这一天暂无更新',
                 action: FilledButton(onPressed: _load, child: const Text('刷新')),
-              ),
-            )
-          else if (layout.showSideRail)
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                layout.gutter,
-                PlayraSpace.lg,
-                layout.gutter,
-                PlayraSpace.xxl,
-              ),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  mainAxisExtent: 260,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final release = _dayReleases(_selectedDate)[index];
-                  return _CalendarReleaseCard(
-                    release: release,
-                    vertical: true,
-                    onTap: () => _openDetail(release.item),
-                  );
-                }, childCount: _dayReleases(_selectedDate).length),
               ),
             )
           else
@@ -230,7 +206,9 @@ class _CalendarPageState extends State<CalendarPage> {
     final first = DateTime(2020);
     final last = DateTime(2100);
     var draft = _selectedDate;
-    var typing = false;
+    var typing =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(14) > 20;
     final form = GlobalKey<FormState>();
     final picked = await showModalBottomSheet<DateTime>(
       context: context,
@@ -278,6 +256,11 @@ class _CalendarPageState extends State<CalendarPage> {
                             if (typing) form.currentState!.save();
                             update(() => typing = !typing);
                           },
+                        ),
+                        IconButton(
+                          tooltip: '关闭日期选择',
+                          onPressed: () => Navigator.pop(sheet),
+                          icon: const Icon(Icons.close),
                         ),
                       ],
                     ),
@@ -359,36 +342,16 @@ class _CalendarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = PlayraHomeTokens.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        layout.gutter,
-        layout.headerTopPadding,
-        layout.gutter,
-        0,
-      ),
-      child: SizedBox(
-        height: layout.isPhone ? 44 : 48,
-        child: Row(
-          children: [
-            Text(
-              '更新日历',
-              style: TextStyle(
-                color: t.textPrimary,
-                fontSize: PlayraType.pageTitle,
-                fontWeight: FontWeight.w800,
-                height: 1,
-              ),
-            ),
-            const Spacer(),
-            _MonthButton(
-              date: selectedDate,
-              onTap: onMonthTap,
-              compact: layout.isPhone,
-            ),
-          ],
+    return PlayraPageHeader(
+      title: '更新日历',
+      largeTitle: true,
+      actions: [
+        _MonthButton(
+          date: selectedDate,
+          onTap: onMonthTap,
+          compact: layout.isPhone,
         ),
-      ),
+      ],
     );
   }
 }
@@ -412,7 +375,7 @@ class _MonthButton extends StatelessWidget {
       style: TextButton.styleFrom(
         foregroundColor: t.textPrimary,
         padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8),
-        minimumSize: const Size(0, 36),
+        minimumSize: const Size(44, 48),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       child: Row(
@@ -434,7 +397,7 @@ class _MonthButton extends StatelessWidget {
   }
 }
 
-class _WeekStrip extends StatelessWidget {
+class _WeekStrip extends StatefulWidget {
   const _WeekStrip({
     required this.layout,
     required this.weekStart,
@@ -451,59 +414,115 @@ class _WeekStrip extends StatelessWidget {
   final ValueChanged<DateTime> onDaySelected;
   final ValueChanged<int> onWeekChanged;
 
+  @override
+  State<_WeekStrip> createState() => _WeekStripState();
+}
+
+class _WeekStripState extends State<_WeekStrip> {
+  final _scroll = ScrollController();
+  DateTime? _revealed;
+  double? _revealedWidth;
+  double? _revealedCellWidth;
   static const _weekdays = <String>['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final today = _dateOnly(DateTime.now());
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        layout.gutter,
+        widget.layout.gutter,
         PlayraSpace.sm,
-        layout.gutter,
+        widget.layout.gutter,
         0,
       ),
-      child: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          final velocity = details.primaryVelocity ?? 0;
-          if (velocity > 160) {
-            onWeekChanged(-7);
-          } else if (velocity < -160) {
-            onWeekChanged(7);
-          }
-        },
-        child: SizedBox(
-          height:
-              (MediaQuery.textScalerOf(context).scale(11) * 1.2 +
-                      MediaQuery.textScalerOf(context).scale(16) +
-                      24)
-                  .clamp(54.0, double.infinity),
-          child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              for (var i = 0; i < 7; i++)
-                Expanded(
-                  child: _DayCell(
-                    weekday: _weekdays[i],
-                    date: weekStart.add(Duration(days: i)),
-                    selected: _sameDay(
-                      weekStart.add(Duration(days: i)),
-                      selectedDate,
-                    ),
-                    today: _sameDay(weekStart.add(Duration(days: i)), today),
-                    releaseCount: releases
-                        .where(
-                          (release) =>
-                              release.weekday ==
-                              weekStart.add(Duration(days: i)).weekday,
-                        )
-                        .length,
-                    onTap: () =>
-                        onDaySelected(weekStart.add(Duration(days: i))),
-                  ),
-                ),
+              TextButton(
+                onPressed: () => widget.onWeekChanged(-7),
+                child: const Text('上周'),
+              ),
+              Text(
+                '${widget.weekStart.month}/${widget.weekStart.day}–${widget.weekStart.add(const Duration(days: 6)).month}/${widget.weekStart.add(const Duration(days: 6)).day}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              TextButton(
+                onPressed: () => widget.onWeekChanged(7),
+                child: const Text('下周'),
+              ),
             ],
           ),
-        ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final scaler = MediaQuery.textScalerOf(context);
+              final minimum = (scaler.scale(11) * 2.4 + 8).clamp(
+                48.0,
+                double.infinity,
+              );
+              final cellWidth = (constraints.maxWidth / 7).clamp(
+                minimum,
+                double.infinity,
+              );
+              if (_revealed != widget.selectedDate ||
+                  _revealedWidth != constraints.maxWidth ||
+                  _revealedCellWidth != cellWidth) {
+                _revealed = widget.selectedDate;
+                _revealedWidth = constraints.maxWidth;
+                _revealedCellWidth = cellWidth;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted || !_scroll.hasClients) return;
+                  final index = widget.selectedDate
+                      .difference(widget.weekStart)
+                      .inDays;
+                  _scroll.jumpTo(
+                    (index * cellWidth - (constraints.maxWidth - cellWidth) / 2)
+                        .clamp(0.0, _scroll.position.maxScrollExtent),
+                  );
+                });
+              }
+              return SizedBox(
+                height: scaler.scale(11) * 1.2 + scaler.scale(16) + 30,
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < 7; i++)
+                        SizedBox(
+                          width: cellWidth,
+                          child: _DayCell(
+                            weekday: _weekdays[i],
+                            date: widget.weekStart.add(Duration(days: i)),
+                            selected: _sameDay(
+                              widget.weekStart.add(Duration(days: i)),
+                              widget.selectedDate,
+                            ),
+                            today: _sameDay(
+                              widget.weekStart.add(Duration(days: i)),
+                              today,
+                            ),
+                            onTap: () => widget.onDaySelected(
+                              widget.weekStart.add(Duration(days: i)),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -515,7 +534,6 @@ class _DayCell extends StatelessWidget {
     required this.date,
     required this.selected,
     required this.today,
-    required this.releaseCount,
     required this.onTap,
   });
 
@@ -523,56 +541,60 @@ class _DayCell extends StatelessWidget {
   final DateTime date;
   final bool selected;
   final bool today;
-  final int releaseCount;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final t = PlayraHomeTokens.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            weekday,
-            style: TextStyle(
-              color: today ? t.accent : t.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          AnimatedContainer(
-            duration: PlayraMotion.duration(context, PlayraMotion.state),
-            curve: PlayraMotion.curve,
-            constraints: const BoxConstraints(minWidth: 30, minHeight: 26),
-            padding: const EdgeInsets.only(bottom: 2),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  width: 2,
-                  color: selected ? t.accent : Colors.transparent,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final shortLabel =
+            constraints.maxWidth <
+            MediaQuery.textScalerOf(context).scale(11) * 2;
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                shortLabel ? weekday.substring(1) : weekday,
+                maxLines: 1,
+                semanticsLabel: weekday,
+                style: TextStyle(
+                  color: today ? t.accent : t.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
                 ),
               ),
-            ),
-            child: Text(
-              '${date.day}',
-              style: TextStyle(
-                color: selected ? t.accent : t.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                height: 1,
+              const SizedBox(height: 4),
+              AnimatedContainer(
+                duration: PlayraMotion.duration(context, PlayraMotion.state),
+                curve: PlayraMotion.curve,
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 26),
+                padding: const EdgeInsets.only(bottom: 2),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? t.railSelected : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${date.day}',
+                  style: TextStyle(
+                    color: selected ? t.accent : t.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 4),
+              _ReleaseDots(count: today ? 1 : 0, selected: selected),
+            ],
           ),
-          const SizedBox(height: 4),
-          _ReleaseDots(count: releaseCount, selected: selected),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -660,83 +682,41 @@ class _CalendarReleaseList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = PlayraHomeTokens.of(context);
-    final timeWidth = MediaQuery.textScalerOf(context).scale(13) * 3.3;
-    final layout = HomeLayoutMetrics.of(context);
-    final titleWidth =
-        MediaQuery.sizeOf(context).width -
-        2 * layout.gutter -
-        timeWidth -
-        16 -
-        80 -
-        10 -
-        44;
-    final stackTime =
-        titleWidth < MediaQuery.textScalerOf(context).scale(14) * 5;
     return Column(
       children: [
-        for (var i = 0; i < releases.length; i++)
-          Stack(
-            children: [
-              if (!stackTime)
-                Positioned(
-                  left: timeWidth,
-                  width: 9,
-                  top: 0,
-                  bottom: 0,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: VerticalDivider(
-                          width: 1,
-                          thickness: 1,
-                          color: i == 0 ? Colors.transparent : palette.divider,
-                        ),
-                      ),
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: palette.accent,
-                        ),
-                      ),
-                      Expanded(
-                        child: VerticalDivider(
-                          width: 1,
-                          thickness: 1,
-                          color: i == releases.length - 1
-                              ? Colors.transparent
-                              : palette.divider,
-                        ),
-                      ),
-                    ],
+        for (var i = 0; i < releases.length; i++) ...[
+          if (i == 0 || releases[i].time != releases[i - 1].time)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 8 : 24, bottom: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ExcludeSemantics(
+                  child: Text(
+                    releases[i].time,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              _CalendarReleaseCard(
-                release: releases[i],
-                stackTime: stackTime,
-                onTap: () => onTap(releases[i].item),
               ),
-            ],
+            ),
+          _CalendarReleaseCard(
+            release: releases[i],
+            onTap: () => onTap(releases[i].item),
           ),
+        ],
       ],
     );
   }
 }
 
 class _CalendarReleaseCard extends StatefulWidget {
-  const _CalendarReleaseCard({
-    required this.release,
-    required this.onTap,
-    this.vertical = false,
-    this.stackTime = false,
-  });
+  const _CalendarReleaseCard({required this.release, required this.onTap});
 
   final _CalendarRelease release;
   final VoidCallback onTap;
-  final bool vertical;
-  final bool stackTime;
 
   @override
   State<_CalendarReleaseCard> createState() => _CalendarReleaseCardState();
@@ -766,90 +746,48 @@ class _CalendarReleaseCardState extends State<_CalendarReleaseCard> {
   @override
   Widget build(BuildContext context) {
     final t = PlayraHomeTokens.of(context);
-    if (!widget.vertical) {
-      return Material(
+    return Semantics(
+      label: widget.release.time,
+      child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: widget.onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: _buildHorizontal(context, t),
-          ),
+          child: _buildHorizontal(context, t),
         ),
-      );
-    }
-
-    final card = Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: t.cardSurface.withValues(alpha: .62),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: _buildVertical(context, t),
-    );
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: card,
       ),
     );
   }
 
   Widget _buildHorizontal(BuildContext context, PlayraHomeTokens t) {
     final release = widget.release;
-    final time = Text(
-      release.time,
-      maxLines: 1,
-      style: TextStyle(
-        color: t.textPrimary,
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-        fontFeatures: const [FontFeature.tabularFigures()],
-      ),
-    );
-    final cover = ClipRRect(
-      borderRadius: BorderRadius.circular(5),
-      child: SizedBox(
-        width: widget.stackTime ? 60 : 80,
-        height: widget.stackTime ? 36 : 52,
-        child: MediaCoverImage(
-          url: release.item.cover,
-          cacheWidth:
-              ((widget.stackTime ? 60 : 80) *
-                      MediaQuery.devicePixelRatioOf(context))
-                  .round(),
-          errorWidget: ColoredBox(
-            color: t.cardPlaceholder,
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              color: t.textSecondary,
-              size: 18,
-            ),
-          ),
-        ),
-      ),
-    );
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 60),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          if (widget.stackTime)
-            Column(children: [time, const SizedBox(height: 3), cover])
-          else ...[
-            SizedBox(
-              width: MediaQuery.textScalerOf(context).scale(13) * 3.3,
-              child: time,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              width: 48,
+              height: 64,
+              child: MediaCoverImage(
+                url: release.item.cover,
+                cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context))
+                    .round(),
+                errorWidget: ColoredBox(
+                  color: t.cardPlaceholder,
+                  child: Icon(
+                    Icons.movie_outlined,
+                    color: t.textSecondary,
+                    size: 20,
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(width: 16),
-            cover,
-          ],
-          const SizedBox(width: 10),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   release.item.title,
@@ -857,24 +795,20 @@ class _CalendarReleaseCardState extends State<_CalendarReleaseCard> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: t.textPrimary,
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    height: 1.2,
+                    height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   release.episodeLabel,
-                  style: TextStyle(
-                    color: t.textSecondary,
-                    fontSize: 11,
-                    height: 1.1,
-                  ),
+                  style: TextStyle(color: t.textSecondary, fontSize: 13),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 2),
+          const SizedBox(width: 8),
           ValueListenableBuilder(
             valueListenable: FavoriteStorage.listenable(),
             builder: (context, box, child) =>
@@ -882,69 +816,6 @@ class _CalendarReleaseCardState extends State<_CalendarReleaseCard> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildVertical(BuildContext context, PlayraHomeTokens t) {
-    final release = widget.release;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              release.time,
-              style: TextStyle(
-                color: t.accent,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const Spacer(),
-            ValueListenableBuilder(
-              valueListenable: FavoriteStorage.listenable(),
-              builder: (context, box, child) =>
-                  _FollowButton(following: _following, onTap: _toggleFollow),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: SizedBox.expand(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: MediaCoverImage(
-                url: release.item.cover,
-                cacheWidth: 720,
-                errorWidget: ColoredBox(
-                  color: t.cardPlaceholder,
-                  child: Icon(
-                    Icons.image_not_supported_outlined,
-                    color: t.textSecondary,
-                    size: 28,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          release.item.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: t.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          release.episodeLabel,
-          style: TextStyle(color: t.textSecondary, fontSize: 12),
-        ),
-      ],
     );
   }
 }
@@ -963,7 +834,7 @@ class _FollowButton extends StatelessWidget {
       onPressed: onTap,
       style: IconButton.styleFrom(
         foregroundColor: following ? t.accent : t.textSecondary,
-        minimumSize: const Size(44, 44),
+        minimumSize: const Size(48, 48),
         padding: EdgeInsets.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
@@ -1013,7 +884,7 @@ _ScheduleInfo? _parseSchedule(String raw) {
   };
   if (weekday == 0) return null;
 
-  var time = '待定';
+  var time = '时间待定';
   final timeMatch = RegExp(r'(\d{1,2})[:：点](\d{1,2})?').firstMatch(text);
   if (timeMatch != null) {
     final hour = int.tryParse(timeMatch.group(1) ?? '');

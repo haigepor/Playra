@@ -111,7 +111,11 @@ class CliCliSource implements MediaSource {
           () => _api.categoryVideos(
             categoryId: categoryId,
             page: page,
-            sort: sort,
+            sort: switch (sort) {
+              'hot' => 'hottest',
+              'new' => 'latest',
+              _ => sort,
+            },
             billing: billing,
           ),
         );

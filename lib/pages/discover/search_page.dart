@@ -21,6 +21,7 @@ class _SearchPageState extends State<SearchPage> {
   final ScrollController _scroll = ScrollController();
   final List<MediaItem> _items = <MediaItem>[];
 
+  int _total = 0;
   int _revision = 0;
   String _keyword = '';
   int _page = 1;
@@ -99,6 +100,7 @@ class _SearchPageState extends State<SearchPage> {
         _error = null;
         _loadMoreFailed = false;
         _items.addAll(result.items);
+        _total = result.total;
         _hasMore = result.hasMore;
         _page += 1;
       });
@@ -109,7 +111,24 @@ class _SearchPageState extends State<SearchPage> {
         _loadMoreFailed = _items.isNotEmpty;
       });
     } finally {
-      if (mounted && revision == _revision) setState(() => _loading = false);
+      if (mounted && revision == _revision) {
+        setState(() => _loading = false);
+        // A short page cannot trigger scrolling. Fill it after layout, using
+        // the same request revision and failure guards as normal pagination.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted ||
+              revision != _revision ||
+              _loading ||
+              !_hasMore ||
+              _error != null) {
+            return;
+          }
+          if (_items.isEmpty ||
+              (_scroll.hasClients && _scroll.position.maxScrollExtent <= 0)) {
+            _search(reset: false);
+          }
+        });
+      }
     }
   }
 
@@ -226,6 +245,15 @@ class _SearchPageState extends State<SearchPage> {
     return CustomScrollView(
       controller: _scroll,
       slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(layout.gutter, 12, layout.gutter, 8),
+            child: Text(
+              _total > 0 ? '找到 $_total 部作品' : '已加载 ${_items.length} 部作品',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ),
         SliverPadding(
           padding: insets,
           sliver: SliverList.separated(
@@ -236,10 +264,7 @@ class _SearchPageState extends State<SearchPage> {
             itemCount: _items.length,
             itemBuilder: (context, i) {
               final item = _items[i];
-              final coverWidth = (MediaQuery.sizeOf(context).width * .18).clamp(
-                56.0,
-                88.0,
-              );
+              const coverWidth = 64.0;
               final matches = RegExp(
                 RegExp.escape(_keyword),
                 caseSensitive: false,
@@ -265,14 +290,15 @@ class _SearchPageState extends State<SearchPage> {
               return InkWell(
                 onTap: () => context.pushNamed('/detail', arguments: item.key),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: SizedBox(
                           width: coverWidth,
-                          height: coverWidth * 4 / 3,
+                          height: 96,
                           child: MediaCoverImage(
                             url: item.cover,
                             fit: BoxFit.cover,
@@ -283,7 +309,7 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,25 +317,37 @@ class _SearchPageState extends State<SearchPage> {
                             Text.rich(
                               TextSpan(children: titleSpans),
                               semanticsLabel: item.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
+                                    fontSize: 16,
                                     height: 1.25,
                                   ),
                             ),
-                            if (item.metaText.isNotEmpty ||
-                                item.subtitle.isNotEmpty) ...[
+                            if (item.subtitle.isNotEmpty) ...[
                               const SizedBox(height: 5),
                               Text(
-                                item.metaText.isNotEmpty
-                                    ? item.metaText
-                                    : item.subtitle,
+                                item.subtitle,
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
+                                      fontSize: 13,
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.onSurfaceVariant,
                                     ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            if (item.metaText.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                item.metaText,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.copyWith(fontSize: 12),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -326,6 +364,7 @@ class _SearchPageState extends State<SearchPage> {
         ),
         SliverToBoxAdapter(
           child: MediaGridFooter(
+            onLoadMore: _hasMore ? () => _search(reset: false) : null,
             loading: _loading,
             error: _loadMoreFailed ? _error : null,
             onRetry: _loadMoreFailed ? () => _search(reset: false) : null,

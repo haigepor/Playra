@@ -8,6 +8,8 @@ import 'package:kazumi/features/sources/core/media_models.dart';
 import 'package:kazumi/features/sources/core/media_source.dart';
 import 'package:kazumi/features/sources/sources.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/pages/discover/media_widgets.dart';
 import 'package:kazumi/pages/player/player_option_sheet.dart';
 import 'package:kazumi/pages/player/player_item.dart';
 import 'package:kazumi/pages/player/player_buffering_overlay.dart';
@@ -44,8 +46,7 @@ class _SourcePlayerPageState extends State<SourcePlayerPage> {
   late int _roadIndex;
   static const _episodesPerGroup = 20;
   int _episodeGroup = 0;
-  bool _allEpisodes = false;
-  final _scaffold = GlobalKey<ScaffoldState>();
+  bool _allEpisodes = true;
   bool _expanded = false;
   bool _drawerOpen = false;
   bool? _immersive;
@@ -328,7 +329,8 @@ class _SourcePlayerPageState extends State<SourcePlayerPage> {
     final playing = _session.playbackEpisode;
     final episodes = _roads[playing.road].episodes;
     // Positions are one-based. The same index selects the next item in this road.
-    if (playing.episode >= episodes.length || episodes[playing.episode].vipOnly) {
+    if (playing.episode >= episodes.length ||
+        episodes[playing.episode].vipOnly) {
       return;
     }
     final next = episodes[playing.episode];
@@ -370,6 +372,11 @@ class _SourcePlayerPageState extends State<SourcePlayerPage> {
           !_player.panel.lockPanel &&
           _player.playback.completed &&
           !_player.playback.resumedNearEnd;
+      final landscape =
+          MediaQuery.orientationOf(context) == Orientation.landscape;
+      final panelWidth = (MediaQuery.sizeOf(context).width * .38)
+          .clamp(240.0, 420.0)
+          .clamp(0.0, MediaQuery.sizeOf(context).width);
       final immersive =
           _session.isFullscreen ||
           _session.isPip ||
@@ -378,7 +385,7 @@ class _SourcePlayerPageState extends State<SourcePlayerPage> {
         _immersive = immersive;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _immersive == immersive) {
-            if (!immersive) _scaffold.currentState?.closeEndDrawer();
+            if (!immersive) setState(() => _drawerOpen = false);
             DisplayModeService.setSystemBarsHidden(
               owner: this,
               hidden: immersive,
@@ -386,132 +393,130 @@ class _SourcePlayerPageState extends State<SourcePlayerPage> {
           }
         });
       }
-      return Scaffold(
-        key: _scaffold,
-        endDrawerEnableOpenDragGesture: false,
-        onEndDrawerChanged: (open) => setState(() => _drawerOpen = open),
-        drawerScrimColor: Colors.black38,
-        endDrawer: Drawer(
-          shape: const RoundedRectangleBorder(),
-          width: (MediaQuery.sizeOf(context).width * .38)
-              .clamp(265, 420)
-              .toDouble(),
-          child: Theme(
-            data: buildShellTheme(Brightness.dark),
-            child: Builder(
-              builder: (context) => Material(
-                color: Theme.of(context).colorScheme.surface,
-                child: SafeArea(child: _episodeInfo(context, drawer: true)),
-              ),
-            ),
-          ),
-        ),
-        body: SafeArea(
-          top: !immersive,
-          bottom: !immersive,
-          left: !immersive,
-          right: !immersive,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final video = ColoredBox(
-                color: Colors.black,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (_started)
-                      PlayerItem(
-                        playerController: _player,
-                        videoPageController: _session,
-                        fillsWindow: immersive,
-                        episodePanelOpen: _drawerOpen,
-                        changeEpisode: _changeEpisode,
-                        onEpisodeEnded: _onEpisodeEnded,
-                        resolvingLabel: _resolvingLabel,
-                        onToggleSidePanel: immersive && !showEndActions
-                            ? () => _scaffold.currentState?.openEndDrawer()
-                            : null,
-                        onBackPressed: () => Navigator.of(context).maybePop(),
-                        keyboardFocus: _keyboardFocus,
-                        pauseForTimedShutdown: () => _player.pause(),
-                        disableAnimations: MediaQuery.disableAnimationsOf(
-                          context,
-                        ),
-                      )
-                    else
-                      _buildGate(context),
-                    if (_drawerOpen && _started && immersive)
-                      Positioned(
-                        left: 18,
-                        top: 12,
-                        right: MediaQuery.sizeOf(context).width * .4,
-                        child: SafeArea(
-                          child: Text(
-                            [
-                              _detail.title,
-                              _roads[_session.playbackEpisode.road]
-                                  .episodes[_session.playbackEpisode.episode -
-                                      1]
-                                  .title,
-                            ].join(' · '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              shadows: [Shadow(blurRadius: 5)],
+      return PopScope(
+        canPop: !_drawerOpen,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && _drawerOpen) setState(() => _drawerOpen = false);
+        },
+        child: Scaffold(
+          body: Stack(
+            children: [
+              SafeArea(
+                top: !immersive,
+                bottom: !immersive,
+                left: !immersive,
+                right: !immersive,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final video = ColoredBox(
+                      color: Colors.black,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (_started)
+                            PlayerItem(
+                              playerController: _player,
+                              videoPageController: _session,
+                              fillsWindow: immersive,
+                              episodePanelOpen: _drawerOpen,
+                              episodePanelInset: _drawerOpen && landscape
+                                  ? panelWidth
+                                  : 0,
+                              changeEpisode: _changeEpisode,
+                              onEpisodeEnded: _onEpisodeEnded,
+                              resolvingLabel: _resolvingLabel,
+                              onToggleSidePanel: immersive && !showEndActions
+                                  ? () => setState(() => _drawerOpen = true)
+                                  : null,
+                              onBackPressed: () {
+                                if (_drawerOpen) {
+                                  setState(() => _drawerOpen = false);
+                                } else {
+                                  Navigator.of(context).maybePop();
+                                }
+                              },
+                              keyboardFocus: _keyboardFocus,
+                              pauseForTimedShutdown: () => _player.pause(),
+                              disableAnimations: MediaQuery.disableAnimationsOf(
+                                context,
+                              ),
+                            )
+                          else
+                            _buildGate(context),
+                        ],
+                      ),
+                    );
+                    final failed = _failedSwitch;
+                    return Column(
+                      children: [
+                        if (immersive)
+                          Expanded(child: video)
+                        else
+                          SizedBox(
+                            width: constraints.maxWidth,
+                            height: (constraints.maxWidth * 9 / 16).clamp(
+                              0.0,
+                              constraints.maxHeight,
+                            ),
+                            child: video,
+                          ),
+                        if (failed != null &&
+                            _started &&
+                            !_loading &&
+                            !_session.isPip)
+                          Observer(
+                            builder: (_) => _player.panel.lockPanel
+                                ? const SizedBox.shrink()
+                                : SafeArea(
+                                    top: false,
+                                    child: _switchFailureBar(context, failed),
+                                  ),
+                          ),
+                        if (showEndActions) _buildEndActions(context),
+                        if (!immersive)
+                          Expanded(
+                            child: Observer(
+                              builder: (_) {
+                                final locked = _player.panel.lockPanel;
+                                return ExcludeSemantics(
+                                  excluding: locked,
+                                  child: AbsorbPointer(
+                                    absorbing: locked,
+                                    child: _episodeInfo(context, drawer: false),
+                                  ),
+                                );
+                              },
                             ),
                           ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              if (_drawerOpen && !_player.panel.lockPanel)
+                Positioned(
+                  top: landscape ? 0 : null,
+                  bottom: 0,
+                  right: 0,
+                  left: landscape ? null : 0,
+                  width: landscape ? panelWidth : null,
+                  height: landscape
+                      ? null
+                      : MediaQuery.sizeOf(context).height * .65,
+                  child: Theme(
+                    data: buildShellTheme(Brightness.dark),
+                    child: Builder(
+                      builder: (context) => Material(
+                        elevation: 12,
+                        color: Theme.of(context).colorScheme.surface,
+                        child: SafeArea(
+                          child: _episodeInfo(context, drawer: true),
                         ),
                       ),
-                  ],
+                    ),
+                  ),
                 ),
-              );
-              final failed = _failedSwitch;
-              return Column(
-                children: [
-                  if (immersive)
-                    Expanded(child: video)
-                  else
-                    SizedBox(
-                      width: constraints.maxWidth,
-                      height: (constraints.maxWidth * 9 / 16).clamp(
-                        0.0,
-                        constraints.maxHeight,
-                      ),
-                      child: video,
-                    ),
-                  if (failed != null &&
-                      _started &&
-                      !_loading &&
-                      !_session.isPip)
-                    Observer(
-                      builder: (_) => _player.panel.lockPanel
-                          ? const SizedBox.shrink()
-                          : SafeArea(
-                              top: false,
-                              child: _switchFailureBar(context, failed),
-                            ),
-                    ),
-                  if (showEndActions) _buildEndActions(context),
-                  if (!immersive)
-                    Expanded(
-                      child: Observer(
-                        builder: (_) {
-                          final locked = _player.panel.lockPanel;
-                          return ExcludeSemantics(
-                            excluding: locked,
-                            child: AbsorbPointer(
-                              absorbing: locked,
-                              child: _episodeInfo(context, drawer: false),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              );
-            },
+            ],
           ),
         ),
       );
@@ -519,342 +524,412 @@ class _SourcePlayerPageState extends State<SourcePlayerPage> {
   );
 
   Widget _episodeInfo(BuildContext context, {required bool drawer}) {
-    final road = _roads.isEmpty ? null : _roads[_roadIndex];
-    final episodes = road?.episodes ?? const <MediaEpisode>[];
-    final first = _episodeGroup * _episodesPerGroup;
-    final groupCount =
-        (episodes.length + _episodesPerGroup - 1) ~/ _episodesPerGroup;
-    final visibleCount = (episodes.length - first).clamp(0, _episodesPerGroup);
-    String groupLabel(int group) {
-      final start = group * _episodesPerGroup;
-      final end = (start + _episodesPerGroup).clamp(0, episodes.length);
-      return '${episodes[start].number}–${episodes[end - 1].number}';
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final road = _roads.isEmpty ? null : _roads[_roadIndex];
+        final episodes = road?.episodes ?? const <MediaEpisode>[];
+        final first = _episodeGroup * _episodesPerGroup;
+        final groupCount =
+            (episodes.length + _episodesPerGroup - 1) ~/ _episodesPerGroup;
+        final visibleCount = (episodes.length - first).clamp(
+          0,
+          _episodesPerGroup,
+        );
+        String groupLabel(int group) {
+          final start = group * _episodesPerGroup;
+          final end = (start + _episodesPerGroup).clamp(0, episodes.length);
+          return '${episodes[start].number}–${episodes[end - 1].number}';
+        }
 
-    final playing = _session.playbackEpisode;
-    final active = _started
-        ? _roads[playing.road].episodes[playing.episode - 1]
-        : null;
-    final theme = Theme.of(context);
-    final columns = ((MediaQuery.sizeOf(context).width - 30) / 54)
-        .floor()
-        .clamp(1, 6);
-    final condensed = !drawer && !_allEpisodes;
-    final anchor = playing.road == _roadIndex
-        ? (playing.episode - 1).clamp(0, episodes.length)
-        : 0;
-    final quickStart = (anchor ~/ columns * columns).clamp(
-      0,
-      (episodes.length - columns).clamp(0, episodes.length),
-    );
-    final schedule = _detail.updateSchedule
-        .replaceAll('|', ' · ')
-        .replaceFirstMapped(RegExp(r'^(\d+)全$'), (match) => '全 ${match[1]} 集');
-    final summary = <String>{
-      if (active != null) active.title,
-      if (_detail.year != null) _detail.year.toString(),
-      _detail.category,
-      _detail.subtitle,
-    }..remove('');
-    final facts = <String>{
-      _detail.area,
-      ..._detail.tags,
-      schedule,
-      if (_detail.score != null) '评分 ${_detail.score}',
-    }..removeAll({'', ...summary});
-    final metadata = facts.join(' · ');
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!drawer) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _detail.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontSize: 20,
-                                height: 1.18,
-                                fontWeight: FontWeight.w700,
+        final playing = _session.playbackEpisode;
+        final active = _started
+            ? _roads[playing.road].episodes[playing.episode - 1]
+            : null;
+        final theme = Theme.of(context);
+        final measure = TextPainter(
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        );
+        var labelWidth = 0.0;
+        for (final episode in episodes) {
+          measure.text = TextSpan(
+            text: episode.number.toString().padLeft(2, '0'),
+            style: theme.textTheme.labelLarge,
+          );
+          measure.layout();
+          if (measure.width > labelWidth) labelWidth = measure.width;
+        }
+        measure.dispose();
+        final cellWidth = (labelWidth + 34).clamp(48.0, double.infinity);
+        final columns = ((constraints.maxWidth - 32 + 6) / (cellWidth + 6))
+            .floor()
+            .clamp(1, 6);
+        final condensed = !drawer && !_allEpisodes;
+        final anchor = playing.road == _roadIndex
+            ? (playing.episode - 1).clamp(0, episodes.length)
+            : 0;
+        final quickStart = (anchor ~/ columns * columns).clamp(
+          0,
+          (episodes.length - columns).clamp(0, episodes.length),
+        );
+        final schedule = _detail.updateSchedule
+            .replaceAll('|', ' · ')
+            .replaceFirstMapped(
+              RegExp(r'^(\d+)全$'),
+              (match) => '全 ${match[1]} 集',
+            );
+        final playbackStatus = [
+          if (active != null) '当前 ${active.title}',
+          _detail.episodeStatus,
+        ].where((part) => part.isNotEmpty).join(' · ');
+        final metadata = <String>{
+          if (_detail.year != null) _detail.year.toString(),
+          _detail.area,
+          _detail.category,
+          ..._detail.tags,
+          schedule,
+          if (_detail.score != null) '评分 ${_detail.score}',
+        }..remove('');
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!drawer) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _detail.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontSize: 24,
+                                    height: 1.18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (playbackStatus.isNotEmpty)
+                                  const SizedBox(height: 2),
+                                if (playbackStatus.isNotEmpty)
+                                  Text(
+                                    playbackStatus,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (widget.demoUrl == null)
+                            ValueListenableBuilder(
+                              valueListenable: FavoriteStorage.listenable(),
+                              builder: (context, box, child) {
+                                final favorite = FavoriteStorage.isFavorite(
+                                  _detail.key.sourceId,
+                                  _detail.key.mediaId,
+                                );
+                                return IconButton(
+                                  tooltip: favorite ? '取消追番' : '加入追番',
+                                  icon: Icon(
+                                    favorite
+                                        ? Icons.bookmark
+                                        : Icons.bookmark_border,
+                                  ),
+                                  onPressed: () => FavoriteStorage.toggle(
+                                    FavoriteRecord(
+                                      sourceId: _detail.key.sourceId,
+                                      mediaId: _detail.key.mediaId,
+                                      title: _detail.title,
+                                      cover: _detail.cover,
+                                      category: _detail.category,
+                                      subtitle: _detail.episodeStatus,
+                                      updatedAt: DateTime.now(),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                      if (metadata.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            metadata.join(' · '),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      const Divider(height: 20),
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '选集',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (!drawer && episodes.length > columns)
+                          TextButton(
+                            onPressed: () =>
+                                setState(() => _allEpisodes = !_allEpisodes),
+                            child: Text(
+                              _allEpisodes ? '收起' : '全部 ${episodes.length} 集',
+                            ),
+                          ),
+                        if (drawer)
+                          IconButton(
+                            tooltip: '关闭选集',
+                            onPressed: () =>
+                                setState(() => _drawerOpen = false),
+                            icon: const Icon(Icons.close),
+                          )
+                        else if (road != null)
+                          _roadMenu(context, road),
+                      ],
+                    ),
+                    if (drawer && road != null)
+                      _roadMenu(context, road, drawer: true),
+                    if (!condensed && groupCount > 1)
+                      Row(
+                        children: [
+                          Text(
+                            '共 ${episodes.length} 集',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const Spacer(),
+                          PopupMenuButton<int>(
+                            tooltip: '选择集数区间',
+                            initialValue: _episodeGroup,
+                            onSelected: (group) =>
+                                setState(() => _episodeGroup = group),
+                            itemBuilder: (_) => [
+                              for (var group = 0; group < groupCount; group++)
+                                CheckedPopupMenuItem(
+                                  value: group,
+                                  checked: group == _episodeGroup,
+                                  child: Text(groupLabel(group)),
+                                ),
+                            ],
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 44),
+                              child: Row(
+                                children: [
+                                  Text(groupLabel(_episodeGroup)),
+                                  const Icon(Icons.expand_more, size: 18),
+                                ],
                               ),
                             ),
-                            if (summary.isNotEmpty) const SizedBox(height: 2),
-                            if (summary.isNotEmpty)
-                              Text(
-                                summary.join(' · '),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+              sliver: SliverGrid.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisExtent:
+                      (MediaQuery.textScalerOf(context).scale(14) * 1.3 + 16)
+                          .clamp(48.0, double.infinity),
+                  crossAxisSpacing: drawer ? 8 : 6,
+                  mainAxisSpacing: 4,
+                ),
+                itemCount: condensed
+                    ? episodes.length.clamp(0, columns)
+                    : visibleCount,
+                itemBuilder: (context, offset) {
+                  final i = (condensed ? quickStart : first) + offset;
+                  final item = episodes[i];
+                  final current =
+                      active != null &&
+                      playing.road == _roadIndex &&
+                      playing.episode == i + 1;
+                  return Semantics(
+                    selected: current,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        backgroundColor: current
+                            ? theme.colorScheme.primary.withValues(alpha: .12)
+                            : theme.colorScheme.surfaceContainer,
+                        side: BorderSide(
+                          color: current
+                              ? theme.colorScheme.primary
+                              : Colors.transparent,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                      ),
+                      onPressed: _loading || item.vipOnly || road!.vipOnly
+                          ? null
+                          : () {
+                              if (drawer) setState(() => _drawerOpen = false);
+                              if (!current) {
+                                _changeEpisode(i + 1, currentRoad: _roadIndex);
+                              }
+                            },
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (current && !drawer)
+                              Icon(
+                                Icons.play_arrow_rounded,
+                                size: 14,
+                                color: theme.colorScheme.primary,
                               ),
+                            Text(
+                              item.number.toString().padLeft(2, '0'),
+                              style: TextStyle(
+                                fontWeight: drawer ? FontWeight.w600 : null,
+                                color: current
+                                    ? theme.colorScheme.primary
+                                    : (item.vipOnly || road!.vipOnly
+                                          ? theme.disabledColor
+                                          : theme.colorScheme.onSurface),
+                              ),
+                            ),
+                            if (current && drawer) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.equalizer_rounded,
+                                color: theme.colorScheme.primary,
+                                size: 15,
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                      if (widget.demoUrl == null)
-                        ValueListenableBuilder(
-                          valueListenable: FavoriteStorage.listenable(),
-                          builder: (context, box, child) {
-                            final favorite = FavoriteStorage.isFavorite(
-                              _detail.key.sourceId,
-                              _detail.key.mediaId,
-                            );
-                            return IconButton(
-                              tooltip: favorite ? '取消追番' : '加入追番',
-                              icon: Icon(
-                                favorite
-                                    ? Icons.bookmark
-                                    : Icons.bookmark_border,
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (!drawer && _detail.description.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_detail.description.isNotEmpty)
+                        LayoutBuilder(
+                          builder: (context, c) {
+                            final style = theme.textTheme.bodyMedium!;
+                            final measure = TextPainter(
+                              text: TextSpan(
+                                text: _detail.description,
+                                style: style,
                               ),
-                              onPressed: () => FavoriteStorage.toggle(
-                                FavoriteRecord(
-                                  sourceId: _detail.key.sourceId,
-                                  mediaId: _detail.key.mediaId,
-                                  title: _detail.title,
-                                  cover: _detail.cover,
-                                  category: _detail.category,
-                                  subtitle: _detail.subtitle,
-                                  updatedAt: DateTime.now(),
+                              maxLines: 2,
+                              textDirection: Directionality.of(context),
+                              textScaler: MediaQuery.textScalerOf(context),
+                            )..layout(maxWidth: c.maxWidth);
+                            final long = measure.didExceedMaxLines;
+                            measure.dispose();
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '剧情简介',
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ),
+                                    if (long)
+                                      TextButton(
+                                        onPressed: () => setState(
+                                          () => _expanded = !_expanded,
+                                        ),
+                                        child: Text(_expanded ? '收起' : '展开'),
+                                      ),
+                                  ],
                                 ),
-                              ),
+                                if (!long) const SizedBox(height: 4),
+                                Text(
+                                  _detail.description,
+                                  maxLines: _expanded ? null : 2,
+                                  overflow: _expanded
+                                      ? null
+                                      : TextOverflow.ellipsis,
+                                  style: style,
+                                ),
+                              ],
                             );
                           },
                         ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '选集',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (!drawer && episodes.length > columns)
-                      TextButton(
-                        onPressed: () =>
-                            setState(() => _allEpisodes = !_allEpisodes),
-                        child: Text(
-                          _allEpisodes ? '收起' : '全部 ${episodes.length} 集',
-                        ),
-                      ),
-                    if (drawer)
-                      IconButton(
-                        tooltip: '关闭选集',
-                        onPressed: () =>
-                            _scaffold.currentState?.closeEndDrawer(),
-                        icon: const Icon(Icons.close),
-                      )
-                    else if (road != null)
-                      _roadMenu(context, road),
-                  ],
                 ),
-                if (drawer && road != null)
-                  _roadMenu(context, road, drawer: true),
-                if (!condensed && groupCount > 1)
-                  Row(
+              ),
+            if (!drawer && _detail.subtitle.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                sliver: SliverToBoxAdapter(
+                  child: ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: const Text('作品资料'),
                     children: [
-                      Text(
-                        '共 ${episodes.length} 集',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      const Spacer(),
-                      PopupMenuButton<int>(
-                        tooltip: '选择集数区间',
-                        initialValue: _episodeGroup,
-                        onSelected: (group) =>
-                            setState(() => _episodeGroup = group),
-                        itemBuilder: (_) => [
-                          for (var group = 0; group < groupCount; group++)
-                            CheckedPopupMenuItem(
-                              value: group,
-                              checked: group == _episodeGroup,
-                              child: Text(groupLabel(group)),
-                            ),
-                        ],
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 44),
-                          child: Row(
-                            children: [
-                              Text(groupLabel(_episodeGroup)),
-                              const Icon(Icons.expand_more, size: 18),
-                            ],
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: SelectableText(
+                            '别名：${_detail.subtitle}',
+                            style: theme.textTheme.bodySmall,
                           ),
                         ),
                       ),
                     ],
                   ),
-              ],
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
-          sliver: SliverGrid.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: drawer ? 3 : columns,
-              mainAxisExtent: drawer ? 48 : 44,
-              crossAxisSpacing: drawer ? 8 : 6,
-              mainAxisSpacing: 4,
-            ),
-            itemCount: condensed
-                ? episodes.length.clamp(0, columns)
-                : visibleCount,
-            itemBuilder: (context, offset) {
-              final i = (condensed ? quickStart : first) + offset;
-              final item = episodes[i];
-              final current =
-                  active != null &&
-                  playing.road == _roadIndex &&
-                  playing.episode == i + 1;
-              return Semantics(
-                selected: current,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    backgroundColor: current
-                        ? theme.colorScheme.primary.withValues(alpha: .12)
-                        : theme.colorScheme.surfaceContainer,
-                    side: BorderSide(
-                      color: current
-                          ? theme.colorScheme.primary
-                          : Colors.transparent,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                  ),
-                  onPressed: _loading || item.vipOnly || road!.vipOnly
-                      ? null
-                      : () {
-                          if (drawer) _scaffold.currentState?.closeEndDrawer();
-                          if (!current) {
-                            _changeEpisode(i + 1, currentRoad: _roadIndex);
-                          }
-                        },
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (current && !drawer)
-                          Icon(
-                            Icons.play_arrow_rounded,
-                            size: 14,
-                            color: theme.colorScheme.primary,
-                          ),
-                        Text(
-                          item.number.toString().padLeft(2, '0'),
-                          style: TextStyle(
-                            fontWeight: drawer ? FontWeight.w600 : null,
-                            color: current
-                                ? theme.colorScheme.primary
-                                : (item.vipOnly || road!.vipOnly
-                                      ? theme.disabledColor
-                                      : theme.colorScheme.onSurface),
-                          ),
-                        ),
-                        if (current && drawer) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.equalizer_rounded,
-                            color: theme.colorScheme.primary,
-                            size: 15,
-                          ),
-                        ],
-                      ],
+                ),
+              ),
+            if (!drawer && _detail.related.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Text(
+                    '相关推荐',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-        if (!drawer && (metadata.isNotEmpty || _detail.description.isNotEmpty))
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_detail.description.isNotEmpty)
-                    LayoutBuilder(
-                      builder: (context, c) {
-                        final style = theme.textTheme.bodyMedium!;
-                        final measure = TextPainter(
-                          text: TextSpan(
-                            text: _detail.description,
-                            style: style,
-                          ),
-                          maxLines: 2,
-                          textDirection: Directionality.of(context),
-                          textScaler: MediaQuery.textScalerOf(context),
-                        )..layout(maxWidth: c.maxWidth);
-                        final long = measure.didExceedMaxLines;
-                        measure.dispose();
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '剧情简介',
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                if (long)
-                                  TextButton(
-                                    onPressed: () =>
-                                        setState(() => _expanded = !_expanded),
-                                    child: Text(_expanded ? '收起' : '展开'),
-                                  ),
-                              ],
-                            ),
-                            if (!long) const SizedBox(height: 4),
-                            Text(
-                              _detail.description,
-                              maxLines: _expanded ? null : 2,
-                              overflow: _expanded
-                                  ? null
-                                  : TextOverflow.ellipsis,
-                              style: style,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  if (metadata.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        metadata,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                ],
               ),
-            ),
-          ),
-      ],
+              MediaPosterGrid(
+                items: _detail.related,
+                insets: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                onTap: (item) =>
+                    context.pushNamed('/detail', arguments: item.key),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -916,7 +991,7 @@ class _SourcePlayerPageState extends State<SourcePlayerPage> {
   }
 
   Future<void> _chooseRoad() async {
-    _scaffold.currentState?.closeEndDrawer();
+    setState(() => _drawerOpen = false);
     while (true) {
       if (!mounted || _loading) return;
       final currentNumber = _currentEpisodeNumber;
@@ -1028,7 +1103,7 @@ class _SourcePlayerPageState extends State<SourcePlayerPage> {
                     child: const Text('重播'),
                   ),
                   TextButton(
-                    onPressed: () => _scaffold.currentState?.openEndDrawer(),
+                    onPressed: () => setState(() => _drawerOpen = true),
                     child: const Text('选集'),
                   ),
                 ],

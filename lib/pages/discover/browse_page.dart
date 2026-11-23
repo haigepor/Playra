@@ -108,7 +108,24 @@ class _BrowsePageState extends State<BrowsePage> {
         _loadMoreFailed = _items.isNotEmpty;
       });
     } finally {
-      if (mounted && revision == _revision) setState(() => _loading = false);
+      if (mounted && revision == _revision) {
+        setState(() => _loading = false);
+        // A short page cannot trigger scrolling. Fill it after layout, using
+        // the same request revision and failure guards as normal pagination.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted ||
+              revision != _revision ||
+              _loading ||
+              !_hasMore ||
+              _error != null) {
+            return;
+          }
+          if (_items.isEmpty ||
+              (_scroll.hasClients && _scroll.position.maxScrollExtent <= 0)) {
+            _load();
+          }
+        });
+      }
     }
   }
 
@@ -179,10 +196,23 @@ class _BrowsePageState extends State<BrowsePage> {
                           insets: const EdgeInsets.symmetric(horizontal: 3),
                         ),
                         indicatorSize: TabBarIndicatorSize.label,
-                        tabAlignment: TabAlignment.fill,
-                        labelPadding: EdgeInsets.zero,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                        ),
                         onTap: (index) => _selectSort(_sorts[index].$1),
-                        tabs: [for (final sort in _sorts) Tab(text: sort.$2)],
+                        tabs: [
+                          for (final sort in _sorts)
+                            Tab(
+                              height:
+                                  (MediaQuery.textScalerOf(context).scale(14) *
+                                              1.2 +
+                                          24)
+                                      .clamp(48, double.infinity),
+                              text: sort.$2,
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -235,6 +265,15 @@ class _BrowsePageState extends State<BrowsePage> {
       controller: _scroll,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(layout.gutter, 8, layout.gutter, 12),
+            child: Text(
+              '已加载 ${_items.length} 部作品',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ),
         MediaPosterGrid(
           items: _items,
           showScore: _sort == 'score',
@@ -243,6 +282,7 @@ class _BrowsePageState extends State<BrowsePage> {
         ),
         SliverToBoxAdapter(
           child: MediaGridFooter(
+            onLoadMore: _hasMore ? () => _load() : null,
             loading: _loading,
             error: _loadMoreFailed ? _error : null,
             onRetry: _loadMoreFailed ? _load : null,

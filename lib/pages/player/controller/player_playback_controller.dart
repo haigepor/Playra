@@ -38,6 +38,7 @@ final class _OwnedPlayer {
   _OwnedPlayer(this.player);
 
   final Player player;
+  VideoController? videoOutput;
   String? mediaResource;
   Future<void>? _disposeFuture;
 
@@ -48,6 +49,15 @@ final class _OwnedPlayer {
   Future<void> _dispose() async {
     final resource = mediaResource;
     mediaResource = null;
+    try {
+      await prepareVideoOutputDisposal(videoOutput);
+    } catch (error, stackTrace) {
+      KazumiLogger().w(
+        'PlayerPlaybackController: video output cleanup failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     try {
       await player.dispose();
     } catch (error, stackTrace) {
@@ -442,7 +452,8 @@ abstract class _PlayerPlaybackController with Store {
           androidAttachSurfaceAfterVideoParameters: false,
         ),
       );
-      player.setPlaylistMode(PlaylistMode.none);
+      candidate.videoOutput = videoController;
+      await player.setPlaylistMode(PlaylistMode.none);
       if (!isCurrentPlayer(player)) {
         return await _discardIfNotCurrent(candidate);
       }

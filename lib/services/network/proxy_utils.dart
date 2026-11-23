@@ -12,24 +12,20 @@ class ProxyUtils {
     url = url.trim();
     if (url.isEmpty) return null;
 
-    String hostPort = url;
-
-    // 移除 http:// 前缀
-    if (url.toLowerCase().startsWith('http://')) {
-      hostPort = url.substring(7);
-    } else if (url.toLowerCase().startsWith('https://')) {
-      hostPort = url.substring(8);
+    if (RegExp(r'\s').hasMatch(url)) return null;
+    final uri = Uri.tryParse(url.contains('://') ? url : 'http://$url');
+    if (uri == null ||
+        !const ['http', 'https'].contains(uri.scheme.toLowerCase()) ||
+        uri.host.isEmpty ||
+        !uri.hasPort ||
+        uri.userInfo.isNotEmpty ||
+        uri.hasQuery ||
+        uri.hasFragment ||
+        (uri.path.isNotEmpty && uri.path != '/')) {
+      return null;
     }
-
-    // 解析主机和端口
-    final parts = hostPort.split(':');
-    if (parts.length != 2) return null;
-
-    final host = parts[0];
-    final port = int.tryParse(parts[1]);
-    if (host.isEmpty || port == null) return null;
-
-    return (host, port);
+    if (uri.port < 1 || uri.port > 65535) return null;
+    return (uri.host, uri.port);
   }
 
   /// 获取格式化的代理 URL（用于 mpv）

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoSlidingSegmentedControl, CupertinoSwitch;
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -21,8 +22,10 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  String? _proxyError;
   late String _themeMode;
   late bool _hAenable;
+  late String _hardwareDecoder;
   late bool _playResume;
   late bool _autoPlayNext;
   late bool _gestures;
@@ -38,6 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _loadSettings() {
     _themeMode = GStorage.getSetting(SettingsKeys.themeMode);
     _hAenable = GStorage.getSetting(SettingsKeys.hAenable);
+    _hardwareDecoder = GStorage.getSetting(SettingsKeys.hardwareDecoder);
     _playResume = GStorage.getSetting(SettingsKeys.playResume);
     _autoPlayNext = GStorage.getSetting(SettingsKeys.autoPlayNext);
     _gestures = GStorage.getSetting(SettingsKeys.brightnessVolumeGesture);
@@ -76,78 +80,95 @@ class _ProfilePageState extends State<ProfilePage> {
                         PlayraSpace.lg,
                       ),
                       children: [
-                        ValueListenableBuilder<Box<dynamic>>(
-                          valueListenable: HistoryStorage.listenable(),
-                          builder: (context, box, _) => ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            minTileHeight: 48,
+                        _settingsSurface(
+                          context,
+                          child: ValueListenableBuilder<Box<dynamic>>(
+                            valueListenable: HistoryStorage.listenable(),
+                            builder: (context, box, _) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              minTileHeight: 48,
+                              leading: const Icon(
+                                Icons.history_rounded,
+                                size: 22,
+                              ),
+                              title: const Text('播放历史'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (box.isNotEmpty)
+                                    Text(
+                                      '${box.length} 条',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                              onTap: () => showPlaybackHistory(context),
+                            ),
+                          ),
+                        ),
+                        _settingsSurface(
+                          context,
+                          child: _buildAppearanceSection(context),
+                        ),
+                        _settingsSurface(
+                          context,
+                          child: _buildPlaybackSection(context),
+                        ),
+                        _settingsSurface(
+                          context,
+                          child: ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
                             leading: const Icon(
-                              Icons.history_rounded,
+                              Icons.storage_rounded,
                               size: 22,
                             ),
-                            title: const Text('播放历史'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (box.isNotEmpty)
-                                  Text(
-                                    '${box.length} 条',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                const SizedBox(width: 4),
-                                const Icon(
+                            title: const Text('网络与存储'),
+                            children: [
+                              if (!kIsWeb) _buildNetworkSection(context),
+                              _buildStorageSection(context),
+                            ],
+                          ),
+                        ),
+                        _settingsSurface(
+                          context,
+                          child: ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
+                            leading: const Icon(
+                              Icons.info_outline_rounded,
+                              size: 22,
+                            ),
+                            title: const Text('关于 Playra'),
+                            children: [
+                              const ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                minTileHeight: 48,
+                                title: Text('开源许可'),
+                                trailing: Text('GPL-3.0'),
+                              ),
+                              const ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text('播放内核'),
+                                subtitle: Text('Kazumi · media_kit · MPV'),
+                              ),
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                minTileHeight: 48,
+                                title: const Text('HLS 播放演示'),
+                                trailing: const Icon(
                                   Icons.chevron_right_rounded,
                                   size: 18,
                                 ),
-                              ],
-                            ),
-                            onTap: () => showPlaybackHistory(context),
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        _buildAppearanceSection(context),
-                        _buildPlaybackSection(context),
-                        ExpansionTile(
-                          tilePadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.storage_rounded, size: 22),
-                          title: const Text('网络与存储'),
-                          children: [
-                            if (!kIsWeb) _buildNetworkSection(context),
-                            _buildStorageSection(context),
-                          ],
-                        ),
-                        ExpansionTile(
-                          tilePadding: EdgeInsets.zero,
-                          leading: const Icon(
-                            Icons.info_outline_rounded,
-                            size: 22,
-                          ),
-                          title: const Text('关于 Playra'),
-                          children: [
-                            const ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              minTileHeight: 48,
-                              title: Text('开源许可'),
-                              trailing: Text('GPL-3.0'),
-                            ),
-                            const ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text('播放内核'),
-                              subtitle: Text('Kazumi · media_kit · MPV'),
-                            ),
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              minTileHeight: 48,
-                              title: const Text('HLS 播放演示'),
-                              trailing: const Icon(
-                                Icons.chevron_right_rounded,
-                                size: 18,
+                                onTap: () => context.pushNamed('/player'),
                               ),
-                              onTap: () => context.pushNamed('/player'),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: PlayraSpace.section),
                       ],
@@ -167,23 +188,25 @@ class _ProfilePageState extends State<ProfilePage> {
     final picker = CupertinoSlidingSegmentedControl<String>(
       groupValue: _themeMode,
       backgroundColor: colors.surfaceContainerHighest,
-      thumbColor: colors.primary,
+      thumbColor: colors.primaryContainer,
       children: {
         for (final (value, label) in const [
           ('system', '系统'),
           ('light', '浅色'),
           ('dark', '深色'),
         ])
-          value: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _themeMode == value
-                    ? colors.onPrimary
-                    : colors.onSurfaceVariant,
+          value: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _themeMode == value
+                      ? colors.primary
+                      : colors.onSurfaceVariant,
+                ),
               ),
             ),
           ),
@@ -196,22 +219,38 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 8,
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.palette_outlined, size: 22),
               SizedBox(width: 8),
-              Text('外观'),
+              Text('外观', style: TextStyle(fontWeight: FontWeight.w600)),
             ],
           ),
+          const SizedBox(height: 12),
           picker,
         ],
+      ),
+    );
+  }
+
+  Widget _settingsSurface(BuildContext context, {required Widget child}) {
+    final t = PlayraTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: t.surface,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: t.border.withValues(alpha: .65)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: child,
+        ),
       ),
     );
   }
@@ -220,7 +259,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return MergeSemantics(
       child: ListTile(
         contentPadding: EdgeInsets.zero,
-        minTileHeight: 48,
+        minTileHeight: 56,
         title: Text(label),
         onTap: () => change(!value),
         trailing: CupertinoSwitch(
@@ -241,6 +280,19 @@ class _ProfilePageState extends State<ProfilePage> {
           setState(() => _hAenable = val);
           GStorage.putSetting(SettingsKeys.hAenable, val);
         }),
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            enabled: _hAenable,
+            title: const Text('硬件解码方式'),
+            subtitle: Text(switch (_hardwareDecoder) {
+              'auto-safe' => '兼容优先（默认）',
+              'mediacodec' => '性能优先',
+              _ => '自定义：$_hardwareDecoder',
+            }),
+            trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+            onTap: _hAenable ? _chooseHardwareDecoder : null,
+          ),
         _playbackSwitch('断点续播', _playResume, (val) {
           setState(() => _playResume = val);
           GStorage.putSetting(SettingsKeys.playResume, val);
@@ -257,9 +309,48 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _chooseHardwareDecoder() async {
+    final decoder = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('硬件解码方式'),
+        children: [
+          for (final (value, title, description) in const [
+            ('auto-safe', '兼容优先（默认）', '自动选择兼容的硬件解码方式。'),
+            ('mediacodec', '性能优先', '可改善部分旧设备的播放卡顿，部分视频色彩可能变化。'),
+          ])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, value),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(title),
+                subtitle: Text(description),
+                trailing: _hardwareDecoder == value
+                    ? const Icon(Icons.check_rounded)
+                    : null,
+              ),
+            ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 8, 24, 16),
+            child: Text('重新打开视频后生效。'),
+          ),
+        ],
+      ),
+    );
+    if (decoder == null || !mounted) return;
+    await GStorage.putSetting(SettingsKeys.hardwareDecoder, decoder);
+    if (mounted) setState(() => _hardwareDecoder = decoder);
+  }
+
   Widget _buildNetworkSection(BuildContext context) {
     void applyAddress() {
-      GStorage.putSetting(SettingsKeys.proxyUrl, _proxyController.text.trim());
+      final draft = _proxyController.text.trim();
+      if (!ProxyUtils.isValidProxyUrl(draft)) {
+        setState(() => _proxyError = '请输入主机:端口，端口范围 1–65535');
+        return;
+      }
+      setState(() => _proxyError = null);
+      GStorage.putSetting(SettingsKeys.proxyUrl, draft);
       ProxyManager.applyProxy();
       FocusScope.of(context).unfocus();
       ScaffoldMessenger.of(
@@ -290,6 +381,8 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: InputDecoration(
                 labelText: '代理地址',
                 hintText: '127.0.0.1:7890',
+                errorText: _proxyError,
+                errorMaxLines: 3,
                 isDense: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(PlayraRadius.control),
@@ -383,13 +476,16 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: PlayraType.label,
-                  fontWeight: FontWeight.w600,
-                  color: t.mutedForeground,
+                  fontSize: PlayraType.body,
+                  fontWeight: FontWeight.w700,
+                  color: t.foreground,
                 ),
               ),
             ),
-            ...children,
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) const Divider(height: 1),
+              children[i],
+            ],
           ],
         ),
       ),

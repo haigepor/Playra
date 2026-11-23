@@ -40,8 +40,7 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
 
   int get _initialPage => widget.banners.length > 1 ? 1 : 0;
 
-  bool get _reduceMotion =>
-      PlayraMotion.reduceOf(context);
+  bool get _reduceMotion => PlayraMotion.reduceOf(context);
 
   @override
   void didChangeDependencies() {
@@ -133,10 +132,10 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final phone = widget.layout.isPhone;
-        final cardHeight = (width * _fraction * (phone ? 0.60 : 9 / 16)).clamp(
-          widget.layout.heroMinHeight,
-          widget.layout.heroMaxHeight,
-        );
+        final cardHeight =
+            (width * _fraction - (phone ? widget.layout.gutter * 2 : 24)) *
+            9 /
+            16;
         final decodeWidth = (width * MediaQuery.devicePixelRatioOf(context))
             .round()
             .clamp(480, 1920);
@@ -171,10 +170,12 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: phone ? 0 : PlayraSpace.md,
+                        horizontal: phone
+                            ? widget.layout.gutter
+                            : PlayraSpace.md,
                       ),
                       child: _BannerCard(
-                        edgeToEdge: phone,
+                        edgeToEdge: false,
                         banner: widget.banners[index],
                         decodeWidth: decodeWidth,
                         onTap: () => widget.onTap(widget.banners[index]),
@@ -183,6 +184,43 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
                   ),
                 ),
               ),
+              if (widget.banners.length > 1)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: widget.banners.length > 7
+                      ? Text(
+                          '${_index + 1} / ${widget.banners.length}',
+                          semanticsLabel:
+                              '第 ${_index + 1} 张，共 ${widget.banners.length} 张推荐',
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.2,
+                            color: PlayraHomeTokens.of(context).textSecondary,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            widget.banners.length,
+                            (index) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 3,
+                              ),
+                              child: Container(
+                                width: index == _index ? 14 : 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: index == _index
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).dividerColor,
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
             ],
           ),
         );
@@ -268,15 +306,15 @@ class _BannerCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Text(
                         banner.title.isEmpty ? '精选推荐' : banner.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
-                          fontFamily: 'serif',
-                          fontSize: edgeToEdge ? 23 : 29,
+                          fontFamily: 'MI_Sans_Regular',
+                          fontSize: 24,
                           fontWeight: FontWeight.w800,
                           letterSpacing: .4,
                           height: 1.12,
@@ -287,15 +325,15 @@ class _BannerCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          color: t.accent,
+                          color: Colors.white,
                           shape: BoxShape.circle,
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(3),
+                        child: SizedBox.square(
+                          dimension: 48,
                           child: Icon(
                             Icons.play_arrow_rounded,
-                            size: 15,
-                            color: t.accentForeground,
+                            size: 22,
+                            color: Colors.black87,
                           ),
                         ),
                       ),

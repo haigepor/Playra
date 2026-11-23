@@ -37,7 +37,7 @@ class _PlayerBufferingOverlayState extends State<PlayerBufferingOverlay> {
   }
 
   double? _validPercentage(double value) =>
-      !kIsWeb && value.isFinite && value >= 0 && value <= 100 ? value : null;
+      !kIsWeb && value.isFinite && value > 0 && value <= 100 ? value : null;
 
   void _bindPlayer() {
     final generation = ++_generation;

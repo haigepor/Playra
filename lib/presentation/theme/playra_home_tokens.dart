@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/presentation/theme/playra_tokens.dart';
 
 /// Page-scoped palette for the discovery/home surface.
 ///
@@ -32,7 +33,7 @@ class PlayraHomeTokens extends ThemeExtension<PlayraHomeTokens> {
     pageHighlight: Color(0xfff8f8fa),
     railBackground: Color(0xFFE1DAF7),
     railSelected: Color(0xFFF7F2FF),
-    accent: Color(0xFF9966FF),
+    accent: Color(0xFF7044C2),
     accentForeground: Color(0xFFFFFFFF),
     vipSurfaceStart: Color(0xFFF2E8FF),
     vipSurfaceEnd: Color(0xFFEADFFE),
@@ -46,23 +47,23 @@ class PlayraHomeTokens extends ThemeExtension<PlayraHomeTokens> {
     sectionMarkEnd: Color(0xFF6A7BFF),
   );
 
-  static const dark = PlayraHomeTokens(
-    pageBackground: Color(0xff101115),
-    pageHighlight: Color(0xff101115),
-    railBackground: Color(0xff16171c),
-    railSelected: Color(0xff282a32),
-    accent: Color(0xffb7a3ff),
-    accentForeground: Color(0xFF1A1026),
-    vipSurfaceStart: Color(0xFF2A203B),
-    vipSurfaceEnd: Color(0xFF241B34),
-    searchFill: Color(0xff25262e),
-    cardSurface: Color(0xff1a1c22),
-    cardPlaceholder: Color(0xff292b33),
-    textPrimary: Color(0xfff4f3ee),
-    textSecondary: Color(0xffb2b4bd),
-    divider: Color(0xff363840),
-    sectionMarkStart: Color(0xFFFF7A8E),
-    sectionMarkEnd: Color(0xFF8C9BFF),
+  static final dark = PlayraHomeTokens(
+    pageBackground: PlayraTokens.dark.background,
+    pageHighlight: PlayraTokens.dark.background,
+    railBackground: PlayraTokens.dark.surface,
+    railSelected: PlayraTokens.dark.primaryContainer,
+    accent: PlayraTokens.dark.primary,
+    accentForeground: PlayraTokens.dark.primaryForeground,
+    vipSurfaceStart: PlayraTokens.dark.surface,
+    vipSurfaceEnd: PlayraTokens.dark.surfaceRaised,
+    searchFill: PlayraTokens.dark.surfaceRaised,
+    cardSurface: PlayraTokens.dark.surface,
+    cardPlaceholder: PlayraTokens.dark.muted,
+    textPrimary: PlayraTokens.dark.foreground,
+    textSecondary: PlayraTokens.dark.foregroundSubtle,
+    divider: PlayraTokens.dark.border,
+    sectionMarkStart: PlayraTokens.dark.primary,
+    sectionMarkEnd: PlayraTokens.dark.primary,
   );
 
   final Color pageBackground;
