@@ -143,6 +143,7 @@ class _RankingRow extends StatelessWidget {
                 height: 52,
                 child: MediaCoverImage(
                   url: item.cover,
+                  fallbackUrl: item.fallbackCover,
                   cacheWidth: 120,
                   errorWidget: ColoredBox(color: t.cardPlaceholder),
                 ),

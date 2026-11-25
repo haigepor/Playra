@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
+import 'package:kazumi/presentation/theme/playra_forui_theme.dart';
+import 'package:kazumi/shell/shell_theme.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/pages/player/controller/player_screenshot_controller.dart';
@@ -22,33 +24,39 @@ Future<void> showPlayerScreenshotSheet(
 }) => showDialog<void>(
   context: context,
   barrierDismissible: true,
-  builder: (context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final inset = constraints.maxWidth < 700 || constraints.maxHeight < 500
-          ? 16.0
-          : 24.0;
-      return Dialog(
-        clipBehavior: Clip.antiAlias,
-        backgroundColor: context.playraTokens.surfaceRaised,
-        insetPadding: EdgeInsets.all(inset),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
-          side: BorderSide(
-            color: context.playraTokens.borderSubtle,
-            width: 1,
-          ),
-        ),
-        child: SizedBox(
-          width: 1120,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: math.min(840, constraints.maxHeight - inset * 2),
+  builder: (context) => Theme(
+    data: buildShellTheme(Brightness.dark),
+    child: PlayraForuiScope(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final inset =
+              constraints.maxWidth < 700 || constraints.maxHeight < 500
+              ? 16.0
+              : 24.0;
+          return Dialog(
+            clipBehavior: Clip.antiAlias,
+            backgroundColor: context.playraTokens.surfaceRaised,
+            insetPadding: EdgeInsets.all(inset),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(PlayraTokens.radiusLg),
+              side: BorderSide(
+                color: context.playraTokens.borderSubtle,
+                width: 1,
+              ),
             ),
-            child: _PlayerScreenshotSheet(controller: controller),
-          ),
-        ),
-      );
-    },
+            child: SizedBox(
+              width: 1120,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: math.min(840, constraints.maxHeight - inset * 2),
+                ),
+                child: _PlayerScreenshotSheet(controller: controller),
+              ),
+            ),
+          );
+        },
+      ),
+    ),
   ),
 );
 
@@ -316,10 +324,14 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                             0,
                           ),
                           child: Material(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(PlayraRadius.overlay),
+                            color: wide
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerLow
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(
+                              PlayraRadius.overlay,
+                            ),
                             clipBehavior: Clip.antiAlias,
                             child: Column(
                               children: [
@@ -351,12 +363,18 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
                                     ],
                                   ),
                                 ),
-                                _thumbnails(compact: compact),
+                                _thumbnails(
+                                  compact: compact,
+                                  selectable: !wide,
+                                ),
                               ],
                             ),
                           ),
                         ),
-                        _footer(context, compact: compact, padding: padding),
+                        if (wide)
+                          _footer(context, compact: compact, padding: padding)
+                        else
+                          _mobileFooter(context, padding: padding),
                       ],
                     ],
                   );
@@ -396,35 +414,33 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
           const SizedBox(width: PlayraSpace.lg),
           SizedBox(
             width: panelWidth,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _header(context, compact: true, padding: 0),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          current!.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: PlayraSpace.xs),
-                        Text(
-                          '${current!.episode} · ${current!.timeLabel}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _header(context, compact: true, padding: 0),
+                  Text(
+                    current!.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
-                ),
-                Center(child: _navigation()),
-                _footer(context, compact: true, padding: 0, stackActions: true),
-              ],
+                  const SizedBox(height: PlayraSpace.xs),
+                  Text(
+                    '${current!.episode} · ${current!.timeLabel}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Center(child: _navigation()),
+                  _footer(
+                    context,
+                    compact: true,
+                    padding: 0,
+                    stackActions: true,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -435,7 +451,10 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
   Widget _preview() => AspectRatio(
     key: _previewKey,
     aspectRatio: _aspectRatio,
-    child: ClipRRect(borderRadius: BorderRadius.circular(PlayraRadius.card), child: _stage()),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(PlayraRadius.card),
+      child: _stage(),
+    ),
   );
 
   Widget _navigation() => Row(
@@ -478,7 +497,7 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '挑选截图',
+                '截图',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: compact
@@ -623,7 +642,9 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
       return Semantics(
         selected: selected,
         child: PlayraButton(
-          kind: selected ? PlayraButtonKind.primary : PlayraButtonKind.secondary,
+          kind: selected
+              ? PlayraButtonKind.primary
+              : PlayraButtonKind.secondary,
           onPressed: collection.saving ? null : _toggle,
           icon: Icon(
             selected
@@ -637,13 +658,15 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
     },
   );
 
-  Widget _thumbnails({required bool compact}) => _ScreenshotFilmstrip(
-    controller: collection,
-    activeIndex: _index,
-    compact: compact,
-    duration: _motion,
-    onBrowse: _goTo,
-  );
+  Widget _thumbnails({required bool compact, bool selectable = false}) =>
+      _ScreenshotFilmstrip(
+        controller: collection,
+        activeIndex: _index,
+        compact: compact,
+        selectable: selectable,
+        duration: _motion,
+        onBrowse: _goTo,
+      );
 
   Widget _noticeView() {
     final colors = Theme.of(context).colorScheme;
@@ -655,7 +678,11 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
         elevation: 6,
         borderRadius: BorderRadius.circular(PlayraRadius.control),
         child: Padding(
-          padding: const EdgeInsets.only(left: PlayraSpace.lg, top: PlayraSpace.xs, bottom: PlayraSpace.xs),
+          padding: const EdgeInsets.only(
+            left: PlayraSpace.lg,
+            top: PlayraSpace.xs,
+            bottom: PlayraSpace.xs,
+          ),
           child: Row(
             children: [
               Icon(
@@ -683,6 +710,78 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _mobileFooter(BuildContext context, {required double padding}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(padding, 8, padding, 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Observer(
+          builder: (context) {
+            final busy = collection.busy;
+            final hasSelection = collection.selectedCount > 0;
+            final all = collection.allSelected;
+            final select = OutlinedButton(
+              onPressed: busy ? null : () => collection.setAllSelected(!all),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                minimumSize: const Size(0, 48),
+              ),
+              child: Text(all ? '取消全选' : '全选', maxLines: 1),
+            );
+            final save = FilledButton(
+              onPressed: !busy && hasSelection ? _save : null,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                minimumSize: const Size(0, 48),
+              ),
+              child: Text(
+                collection.saving
+                    ? '${collection.saveCompleted}/${collection.saveTotal}'
+                    : '保存所选',
+                maxLines: 1,
+              ),
+            );
+            final remove = OutlinedButton(
+              onPressed: !busy && hasSelection ? _removeSelected : null,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                minimumSize: const Size(0, 48),
+              ),
+              child: const Text('移除所选', maxLines: 1),
+            );
+            final stacked =
+                constraints.maxWidth < 240 ||
+                MediaQuery.textScalerOf(context).scale(12) > 17;
+            if (stacked) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: select),
+                      const SizedBox(width: 8),
+                      Expanded(child: remove),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  save,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: select),
+                const SizedBox(width: 8),
+                Expanded(child: save),
+                const SizedBox(width: 8),
+                Expanded(child: remove),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -810,17 +909,17 @@ class _PlayerScreenshotSheetState extends State<_PlayerScreenshotSheet> {
           ),
           const SizedBox(height: PlayraSpace.xl),
           Text('暂无待处理截图', style: Theme.of(context).textTheme.titleLarge),
-          if (_notice != null) ...[const SizedBox(height: PlayraSpace.lg), _noticeView()],
+          if (_notice != null) ...[
+            const SizedBox(height: PlayraSpace.lg),
+            _noticeView(),
+          ],
           const SizedBox(height: PlayraSpace.sm),
           const Text(
             '返回视频，点击相机收集喜欢的画面。\n保存或移除截图后，可以继续截图。',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: PlayraSpace.xxl),
-          PlayraButton.tonal(
-            onPressed: _close,
-            child: const Text('返回视频截图'),
-          ),
+          PlayraButton.tonal(onPressed: _close, child: const Text('返回视频截图')),
         ],
       ),
     ),
@@ -832,6 +931,7 @@ class _ScreenshotFilmstrip extends StatefulWidget {
     required this.controller,
     required this.activeIndex,
     required this.compact,
+    required this.selectable,
     required this.duration,
     required this.onBrowse,
   });
@@ -839,6 +939,7 @@ class _ScreenshotFilmstrip extends StatefulWidget {
   final PlayerScreenshotController controller;
   final int activeIndex;
   final bool compact;
+  final bool selectable;
   final Duration duration;
   final ValueChanged<int> onBrowse;
 
@@ -925,6 +1026,10 @@ class _ScreenshotFilmstripState extends State<_ScreenshotFilmstrip> {
                       selected: widget.controller.isSelected(item),
                       duration: widget.duration,
                       onTap: () => widget.onBrowse(index),
+                      selectable: widget.selectable,
+                      onToggle: widget.controller.saving
+                          ? null
+                          : () => widget.controller.toggle(item),
                     ),
                   );
                 },
@@ -945,6 +1050,8 @@ class _FrameThumbnail extends StatelessWidget {
     required this.selected,
     required this.duration,
     required this.onTap,
+    required this.selectable,
+    required this.onToggle,
   });
   final ScreenshotCandidate item;
   final int index;
@@ -952,6 +1059,8 @@ class _FrameThumbnail extends StatelessWidget {
   final bool selected;
   final Duration duration;
   final VoidCallback onTap;
+  final bool selectable;
+  final VoidCallback? onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -989,7 +1098,45 @@ class _FrameThumbnail extends StatelessWidget {
                       fit: BoxFit.cover,
                       cacheWidth: screenshotThumbnailCacheWidth,
                     ),
-                    if (selected)
+                    if (selectable)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Semantics(
+                          selected: selected,
+                          child: IconButton(
+                            tooltip: selected
+                                ? '取消选择第 ${index + 1} 张'
+                                : '选择第 ${index + 1} 张',
+                            onPressed: onToggle,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 48,
+                              height: 48,
+                            ),
+                            icon: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? colors.primary
+                                    : Colors.black54,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.white70),
+                              ),
+                              child: SizedBox.square(
+                                dimension: 20,
+                                child: selected
+                                    ? Icon(
+                                        Icons.check_rounded,
+                                        size: 16,
+                                        color: colors.onPrimary,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (!selectable && selected)
                       Positioned(
                         right: 3,
                         bottom: 3,

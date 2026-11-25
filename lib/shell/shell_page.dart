@@ -73,10 +73,10 @@ class _ShellPageState extends State<ShellPage> {
             DiscoverPage(onSelectTab: _selectTab),
             const CalendarPage(),
             FavoritesPage(onDiscover: () => _selectTab(0)),
-            const ProfilePage(),
+            ProfilePage(onOpenFavorites: () => _selectTab(2)),
           ];
           return Scaffold(
-            extendBody: false,
+            extendBody: !wide,
             body: SafeArea(
               bottom: false,
               child: wide

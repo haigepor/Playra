@@ -29,7 +29,7 @@ class PlayraPageState extends StatelessWidget {
             ExcludeSemantics(
               child: Icon(
                 icon,
-                size: 40,
+                size: 64,
                 color: Color.lerp(colors.onSurfaceVariant, colors.primary, .42),
               ),
             ),
@@ -54,7 +54,7 @@ class PlayraPageState extends StatelessWidget {
               FilledButtonTheme(
                 data: FilledButtonThemeData(
                   style: FilledButton.styleFrom(
-                    minimumSize: const Size(112, 44),
+                    minimumSize: const Size(112, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

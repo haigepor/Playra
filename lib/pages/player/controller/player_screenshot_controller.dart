@@ -190,14 +190,14 @@ abstract class _PlayerScreenshotController with Store {
       }
       if (failures > 0) {
         _report(
-          '已保存 ${saved.length} 张，$failures 张失败；未保存的截图仍已选中，请重试',
+          '已保存 ${saved.length} 张，$failures 张失败；未保存的截图仍已选中，请检查存储或相册权限后重试',
           error: true,
         );
       } else {
-        _report('已保存 ${saved.length} 张到所选位置');
+        _report('已保存 ${saved.length} 张');
       }
     } catch (_) {
-      _report('无法打开保存位置，请检查权限后重试', error: true);
+      _report('无法准备保存，请检查存储或相册权限后重试', error: true);
     } finally {
       if (!_disposed) {
         // Keep the preview stable during the batch, then release successful items.

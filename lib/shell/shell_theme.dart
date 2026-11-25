@@ -35,6 +35,9 @@ ThemeData buildShellTheme(Brightness brightness) {
     extensions: [t],
   );
   return base.copyWith(
+    hoverColor: t.primary.withValues(alpha: 0.07),
+    splashColor: t.primary.withValues(alpha: 0.10),
+    highlightColor: t.primary.withValues(alpha: 0.08),
     appBarTheme: AppBarTheme(
       backgroundColor: t.background,
       foregroundColor: t.foreground,
@@ -74,10 +77,41 @@ ThemeData buildShellTheme(Brightness brightness) {
     ),
     dividerTheme: DividerThemeData(color: t.border, thickness: 1),
     iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+      style: IconButton.styleFrom(
+        minimumSize: const Size(40, 40),
+        tapTargetSize: MaterialTapTargetSize.padded,
+        hoverColor: t.foreground.withValues(alpha: 0.07),
+        highlightColor: t.foreground.withValues(alpha: 0.10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+      style: TextButton.styleFrom(
+        minimumSize: const Size(52, 36),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        tapTargetSize: MaterialTapTargetSize.padded,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ).copyWith(
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return t.primary.withValues(alpha: 0.14);
+          }
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return t.primary.withValues(alpha: 0.08);
+          }
+          return null;
+        }),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(56, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        tapTargetSize: MaterialTapTargetSize.padded,
+        side: BorderSide(color: t.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: t.surface,
@@ -89,15 +123,114 @@ ThemeData buildShellTheme(Brightness brightness) {
     dialogTheme: DialogThemeData(
       backgroundColor: t.surface,
       surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: t.border),
+      ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: t.primary,
         foregroundColor: t.primaryForeground,
-        minimumSize: const Size(0, PlayraLayout.touchTarget),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(PlayraRadius.control),
+        minimumSize: const Size(0, 42),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        tapTargetSize: MaterialTapTargetSize.padded,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(56, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        tapTargetSize: MaterialTapTargetSize.padded,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+    datePickerTheme: DatePickerThemeData(
+      backgroundColor: t.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: t.border),
+      ),
+      dayShape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      yearShape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      dayOverlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.pressed)) {
+          return t.primary.withValues(alpha: 0.16);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          return t.primary.withValues(alpha: 0.09);
+        }
+        return null;
+      }),
+      yearOverlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.pressed)) {
+          return t.primary.withValues(alpha: 0.16);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          return t.primary.withValues(alpha: 0.09);
+        }
+        return null;
+      }),
+      todayBorder: BorderSide(color: t.primary),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: t.surfaceRaised,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: t.border),
+      ),
+    ),
+    menuTheme: MenuThemeData(
+      style: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(t.surfaceRaised),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: t.border),
+          ),
         ),
+      ),
+    ),
+    menuButtonTheme: MenuButtonThemeData(
+      style: MenuItemButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    ),
+    listTileTheme: ListTileThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+    tooltipTheme: TooltipThemeData(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      textStyle: TextStyle(
+        color: brightness == Brightness.dark ? t.foreground : Colors.white,
+        fontSize: 11.5,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: BoxDecoration(
+        color: brightness == Brightness.dark
+            ? t.surfaceRaised
+            : const Color(0xFF1A1D29),
+        borderRadius: BorderRadius.circular(8),
+        border: brightness == Brightness.dark
+            ? Border.all(color: Colors.white.withValues(alpha: 0.10))
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
     ),
     textTheme: base.textTheme.apply(

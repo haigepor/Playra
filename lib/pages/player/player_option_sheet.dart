@@ -159,7 +159,9 @@ Future<T?> showPlayerOptions<T>(
                   Expanded(
                     child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: () => Navigator.pop(sheet, option.value),
+                      onTap: option.enabled
+                          ? () => Navigator.pop(sheet, option.value)
+                          : null,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           vertical: 5,
@@ -167,19 +169,30 @@ Future<T?> showPlayerOptions<T>(
                         ),
                         child: Column(
                           children: [
-                            SizedBox(
-                              height: 24,
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: colors.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                               child: Icon(
                                 option.icon,
-                                size: 19,
-                                color: colors.onSurface,
+                                size: 22,
+                                color: option.enabled
+                                    ? colors.onSurface
+                                    : theme.disabledColor,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 5),
                             Text(
                               option.label,
                               textAlign: TextAlign.center,
-                              style: theme.textTheme.labelMedium,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: option.enabled
+                                    ? colors.onSurface
+                                    : theme.disabledColor,
+                              ),
                             ),
                           ],
                         ),
@@ -188,79 +201,94 @@ Future<T?> showPlayerOptions<T>(
                   ),
               ],
             ),
-            const SizedBox(height: 4),
-            const Divider(height: 1),
+            const SizedBox(height: 12),
           ],
           for (final option in options)
             Semantics(
               selected: selected == null ? null : selected == option.value,
-              child: InkWell(
-                onTap: option.enabled
-                    ? () => Navigator.pop(sheet, option.value)
-                    : null,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: 48),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 2,
-                      vertical: 5,
+              child: Ink(
+                decoration: BoxDecoration(
+                  color: selected == option.value
+                      ? colors.primary.withValues(alpha: .14)
+                      : colors.surfaceContainerHigh,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: colors.outlineVariant.withValues(alpha: .35),
                     ),
-                    child: Row(
-                      children: [
-                        if (option.icon != null) ...[
-                          Icon(
-                            option.icon,
-                            size: 19,
-                            color: selected == option.value
-                                ? colors.primary
-                                : colors.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                option.label,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: !option.enabled
-                                      ? theme.disabledColor
-                                      : selected == option.value
-                                      ? colors.primary
-                                      : colors.onSurface,
-                                ),
-                              ),
-                              if (option.detail != null && shortcuts.isEmpty)
+                  ),
+                ),
+                child: InkWell(
+                  onTap: option.enabled
+                      ? () => Navigator.pop(sheet, option.value)
+                      : null,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
+                      child: Row(
+                        children: [
+                          if (option.icon != null) ...[
+                            Icon(
+                              option.icon,
+                              size: 19,
+                              color: selected == option.value
+                                  ? colors.primary
+                                  : colors.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 12),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  option.detail!,
-                                  style: theme.textTheme.bodySmall,
+                                  option.label,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: !option.enabled
+                                        ? theme.disabledColor
+                                        : selected == option.value
+                                        ? colors.primary
+                                        : colors.onSurface,
+                                  ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        if (option.detail != null && shortcuts.isNotEmpty)
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 110),
-                            child: Text(
-                              option.detail!,
-                              textAlign: TextAlign.end,
-                              style: theme.textTheme.bodySmall,
+                                if (option.detail != null && shortcuts.isEmpty)
+                                  Text(
+                                    option.detail!,
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                              ],
                             ),
                           ),
-                        if (selected == option.value)
-                          Icon(
-                            Icons.check_rounded,
-                            size: 20,
-                            color: colors.primary,
-                          )
-                        else if (option.opensPage)
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            size: 17,
-                            color: Colors.white38,
-                          ),
-                      ],
+                          if (option.detail != null && shortcuts.isNotEmpty)
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 110),
+                              child: Text(
+                                option.detail!,
+                                textAlign: TextAlign.end,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          if (selected != null && !option.opensPage)
+                            Icon(
+                              selected == option.value
+                                  ? Icons.radio_button_checked_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              size: 20,
+                              color: selected == option.value
+                                  ? colors.primary
+                                  : colors.onSurfaceVariant,
+                            )
+                          else if (option.opensPage)
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 17,
+                              color: Colors.white38,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -285,19 +313,37 @@ Future<int?> showRoadEpisodes(
   GridView.builder(
     padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
     shrinkWrap: true,
-    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-      maxCrossAxisExtent: 76,
-      mainAxisExtent: 48,
+    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: MediaQuery.textScalerOf(
+        context,
+      ).scale(72).clamp(144.0, double.infinity),
+      mainAxisExtent: (MediaQuery.textScalerOf(context).scale(14) * 4.0 + 20)
+          .clamp(76.0, double.infinity),
       crossAxisSpacing: 6,
       mainAxisSpacing: 6,
     ),
     itemCount: episodes.length,
     itemBuilder: (context, i) {
       final ep = episodes[i];
-      return OutlinedButton(
-        style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
-        onPressed: ep.enabled ? () => Navigator.pop(context, ep.value) : null,
-        child: Text(ep.label),
+      return Tooltip(
+        message: [
+          ep.label,
+          if (ep.detail?.isNotEmpty == true) ep.detail!,
+        ].join(' · '),
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          ),
+          onPressed: ep.enabled ? () => Navigator.pop(context, ep.value) : null,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(ep.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+              if (ep.detail?.isNotEmpty == true)
+                Text(ep.detail!, maxLines: 2, overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
       );
     },
   ),
@@ -312,7 +358,7 @@ Future<double?> showPlayerSpeed(
   VoidCallback? onBack,
 }) => _playerSheet<double>(
   context,
-  '播放倍速',
+  '倍速',
   _SpeedSelector(speeds: speeds, selected: selected),
   onBack: onBack,
 );
@@ -334,81 +380,97 @@ class _SpeedSelectorState extends State<_SpeedSelector> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final rate = widget.speeds[index];
+    final shortcuts = const [
+      1.0,
+      1.25,
+      1.5,
+      2.0,
+    ].where(widget.speeds.contains).toList(growable: false);
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                children: [
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 3,
-                      showValueIndicator: ShowValueIndicator.never,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 7,
+        const SizedBox(height: 12),
+        Text(
+          '$rate×',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: colors.primary,
+            fontWeight: FontWeight.w700,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 3,
+            showValueIndicator: ShowValueIndicator.never,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+          ),
+          child: Slider(
+            value: index.toDouble(),
+            max: (widget.speeds.length - 1).toDouble(),
+            divisions: widget.speeds.length - 1,
+            semanticFormatterCallback: (v) => '${widget.speeds[v.round()]} 倍',
+            onChanged: (v) => setState(() => index = v.round()),
+            onChangeEnd: (v) =>
+                Navigator.pop(context, widget.speeds[v.round()]),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${widget.speeds.first}×',
+                style: theme.textTheme.labelSmall,
+              ),
+              Text('${widget.speeds.last}×', style: theme.textTheme.labelSmall),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = MediaQuery.textScalerOf(context).scale(14) > 20
+                ? 2
+                : 4;
+            const spacing = 8.0;
+            final width =
+                (constraints.maxWidth - (columns - 1) * spacing) / columns;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (final value in shortcuts)
+                  SizedBox(
+                    width: width,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, value),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        minimumSize: const Size(48, 48),
+                        backgroundColor: value == rate
+                            ? colors.primary
+                            : Colors.transparent,
+                        foregroundColor: value == rate
+                            ? colors.onPrimary
+                            : colors.onSurface,
+                        side: BorderSide(
+                          color: value == rate
+                              ? colors.primary
+                              : colors.outline,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(9),
+                        ),
                       ),
-                    ),
-                    child: Slider(
-                      value: index.toDouble(),
-                      max: (widget.speeds.length - 1).toDouble(),
-                      divisions: widget.speeds.length - 1,
-                      semanticFormatterCallback: (v) =>
-                          '${widget.speeds[v.round()]} 倍',
-                      onChanged: (v) => setState(() => index = v.round()),
-                      onChangeEnd: (v) =>
-                          Navigator.pop(context, widget.speeds[v.round()]),
+                      child: Text('$value×', maxLines: 1),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${widget.speeds.first}×',
-                          style: theme.textTheme.labelSmall,
-                        ),
-                        Text(
-                          '${widget.speeds.last}×',
-                          style: theme.textTheme.labelSmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '$rate×',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: colors.primary,
-                fontWeight: FontWeight.w600,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
-        const SizedBox(height: 6),
-        const Divider(height: 1),
-        Row(
-          children: [
-            for (final value in const [1.0, 1.25, 1.5, 2.0])
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context, value),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    foregroundColor: value == rate
-                        ? colors.primary
-                        : colors.onSurface,
-                  ),
-                  child: Text('$value×', textAlign: TextAlign.center),
-                ),
-              ),
-          ],
-        ),
+        const SizedBox(height: 12),
       ],
     );
   }

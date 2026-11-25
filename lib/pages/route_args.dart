@@ -6,11 +6,13 @@ class BrowseArgs {
     required this.sourceId,
     required this.categoryId,
     required this.title,
+    this.initialSort = '',
   });
 
   final String sourceId;
   final String categoryId;
   final String title;
+  final String initialSort;
 }
 
 /// Route argument for `/play`.

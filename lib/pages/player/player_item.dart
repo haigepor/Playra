@@ -28,11 +28,201 @@ import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/presentation/widgets/playra_controls.dart';
 import 'package:kazumi/pages/player/player_item_surface.dart';
 import 'package:mobx/mobx.dart' as mobx;
-import 'package:saver_gallery/saver_gallery.dart';
 import 'package:kazumi/services/player/audio_controller.dart';
 import 'package:kazumi/services/player/timed_shutdown_service.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/services/platform/player_menu_service.dart';
+
+/// Bounds a single platform PiP entry request, including hangs and late replies.
+/// A successful method-channel result remains pending until the native mode
+/// callback confirms entry; this avoids showing player controls during resize.
+@visibleForTesting
+enum AndroidPipEntryFailure { unsupported, failed, timeout }
+
+@visibleForTesting
+class AndroidPipEntryCoordinator {
+  AndroidPipEntryCoordinator({
+    required this.onChanged,
+    required this.onFailure,
+    this.timeout = const Duration(seconds: 8),
+  });
+
+  final VoidCallback onChanged;
+  final ValueChanged<AndroidPipEntryFailure> onFailure;
+  final Duration timeout;
+  Timer? _timer;
+  int _generation = 0;
+  bool _disposed = false;
+  bool _pending = false;
+
+  bool get pending => _pending;
+  bool _isCurrent(int generation) =>
+      !_disposed && _pending && _generation == generation;
+
+  Future<void> request({
+    required Future<bool> Function() isSupported,
+    required Future<void> Function() prepare,
+    required Future<bool> Function() enter,
+  }) async {
+    if (_disposed || _pending) return;
+    _pending = true;
+    final generation = ++_generation;
+    _timer = Timer(
+      timeout,
+      () => _fail(generation, AndroidPipEntryFailure.timeout),
+    );
+    onChanged();
+    try {
+      final supported = await isSupported();
+      if (!_isCurrent(generation)) return;
+      if (!supported) {
+        _fail(generation, AndroidPipEntryFailure.unsupported);
+        return;
+      }
+      await prepare();
+      if (!_isCurrent(generation)) return;
+      final entered = await enter();
+      if (!_isCurrent(generation)) return;
+      if (!entered) _fail(generation, AndroidPipEntryFailure.failed);
+      // If entered is true, the native mode callback or timeout finishes it.
+    } catch (error, stack) {
+      if (!_isCurrent(generation)) return;
+      KazumiLogger().w(
+        'PlayerItem: Android PiP entry failed',
+        error: error,
+        stackTrace: stack,
+      );
+      _fail(generation, AndroidPipEntryFailure.failed);
+    }
+  }
+
+  void _fail(int generation, AndroidPipEntryFailure failure) {
+    if (!_isCurrent(generation)) return;
+    _finish();
+    onChanged();
+    onFailure(failure);
+  }
+
+  void confirmModeChanged() {
+    if (_disposed || !_pending) return;
+    _finish();
+    onChanged();
+  }
+
+  void rejectModeChanged() {
+    if (_disposed || !_pending) return;
+    _fail(_generation, AndroidPipEntryFailure.failed);
+  }
+
+  void _finish() {
+    _timer?.cancel();
+    _timer = null;
+    _pending = false;
+    _generation++;
+  }
+
+  void dispose() {
+    _disposed = true;
+    _finish();
+  }
+}
+
+/// Coalesces background suspension and invalidates work when the app resumes.
+@visibleForTesting
+class BackgroundPlaybackCoordinator {
+  BackgroundPlaybackCoordinator({
+    required this.shouldSuspend,
+    required this.setPrefetchSuspended,
+    required this.pause,
+  });
+
+  final bool Function() shouldSuspend;
+  final Future<void> Function(bool) setPrefetchSuspended;
+  final Future<void> Function() pause;
+  int _generation = 0;
+  bool _requested = false;
+  bool _disposed = false;
+
+  Future<void> suspend() async {
+    if (_disposed || _requested || !shouldSuspend()) return;
+    _requested = true;
+    final generation = ++_generation;
+    final prefetch = Future<void>.sync(() => setPrefetchSuspended(true))
+        .catchError((Object error, StackTrace stack) {
+          KazumiLogger().w(
+            'PlayerItem: failed to suspend prefetch',
+            error: error,
+            stackTrace: stack,
+          );
+        });
+    try {
+      // Give a pending foreground transition an opportunity to invalidate this
+      // request before sending a native pause command.
+      await Future<void>.value();
+      if (!_disposed && generation == _generation && shouldSuspend()) {
+        await pause();
+      }
+    } catch (error, stack) {
+      KazumiLogger().w(
+        'PlayerItem: failed to pause in background',
+        error: error,
+        stackTrace: stack,
+      );
+    } finally {
+      await prefetch;
+    }
+  }
+
+  Future<void> resume() async {
+    if (_disposed) return;
+    _generation++;
+    _requested = false;
+    try {
+      // The underlying controller serializes its writes and honours the latest
+      // requested prefetch state, even if a prior suspend is still in flight.
+      await setPrefetchSuspended(false);
+    } catch (error, stack) {
+      KazumiLogger().w(
+        'PlayerItem: failed to resume prefetch',
+        error: error,
+        stackTrace: stack,
+      );
+    }
+  }
+
+  void dispose() {
+    _disposed = true;
+    _generation++;
+  }
+}
+
+/// The on-screen portion of the video inside its local layout viewport.
+@visibleForTesting
+Rect visiblePipVideoRect({
+  required Size viewport,
+  required Size video,
+  required BoxFit fit,
+  double? frameAspectRatio,
+}) {
+  if (viewport.isEmpty) return Rect.zero;
+  final bounds = Offset.zero & viewport;
+  final frame = frameAspectRatio != null && frameAspectRatio > 0
+      ? Alignment.center.inscribe(
+          applyBoxFit(
+            BoxFit.contain,
+            Size(frameAspectRatio, 1),
+            viewport,
+          ).destination,
+          bounds,
+        )
+      : bounds;
+  if (video.isEmpty) return frame.intersect(bounds);
+  final visible = Alignment.center.inscribe(
+    applyBoxFit(fit, video, frame.size).destination,
+    frame,
+  );
+  return visible.intersect(bounds);
+}
 
 class PlayerItem extends StatefulWidget {
   const PlayerItem({
@@ -71,6 +261,183 @@ class PlayerItem extends StatefulWidget {
   State<PlayerItem> createState() => _PlayerItemState();
 }
 
+class _ProgressSeekOwner<T> {
+  _ProgressSeekOwner(this.player, this.lease, this.wasPlaying);
+  final Object player;
+  final T lease;
+  final bool wasPlaying;
+  bool resuming = false;
+  final List<bool Function()> resumeGuards = [];
+  int overlayHolds = 0;
+
+  bool get canResume => resumeGuards.every((guard) => guard());
+}
+
+/// A screenshot overlay holds the same pause lease as an in-flight drag.
+class ProgressSeekOverlay<T> {
+  ProgressSeekOverlay._(this._owner);
+  final _ProgressSeekOwner<T> _owner;
+  bool _released = false;
+}
+
+class _ProgressSeekSession<T> {
+  _ProgressSeekSession(this.owner, this.initial) : target = initial;
+  final _ProgressSeekOwner<T> owner;
+  final Duration initial;
+  Duration target;
+}
+
+/// Serializes consecutive progress drags and shares their temporary pause.
+@visibleForTesting
+class ProgressSeekCoordinator<T> {
+  ProgressSeekCoordinator({
+    required this.pause,
+    required this.pauseCompleted,
+    required this.resume,
+    required this.seek,
+    required this.setPosition,
+    required this.isCurrentPlayer,
+  });
+
+  final T Function() pause;
+  final Future<void> Function(T) pauseCompleted;
+  final Future<void> Function(T) resume;
+  final Future<void> Function(Duration) seek;
+  final void Function(Duration) setPosition;
+  final bool Function(Object) isCurrentPlayer;
+  _ProgressSeekOwner<T>? _owner;
+  _ProgressSeekSession<T>? _active;
+  Future<void> _tail = Future<void>.value();
+  int _generation = 0;
+
+  bool get active => _active != null;
+  int get generation => _generation;
+
+  void begin(
+    Object player,
+    Duration position, {
+    required bool playing,
+    required bool wantsPlayback,
+  }) {
+    _generation++;
+    final previous = _owner;
+    final reuse =
+        previous != null &&
+        identical(previous.player, player) &&
+        !previous.resuming;
+    final owner = reuse
+        ? previous
+        : _ProgressSeekOwner<T>(
+            player,
+            pause(),
+            previous != null &&
+                    identical(previous.player, player) &&
+                    previous.resuming
+                ? wantsPlayback
+                : playing,
+          );
+    _owner = owner;
+    _active = _ProgressSeekSession<T>(owner, position);
+  }
+
+  ProgressSeekOverlay<T>? acquireOverlay(
+    Object? player, {
+    required bool playing,
+    required bool wantsPlayback,
+  }) {
+    if (player == null) return null;
+    var owner = _owner;
+    if (owner == null || !identical(owner.player, player) || owner.resuming) {
+      final shouldResume =
+          owner != null && identical(owner.player, player) && owner.resuming
+          ? wantsPlayback
+          : playing;
+      if (!shouldResume) return null;
+      owner = _ProgressSeekOwner<T>(player, pause(), true);
+      _owner = owner;
+    }
+    owner.overlayHolds++;
+    return ProgressSeekOverlay<T>._(owner);
+  }
+
+  Future<void> overlayPauseCompleted(ProgressSeekOverlay<T> overlay) =>
+      pauseCompleted(overlay._owner.lease);
+
+  Future<void> releaseOverlay(
+    ProgressSeekOverlay<T> overlay, {
+    required bool Function() canResume,
+  }) async {
+    if (overlay._released) return;
+    overlay._released = true;
+    final owner = overlay._owner;
+    owner.overlayHolds--;
+    owner.resumeGuards.add(canResume);
+    await _tail;
+    if (!identical(_owner, owner) ||
+        owner.overlayHolds != 0 ||
+        _active != null ||
+        owner.resuming ||
+        !isCurrentPlayer(owner.player)) {
+      return;
+    }
+    try {
+      if (owner.canResume && owner.wasPlaying) {
+        owner.resuming = true;
+        await resume(owner.lease);
+      }
+    } finally {
+      if (identical(_owner, owner)) _owner = null;
+    }
+  }
+
+  void update(Duration position) {
+    final session = _active;
+    if (session == null || !isCurrentPlayer(session.owner.player)) return;
+    session.target = position;
+    setPosition(position);
+  }
+
+  Future<void> end({required bool cancelled}) {
+    final session = _active;
+    if (session == null) return Future<void>.value();
+    _active = null;
+    final generation = _generation;
+    bool current() =>
+        generation == _generation && isCurrentPlayer(session.owner.player);
+    if (cancelled && current()) setPosition(session.initial);
+    final result = _tail.then((_) async {
+      try {
+        await pauseCompleted(session.owner.lease);
+        if (!current()) return;
+        if (!cancelled) await seek(session.target);
+        if (!current()) return;
+        if (session.owner.wasPlaying &&
+            session.owner.canResume &&
+            session.owner.overlayHolds == 0 &&
+            !session.owner.resuming) {
+          session.owner.resuming = true;
+          await resume(session.owner.lease);
+        }
+      } finally {
+        if (generation == _generation &&
+            identical(_owner, session.owner) &&
+            session.owner.overlayHolds == 0) {
+          _owner = null;
+        }
+      }
+    });
+    // A failed seek must not block a later gesture.
+    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return result;
+  }
+
+  void invalidate() {
+    _generation++;
+    _active = null;
+    _owner = null;
+  }
+}
+
 class _PlayerItemState extends State<PlayerItem>
     with
         WindowListener,
@@ -100,6 +467,17 @@ class _PlayerItemState extends State<PlayerItem>
   final Set<PlayerPanelHold> _playerPanelHolds = <PlayerPanelHold>{};
   int _openPlayerMenuCount = 0;
   PlayerPanelHold? _progressBarDragHold;
+  late final ProgressSeekCoordinator<PlayerTemporaryPause> _progressSeek =
+      ProgressSeekCoordinator<PlayerTemporaryPause>(
+        pause: playerController.pauseTemporarily,
+        pauseCompleted: (lease) => lease.completed,
+        resume: playerController.resumeTemporaryPause,
+        seek: playerController.seek,
+        setPosition: (position) =>
+            playerController.playback.currentPosition = position,
+        isCurrentPlayer: (player) =>
+            mounted && identical(player, playerController.playback.mediaPlayer),
+      );
   PlayerPanelHold? _episodePanelHold;
   PointerDeviceKind? _lastTapPointerKind;
   PointerDeviceKind? _lastDoubleTapPointerKind;
@@ -117,7 +495,37 @@ class _PlayerItemState extends State<PlayerItem>
   bool? _lastPipPlaying;
   Rect? _lastPipSourceRect;
   bool _pipSourceRectSyncScheduled = false;
-  bool _pipEnterRequested = false;
+  late final AndroidPipEntryCoordinator _pipEntry = AndroidPipEntryCoordinator(
+    onChanged: () {
+      if (mounted) setState(() {});
+    },
+    onFailure: (failure) {
+      if (!mounted) return;
+      KazumiDialog.showToast(
+        message: switch (failure) {
+          AndroidPipEntryFailure.unsupported => '当前设备不支持画中画',
+          AndroidPipEntryFailure.timeout => '进入画中画超时，请重试',
+          AndroidPipEntryFailure.failed => '进入画中画失败',
+        },
+      );
+      // The paused event may have been skipped while a PiP request was pending.
+      if (_shouldSuspendForBackground()) {
+        unawaited(_backgroundPlaybackCoordinator.suspend());
+      }
+    },
+  );
+  bool get _pipEnterRequested => _pipEntry.pending;
+  late final BackgroundPlaybackCoordinator _backgroundPlaybackCoordinator =
+      BackgroundPlaybackCoordinator(
+        shouldSuspend: _shouldSuspendForBackground,
+        setPrefetchSuspended: playerController.playback.setPrefetchSuspended,
+        pause: () async {
+          if (playerController.playback.mediaPlayer != null &&
+              playerController.playback.playerPlaying) {
+            await playerController.pause(enableSync: false);
+          }
+        },
+      );
   late mobx.ReactionDisposer _playerSizeListener;
 
   late mobx.ReactionDisposer _fullscreenListener;
@@ -128,30 +536,21 @@ class _PlayerItemState extends State<PlayerItem>
     _scheduleAndroidPIPSourceRectSync();
   }
 
+  bool _shouldSuspendForBackground() =>
+      mounted &&
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.paused &&
+      !backgroundPlayback &&
+      !videoPageController.isPip &&
+      !_pipEnterRequested;
+
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused &&
-        !backgroundPlayback &&
-        !videoPageController.isPip &&
-        !_pipEnterRequested) {
-      // Suspend before awaiting pause so a later resume wins; pause alone keeps prefetching.
-      final suspend = playerController.playback.setPrefetchSuspended(true);
-      if (playerController.playback.mediaPlayer != null &&
-          playerController.playback.playerPlaying) {
-        try {
-          await playerController.pause(enableSync: false);
-        } catch (_) {}
-      }
-      await suspend;
-      return;
+    if (state == AppLifecycleState.paused) {
+      unawaited(_backgroundPlaybackCoordinator.suspend());
+    } else if (state == AppLifecycleState.resumed) {
+      unawaited(_backgroundPlaybackCoordinator.resume());
     }
-    if (state == AppLifecycleState.resumed) {
-      await playerController.playback.setPrefetchSuspended(false);
-    }
-    try {
-      if (playerController.playback.playerPlaying) {}
-    } catch (_) {}
   }
 
   Future<void> _syncAndroidAutoEnterPIPSetting() async {
@@ -224,22 +623,22 @@ class _PlayerItemState extends State<PlayerItem>
     if (size.isEmpty) {
       return null;
     }
-    Rect rect = Offset.zero & size;
-    final int videoWidth = playerController.debug.playerWidth;
-    final int videoHeight = playerController.debug.playerHeight;
-    if (videoWidth > 0 && videoHeight > 0) {
-      final double scale =
-          (rect.width / videoWidth) < (rect.height / videoHeight)
-          ? rect.width / videoWidth
-          : rect.height / videoHeight;
-      rect = Rect.fromCenter(
-        center: rect.center,
-        width: videoWidth * scale,
-        height: videoHeight * scale,
-      );
-    }
-    // Convert the fitted video rectangle to window coordinates for native PiP.
-    rect = MatrixUtils.transformRect(renderObject.getTransformTo(null), rect);
+    final mode = playerController.panel.aspectRatioMode;
+    final rectInSurface = visiblePipVideoRect(
+      viewport: size,
+      video: Size(
+        playerController.debug.playerWidth.toDouble(),
+        playerController.debug.playerHeight.toDouble(),
+      ),
+      fit: mode.fit,
+      frameAspectRatio: mode.frameAspectRatio,
+    );
+    // Convert to window coordinates, clipping to the visible Flutter view.
+    final rect = MatrixUtils.transformRect(
+      renderObject.getTransformTo(null),
+      rectInSurface,
+    ).intersect(Offset.zero & MediaQuery.sizeOf(context));
+    if (rect.isEmpty) return null;
     final double ratio = MediaQuery.devicePixelRatioOf(context);
     return Rect.fromLTRB(
       rect.left * ratio,
@@ -263,35 +662,18 @@ class _PlayerItemState extends State<PlayerItem>
         videoPageController.isPip) {
       return;
     }
-    _pipEnterRequested = true;
-    final bool supported = await PipUtils.isAndroidPIPSupported();
-    if (!mounted) {
-      return;
-    }
-    if (!supported) {
-      _pipEnterRequested = false;
-      KazumiDialog.showToast(message: '当前设备不支持画中画');
-      return;
-    }
-    setState(() {
-      _pipEnterRequested = true;
-    });
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-    await _updateAndroidPIPActions(force: true);
-    final bool entered = await PipUtils.enterAndroidPIPWindow(
-      width: playerController.debug.playerWidth,
-      height: playerController.debug.playerHeight,
+    await _pipEntry.request(
+      isSupported: PipUtils.isAndroidPIPSupported,
+      prepare: () async {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted || !_pipEntry.pending) return;
+        await _updateAndroidPIPActions(force: true);
+      },
+      enter: () => PipUtils.enterAndroidPIPWindow(
+        width: playerController.debug.playerWidth,
+        height: playerController.debug.playerHeight,
+      ),
     );
-    if (entered || !mounted) {
-      return;
-    }
-    KazumiDialog.showToast(message: '进入画中画失败');
-    setState(() {
-      _pipEnterRequested = false;
-    });
   }
 
   void _handleAndroidPIPModeChanged(bool inPipMode) {
@@ -301,8 +683,12 @@ class _PlayerItemState extends State<PlayerItem>
     }
     setState(() {
       videoPageController.isPip = inPipMode;
-      _pipEnterRequested = false;
     });
+    if (inPipMode) {
+      _pipEntry.confirmModeChanged();
+    } else {
+      _pipEntry.rejectModeChanged();
+    }
     if (!inPipMode) {
       _scheduleAndroidPIPSourceRectSync();
     }
@@ -644,6 +1030,9 @@ class _PlayerItemState extends State<PlayerItem>
     if (playerController.seeking.hasActiveInteractiveSeek) {
       unawaited(_finishInteractiveSeek(cancelled: true));
     }
+    if (_progressSeek.active) {
+      unawaited(handleProgressBarDragEnd(true));
+    }
     _finishAdjustmentGesture();
     panel.showSeekTime = false;
     panel.showBrightness = false;
@@ -653,20 +1042,48 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void handleProgressBarDragStart() {
-    _beginInteractiveSeek();
+    final playback = playerController.playback;
+    final player = playback.mediaPlayer;
+    if (player == null) return;
+    _progressBarDragHold?.release();
+    playerTimer?.cancel();
+    _progressSeek.begin(
+      player,
+      playback.currentPosition,
+      playing: playback.playerPlaying,
+      wantsPlayback: !playback.startupSuspended,
+    );
     playerController.panel.showSeekTime = true;
     _syncAudioServiceState();
     _progressBarDragHold = acquirePlayerPanelHold();
   }
 
-  Future<void> handleProgressBarSeek(Duration duration) async {
-    playerController.panel.showSeekTime = false;
-    if (!playerController.seeking.updateInteractiveSeek(duration)) {
-      await playerController.seek(duration);
-      return;
-    }
-    await _finishInteractiveSeek();
+  void handleProgressBarDragUpdate(Duration duration) {
+    _progressSeek.update(duration);
   }
+
+  Future<void> handleProgressBarDragEnd(bool cancelled) async {
+    if (!_progressSeek.active) return;
+    final generation = _progressSeek.generation;
+    playerController.panel.showSeekTime = false;
+    _progressBarDragHold?.release();
+    _progressBarDragHold = null;
+    try {
+      await _progressSeek.end(cancelled: cancelled);
+      if (mounted && generation == _progressSeek.generation) {
+        _syncAudioServiceState();
+      }
+    } catch (error) {
+      KazumiLogger().e('PlayerController: progress seek failed', error: error);
+    } finally {
+      if (mounted && generation == _progressSeek.generation) {
+        _restartPlayerTimer();
+      }
+    }
+  }
+
+  Future<void> handleProgressBarSeek(Duration duration) =>
+      playerController.seek(duration);
 
   void _beginInteractiveSeek() {
     _progressBarDragHold?.release();
@@ -714,11 +1131,6 @@ class _PlayerItemState extends State<PlayerItem>
 
   Future<void> handleScreenshot() async {
     if (!mounted) return;
-    // Web 使用截图挑选和浏览器下载，不能调用手机相册插件。
-    if (!kIsWeb && !isDesktop()) {
-      await _saveScreenshotToGallery();
-      return;
-    }
     if (_screenshots.busy || _screenshotSheetOpen) return;
     final episode = videoPageController.playbackEpisode;
     final source = videoPageController.src;
@@ -758,34 +1170,8 @@ class _PlayerItemState extends State<PlayerItem>
     }
   }
 
-  Future<void> _saveScreenshotToGallery() async {
-    _playScreenshotFeedback();
-    try {
-      final screenshot = await playerController.screenshotPng();
-      if (!mounted) return;
-      if (screenshot == null || screenshot.isEmpty) {
-        KazumiDialog.showToast(message: '截图失败：未获取到图像');
-        return;
-      }
-      final result = await SaverGallery.saveImage(
-        screenshot,
-        fileName: DateTime.timestamp().millisecondsSinceEpoch.toString(),
-        extension: 'png',
-        skipIfExists: false,
-      );
-      if (mounted && !result.isSuccess) {
-        KazumiDialog.showToast(message: '截图保存失败：${result.errorMessage}');
-      }
-    } catch (e) {
-      if (mounted) KazumiDialog.showToast(message: '截图失败：$e');
-    }
-  }
-
   Future<void> showScreenshotCandidates() async {
-    if ((!kIsWeb && !isDesktop()) ||
-        !mounted ||
-        _screenshotSheetOpen ||
-        _screenshots.busy) {
+    if (!mounted || _screenshotSheetOpen || _screenshots.busy) {
       return;
     }
     _screenshotSheetOpen = true;
@@ -793,35 +1179,40 @@ class _PlayerItemState extends State<PlayerItem>
     final player = playerController.playback.mediaPlayer;
     final episode = videoPageController.playbackEpisode;
     final source = videoPageController.src;
-    final resume = playerController.playback.playing;
     final sleepRemaining =
         TimedShutdownService().remainingSecondsNotifier.value;
     final sleepDeadline = sleepRemaining > 0
         ? DateTime.now().add(Duration(seconds: sleepRemaining))
         : null;
+    // Share an in-flight progress pause instead of losing its resume intent.
+    final overlay = _progressSeek.acquireOverlay(
+      player,
+      playing: playerController.playback.playing,
+      wantsPlayback: !playerController.playback.startupSuspended,
+    );
     try {
-      if (resume) await playerController.pause(enableSync: false);
+      if (overlay != null) await _progressSeek.overlayPauseCompleted(overlay);
       if (!mounted) return;
       await showPlayerScreenshotSheet(context, controller: _screenshots);
     } finally {
       _screenshotSheetOpen = false;
+      bool canResume() =>
+          mounted &&
+          identical(player, playerController.playback.mediaPlayer) &&
+          videoPageController.playbackEpisode == episode &&
+          videoPageController.src == source &&
+          !videoPageController.loading &&
+          (sleepDeadline == null || DateTime.now().isBefore(sleepDeadline)) &&
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed &&
+          (ModalRoute.of(context)?.isCurrent ?? false);
       if (mounted) {
         hold.release();
         widget.keyboardFocus.requestFocus();
-        // Resume only the same local playback, respecting the sleep timer.
-        if (resume &&
-            identical(player, playerController.playback.mediaPlayer) &&
-            videoPageController.playbackEpisode == episode &&
-            videoPageController.src == source &&
-            !videoPageController.loading &&
-            (sleepDeadline == null || DateTime.now().isBefore(sleepDeadline)) &&
-            WidgetsBinding.instance.lifecycleState ==
-                AppLifecycleState.resumed &&
-            (ModalRoute.of(context)?.isCurrent ?? false)) {
-          await playerController.play(enableSync: false);
-        }
       } else {
         hold.releaseSilently();
+      }
+      if (overlay != null) {
+        await _progressSeek.releaseOverlay(overlay, canResume: canResume);
       }
     }
   }
@@ -1243,12 +1634,15 @@ class _PlayerItemState extends State<PlayerItem>
 
   @override
   void dispose() {
+    _pipEntry.dispose();
+    _backgroundPlaybackCoordinator.dispose();
     _episodePanelHold?.releaseSilently();
     // The route-scoped PlayerController owns playback disposal.
     _fullscreenListener();
     _playerSizeListener();
     WidgetsBinding.instance.removeObserver(this);
     windowManager.removeListener(this);
+    _progressSeek.invalidate();
     playerController.seeking.invalidateInteractiveSeek();
     playerTimer?.cancel();
     hideTimer?.cancel();
@@ -1504,6 +1898,12 @@ class _PlayerItemState extends State<PlayerItem>
                                     enterAndroidPictureInPicture,
                                 handleProgressBarDragStart:
                                     handleProgressBarDragStart,
+                                handleProgressBarDragUpdate:
+                                    handleProgressBarDragUpdate,
+                                handleProgressBarDragEnd: (cancelled) =>
+                                    unawaited(
+                                      handleProgressBarDragEnd(cancelled),
+                                    ),
                                 handleProgressBarSeek: handleProgressBarSeek,
                                 handleSuperResolutionChange:
                                     handleSuperResolutionChange,
@@ -1548,7 +1948,7 @@ class _PlayerItemState extends State<PlayerItem>
                                     padding: const EdgeInsets.only(right: 12),
                                     child: Semantics(
                                       button: true,
-                                      label: '长按解锁',
+                                      label: '解锁面板',
                                       onTap: _toggleLock,
                                       child: ExcludeSemantics(
                                         child: Material(
@@ -1559,6 +1959,7 @@ class _PlayerItemState extends State<PlayerItem>
                                           child: InkWell(
                                             onTapDown: (_) =>
                                                 showVideoController(),
+                                            onTap: _toggleLock,
                                             onLongPress: _toggleLock,
                                             borderRadius: BorderRadius.circular(
                                               12,
@@ -1578,7 +1979,7 @@ class _PlayerItemState extends State<PlayerItem>
                                                   ),
                                                   SizedBox(width: 6),
                                                   Text(
-                                                    '长按解锁',
+                                                    '解锁',
                                                     style: TextStyle(
                                                       color: Colors.white,
                                                       fontSize: 13,

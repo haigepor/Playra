@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:kazumi/request/core/network_config.dart';
 import 'package:kazumi/services/logging/logger.dart';
+import 'package:kazumi/services/network/cover_url_policy.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
 import 'package:kazumi/services/platform/platform_io.dart';
@@ -23,14 +24,16 @@ class ProxyAwareImageCacheManager extends CacheManager with ImageCacheManager {
 
   /// 代理设置变更后由 ProxyManager 调用；文件服务会在下一次请求时根据
   /// [NetworkConfig.revision] 自动切换 HttpClient。
-  void resetNetworkClients() {}
+  void resetNetworkClients() {
+    CoverUrlPolicy.clearFailedCache();
+  }
 
   static IOClient _createHttpClient() {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
     final proxy = _currentProxy();
     if (proxy != null) {
+      // A proxy changes the route, not the server's certificate trust policy.
       client.findProxy = (_) => 'PROXY ${proxy.$1}:${proxy.$2}';
-      client.badCertificateCallback = (cert, host, port) => true;
     } else if (Platform.isWindows) {
       client.findProxy = SystemProxyService.findProxy;
     }
@@ -59,10 +62,30 @@ class _ProxyAwareHttpFileService extends FileService {
     String url, {
     Map<String, String>? headers,
   }) async {
+    final normalized = CoverUrlPolicy.normalize(url);
+    final effectiveUrl = normalized.isNotEmpty ? normalized : url;
+    final uri = Uri.parse(effectiveUrl);
     final client = _clientForCurrentConfig();
-    final request = http.Request('GET', Uri.parse(url));
-    if (headers != null) request.headers.addAll(headers);
-    return HttpGetResponse(await client.send(request));
+    final request = http.Request('GET', uri);
+    final effectiveHeaders = (headers != null && headers.isNotEmpty)
+        ? headers
+        : CoverUrlPolicy.headersFor(effectiveUrl);
+    request.headers.addAll(effectiveHeaders);
+    final streamed = await client.send(request);
+    final contentType = (streamed.headers['content-type'] ?? '').toLowerCase();
+    // Anti-bot challenge endpoints (for example img9.doubanio.com) can return
+    // HTTP 200 with text/html. Reject non-image payloads before caching them.
+    if (contentType.startsWith('text/') ||
+        contentType.contains('html') ||
+        contentType.contains('json') ||
+        contentType.contains('xml')) {
+      await streamed.stream.drain<void>();
+      throw HttpException(
+        'Unexpected image content-type: $contentType',
+        uri: uri,
+      );
+    }
+    return HttpGetResponse(streamed);
   }
 
   http.Client _clientForCurrentConfig() {

@@ -7,8 +7,11 @@ import 'package:kazumi/features/sources/sources.dart';
 import 'package:kazumi/pages/discover/home_layout.dart';
 import 'package:kazumi/pages/discover/media_widgets.dart';
 import 'package:kazumi/pages/route_args.dart';
+import 'package:kazumi/presentation/theme/playra_home_tokens.dart';
 import 'package:kazumi/presentation/theme/playra_tokens.dart';
 import 'package:kazumi/presentation/widgets/playra_backdrop.dart';
+import 'package:kazumi/presentation/widgets/playra_page_header.dart';
+import 'package:kazumi/presentation/widgets/playra_segmented_tab_bar.dart';
 
 class BrowsePage extends StatefulWidget {
   const BrowsePage({super.key, required this.args});
@@ -41,6 +44,10 @@ class _BrowsePageState extends State<BrowsePage> {
   @override
   void initState() {
     super.initState();
+    final initialSort = widget.args.initialSort;
+    if (_sorts.any((s) => s.$1 == initialSort)) {
+      _sort = initialSort;
+    }
     _scroll.addListener(_onScroll);
     _load(reset: true);
   }
@@ -144,88 +151,90 @@ class _BrowsePageState extends State<BrowsePage> {
   @override
   Widget build(BuildContext context) {
     final layout = HomeLayoutMetrics.of(context);
+    final homeTokens = PlayraHomeTokens.of(context);
+    final selectedIndex = _sorts.indexWhere((s) => s.$1 == _sort);
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: PlayraBackdrop(
         child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: layout.contentMaxWidth),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(2, 0, 16, 0),
-                    child: Row(
-                      children: [
-                        BackButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: layout.contentMaxWidth),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          layout.gutter,
+                          4,
+                          layout.gutter,
+                          2,
                         ),
-                        Expanded(
-                          child: Text(
-                            widget.args.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                        child: SizedBox(
+                          height: 40,
+                          child: Row(
+                            children: [
+                              PlayraCircleAction(
+                                tooltip: '返回',
+                                icon: Icons.arrow_back_rounded,
+                                onTap: () => Navigator.of(context).maybePop(),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  widget.args.title,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: homeTokens.textPrimary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.15,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 36),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: DefaultTabController(
-                      length: _sorts.length,
-                      initialIndex: _sorts.indexWhere((s) => s.$1 == _sort),
-                      child: TabBar(
-                        dividerHeight: 0,
-                        labelStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        unselectedLabelStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        indicator: UnderlineTabIndicator(
-                          borderRadius: BorderRadius.circular(2),
-                          borderSide: BorderSide(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 3,
-                          ),
-                          insets: const EdgeInsets.symmetric(horizontal: 3),
-                        ),
-                        indicatorSize: TabBarIndicatorSize.label,
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.start,
-                        labelPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                        ),
-                        onTap: (index) => _selectSort(_sorts[index].$1),
-                        tabs: [
-                          for (final sort in _sorts)
-                            Tab(
-                              height:
-                                  (MediaQuery.textScalerOf(context).scale(14) *
-                                              1.2 +
-                                          24)
-                                      .clamp(48, double.infinity),
-                              text: sort.$2,
-                            ),
-                        ],
                       ),
-                    ),
+                      DefaultTabController(
+                        length: _sorts.length,
+                        initialIndex: selectedIndex < 0 ? 0 : selectedIndex,
+                        child: PlayraSegmentedTabBar(
+                          labels: [for (final sort in _sorts) sort.$2],
+                          horizontalPadding: layout.gutter,
+                          verticalPadding: 6,
+                          onTap: (index) => _selectSort(_sorts[index].$1),
+                        ),
+                      ),
+                    ],
                   ),
-                  Expanded(
+                ),
+              ),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: homeTokens.divider.withValues(alpha: .6),
+              ),
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: layout.contentMaxWidth,
+                    ),
                     child: RefreshIndicator(
                       onRefresh: _refresh,
                       color: Theme.of(context).colorScheme.primary,
                       child: _buildBody(context),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -277,6 +286,8 @@ class _BrowsePageState extends State<BrowsePage> {
         MediaPosterGrid(
           items: _items,
           showScore: _sort == 'score',
+          fixedColumns: 3,
+          overlayStatus: true,
           onTap: (item) => context.pushNamed('/detail', arguments: item.key),
           insets: insets,
         ),

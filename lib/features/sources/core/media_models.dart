@@ -31,6 +31,7 @@ class MediaItem {
     required this.key,
     required this.title,
     this.cover = '',
+    this.fallbackCover = '',
     this.subtitle = '',
     this.badge = '',
     this.category = '',
@@ -45,6 +46,7 @@ class MediaItem {
   final MediaKey key;
   final String title;
   final String cover;
+  final String fallbackCover;
 
   /// Short status line, e.g. "更新至 179 集".
   final String subtitle;
@@ -78,6 +80,7 @@ class MediaBanner {
     required this.id,
     required this.title,
     required this.imageUrl,
+    this.fallbackImageUrl = '',
     this.target,
     this.linkUrl = '',
   });
@@ -85,8 +88,22 @@ class MediaBanner {
   final String id;
   final String title;
   final String imageUrl;
+  final String fallbackImageUrl;
   final MediaKey? target;
   final String linkUrl;
+
+  /// Only public HTTP(S) links may be opened by a banner action.
+  Uri? get externalUri {
+    final uri = Uri.tryParse(linkUrl.trim());
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        !uri.hasAuthority ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty) {
+      return null;
+    }
+    return uri;
+  }
 }
 
 class MediaSection {
@@ -195,6 +212,7 @@ class MediaDetail {
     this.subtitle = '',
     this.episodeStatus = '',
     this.cover = '',
+    this.fallbackCover = '',
     this.description = '',
     this.category = '',
     this.area = '',
@@ -214,6 +232,7 @@ class MediaDetail {
   /// Source-provided release status, distinct from aliases and episode totals.
   final String episodeStatus;
   final String cover;
+  final String fallbackCover;
   final String description;
   final String category;
   final String area;

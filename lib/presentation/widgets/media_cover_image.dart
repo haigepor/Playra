@@ -1,44 +1,67 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kazumi/services/network/cover_url_policy.dart';
 import 'package:kazumi/services/network/proxy_aware_image_cache_manager.dart';
 
 /// Cover loader shared by poster cards, banners, detail backdrops and the
 /// player gate.
 ///
-/// Two reasons this is not a plain `Image.network`:
-///
-/// * The feed mixes CDNs. douban answers `418` without a browser UA and `403`
-///   when the request carries Dart's default UA, and `Image.network` only
-///   *appends* headers, so `user-agent` ends up duplicated and the request is
-///   rejected. [CachedNetworkImage] goes through `package:http`, which replaces
-///   the header, so one browser UA + referer works for douban, qpic and
-///   360buyimg alike (verified on the emulator).
-/// * Covers are scrolled past repeatedly; the disk cache and the app's
-///   proxy-aware manager keep them off the network after the first load.
-class MediaCoverImage extends StatelessWidget {
+/// Handles CDN-specific headers (for example Douban Referer vs. no Referer on
+/// iQIYI), retired/anti-bot host rewrites (`qnmob3` / `img9` -> `img2`),
+/// primary -> fallback URL recovery, and short-lived negative caching so dead
+/// links are not repeatedly retried across list scrolls.
+class MediaCoverImage extends StatefulWidget {
   const MediaCoverImage({
     super.key,
     required this.url,
+    this.fallbackUrl = '',
     this.fit = BoxFit.cover,
     this.cacheWidth,
     this.errorWidget,
   });
 
   final String url;
+  final String fallbackUrl;
   final BoxFit fit;
   final int? cacheWidth;
   final Widget? errorWidget;
 
-  static const String userAgent =
-      'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 '
-      '(KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36';
-  static const String referer = 'https://movie.douban.com/';
+  static const String userAgent = CoverUrlPolicy.userAgent;
+  static const String referer = CoverUrlPolicy.doubanReferer;
 
-  static const Map<String, String> headers = <String, String>{
-    'User-Agent': userAgent,
-    'Referer': referer,
-  };
+  static Map<String, String> headersFor(String url) =>
+      CoverUrlPolicy.headersFor(url);
+
+  @override
+  State<MediaCoverImage> createState() => _MediaCoverImageState();
+}
+
+class _MediaCoverImageState extends State<MediaCoverImage> {
+  bool _useFallback = false;
+
+  @override
+  void didUpdateWidget(covariant MediaCoverImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url ||
+        oldWidget.fallbackUrl != widget.fallbackUrl) {
+      _useFallback = false;
+    }
+  }
+
+  String _pickActiveUrl(String primary, String fallback) {
+    if (primary.isEmpty) return fallback;
+    if (_useFallback && fallback.isNotEmpty && fallback != primary) {
+      return fallback;
+    }
+    if (CoverUrlPolicy.isRecentlyFailed(primary) &&
+        fallback.isNotEmpty &&
+        fallback != primary &&
+        !CoverUrlPolicy.isRecentlyFailed(fallback)) {
+      return fallback;
+    }
+    return primary;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,28 +72,49 @@ class MediaCoverImage extends StatelessWidget {
         child: Icon(
           Icons.movie_outlined,
           size: 22,
-          color: colors.onSurfaceVariant,
+          color: colors.onSurfaceVariant.withValues(alpha: 0.72),
         ),
       ),
     );
-    if (url.isEmpty) return errorWidget ?? placeholder;
+    final primary = CoverUrlPolicy.normalize(widget.url);
+    final fallback = CoverUrlPolicy.normalize(widget.fallbackUrl);
+    final activeUrl = _pickActiveUrl(primary, fallback);
+
+    if (activeUrl.isEmpty || CoverUrlPolicy.isRecentlyFailed(activeUrl)) {
+      return widget.errorWidget ?? placeholder;
+    }
+
     return CachedNetworkImage(
-      imageUrl: url,
+      key: ValueKey<String>(activeUrl),
+      imageUrl: activeUrl,
       placeholder: (_, _) => ColoredBox(color: colors.surfaceContainerHighest),
-      fit: fit,
+      fit: widget.fit,
       // Headers are ignored by the web loader, so keep them native-only.
-      httpHeaders: kIsWeb ? null : headers,
-      memCacheWidth: cacheWidth,
+      httpHeaders: kIsWeb ? null : CoverUrlPolicy.headersFor(activeUrl),
+      memCacheWidth: widget.cacheWidth,
       cacheManager: ProxyAwareImageCacheManager.instance,
       fadeInDuration: const Duration(milliseconds: 160),
       fadeOutDuration: const Duration(milliseconds: 80),
-      errorWidget: (context, url, error) {
-        // 只在 debug 输出，方便定位封面 CDN 的拒绝原因（正式包静默回退）。
+      errorWidget: (context, failedUrl, error) {
+        CoverUrlPolicy.markFailed(activeUrl);
         assert(() {
-          debugPrint('MediaCoverImage failed: $url -> $error');
+          if (CoverUrlPolicy.shouldLogFailure(activeUrl)) {
+            debugPrint('MediaCoverImage failed: $activeUrl -> $error');
+          }
           return true;
         }());
-        return errorWidget ?? placeholder;
+        if (!_useFallback &&
+            fallback.isNotEmpty &&
+            fallback != activeUrl &&
+            !CoverUrlPolicy.isRecentlyFailed(fallback)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_useFallback) {
+              setState(() => _useFallback = true);
+            }
+          });
+          return ColoredBox(color: colors.surfaceContainerHighest);
+        }
+        return widget.errorWidget ?? placeholder;
       },
     );
   }

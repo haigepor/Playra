@@ -51,26 +51,200 @@ final class _OwnedPlayer {
     mediaResource = null;
     try {
       await prepareVideoOutputDisposal(videoOutput);
-    } catch (error, stackTrace) {
+    } catch (error) {
       KazumiLogger().w(
-        'PlayerPlaybackController: video output cleanup failed',
-        error: error,
-        stackTrace: stackTrace,
+        'PlayerPlaybackController: video output cleanup failed (${error.runtimeType})',
       );
     }
     try {
       await player.dispose();
-    } catch (error, stackTrace) {
+    } catch (error) {
       KazumiLogger().e(
-        'PlayerPlaybackController: failed to dispose media player',
-        error: error,
-        stackTrace: stackTrace,
+        'PlayerPlaybackController: failed to dispose media player (${error.runtimeType})',
       );
       try {
         await player.stop();
       } catch (_) {}
     } finally {
       if (resource != null) releaseMediaResource(resource);
+    }
+  }
+}
+
+/// Detects playback progress even when a stream cannot honor a resume seek.
+@visibleForTesting
+class PlayerStartupProgress {
+  PlayerStartupProgress(this.initialPosition);
+
+  final Duration initialPosition;
+  Duration? _previous;
+  bool _advanced = false;
+
+  bool observe(Duration position) {
+    final previous = _previous;
+    _previous = position;
+    if (previous != null) {
+      final delta = position - previous;
+      // A large discontinuity is a seek, not evidence of playback. Require a
+      // subsequent small forward update, also for streams that ignore resume.
+      if (delta > Duration.zero &&
+          delta <= const Duration(seconds: 2) &&
+          !(initialPosition > Duration.zero && position == initialPosition)) {
+        _advanced = true;
+      }
+    }
+    return _advanced;
+  }
+}
+
+/// Coordinates bounded retries only while the current media is starting.
+/// The injected checks are re-evaluated after the delay, so a user pause,
+/// actual playback progress, or a replaced player cannot be undone by a
+/// previously scheduled retry. Errors are never surfaced as raw strings.
+@visibleForTesting
+class PlayerOpenRetryGate {
+  PlayerOpenRetryGate({
+    required this.isCurrent,
+    required this.withinWindow,
+    required this.hasProgress,
+    required this.isPaused,
+    required this.reopen,
+    required this.onFailure,
+    Future<void> Function()? delay,
+    this.maxAttempts = 2,
+  }) : _delay =
+           delay ??
+           (() => Future<void>.delayed(const Duration(milliseconds: 1200)));
+
+  final bool Function() isCurrent;
+  final bool Function() withinWindow;
+  final bool Function() hasProgress;
+  final bool Function() isPaused;
+  final Future<void> Function() reopen;
+  final VoidCallback onFailure;
+  final Future<void> Function() _delay;
+  final int maxAttempts;
+  int _attempts = 0;
+  bool _pending = false;
+  bool _reopening = false;
+  bool _stopped = false;
+  bool _reported = false;
+  bool _deferredFailure = false;
+  Object? _failureDuringReopen;
+
+  bool request(Object error) {
+    if (_reported && isCurrent()) return true;
+    if (_stopped || !isCurrent()) return false;
+    // A deliberately paused startup can fail with either transient or fatal
+    // errors. Keep the failure for the next explicit play rather than losing
+    // a non-transient format error in the paused event handler.
+    if (isPaused()) {
+      if (!hasProgress()) _deferredFailure = true;
+      return true;
+    }
+    if (!PlayerErrorMapper.isTransientOpenFailure(error)) return false;
+    if (_pending) {
+      if (_reopening) _failureDuringReopen = error;
+      return true;
+    }
+    if (_attempts >= maxAttempts || !withinWindow() || hasProgress()) {
+      return false;
+    }
+    _attempts++;
+    _pending = true;
+    unawaited(_retry());
+    return true;
+  }
+
+  bool get isActive => !_stopped && isCurrent();
+  bool get failureReported => _reported;
+
+  void stop() => _stopped = true;
+
+  /// A pause before reopening cancels the pending retry but retains its error.
+  /// A pause during reopen waits for its result before deciding to report.
+  void intentChanged({required bool paused}) {
+    if (_stopped || !isCurrent()) return;
+    if (paused && _pending && !_reopening) _deferredFailure = true;
+    if (!paused && _deferredFailure) {
+      _deferredFailure = false;
+      if (!hasProgress()) _notifyFailure();
+    }
+  }
+
+  /// Atomically mark any terminal startup failure before exposing its UI.
+  void reportTerminalFailure(VoidCallback report) {
+    if (_stopped || !isCurrent()) return;
+    _stopped = true;
+    _reported = true;
+    report();
+  }
+
+  void _notifyFailure() {
+    if (isPaused()) return;
+    reportTerminalFailure(onFailure);
+  }
+
+  Future<void> _retry() async {
+    Object? failure;
+    try {
+      await _delay();
+      if (_stopped || !isCurrent()) return;
+      if (_deferredFailure || hasProgress()) return;
+      if (isPaused()) {
+        _deferredFailure = true;
+        return;
+      }
+      if (!withinWindow()) {
+        _notifyFailure();
+        return;
+      }
+      _reopening = true;
+      await reopen();
+    } catch (error) {
+      failure = error;
+    } finally {
+      _reopening = false;
+      _pending = false;
+      final nextFailure = failure ?? _failureDuringReopen;
+      _failureDuringReopen = null;
+      if (nextFailure != null && !_stopped && isCurrent() && !hasProgress()) {
+        if (isPaused()) {
+          _deferredFailure = true;
+        } else if (!request(nextFailure)) {
+          _notifyFailure();
+        }
+      }
+    }
+  }
+}
+
+/// Reconcile the latest intent after an asynchronous open or native command.
+@visibleForTesting
+class PlayerRetryIntentSynchronizer {
+  PlayerRetryIntentSynchronizer({
+    required this.isCurrent,
+    required this.isPaused,
+    required this.revision,
+    required this.play,
+    required this.pause,
+  });
+
+  final bool Function() isCurrent;
+  final bool Function() isPaused;
+  final int Function() revision;
+  final Future<void> Function() play;
+  final Future<void> Function() pause;
+
+  Future<void> reconcile() async {
+    while (isCurrent()) {
+      final before = revision();
+      if (isPaused()) {
+        await pause();
+      } else {
+        await play();
+      }
+      if (!isCurrent() || before == revision()) return;
     }
   }
 }
@@ -106,7 +280,19 @@ abstract class _PlayerPlaybackController with Store {
   late String hardwareDecoder;
   bool androidEnableOpenSLES = true;
   bool autoPlay = true;
-  bool startupSuspended = false;
+  bool _startupSuspended = false;
+  int _startupPauseGeneration = 0;
+  int _startupIntentRevision = 0;
+  PlayerOpenRetryGate? _startupRetry;
+  bool get startupSuspended => _startupSuspended;
+  bool get startupFailureReported => _startupRetry?.failureReported ?? false;
+  set startupSuspended(bool value) {
+    _startupSuspended = value;
+    _startupIntentRevision++;
+    if (value) _startupPauseGeneration++;
+    _startupRetry?.intentChanged(paused: value);
+  }
+
   bool playerDebugMode = false;
   int buttonSkipTime = 80;
   int arrowKeySkipTime = 10;
@@ -161,6 +347,8 @@ abstract class _PlayerPlaybackController with Store {
 
   @action
   void resetForInit() {
+    _startupRetry?.stop();
+    _startupRetry = null;
     startupSuspended = false;
     playing = false;
     loading = true;
@@ -197,8 +385,7 @@ abstract class _PlayerPlaybackController with Store {
       startOffset = 0;
     } catch (e) {
       KazumiLogger().w(
-        'PlayerController: failed to restart from beginning',
-        error: e,
+        'PlayerController: failed to restart from beginning (${e.runtimeType})',
       );
     }
   }
@@ -286,8 +473,7 @@ abstract class _PlayerPlaybackController with Store {
         await pp.setProperty('demuxer-readahead-secs', wanted ? '0' : '1');
       } catch (e) {
         KazumiLogger().w(
-          'PlayerController: failed to ${wanted ? 'suspend' : 'resume'} demuxer prefetch',
-          error: e,
+          'PlayerController: failed to ${wanted ? 'suspend' : 'resume'} demuxer prefetch (${e.runtimeType})',
         );
       }
     });
@@ -315,6 +501,10 @@ abstract class _PlayerPlaybackController with Store {
     );
     hardwareDecoder = GStorage.getSetting(SettingsKeys.hardwareDecoder);
     autoPlay = playWhenReady ?? GStorage.getSetting(SettingsKeys.autoPlay);
+    // A fresh open starts a new intent and must not resume an old retry.
+    _startupRetry?.stop();
+    _startupRetry = null;
+    startupSuspended = !autoPlay;
     playerDebugMode = GStorage.getSetting(SettingsKeys.playerDebugMode);
 
     if (!canInstall()) {
@@ -458,59 +648,116 @@ abstract class _PlayerPlaybackController with Store {
         return await _discardIfNotCurrent(candidate);
       }
 
-      bool showPlayerError = GStorage.getSetting(SettingsKeys.showPlayerError);
-      // 采集站直链 CDN 偶发在打开阶段被对端重置/提前断流（AVERROR_EOF），
-      // 重开同一地址通常即可恢复；窗口限制在打开后的几秒内，避免误伤播放中错误。
-      final openStartedAt = DateTime.now();
-      var openRetries = 0;
-      player.stream.error.listen((event) {
-        if (isCurrentPlayer(player)) {
-          if (DateTime.now().difference(openStartedAt) <
-                  const Duration(seconds: 8) &&
-              openRetries < 2 &&
-              PlayerErrorMapper.isTransientOpenFailure(event)) {
-            openRetries++;
-            KazumiLogger().w(
-              'PlayerController: 媒体打开失败，自动重试（$openRetries/2）',
-              error: event,
-            );
-            unawaited(
-              Future<void>.delayed(const Duration(milliseconds: 1200)).then((
-                _,
-              ) async {
-                if (!isCurrentPlayer(player)) return;
-                await player.open(
-                  Media(
-                    videoUrl(),
-                    start: Duration(seconds: offset),
-                    httpHeaders: kIsWeb ? null : httpHeaders,
-                  ),
-                  play: autoPlay,
-                );
-              }),
-            );
+      final bool showPlayerError = GStorage.getSetting(
+        SettingsKeys.showPlayerError,
+      );
+      DateTime? openStartedAt;
+      final initialPosition = Duration(seconds: offset);
+      final progress = PlayerStartupProgress(initialPosition);
+      final pauseGeneration = _startupPauseGeneration;
+      var playbackAdvanced = false;
+      player.stream.position.listen((position) {
+        if (isCurrentPlayer(player) && !startupSuspended) {
+          playbackAdvanced = progress.observe(position);
+        }
+      });
+      bool hasPlaybackProgress() => playbackAdvanced;
+
+      void reportFailure(String message) {
+        final report = onOpenFailure;
+        if (report != null) {
+          report(message);
+        } else {
+          KazumiDialog.showToast(message: message, showActionButton: true);
+        }
+      }
+
+      final initialOpenFinished = Completer<void>();
+      late final PlayerOpenRetryGate retry;
+      final intent = PlayerRetryIntentSynchronizer(
+        isCurrent: () => isCurrentPlayer(player) && retry.isActive,
+        isPaused: () => startupSuspended,
+        revision: () => _startupIntentRevision,
+        play: player.play,
+        pause: player.pause,
+      );
+      retry = PlayerOpenRetryGate(
+        isCurrent: () => isCurrentPlayer(player),
+        withinWindow: () =>
+            openStartedAt != null &&
+            DateTime.now().difference(openStartedAt) <
+                const Duration(seconds: 8),
+        hasProgress: hasPlaybackProgress,
+        isPaused: () =>
+            startupSuspended && _startupPauseGeneration != pauseGeneration,
+        reopen: () async {
+          await initialOpenFinished.future;
+          if (!retry.isActive || hasPlaybackProgress()) {
             return;
           }
-          final message = PlayerErrorMapper.openFailureMessage(event);
-          if (message != null) {
-            final report = onOpenFailure;
-            if (report != null) {
-              report(message);
-            } else {
-              KazumiDialog.showToast(message: message, showActionButton: true);
-            }
-          } else if (showPlayerError) {
+          if (openStartedAt == null ||
+              DateTime.now().difference(openStartedAt) >=
+                  const Duration(seconds: 8)) {
+            throw StateError('Startup retry window expired');
+          }
+          // The prepared URI is also required on Web, where it contains the
+          // gateway encoding of the original headers.
+          final resource = candidate.mediaResource;
+          if (resource == null) throw StateError('Media resource unavailable');
+          KazumiLogger().w('PlayerController: 媒体打开失败，正在重试');
+          await player.open(
+            Media(
+              resource,
+              start: initialPosition,
+              httpHeaders: kIsWeb ? null : httpHeaders,
+            ),
+            play: false,
+          );
+          await intent.reconcile();
+        },
+        onFailure: () => reportFailure('视频未能打开，请重试'),
+      );
+      _startupRetry = retry;
+      player.stream.error.listen((event) {
+        if (!isCurrentPlayer(player)) return;
+        if (startupSuspended && _startupPauseGeneration != pauseGeneration) {
+          retry.request(event);
+          return;
+        }
+        // Once playback has progressed this is no longer an open failure.
+        // Do not let the startup callback tear down a stream that already ran.
+        if (hasPlaybackProgress()) {
+          retry.stop();
+          if (showPlayerError) {
             KazumiDialog.showToast(
-              message: '播放器内部错误 ${event.toString()} ${videoUrl()}',
+              message: '播放过程中出现错误，请检查网络',
+              duration: const Duration(seconds: 5),
+              showActionButton: true,
+            );
+          }
+          KazumiLogger().e('PlayerController: media playback error');
+          return;
+        }
+        if (retry.request(event)) return;
+        final message =
+            PlayerErrorMapper.openFailureMessage(event) ??
+            (PlayerErrorMapper.isTransientOpenFailure(event)
+                ? '视频连接失败，请重试'
+                : null);
+        if (message != null) {
+          retry.reportTerminalFailure(() => reportFailure(message));
+        } else {
+          retry.stop();
+          if (showPlayerError) {
+            KazumiDialog.showToast(
+              message: '播放器内部错误，请重试',
               duration: const Duration(seconds: 5),
               showActionButton: true,
             );
           }
         }
-        KazumiLogger().e(
-          'PlayerController: Player intent error ${videoUrl()}',
-          error: event,
-        );
+        // Native errors often embed signed URLs or headers: never log them.
+        KazumiLogger().e('PlayerController: media playback error');
       });
 
       if (superResolutionMode != SuperResolutionMode.off) {
@@ -537,10 +784,7 @@ abstract class _PlayerPlaybackController with Store {
             'decryption_key=$decryptionKey',
           );
         } catch (error) {
-          KazumiLogger().w(
-            'PlayerController: 注入解密密钥失败（内核不支持 CENC 解密）',
-            error: error,
-          );
+          KazumiLogger().w('PlayerController: 注入解密密钥失败（${error.runtimeType}）');
         }
         if (!isCurrentPlayer(player)) {
           return await _discardIfNotCurrent(candidate);
@@ -556,15 +800,30 @@ abstract class _PlayerPlaybackController with Store {
       if (!isCurrentPlayer(player)) {
         return await _discardIfNotCurrent(candidate);
       }
-      await player.open(
-        Media(
-          mediaResource,
-          start: Duration(seconds: offset),
-          // Web 请求头已编码在网关地址中，HTML 视频不能直接设置请求头。
-          httpHeaders: kIsWeb ? null : httpHeaders,
-        ),
-        play: autoPlay,
-      );
+      openStartedAt = DateTime.now();
+      final initialIntentRevision = _startupIntentRevision;
+      try {
+        await player.open(
+          Media(
+            mediaResource,
+            start: Duration(seconds: offset),
+            // Web 请求头已编码在网关地址中，HTML 视频不能直接设置请求头。
+            httpHeaders: kIsWeb ? null : httpHeaders,
+          ),
+          play: !startupSuspended,
+        );
+        if (isCurrentPlayer(player) &&
+            initialIntentRevision != _startupIntentRevision) {
+          await intent.reconcile();
+        }
+      } catch (error) {
+        if (!isCurrentPlayer(player)) {
+          return await _discardIfNotCurrent(candidate);
+        }
+        if (!retry.request(error)) rethrow;
+      } finally {
+        initialOpenFinished.complete();
+      }
       if (!isCurrentPlayer(player)) {
         return await _discardIfNotCurrent(candidate);
       }
@@ -634,18 +893,21 @@ abstract class _PlayerPlaybackController with Store {
       }
       superResolutionMode = mode;
     } catch (e) {
-      KazumiLogger().w('PlayerController: failed to set shader', error: e);
+      KazumiLogger().w(
+        'PlayerController: failed to set shader (${e.runtimeType})',
+      );
     }
   }
 
   Future<void> setPlaybackSpeed(double playerSpeed) async {
     this.playerSpeed = playerSpeed;
+    final player = mediaPlayer;
+    if (player == null) return;
     try {
-      mediaPlayer!.setRate(playerSpeed);
+      await player.setRate(playerSpeed);
     } catch (e) {
       KazumiLogger().e(
-        'PlayerController: failed to set playback speed',
-        error: e,
+        'PlayerController: failed to set playback speed (${e.runtimeType})',
       );
     }
   }
@@ -735,6 +997,8 @@ abstract class _PlayerPlaybackController with Store {
   }
 
   Future<void> stop() async {
+    _startupRetry?.stop();
+    _startupRetry = null;
     cachePolicy.stopWatching();
     final ownedPlayer = _ownedPlayer;
     _ownedPlayer = null;

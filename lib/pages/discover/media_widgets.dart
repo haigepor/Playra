@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:kazumi/presentation/widgets/playra_page_state.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/features/sources/core/media_models.dart';
@@ -15,6 +17,9 @@ class MediaPosterCard extends StatelessWidget {
     this.showScore = false,
     this.onTap,
     this.decodeWidth,
+    this.overlayStatus = false,
+    this.onRemove,
+    this.coverAspectRatio = 2 / 3,
   });
 
   final MediaItem item;
@@ -29,18 +34,30 @@ class MediaPosterCard extends StatelessWidget {
   /// full-resolution bitmaps in memory.
   final int? decodeWidth;
 
+  /// Compact grid presentation with status over the artwork and one title line.
+  final bool overlayStatus;
+  final VoidCallback? onRemove;
+  final double coverAspectRatio;
+
   @override
   Widget build(BuildContext context) {
     final t = PlayraTokens.of(context);
+    final status = item.subtitle.isNotEmpty
+        ? item.subtitle
+        : item.episodeCount > 0
+        ? '${item.episodeCount} 集'
+        : '';
     return SizedBox(
       width: width,
       child: Semantics(
         container: true,
-        button: true,
+        button: onTap != null,
         label:
-            '查看 ${item.title}${item.subtitle.isEmpty ? '' : '，${item.subtitle}'}',
+            '${onTap == null ? '作品' : '查看'} ${item.title}'
+            '${status.isEmpty ? '' : '，$status'}'
+            '${onRemove == null && showScore && (item.score ?? 0) > 0 ? '，评分 ${_scoreText(item.score!)}' : ''}',
         onTap: onTap,
-        excludeSemantics: true,
+        excludeSemantics: onRemove == null,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(PlayraRadius.poster),
@@ -55,17 +72,20 @@ class MediaPosterCard extends StatelessWidget {
                 decodeWidth: decodeWidth,
                 mutedColor: t.muted,
                 subtleColor: t.foregroundSubtle,
+                overlayStatus: overlayStatus,
+                onRemove: onRemove,
+                coverAspectRatio: coverAspectRatio,
               ),
               const SizedBox(height: PlayraSpace.compact),
               ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight:
                       MediaQuery.textScalerOf(context).scale(PlayraType.item) *
-                      2.4,
+                      (overlayStatus ? 1.2 : 2.4),
                 ),
                 child: Text(
                   item.title,
-                  maxLines: 2,
+                  maxLines: overlayStatus ? 1 : 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: t.foreground,
@@ -75,7 +95,8 @@ class MediaPosterCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (item.subtitle.isNotEmpty || item.metaText.isNotEmpty)
+              if (!overlayStatus &&
+                  (item.subtitle.isNotEmpty || item.metaText.isNotEmpty))
                 Padding(
                   padding: const EdgeInsets.only(top: PlayraSpace.tiny),
                   child: Text(
@@ -112,6 +133,9 @@ class _PosterCover extends StatelessWidget {
     required this.decodeWidth,
     required this.mutedColor,
     required this.subtleColor,
+    required this.overlayStatus,
+    required this.onRemove,
+    required this.coverAspectRatio,
   });
 
   final MediaItem item;
@@ -120,11 +144,19 @@ class _PosterCover extends StatelessWidget {
   final int? decodeWidth;
   final Color mutedColor;
   final Color subtleColor;
+  final bool overlayStatus;
+  final VoidCallback? onRemove;
+  final double coverAspectRatio;
 
   @override
   Widget build(BuildContext context) {
+    final status = item.subtitle.isNotEmpty
+        ? item.subtitle
+        : item.episodeCount > 0
+        ? '${item.episodeCount} 集'
+        : '';
     return AspectRatio(
-      aspectRatio: 2 / 3,
+      aspectRatio: coverAspectRatio,
       child: LayoutBuilder(
         builder: (context, constraints) {
           return ClipRRect(
@@ -136,34 +168,64 @@ class _PosterCover extends StatelessWidget {
                   color: mutedColor,
                   child: MediaCoverImage(
                     url: item.cover,
+                    fallbackUrl: item.fallbackCover,
                     cacheWidth: decodeWidth,
-                    errorWidget: Icon(
-                      item.cover.isEmpty
-                          ? Icons.movie_outlined
-                          : Icons.broken_image_outlined,
-                      color: subtleColor,
-                      size: 26,
+                    errorWidget: ColoredBox(
+                      color: mutedColor,
+                      child: Center(
+                        child: Icon(
+                          Icons.movie_outlined,
+                          color: subtleColor.withValues(alpha: 0.72),
+                          size: 26,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                if (!showScore && item.badge.isNotEmpty)
+                if (onRemove == null && showScore && (item.score ?? 0) > 0)
                   Positioned(
-                    right: 6,
-                    top: 6,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: constraints.maxWidth - 12,
-                      ),
-                      child: _Badge(text: item.badge, highlight: true),
+                    right: 0,
+                    top: 0,
+                    child: PosterScoreCornerBadge(
+                      scoreText: MediaPosterCard._scoreText(item.score!),
+                      topRightRadius: PlayraRadius.poster,
                     ),
                   ),
-                if (showScore && (item.score ?? 0) > 0)
+                if (overlayStatus && status.isNotEmpty)
                   Positioned(
+                    left: 6,
                     right: 6,
-                    top: 6,
-                    child: _Badge(
-                      text: MediaPosterCard._scoreText(item.score!),
-                      highlight: true,
+                    bottom: 6,
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: _Badge(text: status),
+                    ),
+                  ),
+                if (onRemove != null)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      tooltip: '移除${item.title}',
+                      onPressed: onRemove,
+                      icon: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: .68),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 48,
+                        height: 48,
+                      ),
                     ),
                   ),
                 if (rank != null && rank! > 0)
@@ -181,6 +243,71 @@ class _PosterCover extends StatelessWidget {
   }
 }
 
+/// Flush top-right frosted glass score badge whose outer corner matches the
+/// poster's exact [topRightRadius] so no background peeks around the curve.
+class PosterScoreCornerBadge extends StatelessWidget {
+  const PosterScoreCornerBadge({
+    super.key,
+    required this.scoreText,
+    this.topRightRadius = PlayraRadius.poster,
+  });
+
+  final String scoreText;
+  final double topRightRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final cornerRadius = BorderRadius.only(
+      topRight: Radius.circular(topRightRadius),
+      bottomLeft: const Radius.circular(10),
+    );
+    return ClipRRect(
+      borderRadius: cornerRadius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(7, 3, 7, 4),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [Color(0xC21A1524), Color(0x9E0E111A)],
+            ),
+            borderRadius: cornerRadius,
+            border: const Border(
+              left: BorderSide(color: Color(0x4DFDE68A), width: 0.75),
+              bottom: BorderSide(color: Color(0x4DFDE68A), width: 0.75),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.star_rounded,
+                size: 11.5,
+                color: Color(0xFFFBBF24),
+              ),
+              const SizedBox(width: 2),
+              Text(
+                scoreText,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                  color: Color(0xFFFEF08A),
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Badge extends StatelessWidget {
   const _Badge({required this.text, this.highlight = false});
 
@@ -190,23 +317,45 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = PlayraTokens.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: highlight
-            ? t.primary.withValues(alpha: 0.92)
-            : Colors.black.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(PlayraTokens.radiusXs),
+    final radius = BorderRadius.circular(
+      highlight ? PlayraTokens.radiusXs : 6,
+    );
+    final label = Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: highlight ? t.primaryForeground : Colors.white,
+        fontSize: PlayraType.micro,
+        fontWeight: FontWeight.w600,
+        height: 1.1,
       ),
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: highlight ? t.primaryForeground : Colors.white,
-          fontSize: PlayraType.micro,
-          fontWeight: FontWeight.w600,
-          height: 1.1,
+    );
+    if (highlight) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: t.primary.withValues(alpha: 0.92),
+          borderRadius: radius,
+        ),
+        child: label,
+      );
+    }
+    return ClipRRect(
+      borderRadius: radius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0x6612151E),
+            borderRadius: radius,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.22),
+              width: 0.75,
+            ),
+          ),
+          child: label,
         ),
       ),
     );
@@ -363,7 +512,7 @@ class MediaSearchEntry extends StatelessWidget {
 
 /// Editable search box used by the search page; same surface, radius and
 /// height as [MediaSearchEntry] so the transition between them is seamless.
-class MediaSearchField extends StatelessWidget {
+class MediaSearchField extends StatefulWidget {
   const MediaSearchField({
     super.key,
     required this.controller,
@@ -372,6 +521,7 @@ class MediaSearchField extends StatelessWidget {
     this.hint = '输入作品名',
     this.onSubmitted,
     this.onClear,
+    this.showIcon = true,
   });
 
   final TextEditingController controller;
@@ -380,48 +530,152 @@ class MediaSearchField extends StatelessWidget {
   final String hint;
   final ValueChanged<String>? onSubmitted;
   final VoidCallback? onClear;
+  final bool showIcon;
+
+  @override
+  State<MediaSearchField> createState() => _MediaSearchFieldState();
+}
+
+class _MediaSearchFieldState extends State<MediaSearchField> {
+  FocusNode? _internalFocusNode;
+  bool _focused = false;
+
+  FocusNode get _effectiveFocusNode =>
+      widget.focusNode ?? (_internalFocusNode ??= FocusNode());
+
+  @override
+  void initState() {
+    super.initState();
+    _focused = _effectiveFocusNode.hasFocus;
+    _effectiveFocusNode.addListener(_handleFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant MediaSearchField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      (oldWidget.focusNode ?? _internalFocusNode)?.removeListener(
+        _handleFocusChange,
+      );
+      _focused = _effectiveFocusNode.hasFocus;
+      _effectiveFocusNode.addListener(_handleFocusChange);
+    }
+  }
+
+  @override
+  void dispose() {
+    _effectiveFocusNode.removeListener(_handleFocusChange);
+    _internalFocusNode?.dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChange() {
+    final next = _effectiveFocusNode.hasFocus;
+    if (next != _focused && mounted) {
+      setState(() => _focused = next);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = PlayraTokens.of(context);
-    return Container(
-      constraints: BoxConstraints(minHeight: 48),
-      padding: const EdgeInsets.only(
-        left: PlayraSpace.md,
-        right: PlayraSpace.xs,
-      ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillColor = isDark ? t.surface : Colors.white;
+    final borderColor = _focused
+        ? t.primary.withValues(alpha: isDark ? 0.62 : 0.7)
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.09)
+              : Colors.black.withValues(alpha: 0.09));
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOutCubic,
+      constraints: const BoxConstraints(minHeight: 42),
+      padding: const EdgeInsets.only(left: 12, right: 6),
       decoration: BoxDecoration(
-        color: t.surfaceRaised,
-        borderRadius: BorderRadius.circular(20),
+        color: fillColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: _focused ? 1.2 : 1),
+        boxShadow: _focused
+            ? [
+                BoxShadow(
+                  color: t.primary.withValues(alpha: isDark ? 0.14 : 0.10),
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                ),
+              ]
+            : null,
       ),
       child: Row(
         children: [
+          if (widget.showIcon) ...[
+            Icon(
+              Icons.search_rounded,
+              size: 18,
+              color: _focused
+                  ? t.primary
+                  : t.foregroundSubtle.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 8),
+          ],
           Expanded(
             child: TextField(
-              controller: controller,
-              autofocus: autofocus,
-              focusNode: focusNode,
+              controller: widget.controller,
+              autofocus: widget.autofocus,
+              focusNode: _effectiveFocusNode,
               textInputAction: TextInputAction.search,
-              onSubmitted: onSubmitted,
-              style: TextStyle(color: t.foreground, fontSize: PlayraType.body),
+              onSubmitted: widget.onSubmitted,
+              style: TextStyle(
+                color: t.foreground,
+                fontSize: PlayraType.body,
+                height: 1.3,
+              ),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                hintText: hint,
+                contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                hintText: widget.hint,
                 hintStyle: TextStyle(
-                  color: t.foregroundSubtle,
+                  color: t.foregroundSubtle.withValues(alpha: 0.72),
                   fontSize: PlayraType.body,
                 ),
               ),
             ),
           ),
-          if (controller.text.isNotEmpty)
-            IconButton(
-              tooltip: '清空',
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              onPressed: onClear,
-              icon: const Icon(Icons.cancel_rounded, size: 17),
+          if (widget.controller.text.isNotEmpty)
+            Semantics(
+              button: true,
+              label: '清空',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: t.foreground.withValues(alpha: 0.08),
+                  splashColor: t.foreground.withValues(alpha: 0.12),
+                  onTap: widget.onClear,
+                  child: SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: Center(
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: t.foregroundSubtle.withValues(
+                            alpha: isDark ? 0.24 : 0.18,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 12,
+                          color: isDark ? t.foreground : t.foregroundSubtle,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
         ],
       ),
@@ -443,14 +697,22 @@ class MediaPosterGrid extends StatelessWidget {
     this.ranked = false,
     this.phoneColumns = 3,
     this.showScore = false,
+    this.overlayStatus = false,
+    this.fixedColumns,
+    this.onRemove,
+    this.coverAspectRatio = 2 / 3,
   });
 
   final List<MediaItem> items;
-  final ValueChanged<MediaItem> onTap;
+  final ValueChanged<MediaItem>? onTap;
   final EdgeInsets insets;
   final bool ranked;
   final int phoneColumns;
   final bool showScore;
+  final bool overlayStatus;
+  final int? fixedColumns;
+  final ValueChanged<MediaItem>? onRemove;
+  final double coverAspectRatio;
 
   static const double _maxExtent = 140;
   static const double _tabletMaxExtent = 180;
@@ -470,15 +732,16 @@ class MediaPosterGrid extends StatelessWidget {
                   PlayraLayout.compactWidth
               ? _tabletMaxExtent
               : _maxExtent;
-          var columns =
+          final isPhone =
               MediaQuery.sizeOf(context).shortestSide <
-                  PlayraLayout.compactWidth
+              PlayraLayout.compactWidth;
+          var columns = isPhone
               ? ((available + gap) /
                         (scaler.scale(PlayraType.item) *
                                 (phoneColumns == 2 ? 5.5 : 4.5) +
                             gap))
                     .floor()
-                    .clamp(1, phoneColumns)
+                    .clamp(1, fixedColumns ?? phoneColumns)
               : ((available + gap) / (maxExtent + gap)).ceil();
           if (columns < 1) columns = 1;
           final tileWidth = (available - gap * (columns - 1)) / columns;
@@ -501,8 +764,15 @@ class MediaPosterGrid extends StatelessWidget {
                       width: tileWidth,
                       rank: ranked ? first + offset + 1 : null,
                       showScore: showScore,
+                      overlayStatus: overlayStatus,
+                      coverAspectRatio: coverAspectRatio,
+                      onRemove: onRemove == null
+                          ? null
+                          : () => onRemove!(items[first + offset]),
                       decodeWidth: (tileWidth * dpr).round(),
-                      onTap: () => onTap(items[first + offset]),
+                      onTap: onTap == null
+                          ? null
+                          : () => onTap!(items[first + offset]),
                     ),
                   ],
                 ],

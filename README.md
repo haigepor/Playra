@@ -13,7 +13,7 @@ Playra 接入 CliCli 单内容源。手机端使用发现、日历、追番、�
 | 追番 | 本地双列收藏，支持从作品或日历加入、逐条移除和确认清空 |
 | 我的 | 主题、播放偏好、网络代理、本地数据与关于信息 |
 | 搜索 / 分类 | 搜索以列表展示片名及元信息，分类使用可排序的三列海报网格 |
-| 详情 / 播放 | 竖屏上方直接播放，下方显示线路、选集、收藏和作品信息。横屏使用同一播放器，右侧抽屉可换集 |
+| 详情 / 播放 | 竖屏上方播放，下方显示线路、选集、收藏和作品信息；大尺寸横屏提供视频与选集双栏，显式全屏时可用侧边选集 |
 | 播放器演示 | 公开 HLS 测试流，用于验证播放组件 |
 
 ## 架构
@@ -38,7 +38,8 @@ main.dart
 - 唯一内容源：`lib/features/sources/clicli/`
 - 存储：Hive `setting`、`playback_history`、`favorites` 三个 Box（`lib/services/storage/`）
 - 设计系统：`lib/presentation/theme/playra_tokens.dart`（全局淡紫 token）、`playra_home_tokens.dart`（首页 / 日历页面 token）、`lib/presentation/widgets/playra_backdrop.dart`（共享背景）
-- 播放内核：`lib/pages/player/` + `lib/playback/playback_session.dart`，页面只通过 `PlaybackInitParams` 传入解析后的地址
+- 播放内核：`lib/pages/player/` + `lib/playback/playback_session.dart`，页面只通过 `PlaybackInitParams` 传入解析后的地址。
+- Kazumi 播放器控件：进度条及传输栏基于上游 [Predidit/Kazumi `906b144`](https://github.com/Predidit/Kazumi/tree/906b144fbc6abb40b83bccf86354ba1751c316e6) 适配，保留 Playra 的片源解析、历史和平台处理。当前不是完整的上游播放器：按当前产品选择暂不接入弹幕和一起看，不连接相关第三方服务。media_kit 与 media_kit_video 已同步到上游使用的 `484639a` 版本；Flutter 暂保留 3.47.6，原生播放仍需设备验证。
 
 ## 运行
 
@@ -103,7 +104,7 @@ flutter build apk --debug --target-platform android-arm64
 flutter build web --release
 ```
 
-当前工作区的 `flutter test` 在本机受 Windows 原生测试工具链限制，暂不作为门禁；首页与底部导航的 widget 测试位于 `test/`。
+Windows 本机运行测试时，如遇 Visual Studio 探测的 `vswhere` 输出编码问题，可在当前 PowerShell 会话先执行 `$env:PATH="$PWD\.tooling\bin;$env:PATH"`，再运行 `flutter test --no-pub`。若 `flutter pub get` 提示插件需要符号链接，Windows 桌面构建需要系统提供符号链接权限（例如启用开发者模式）；仅验证 Android / Web 时，可在该进程设置 `$env:FLUTTER_WINDOWS='false'` 后解析依赖，这不验证 Windows 桌面构建。widget 测试不能替代真实设备上的解码、画中画和生命周期验证。
 
 ## 说明
 

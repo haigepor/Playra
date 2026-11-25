@@ -67,26 +67,33 @@ class PlayerTransportBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (compact && MediaQuery.textScalerOf(context).scale(12) >= 16) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: 48, child: progressBuilder(TimeLabelLocation.none)),
-          Row(
+    if (compact) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 400 ||
+              MediaQuery.textScalerOf(context).scale(12) >= 16) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 48,
+                  child: progressBuilder(TimeLabelLocation.none),
+                ),
+                Row(
+                  children: [
+                    playPause,
+                    nextEpisode,
+                    Expanded(child: timeLabel),
+                    fullscreen,
+                  ],
+                ),
+              ],
+            );
+          }
+          return Row(
             children: [
               playPause,
               nextEpisode,
-              Expanded(child: timeLabel),
-              fullscreen,
-            ],
-          ),
-        ],
-      );
-    }
-    return compact
-        ? Row(
-            children: [
-              playPause,
               Expanded(
                 child: SizedBox(
                   height: 48,
@@ -99,78 +106,72 @@ class PlayerTransportBar extends StatelessWidget {
               ),
               fullscreen,
             ],
-          )
-        : LayoutBuilder(
-            builder: (context, constraints) {
-              final stacked =
-                  constraints.maxWidth < 400 ||
-                  MediaQuery.textScalerOf(context).scale(12) >= 16;
-              if (stacked) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: 48,
-                        child: progressBuilder(TimeLabelLocation.none),
-                      ),
-                      timeLabel,
-                      Row(
-                        children: [
-                          playPause,
-                          nextEpisode,
-                          const Spacer(),
-                          fullscreen,
-                        ],
-                      ),
-                      controls,
-                    ],
-                  ),
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 48,
-                            child: progressBuilder(TimeLabelLocation.none),
-                          ),
-                        ),
-                        if (timeBesideProgress) ...[
-                          const SizedBox(width: 10),
-                          timeLabel,
-                        ],
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Row(
-                      children: [
-                        playPause,
-                        nextEpisode,
-                        if (!timeBesideProgress)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 10),
-                            child: timeLabel,
-                          ),
-                        Expanded(child: controls),
-                        fullscreen,
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                ],
-              );
-            },
           );
+        },
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked =
+            constraints.maxWidth < 400 ||
+            MediaQuery.textScalerOf(context).scale(12) >= 16;
+        if (stacked) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 48,
+                  child: progressBuilder(TimeLabelLocation.none),
+                ),
+                timeLabel,
+                Row(
+                  children: [
+                    playPause,
+                    nextEpisode,
+                    const Spacer(),
+                    fullscreen,
+                  ],
+                ),
+                controls,
+              ],
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: progressBuilder(TimeLabelLocation.sides),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                children: [
+                  playPause,
+                  Expanded(child: controls),
+                  nextEpisode,
+                  fullscreen,
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+        );
+      },
+    );
   }
 }

@@ -31,9 +31,9 @@ class PlayraPageHeader extends StatelessWidget {
     final stacked =
         onBack == null && MediaQuery.textScalerOf(context).scale(14) > 20;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         PlayraSpace.lg,
-        PlayraSpace.sm,
+        6,
         PlayraSpace.lg,
         0,
       ),
@@ -41,10 +41,12 @@ class PlayraPageHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ConstrainedBox(
-            constraints: BoxConstraints(minHeight: 48),
+            constraints: const BoxConstraints(minHeight: 40),
             child: Flex(
               direction: stacked ? Axis.vertical : Axis.horizontal,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: stacked
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
               children: [
                 if (onBack != null) ...[
                   _CircleIconButton(
@@ -67,11 +69,10 @@ class PlayraPageHeader extends StatelessWidget {
                         maxLines: largeTitle ? null : 2,
                         style: TextStyle(
                           color: t.textPrimary,
-                          fontSize: largeTitle
-                              ? PlayraType.pageTitle
-                              : PlayraType.title,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
+                          fontSize: largeTitle ? 22 : 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: largeTitle ? -0.3 : -0.1,
+                          height: 1.15,
                         ),
                       ),
                       if (subtitle != null) ...[
@@ -101,7 +102,7 @@ class PlayraPageHeader extends StatelessWidget {
             const SizedBox(height: PlayraSpace.sm),
             bottom!,
           ],
-          const SizedBox(height: PlayraSpace.sm),
+          const SizedBox(height: 6),
         ],
       ),
     );
@@ -149,20 +150,14 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = PlayraHomeTokens.of(context);
-    return Material(
-      color: t.cardSurface.withValues(alpha: .62),
-      shape: const CircleBorder(),
-      child: InkWell(
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: Tooltip(
-            message: tooltip,
-            child: Icon(icon, size: 21, color: color),
-          ),
+        child: SizedBox.square(
+          dimension: 36,
+          child: Icon(icon, size: 22, color: color),
         ),
       ),
     );

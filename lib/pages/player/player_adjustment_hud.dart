@@ -118,37 +118,46 @@ class PlayerSeekHud extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                cancelPending
-                    ? Icons.undo_rounded
-                    : forward
-                    ? Icons.fast_forward_rounded
-                    : Icons.fast_rewind_rounded,
-                color: _accent,
-                size: 20,
-              ),
-              const SizedBox(width: 7),
-              Text(
-                durationToString(currentPosition),
-                style: _digits.copyWith(fontSize: 18),
-              ),
-              Text(
-                ' / ${durationToString(duration)}',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontFeatures: [FontFeature.tabularFigures()],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  cancelPending
+                      ? Icons.undo_rounded
+                      : forward
+                      ? Icons.fast_forward_rounded
+                      : Icons.fast_rewind_rounded,
+                  color: _accent,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 7),
+                Text(
+                  durationToString(currentPosition),
+                  style: _digits.copyWith(fontSize: 18),
+                ),
+                Text(
+                  ' / ${durationToString(duration)}',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
           ),
           Text(
             cancelPending ? '松开取消' : '${forward ? '+' : '−'}${delta.abs()} 秒',
             style: const TextStyle(color: _accent, fontSize: 12),
           ),
+          if (cancelPending)
+            const Text(
+              '移回画面继续调整',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 10),
+            ),
         ],
       ),
     );

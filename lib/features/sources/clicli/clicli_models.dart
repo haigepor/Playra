@@ -11,6 +11,10 @@ MediaItem mediaItemFromVideo(Map<String, dynamic> video) {
   final total = _asInt(video['totalEpisodes']) ?? 0;
   final finished = _asInt(video['isFinished']) == 1;
   final schedule = _asString(video['updateSchedule']);
+  final (cover, fallbackCover) = _urlPair(
+    _asString(video['coverUrl']),
+    _asString(video['posterUrl']),
+  );
   return MediaItem(
     key: MediaKey(
       sourceId: CliCliConfig.sourceId,
@@ -19,10 +23,8 @@ MediaItem mediaItemFromVideo(Map<String, dynamic> video) {
     title: _asString(video['title']).isEmpty
         ? _asString(video['name'])
         : _asString(video['title']),
-    cover: _firstNonEmpty(<String>[
-      _asString(video['coverUrl']),
-      _asString(video['posterUrl']),
-    ]),
+    cover: cover,
+    fallbackCover: fallbackCover,
     subtitle: _episodeLine(current, total, finished, schedule),
     badge: _firstNonEmpty(<String>[
       _asString(video['coverTag']),
@@ -66,10 +68,10 @@ HomeFeed homeFeedFromModules(Map<String, dynamic> data) {
 List<MediaBanner> bannersFromData(Map<String, dynamic> data) {
   final result = <MediaBanner>[];
   for (final banner in _mapList(data['banners'])) {
-    final image = _firstNonEmpty(<String>[
+    final (image, fallbackImage) = _urlPair(
       _asString(banner['imageUrl']),
       _asString(banner['image']),
-    ]);
+    );
     if (image.isEmpty) continue;
     final linkId = _asString(banner['linkId']);
     final linkType = _asInt(banner['linkType']);
@@ -78,6 +80,7 @@ List<MediaBanner> bannersFromData(Map<String, dynamic> data) {
         id: _asString(banner['id']),
         title: _asString(banner['title']),
         imageUrl: image,
+        fallbackImageUrl: fallbackImage,
         // linkType 1 = opens a work; other types carry linkUrl instead.
         target: linkType == 1 && linkId.isNotEmpty
             ? MediaKey(sourceId: CliCliConfig.sourceId, mediaId: linkId)
@@ -146,7 +149,8 @@ MediaPage mediaPageFromVideos(Map<String, dynamic> data) {
     items: videos.map(mediaItemFromVideo).toList(growable: false),
     pageIndex: _asInt(pageInfo['pageIndex']) ?? 1,
     pageSize: _asInt(pageInfo['pageSize']) ?? videos.length,
-    total: _asInt(pageInfo['total']) ?? videos.length,
+    // A page length is not the total across pages. Zero denotes unknown.
+    total: _asInt(pageInfo['total']) ?? 0,
     pages: _asInt(pageInfo['pages']) ?? 1,
   );
 }
@@ -160,6 +164,10 @@ MediaDetail mediaDetailFromVideo(
   final total = _asInt(video['totalEpisodes']) ?? 0;
   final finished = _asInt(video['isFinished']) == 1;
   final schedule = _asString(video['updateSchedule']);
+  final (cover, fallbackCover) = _urlPair(
+    _asString(video['coverUrl']),
+    _asString(video['posterUrl']),
+  );
   return MediaDetail(
     key: MediaKey(
       sourceId: CliCliConfig.sourceId,
@@ -171,10 +179,8 @@ MediaDetail mediaDetailFromVideo(
       _asString(video['alias']),
     ]),
     episodeStatus: _episodeLine(current, total, finished, schedule),
-    cover: _firstNonEmpty(<String>[
-      _asString(video['coverUrl']),
-      _asString(video['posterUrl']),
-    ]),
+    cover: cover,
+    fallbackCover: fallbackCover,
     description: _asString(video['description']),
     category: _asString(video['categoryName']),
     area: _asString(video['area']),
@@ -279,8 +285,7 @@ String _episodeLine(int current, int total, bool finished, String schedule) {
   if (finished && current > 0) return '全 $current 集';
   if (current > 0) return '更新至 $current 集';
   if (total > 0) return '共 $total 集';
-  if (schedule.isNotEmpty) return schedule;
-  return '';
+  return schedule.contains('|') ? _scheduleLine(schedule) : schedule.trim();
 }
 
 // The service packs counts into updateSchedule, e.g. "168|周日18:30后更".
@@ -325,6 +330,14 @@ List<String> _stringList(Object? value) {
     for (final item in value)
       if (_asString(item).isNotEmpty) _asString(item),
   ];
+}
+
+(String, String) _urlPair(String primaryRaw, String secondaryRaw) {
+  final a = primaryRaw.trim();
+  final b = secondaryRaw.trim();
+  if (a.isEmpty) return (b, '');
+  if (b.isEmpty || b == a) return (a, '');
+  return (a, b);
 }
 
 String _firstNonEmpty(List<String> values) {

@@ -231,7 +231,96 @@ void main() {
     );
   });
 
-  testWidgets('home hero artwork uses a single 16dp phone gutter', (
+  testWidgets('resume card shows episode on artwork and keeps progress', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => HistoryStorage.save(
+        HistoryRecord(
+          sourceId: 'audit',
+          mediaId: 'resume-test',
+          title: '一部特别长的继续观看作品标题用于验证单行省略',
+          cover: '',
+          roadCode: 'main',
+          roadName: '主线',
+          episode: 6,
+          episodeTitle: '第 6 集',
+          positionMs: 60000,
+          durationMs: 120000,
+          updatedAt: DateTime.now(),
+        ),
+      ),
+    );
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 640);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildShellTheme(Brightness.dark),
+        home: const Scaffold(body: DiscoverPage()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    final title = tester.widget<Text>(find.text('一部特别长的继续观看作品标题用于验证单行省略'));
+    expect(title.maxLines, 1);
+    expect(title.overflow, TextOverflow.ellipsis);
+    expect(find.text('第 6 集'), findsOneWidget);
+    expect(find.text('01:00 / 02:00'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.runAsync(() => HistoryStorage.delete('audit', 'resume-test'));
+  });
+
+  for (final size in [const Size(320, 640), const Size(1280, 800)]) {
+    for (final count in [3, 40]) {
+      testWidgets('carousel has no indicators at $size with $count banners', (
+        tester,
+      ) async {
+        BoundarySource.bannerCount = count;
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = size;
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildShellTheme(Brightness.dark),
+            home: const Scaffold(body: DiscoverPage()),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        final carousel = find.byType(HomeBannerCarousel);
+        expect(carousel, findsOneWidget);
+        expect(
+          find.descendant(
+            of: carousel,
+            matching: find.textContaining(RegExp(r'^\d+\s*/\s*\d+$')),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: carousel,
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Container &&
+                  widget.constraints?.maxHeight == 5 &&
+                  (widget.constraints?.maxWidth == 5 ||
+                      widget.constraints?.maxWidth == 14),
+            ),
+          ),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+  }
+
+  testWidgets('phone carousel cards retain 16:9 and respond to swipes', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -245,33 +334,35 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 300));
+    final carousel = find.byType(HomeBannerCarousel);
+    final pages = find.descendant(
+      of: carousel,
+      matching: find.byType(PageView),
+    );
+    final controller = tester.widget<PageView>(pages).controller!;
+    expect(controller.viewportFraction, closeTo(.84, .001));
+    expect(find.text('A long recommended media title 0'), findsOneWidget);
     final artwork = find.descendant(
-      of: find.byType(HomeBannerCarousel),
+      of: carousel,
       matching: find.byType(MediaCoverImage),
     );
-    final visible = artwork
-        .evaluate()
-        .map((element) => tester.getRect(find.byWidget(element.widget)))
-        .where((rect) => rect.center.dx > 0 && rect.center.dx < 360)
-        .toList();
-    expect(visible, hasLength(1));
-    final rect = visible.single;
-    expect(rect.left, 16);
-    expect(rect.right, 344);
-    expect(rect.width / rect.height, closeTo(16 / 9, .001));
+    final size = tester.getSize(artwork.first);
+    expect(size.width / size.height, closeTo(16 / 9, .01));
+    expect(size.width, lessThan(360));
+    await tester.drag(pages, const Offset(-250, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('A long recommended media title 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('many recommendations keep a bounded position indicator', (
+  testWidgets('phone carousel advances automatically after six seconds', (
     tester,
   ) async {
-    BoundarySource.bannerCount = 40;
     tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(320, 640);
-    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    tester.view.physicalSize = const Size(360, 760);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpWidget(
       MaterialApp(
         theme: buildShellTheme(Brightness.dark),
@@ -279,7 +370,12 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('2 / 40'), findsOneWidget);
+    expect(find.text('A long recommended media title 0'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.text('A long recommended media title 0'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('A long recommended media title 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -384,6 +480,35 @@ void main() {
       reason: 'More pages exist and the user swiped to reach them',
     );
   });
+
+  for (final scale in [1.0, 2.0]) {
+    testWidgets('tablet search retains real results at text scale $scale', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildShellTheme(Brightness.dark),
+          home: const SearchPage(),
+        ),
+      );
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'sample');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(find.text('Playra'), findsOneWidget);
+      expect(find.textContaining('搜索结果：'), findsOneWidget);
+      final cover = tester.getSize(find.byType(MediaCoverImage).first);
+      expect(cover.width, 168);
+      expect(cover.width / cover.height, closeTo(1.5, .01));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   Future<void> openPage(WidgetTester tester, bool search) async {
     tester.view.devicePixelRatio = 1;

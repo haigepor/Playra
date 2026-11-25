@@ -10,6 +10,9 @@ import 'package:kazumi/shell/shell_theme.dart';
 class AppWidget extends StatelessWidget {
   const AppWidget({super.key});
 
+  static final ThemeData _lightTheme = buildShellTheme(Brightness.light);
+  static final ThemeData _darkTheme = buildShellTheme(Brightness.dark);
+
   ThemeMode get _themeMode => switch (GStorage.getSetting(
     SettingsKeys.themeMode,
   )) {
@@ -28,9 +31,10 @@ class AppWidget extends StatelessWidget {
         return MaterialApp.router(
           title: AppBrand.name,
           debugShowCheckedModeBanner: false,
-          theme: buildShellTheme(Brightness.light),
-          darkTheme: buildShellTheme(Brightness.dark),
+          theme: _lightTheme,
+          darkTheme: _darkTheme,
           themeMode: _themeMode,
+          themeAnimationDuration: Duration.zero,
           scaffoldMessengerKey: rootScaffoldMessengerKey,
           routerConfig: ModularApp.routerConfigOf(context),
           localizationsDelegates: const [

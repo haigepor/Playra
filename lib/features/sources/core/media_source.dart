@@ -81,6 +81,11 @@ abstract class MediaSource {
 
   Future<HomeFeed> loadHome({int page = 1});
 
+  /// Load a channel-specific home feed (banners + curated modules).
+  /// Defaults to [loadHome] for sources that do not split feeds by category.
+  Future<HomeFeed> loadChannelHome(String categoryId, {int page = 1}) =>
+      loadHome(page: page);
+
   Future<List<MediaCategory>> loadCategories();
 
   Future<MediaPage> browse({

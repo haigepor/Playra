@@ -17,9 +17,48 @@ import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/shaders/shader_asset_service.dart';
 import 'package:kazumi/services/player/audio_controller.dart';
 import 'package:kazumi/utils/async_session.dart';
+import 'package:kazumi/utils/async_serial_queue.dart';
 import 'package:kazumi/utils/device.dart';
 
 export 'package:kazumi/pages/player/controller/player_models.dart';
+
+/// Serializes play/pause commands while suppressing stale completions.
+@visibleForTesting
+class PlayerPlaybackIntentQueue {
+  final AsyncSerialQueue _queue = AsyncSerialQueue();
+  int _revision = 0;
+
+  int get revision => _revision;
+  bool isRevisionCurrent(int revision) => _revision == revision;
+
+  Future<void> submit({
+    required bool Function() isCurrent,
+    required Future<void> Function() command,
+    required VoidCallback onApplied,
+  }) {
+    final revision = ++_revision;
+    return _queue.run(() async {
+      if (revision != _revision || !isCurrent()) return;
+      try {
+        await command();
+      } catch (_) {
+        return;
+      }
+      if (revision == _revision && isCurrent()) onApplied();
+    });
+  }
+
+  void invalidate() => _revision++;
+}
+
+/// One temporary pause, valid only until another playback intent is submitted.
+class PlayerTemporaryPause {
+  PlayerTemporaryPause._(this._owner, this._revision, this.completed);
+
+  final PlayerController _owner;
+  final int _revision;
+  final Future<void> completed;
+}
 
 /// 独立播放器控制器：只管理媒体、音量、倍速、截图和全屏。
 ///
@@ -31,6 +70,8 @@ class PlayerController {
   final ShaderAssetService shaderAssetService;
   final AudioController audioController;
   final AsyncSessionOwner _initializations = AsyncSessionOwner();
+  final PlayerPlaybackIntentQueue _playbackIntents =
+      PlayerPlaybackIntentQueue();
   Future<void>? _shutdownFuture;
   final PlayerPanelController panel = PlayerPanelController();
   final PlayerScreenshotController screenshots = PlayerScreenshotController();
@@ -63,6 +104,7 @@ class PlayerController {
   String _episodeTitle = '';
   String _sourceName = '';
   bool isLocalPlayback = false;
+  bool hasPlaybackHeaders = false;
   Timer? hideVolumeUITimer;
   Timer? _volumeGestureSyncTimer;
   double? _pendingGestureVolume;
@@ -156,18 +198,21 @@ class PlayerController {
       return false;
     }
     final initialization = _initializations.begin();
+    _playbackIntents.invalidate();
 
     videoUrl = params.videoUrl;
     _workTitle = params.workTitle;
     _episodeTitle = params.episodeTitle.trim();
     _sourceName = params.sourceName;
     isLocalPlayback = params.isLocalPlayback;
+    hasPlaybackHeaders = params.httpHeaders.isNotEmpty;
     currentEpisode = params.episode;
     currentRoad = params.currentRoad;
     referer = params.referer;
 
+    // Playback URLs may contain expiring credentials or private local paths.
     KazumiLogger().i(
-      'PlayerController: ${params.isLocalPlayback ? "local" : "online"} playback, url: ${params.videoUrl}',
+      'PlayerController: ${params.isLocalPlayback ? "local" : "online"} playback starting',
     );
 
     playback.resetForInit();
@@ -205,8 +250,7 @@ class PlayerController {
       }
       playback.loading = false;
       KazumiLogger().e(
-        'PlayerController: failed to initialize video',
-        error: e,
+        'PlayerController: failed to initialize video (${e.runtimeType})',
       );
       return false;
     }
@@ -309,28 +353,46 @@ class PlayerController {
 
   Future<void> _onSeekCompleted(bool enableSync) async {}
 
-  Future<void> pause({bool enableSync = true}) async {
+  Future<void> pause({bool enableSync = true}) {
     playback.startupSuspended = true;
     final player = playback.mediaPlayer;
-    if (player == null) return;
-    try {
-      await player.pause();
-    } catch (_) {
-      return;
-    }
-    playback.playing = false;
+    return _playbackIntents.submit(
+      isCurrent: () => player != null && playback.isCurrentPlayer(player),
+      command: () => player!.pause(),
+      onApplied: () => playback.playing = false,
+    );
   }
 
-  Future<void> play({bool enableSync = true}) async {
+  Future<void> play({bool enableSync = true}) {
     playback.startupSuspended = false;
-    final player = playback.mediaPlayer;
-    if (player == null) return;
-    try {
-      await player.play();
-    } catch (_) {
-      return;
+    // A deferred open failure may synchronously replace the player UI with a
+    // retry gate. Do not subsequently start that failed hidden player.
+    if (playback.startupFailureReported) {
+      _playbackIntents.invalidate();
+      return Future<void>.value();
     }
-    playback.playing = true;
+    final player = playback.mediaPlayer;
+    return _playbackIntents.submit(
+      isCurrent: () => player != null && playback.isCurrentPlayer(player),
+      command: () => player!.play(),
+      onApplied: () => playback.playing = true,
+    );
+  }
+
+  /// Pause for a transient overlay, recording the intent before any await.
+  PlayerTemporaryPause pauseTemporarily() {
+    final completed = pause(enableSync: false);
+    return PlayerTemporaryPause._(this, _playbackIntents.revision, completed);
+  }
+
+  /// Resume only if no later playback command or player replacement intervened.
+  Future<void> resumeTemporaryPause(PlayerTemporaryPause lease) {
+    if (!identical(lease._owner, this) ||
+        !_playbackIntents.isRevisionCurrent(lease._revision)) {
+      return Future<void>.value();
+    }
+    // play() synchronously increments the revision, consuming this lease.
+    return play(enableSync: false);
   }
 
   void dispose() {
@@ -340,6 +402,7 @@ class PlayerController {
   /// Starts the idempotent player shutdown without blocking route navigation.
   void beginShutdown() {
     _initializations.close();
+    _playbackIntents.invalidate();
     if (_shutdownFuture != null) {
       return;
     }
@@ -347,11 +410,9 @@ class PlayerController {
     final shutdown = _shutdownResources();
     _shutdownFuture = shutdown;
     unawaited(
-      shutdown.catchError((Object error, StackTrace stackTrace) {
+      shutdown.catchError((Object error, StackTrace _) {
         KazumiLogger().e(
-          'PlayerController: failed to dispose asynchronously',
-          error: error,
-          stackTrace: stackTrace,
+          'PlayerController: failed to dispose asynchronously (${error.runtimeType})',
         );
       }),
     );
@@ -376,17 +437,16 @@ class PlayerController {
     if (kIsWeb) return;
     try {
       await FlutterVolumeController.updateShowSystemUI(true);
-    } catch (error, stackTrace) {
+    } catch (error) {
       KazumiLogger().w(
-        'PlayerController: failed to restore the system volume UI',
-        error: error,
-        stackTrace: stackTrace,
+        'PlayerController: failed to restore the system volume UI (${error.runtimeType})',
       );
     }
   }
 
   Future<void> stop() async {
     _initializations.cancel();
+    _playbackIntents.invalidate();
     await _releasePlaybackResources();
   }
 

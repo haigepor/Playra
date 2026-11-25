@@ -62,18 +62,25 @@ class CliCliSource implements MediaSource {
   }
 
   @override
-  Future<HomeFeed> loadHome({int page = 1}) {
+  Future<HomeFeed> loadHome({int page = 1}) =>
+      loadChannelHome('', page: page);
+
+  @override
+  Future<HomeFeed> loadChannelHome(String categoryId, {int page = 1}) {
     return _cache.fetch<HomeFeed>(
-      'home:$page',
+      'home:$categoryId:$page',
       const Duration(minutes: 2),
       () async {
-        final modulesFuture = _read(() => _api.modules(page: page));
+        final modulesFuture = _read(
+          () => _api.modules(categoryId: categoryId, page: page),
+        );
         // Banners are decorative: a failure here must not blank the feed.
-        final bannersFuture = _read(() => _api.banners())
-            .then(
-              (data) => bannersFromData(data),
-              onError: (_) => const <MediaBanner>[],
-            );
+        final bannersFuture = _read(
+          () => _api.banners(categoryId: categoryId),
+        ).then(
+          (data) => bannersFromData(data),
+          onError: (_) => const <MediaBanner>[],
+        );
         final data = await modulesFuture;
         final banners = await bannersFuture;
         return HomeFeed(
