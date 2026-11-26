@@ -4,6 +4,7 @@
   [string]$AndroidSdk = $env:ANDROID_HOME,
   [string]$JavaHome = $env:JAVA_HOME,
   [string]$DartDefineFromFile,
+  [string]$CliCliCredentials = 'D:\project-Auto\NiXiang\CliCli动漫\dm-client\_credentials.json',
   [Alias('Profile')]
   [switch]$ProfileBuild,
   [ValidateSet('android-arm', 'android-arm64', 'android-x64')]
@@ -84,7 +85,21 @@ try {
     $DartDefineFromFile = Join-Path $projectRoot '.env.clicli.json'
   }
   $defineArguments = @()
-  if ($DartDefineFromFile) {
+  if ($DartDefineFromFile -and (Test-Path -LiteralPath $CliCliCredentials)) {
+    # The generated build file is temporary and ignored by Git. Credentials are
+    # embedded in the resulting app, so this is intended for private builds only.
+    $definePath = (Resolve-Path -LiteralPath $DartDefineFromFile).Path
+    $defineObject = Get-Content -LiteralPath $definePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $defines = @{}
+    foreach ($property in $defineObject.PSObject.Properties) { $defines[$property.Name] = $property.Value }
+    $credentials = Get-Content -LiteralPath $CliCliCredentials -Raw -Encoding UTF8 | ConvertFrom-Json
+    if (-not $credentials.email -or -not $credentials.password) { throw 'CliCli credentials are incomplete' }
+    $defines['CLICLI_ACCOUNT'] = $credentials.email
+    $defines['CLICLI_PASSWORD'] = $credentials.password
+    $generatedDefines = Join-Path $projectRoot ('.dart_tool/android-defines-' + [Guid]::NewGuid().ToString('N') + '.json')
+    [IO.File]::WriteAllText($generatedDefines, ($defines | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
+    $defineArguments += "--dart-define-from-file=$generatedDefines"
+  } elseif ($DartDefineFromFile) {
     $definePath = (Resolve-Path -LiteralPath $DartDefineFromFile).Path
     $defineArguments += "--dart-define-from-file=$definePath"
   } else {

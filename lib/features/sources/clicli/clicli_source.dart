@@ -62,8 +62,7 @@ class CliCliSource implements MediaSource {
   }
 
   @override
-  Future<HomeFeed> loadHome({int page = 1}) =>
-      loadChannelHome('', page: page);
+  Future<HomeFeed> loadHome({int page = 1}) => loadChannelHome('', page: page);
 
   @override
   Future<HomeFeed> loadChannelHome(String categoryId, {int page = 1}) {
@@ -75,12 +74,11 @@ class CliCliSource implements MediaSource {
           () => _api.modules(categoryId: categoryId, page: page),
         );
         // Banners are decorative: a failure here must not blank the feed.
-        final bannersFuture = _read(
-          () => _api.banners(categoryId: categoryId),
-        ).then(
-          (data) => bannersFromData(data),
-          onError: (_) => const <MediaBanner>[],
-        );
+        final bannersFuture = _read(() => _api.banners(categoryId: categoryId))
+            .then(
+              (data) => bannersFromData(data),
+              onError: (_) => const <MediaBanner>[],
+            );
         final data = await modulesFuture;
         final banners = await bannersFuture;
         return HomeFeed(
@@ -135,9 +133,7 @@ class CliCliSource implements MediaSource {
   Future<MediaPage> search(String keyword, {int page = 1}) {
     final term = keyword.trim();
     if (term.isEmpty) {
-      return Future<MediaPage>.value(
-        const MediaPage(items: <MediaItem>[]),
-      );
+      return Future<MediaPage>.value(const MediaPage(items: <MediaItem>[]));
     }
     return _cache.fetch<MediaPage>(
       'search:$term:$page',
@@ -204,26 +200,16 @@ class CliCliSource implements MediaSource {
     required int episode,
     String? quality,
   }) async {
-    // qualities 与广告门控互不依赖：同时发起，把两段网络等待压成一段。
-    final optionsFuture = _episodeOptions(mediaId, roadCode, episode);
-    final adTokenFuture = _obtainAdToken();
-    final results = await Future.wait<Object>(<Future<Object>>[
-      optionsFuture,
-      adTokenFuture,
-    ]);
-    var options = results[0] as _EpisodePlaybackOptions;
-    var adToken = results[1] as String;
+    // An entitled account may not need an ad token. Only request one after
+    // the server explicitly reports the ad gate.
+    var options = await _episodeOptions(mediaId, roadCode, episode);
+    var adToken = '';
     var selected = _pickQuality(options.qualities, quality);
-    if (selected.vipOnly) {
-      throw MediaSourceException(
-        MediaSourceErrorKind.vipRequired,
-        '${selected.label} 需要会员',
-        code: 4032,
-      );
-    }
+    final automatic = quality == null || quality.isEmpty;
+    var fellBack = false;
 
-    MediaSourceException? lastError;
-    for (var attempt = 0; attempt < 2; attempt++) {
+    var adRetries = 0;
+    while (true) {
       try {
         final exchanged = await _read(
           () => _api.exchange(
@@ -237,39 +223,39 @@ class CliCliSource implements MediaSource {
         );
         final source = playbackSourceFromExchange(exchanged);
         if (source.url.isNotEmpty) return source;
-        lastError = MediaSourceException(
-          MediaSourceErrorKind.adRequired,
+        throw const MediaSourceException(
+          MediaSourceErrorKind.notFound,
           '播放凭证未下发 playUrl',
-          code: 4031,
         );
       } on MediaSourceException catch (error) {
-        lastError = error;
-        // 4031 = the ad token was already consumed; everything else is fatal.
-        if (error.code != 4031 &&
-            error.kind != MediaSourceErrorKind.adRequired) {
+        if (automatic &&
+            !fellBack &&
+            _is4k(selected.id) &&
+            (error.kind == MediaSourceErrorKind.vipRequired ||
+                error.kind == MediaSourceErrorKind.notFound ||
+                error.code == 4206)) {
+          final fallback = options.qualities.where(
+            (q) => q.id.toLowerCase() == '1080p',
+          );
+          if (fallback.isEmpty) rethrow;
+          selected = fallback.first;
+          fellBack = true;
+          adRetries = 0;
+        } else if ((error.code == 4031 ||
+                error.kind == MediaSourceErrorKind.adRequired) &&
+            adRetries++ == 0) {
+          // A consumed ad token must never be reused.
+        } else {
           rethrow;
         }
-      }
-      if (attempt == 0) {
-        // 凭证可能已被消费：换一份 exchangeToken 与 adToken 再试一次。
         _cache.invalidate(_optionsKey(mediaId, roadCode, episode));
         options = await _episodeOptions(mediaId, roadCode, episode);
-        selected = _pickQuality(options.qualities, quality);
-        if (selected.vipOnly) {
-          throw MediaSourceException(
-            MediaSourceErrorKind.vipRequired,
-            '${selected.label} 需要会员',
-            code: 4032,
-          );
-        }
-        adToken = await _obtainAdToken();
+        adToken =
+            error.code == 4031 || error.kind == MediaSourceErrorKind.adRequired
+            ? await _obtainAdToken()
+            : '';
       }
     }
-    throw lastError ??
-        const MediaSourceException(
-          MediaSourceErrorKind.adRequired,
-          '广告校验未通过，无法获取播放地址',
-        );
   }
 
   String _optionsKey(String mediaId, String roadCode, int episode) =>
@@ -452,11 +438,17 @@ class CliCliSource implements MediaSource {
     return placementId;
   }
 
+  bool _is4k(String id) =>
+      const <String>{'4k', '2160p', 'uhd'}.contains(id.toLowerCase());
+
   MediaQuality _pickQuality(List<MediaQuality> qualities, String? requested) {
     if (requested != null && requested.isNotEmpty) {
       for (final quality in qualities) {
         if (quality.id == requested) return quality;
       }
+    }
+    for (final quality in qualities) {
+      if (_is4k(quality.id)) return quality;
     }
     for (final preferred in const <String>['1080p', '720p', '540p']) {
       for (final quality in qualities) {

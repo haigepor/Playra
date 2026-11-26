@@ -14,12 +14,26 @@ import '../../../request/core/dio_factory.dart';
 import '../../../request/core/network_config.dart';
 import '../core/media_source.dart';
 import 'clicli_config.dart';
+import 'clicli_auth.dart';
 import 'protocol/esdk_v3.dart';
 
 class CliCliClient {
-  CliCliClient({Dio? dio}) : _injectedDio = dio {
+  CliCliClient({
+    Dio? dio,
+    CliCliSessionStore? sessionStore,
+    String account = const String.fromEnvironment('CLICLI_ACCOUNT'),
+    String password = const String.fromEnvironment('CLICLI_PASSWORD'),
+  }) : _injectedDio = dio {
     _sessionId = _hex(8);
+    auth = CliCliAuth(
+      _callAuthEndpoint,
+      store: sessionStore,
+      account: account,
+      password: password,
+    );
   }
+
+  late final CliCliAuth auth;
 
   final Dio? _injectedDio;
   Dio? _dio;
@@ -90,23 +104,66 @@ class CliCliClient {
     Map<String, dynamic> payload, {
     Duration? timeout,
   }) async {
+    await auth.initialize();
+    final usedToken = auth.token;
     try {
-      return dataOf(await _callOnce(path, payload, timeout: timeout));
+      return await _callWithRecovery(
+        path,
+        payload,
+        timeout: timeout,
+        token: usedToken,
+      );
     } on MediaSourceException catch (error) {
-      final code = error.code;
-      if (code == 4020) {
-        await _recoverSession();
-        return dataOf(await _callOnce(path, payload, timeout: timeout));
-      } else if (code == 4012 || code == 4013) {
-        throw MediaSourceException(
-          MediaSourceErrorKind.authentication,
-          '登录状态已失效',
-          code: code,
-          cause: error,
+      if (error.code != 4012 && error.code != 4013) rethrow;
+      if (usedToken != null && await auth.refresh(usedToken)) {
+        return _callWithRecovery(
+          path,
+          payload,
+          timeout: timeout,
+          token: auth.token,
         );
-      } else {
-        rethrow;
       }
+      throw MediaSourceException(
+        MediaSourceErrorKind.authentication,
+        '登录状态已失效',
+        code: error.code,
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> _callAuthEndpoint(
+    String path,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      return await _callWithRecovery(path, payload);
+    } on MediaSourceException catch (error) {
+      // Do not propagate server-provided text or request data from auth calls.
+      throw MediaSourceException(
+        error.kind,
+        '账号认证失败',
+        code: error.code,
+        retryable: error.retryable,
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> _callWithRecovery(
+    String path,
+    Map<String, dynamic> payload, {
+    Duration? timeout,
+    String? token,
+  }) async {
+    try {
+      return dataOf(
+        await _callOnce(path, payload, timeout: timeout, token: token),
+      );
+    } on MediaSourceException catch (error) {
+      if (error.code != 4020) rethrow;
+      await _recoverSession();
+      return dataOf(
+        await _callOnce(path, payload, timeout: timeout, token: token),
+      );
     }
   }
 
@@ -149,9 +206,15 @@ class CliCliClient {
     String path,
     Map<String, dynamic> payload, {
     Duration? timeout,
+    String? token,
   }) async {
     final wire = _encryptJson(payload);
-    final response = await _post(path, wire, timeout: timeout);
+    final response = await _post(
+      path,
+      wire,
+      timeout: timeout,
+      overrideHeaders: _headers(encrypted: true, token: token),
+    );
     final json = _decode(response);
     _applyTimestamp(json);
     return json;
@@ -184,7 +247,7 @@ class CliCliClient {
     }
   }
 
-  Map<String, String> _headers({required bool encrypted}) {
+  Map<String, String> _headers({required bool encrypted, String? token}) {
     final ts = nowMs.toString();
     final nonce = _hex(16);
     final signature = c.md5
@@ -197,6 +260,7 @@ class CliCliClient {
     return <String, String>{
       'User-Agent': CliCliConfig.userAgent,
       'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
       if (encrypted) 'Content-Type': 'application/octet-stream',
       'X-Device-Id': CliCliConfig.deviceId,
       'X-Device-Fingerprint': CliCliConfig.deviceFingerprint,

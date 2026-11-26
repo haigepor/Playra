@@ -52,6 +52,14 @@ flutter run -d windows --dart-define-from-file=.env.clicli.json
 flutter run -d chrome --dart-define-from-file=.env.clicli.json
 ```
 
+私有 Android 构建会在本机存在 `D:/project-Auto/NiXiang/CliCli动漫/dm-client/_credentials.json` 时，将其中的账号配置与 `.env.clicli.json` 合并传给编译器；可用 `-CliCliCredentials` 指定其他凭据文件。账号凭据会被嵌入 APK，可被提取，不应分发。
+
+启动时以及每次回到前台时各执行一次账号维护：先收取当日金币（签到 +30 与看完视频任务 +20，合计 50/天，两者都由服务端限制为每日一次），再在会员剩余不足 48 小时、金币充足时兑换；下单后必须重新读取到期时间并确认其确实后移，否则记为待确认订单并停止后续下单。观看时长任务只发送一条最小进度记录用于建立当日条目，不伪造观看进度。
+
+维护只在 App 被打开时触发，不做后台常驻：某天没有打开 App，那天就不会收取金币，也不会尝试续费。不要同时运行其他设备或服务器上的同账号自动续费器——会话令牌按设备绑定，同一 deviceId 重复登录会使先前令牌失效。
+
+**安全提示：当前 CliCli 上游为 HTTP，认证公钥和令牌无法获得 TLS 传输保护；Hive 中保存的会话令牌也未加密。** 网络中的攻击者可能窃取账号或令牌。仅应在了解风险的可信环境下使用；不要将 APK 和私有配置公开。
+
 Android 构建：
 
 ```powershell
